@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v10.7 - 미니멀 UI</title>
+    <title>정부 지원사업 알리미 v10.8 - 미니멀 UI</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -33,7 +33,7 @@
         
         <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v10.7</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v10.8</h1>
                 <p class="text-gray-600 mt-2">깔끔해진 필터로 더 편리하게 찾아보세요!</p>
             </header>
 
@@ -74,7 +74,7 @@
                 <!-- 활성 필터 -->
                 <div id="active-filters-container" class="flex flex-wrap gap-2 items-center pt-4 border-t min-h-[41px]"></div>
 
-                <!-- *** [변경] 버튼 그룹을 하나의 div로 합치고 간격을 gap-2로 통일했습니다 *** -->
+                <!-- 버튼 그룹 -->
                 <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
                     <button data-sort="default" class="control-button active px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-100">기본순</button>
                     <button data-sort="deadline" class="control-button px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-100">마감 임박순</button>
@@ -100,10 +100,6 @@
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-indigo-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
     <script>
-        // JavaScript 코드는 이전 버전과 동일하게 작동합니다.
-        // HTML 구조만 변경되었기 때문에, 별도의 JS 수정 없이도
-        // 모든 기능이 정상적으로 동작합니다.
-        
         const INITIAL_LOAD_COUNT = 12;
         const TOTAL_LOAD_COUNT = 500; 
         let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
@@ -177,7 +173,12 @@
             };
             
             elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiData.length +')</option>';
-            for (const [region, count] of Object.entries(regionCounts)) {
+            
+            // *** [변경] 지역 목록을 가나다순으로 정렬하는 로직이 추가되었습니다 ***
+            const sortedRegions = Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko'));
+            
+            for (const region of sortedRegions) {
+                const count = regionCounts[region];
                 createAndAppendOption(elements.regionSelect, `${region} (${count})`, region);
             }
             
