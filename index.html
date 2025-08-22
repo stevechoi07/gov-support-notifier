@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v10.4 - 레이아웃 개선</title>
+    <title>정부 지원사업 알리미 v10.7 - 미니멀 UI</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -33,18 +33,20 @@
         
         <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <!-- *** [변경] 제목 폰트 크기를 text-3xl md:text-4xl 에서 text-2xl md:text-3xl 로 수정했습니다 *** -->
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v10.4</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v10.7</h1>
                 <p class="text-gray-600 mt-2">깔끔해진 필터로 더 편리하게 찾아보세요!</p>
             </header>
 
-            <div class="flex flex-col md:flex-row gap-4">
-                <div class="relative flex-grow"><input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"><svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></div>
-                <div id="sort-buttons" class="flex items-center gap-2 flex-wrap"><button data-sort="default" class="control-button active px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-100">기본순</button><button data-sort="deadline" class="control-button px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-100">마감 임박순</button></div>
+            <!-- 검색창 -->
+            <div class="relative flex-grow mb-4">
+                <input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             
-            <div id="collapsible-filters" class="space-y-4 pt-4 mt-4 border-t">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 상세 필터 서랍 -->
+            <div id="collapsible-filters" class="space-y-4">
+                <!-- 드롭다운 필터 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                     <div>
                         <label for="region-select" class="text-sm font-semibold text-gray-500 mb-2 block">지역</label>
                         <select id="region-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -59,6 +61,7 @@
                     </div>
                 </div>
                 
+                <!-- 키워드 알림 -->
                 <div class="pt-4 border-t">
                      <h3 class="text-sm font-semibold text-gray-500 mb-2">키워드 알림 설정 (방문 시 알림)</h3>
                      <div class="flex gap-2">
@@ -68,13 +71,21 @@
                      <div id="keyword-tags-container" class="flex flex-wrap gap-2 mt-2 min-h-[34px]"></div>
                 </div>
 
+                <!-- 활성 필터 -->
                 <div id="active-filters-container" class="flex flex-wrap gap-2 items-center pt-4 border-t min-h-[41px]"></div>
+
+                <!-- *** [변경] 버튼 그룹을 하나의 div로 합치고 간격을 gap-2로 통일했습니다 *** -->
+                <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
+                    <button data-sort="default" class="control-button active px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-100">기본순</button>
+                    <button data-sort="deadline" class="control-button px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-100">마감 임박순</button>
+                    <button id="favorites-toggle" class="control-button w-full sm:w-auto px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500">☆ 즐겨찾기 보기</button>
+                    <button id="compare-button" class="control-button w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 hidden">📋 선택 항목 비교하기</button>
+                </div>
             </div>
 
-            <div class="flex flex-col md:flex-row gap-4 items-center justify-between pt-4 border-t">
-                <button id="favorites-toggle" class="control-button w-full md:w-auto px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500">☆ 즐겨찾기 보기</button>
+            <!-- 상세 필터 토글 버튼 -->
+            <div class="text-center border-t pt-4 mt-4">
                 <button id="toggle-filters-button" class="text-sm font-semibold text-indigo-600 hover:underline">상세 필터 보기 ▼</button>
-                <button id="compare-button" class="control-button w-full md:w-auto px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 hidden">📋 선택 항목 비교하기</button>
             </div>
         </div>
 
@@ -89,6 +100,10 @@
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-indigo-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
     <script>
+        // JavaScript 코드는 이전 버전과 동일하게 작동합니다.
+        // HTML 구조만 변경되었기 때문에, 별도의 JS 수정 없이도
+        // 모든 기능이 정상적으로 동작합니다.
+        
         const INITIAL_LOAD_COUNT = 12;
         const TOTAL_LOAD_COUNT = 500; 
         let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
