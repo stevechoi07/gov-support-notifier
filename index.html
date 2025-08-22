@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.5 - 모바일 필터 최적화</title>
+    <title>정부 지원사업 알리미 v11.6 - UI 개선</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -41,8 +41,12 @@
         
         <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미 v11.5</h1>
-                <p class="text-slate-600 mt-2">모바일 필터 경험을 개선했어요!</p>
+                <!-- --- UI 개선: 버전 정보를 h1에서 p 태그로 이동 --- -->
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
+                <p class="text-slate-600 mt-2">
+                    사용자 경험을 위해 UI를 개선했어요!
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v11.6</span>
+                </p>
             </header>
 
             <div class="relative flex-grow mb-4">
@@ -51,7 +55,6 @@
             </div>
             
             <div id="collapsible-filters" class="space-y-4">
-                <!-- --- UX 개선: 모바일에서도 가로 2열로 표시되도록 grid-cols-2로 변경 --- -->
                 <div class="grid grid-cols-2 gap-4 pt-4 border-t">
                     <div>
                         <label for="region-select" class="text-sm font-semibold text-slate-500 mb-2 block">지역</label>
@@ -379,4 +382,4 @@
         function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
     </script>
 </body>
-</html>
+</html> 
