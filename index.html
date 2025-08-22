@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.1 - 무한 스크롤</title>
+    <title>정부 지원사업 알리미 v11.2 - 무한 스크롤</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -33,7 +33,7 @@
         
         <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.1</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.2</h1>
                 <p class="text-gray-600 mt-2">깔끔해진 필터로 더 편리하게 찾아보세요!</p>
             </header>
 
@@ -236,8 +236,7 @@
             if (filteredItems.length === 0) { 
                 elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
             } else { 
-                // *** [변경] 사서가 고정 규칙(INITIAL_LOAD_COUNT) 대신,
-                // 현재 보여줘야 할 책의 총 권수(visibleItemCount)를 보도록 수정했습니다! ***
+                // *** [수정] render 함수는 이제 처음 N개만 그리는 역할을 합니다. ***
                 displayData(filteredItems.slice(0, visibleItemCount)); 
             } 
         }
@@ -252,6 +251,7 @@
             }).join(''); 
         }
 
+        // *** [추가] 새로운 데이터를 '덧붙이는' 함수입니다 ***
         function appendData(items) {
             const newContent = items.map(item => {
                 const dday = calculateDday(item.pbanc_rcpt_end_dt); 
