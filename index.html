@@ -3,66 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.3 - 레이아웃개선</title>
+    <title>정부 지원사업 알리미 v11.4 - 디자인 개선</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #38bdf8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .control-button.active { background-color: #4f46e5; color: white; border-color: #4f46e5; }
+        
+        /* --- 디자인 개선 --- */
+        .control-button.active { background-color: #0ea5e9; color: white; border-color: #0ea5e9; }
         .favorite-button.favorited { color: #f59e0b; }
         #toast-notification { transition: opacity 0.3s, transform 0.3s; }
         .new-badge { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         .details-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
         .details-content.expanded { max-height: 500px; }
-        .active-filter-tag, .keyword-tag { display: inline-flex; align-items: center; background-color: #e0e7ff; color: #3730a3; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; }
-        .active-filter-tag button, .keyword-tag button { margin-left: 0.5rem; color: #4f46e5; font-weight: bold; }
+        .active-filter-tag, .keyword-tag { display: inline-flex; align-items: center; background-color: #e0f2fe; color: #075985; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; }
+        .active-filter-tag button, .keyword-tag button { margin-left: 0.5rem; color: #0ea5e9; font-weight: bold; }
         #collapsible-filters { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
         #collapsible-filters.expanded { max-height: 1000px; }
         #keyword-alert-modal { transition: opacity 0.3s; }
         #keyword-alert-modal.hidden { opacity: 0; pointer-events: none; }
+        
+        /* 반투명 헤더를 위한 스타일 */
+        .sticky-header {
+            backdrop-filter: saturate(180%) blur(10px);
+            -webkit-backdrop-filter: saturate(180%) blur(10px);
+        }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-100">
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         
-        <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sticky top-4 z-10">
+        <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.3</h1>
-                <p class="text-gray-600 mt-2">안정성을 높이고 코드를 개선했어요!</p>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미 v11.4</h1>
+                <p class="text-slate-600 mt-2">새로운 디자인으로 더 쾌적하게 사용하세요!</p>
             </header>
 
             <div class="relative flex-grow mb-4">
-                <input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                 <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             
             <div id="collapsible-filters" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                     <div>
-                        <label for="region-select" class="text-sm font-semibold text-gray-500 mb-2 block">지역</label>
-                        <select id="region-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <label for="region-select" class="text-sm font-semibold text-slate-500 mb-2 block">지역</label>
+                        <select id="region-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
                             <option value="all">모든 지역</option>
                         </select>
                     </div>
                     <div>
-                        <label for="category-select" class="text-sm font-semibold text-gray-500 mb-2 block">사업분야</label>
-                        <select id="category-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <label for="category-select" class="text-sm font-semibold text-slate-500 mb-2 block">사업분야</label>
+                        <select id="category-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
                             <option value="all">모든 사업분야</option>
                         </select>
                     </div>
                 </div>
                 
                 <div class="pt-4 border-t">
-                     <h3 class="text-sm font-semibold text-gray-500 mb-2">키워드 알림 설정 (방문 시 알림)</h3>
+                     <h3 class="text-sm font-semibold text-slate-500 mb-2">키워드 알림 설정 (방문 시 알림)</h3>
                      <div class="flex gap-2">
-                         <input type="text" id="keyword-input" placeholder="알림받을 키워드 입력" class="flex-grow min-w-0 px-3 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                         <button id="add-keyword-button" class="px-4 py-1 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700">추가</button>
+                         <input type="text" id="keyword-input" placeholder="알림받을 키워드 입력" class="flex-grow min-w-0 px-3 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                         <button id="add-keyword-button" class="px-4 py-1 bg-sky-500 text-white rounded-lg text-sm font-semibold hover:bg-sky-600 shadow-md transition-colors">추가</button>
                      </div>
                      <div id="keyword-tags-container" class="flex flex-wrap gap-2 mt-2 min-h-[34px]"></div>
                 </div>
@@ -70,33 +78,35 @@
                 <div id="active-filters-container" class="flex flex-wrap gap-2 items-center pt-4 border-t min-h-[41px]"></div>
 
                 <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
-                    <button data-sort="default" class="control-button active px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-100">기본순</button>
-                    <button data-sort="deadline" class="control-button px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-100">마감 임박순</button>
-                    <button id="favorites-toggle" class="control-button w-full sm:w-auto px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500">☆ 즐겨찾기 보기</button>
-                    <button id="compare-button" class="control-button w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 hidden">📋 선택 항목 비교하기</button>
+                    <button data-sort="default" class="control-button active px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">기본순</button>
+                    <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
+                    <button id="favorites-toggle" class="control-button w-full sm:w-auto px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500 shadow-md transition-colors">☆ 즐겨찾기 보기</button>
+                    <button id="compare-button" class="control-button w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
                 </div>
             </div>
 
             <div class="text-center border-t pt-4 mt-4">
-                <button id="toggle-filters-button" class="text-sm font-semibold text-indigo-600 hover:underline">상세 필터 보기 ▼</button>
+                <button id="toggle-filters-button" class="text-sm font-semibold text-sky-600 hover:underline">상세 필터 보기 ▼</button>
             </div>
         </div>
 
-        <div id="status-container" class="text-center h-64 flex justify-center items-center"><div id="loading-indicator"><div class="loader mx-auto"></div><p class="text-gray-500 mt-4">최신 데이터를 불러오는 중입니다...</p></div><div id="error-message" class="hidden"></div></div>
+        <div id="status-container" class="text-center h-64 flex justify-center items-center"><div id="loading-indicator"><div class="loader mx-auto"></div><p class="text-slate-500 mt-4">최신 데이터를 불러오는 중입니다...</p></div><div id="error-message" class="hidden"></div></div>
         <main id="results-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
         
         <div id="load-more-spinner" class="text-center mt-8 hidden">
             <div class="loader mx-auto"></div>
         </div>
 
-        <footer class="text-center mt-12 text-sm text-gray-500"><p>본 데이터는 공공데이터포털(K-Startup) API를 통해 제공받았습니다.</p></footer>
+        <footer class="text-center mt-12 text-sm text-slate-500"><p>본 데이터는 공공데이터포털(K-Startup) API를 통해 제공받았습니다.</p></footer>
     </div>
 
     <div id="comparison-modal" class="fixed inset-0 z-50 hidden"><div id="comparison-modal-bg" class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white rounded-lg shadow-xl m-4 md:m-8 max-w-6xl mx-auto max-h-[90vh] flex flex-col"><div class="flex justify-between items-center p-4 border-b"><h2 class="text-xl font-bold">지원사업 비교하기</h2><button id="close-modal-button" class="text-2xl">&times;</button></div><div id="comparison-content" class="p-4 overflow-auto"></div></div></div>
-    <div id="toast-notification" class="fixed bottom-10 right-10 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
-    <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-indigo-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
+    <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
+    <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
     <script>
+        // JavaScript 로직은 v11.3과 동일하게 유지됩니다.
+        // 디자인 변경은 HTML 클래스와 CSS 스타일로만 이루어졌습니다.
         const INITIAL_LOAD_COUNT = 12;
         const TOTAL_LOAD_COUNT = 500; 
         let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
@@ -136,7 +146,6 @@
         }
         
         async function fetchData(perPage) {
-            // Netlify 서버리스 함수를 호출합니다. 로컬 테스트 시 주소 확인이 필요합니다.
             const backendApiUrl = `/.netlify/functions/get-support-data?perPage=${perPage}`;
             try {
                 const response = await fetch(backendApiUrl);
@@ -196,7 +205,7 @@
                 searchTimeout = setTimeout(() => {
                     currentFilters.searchTerm = e.target.value.toLowerCase();
                     applyFiltersAndRender();
-                }, 300); // 300ms 디바운스
+                }, 300);
             });
             elements.sortButtons.addEventListener('click', e => { if (e.target.tagName === 'BUTTON' && e.target.dataset.sort) { currentFilters.sort = e.target.dataset.sort; updateFilterUI(); applyFiltersAndRender(); } });
             elements.favoritesToggle.addEventListener('click', e => { currentFilters.showFavorites = !currentFilters.showFavorites; e.target.classList.toggle('active'); e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; applyFiltersAndRender(); });
@@ -233,23 +242,22 @@
             }, 500);
         }
         
-        // --- 개선된 부분: HTML 생성을 하나의 함수로 통합 ---
         function createItemHTML(item) {
             const dday = calculateDday(item.pbanc_rcpt_end_dt); 
             const isFavorited = favorites.includes(item.pbanc_sn); 
             const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
             const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); 
             return `
-                <div class="bg-white rounded-xl shadow-md overflow-hidden relative">
+                <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative">
                     ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''}
                     <div class="p-6">
                         <div class="flex justify-between items-start">
-                            <span class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span>
+                            <span class="text-sm font-semibold text-sky-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span>
                             <span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span>
                         </div>
-                        <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-black hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a>
-                        <p class="mt-2 text-gray-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p>
-                        <div class="details-content mt-4 pt-4 border-t text-sm text-gray-600 space-y-2">
+                        <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a>
+                        <p class="mt-2 text-slate-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p>
+                        <div class="details-content mt-4 pt-4 border-t text-sm text-slate-600 space-y-2">
                             <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p>
                         </div>
                         <div class="flex justify-between items-center mt-4 pt-4 border-t">
@@ -258,13 +266,13 @@
                                     <input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}>
                                     <span>비교</span>
                                 </label>
-                                <button class="details-toggle text-sm font-semibold text-indigo-600 hover:underline">자세히 보기 ▼</button>
+                                <button class="details-toggle text-sm font-semibold text-sky-600 hover:underline">자세히 보기 ▼</button>
                             </div>
                             <div>
-                                <button class="share-button text-gray-400 hover:text-indigo-500" data-url="${item.detl_pg_url}" title="공유하기">
+                                <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
                                 </button>
-                                <button class="favorite-button text-2xl text-gray-400 hover:text-amber-400 ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
+                                <button class="favorite-button text-2xl text-slate-400 hover:text-amber-400 transition-colors ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
                             </div>
                         </div>
                     </div>
@@ -295,7 +303,7 @@
             elements.resultsContainer.classList.remove('hidden'); 
             renderActiveFilters(); 
             if (filteredItems.length === 0) { 
-                elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
+                elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
             } else { 
                 displayData(filteredItems.slice(0, visibleItemCount)); 
             }
@@ -319,7 +327,6 @@
             } 
         }
 
-        // --- 버그 수정: 누락된 함수들 추가 ---
         function resetFilter(type) {
             if (type === 'searchTerm') {
                 currentFilters.searchTerm = '';
@@ -353,21 +360,20 @@
                 }
             });
         }
-        // --- 버그 수정 끝 ---
 
-        function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-gray-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-gray-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
+        function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
         function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
         function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
         function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); if (currentFilters.showFavorites) applyFiltersAndRender(); }
         function toggleComparison(checkbox) { const id = parseInt(checkbox.dataset.id); const index = comparisonList.indexOf(id); if (index > -1) comparisonList.splice(index, 1); else comparisonList.push(id); elements.compareButton.style.display = comparisonList.length > 0 ? 'block' : 'none'; }
-        function showComparisonModal() { const itemsToCompare = allApiData.filter(item => comparisonList.includes(item.pbanc_sn)); const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-gray-100"><th class="p-2 w-1/5">항목</th>'; itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); tableHTML += '</tr></thead><tbody>'; Object.keys(headers).forEach(key => { tableHTML += `<tr class="border-b"><td class="font-bold p-2 align-top">${headers[key]}</td>`; itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); tableHTML += '</tr>'; }); tableHTML += '</tbody></table></div>'; elements.comparisonContent.innerHTML = tableHTML; elements.modal.classList.remove('hidden'); }
+        function showComparisonModal() { const itemsToCompare = allApiData.filter(item => comparisonList.includes(item.pbanc_sn)); const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-slate-100"><th class="p-2 w-1/5">항목</th>'; itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); tableHTML += '</tr></thead><tbody>'; Object.keys(headers).forEach(key => { tableHTML += `<tr class="border-b"><td class="font-bold p-2 align-top">${headers[key]}</td>`; itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); tableHTML += '</tr>'; }); tableHTML += '</tbody></table></div>'; elements.comparisonContent.innerHTML = tableHTML; elements.modal.classList.remove('hidden'); }
         function shareLink(button) { const url = button.dataset.url; const textArea = document.createElement("textarea"); textArea.value = url; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); showToast("링크가 복사되었습니다!"); } catch (err) { showToast("링크 복사에 실패했습니다.", true); } document.body.removeChild(textArea); }
-        function showToast(message, isError = false) { elements.toast.textContent = message; elements.toast.className = `fixed bottom-10 right-10 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 ${isError ? 'bg-red-500' : 'bg-gray-800'}`; elements.toast.classList.remove('opacity-0', 'translate-y-4'); setTimeout(() => { elements.toast.classList.add('opacity-0', 'translate-y-4'); }, 2000); }
+        function showToast(message, isError = false) { elements.toast.textContent = message; elements.toast.className = `fixed bottom-10 right-10 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 ${isError ? 'bg-red-500' : 'bg-slate-800'}`; elements.toast.classList.remove('opacity-0', 'translate-y-4'); setTimeout(() => { elements.toast.classList.add('opacity-0', 'translate-y-4'); }, 2000); }
         function addKeyword() { const keyword = elements.keywordInput.value.trim(); if (keyword && !alertKeywords.includes(keyword)) { alertKeywords.push(keyword); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); elements.keywordInput.value = ''; } }
-        function renderAlertKeywords() { if (alertKeywords.length === 0) { elements.keywordTagsContainer.innerHTML = '<span class="text-xs text-gray-400">알림 받을 키워드를 추가해보세요.</span>'; return; } elements.keywordTagsContainer.innerHTML = alertKeywords.map((keyword, index) => ` <span class="keyword-tag">${keyword} <button data-index="${index}">x</button></span> `).join(''); }
+        function renderAlertKeywords() { if (alertKeywords.length === 0) { elements.keywordTagsContainer.innerHTML = '<span class="text-xs text-slate-400">알림 받을 키워드를 추가해보세요.</span>'; return; } elements.keywordTagsContainer.innerHTML = alertKeywords.map((keyword, index) => ` <span class="keyword-tag">${keyword} <button data-index="${index}">x</button></span> `).join(''); }
         function handleKeywordTagClick(e) { if (e.target.tagName === 'BUTTON') { const index = parseInt(e.target.dataset.index); alertKeywords.splice(index, 1); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); } }
         function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiData.length === 0) return; const currentItemIds = allApiData.map(item => item.pbanc_sn); const newItems = allApiData.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
-        function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-gray-50"> <p class="text-sm text-gray-500"> <span class="font-bold text-indigo-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-gray-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
+        function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
     </script>
 </body>
 </html>
