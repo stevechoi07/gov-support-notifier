@@ -133,6 +133,8 @@
             if (fullData) {
                 allApiData = fullData;
                 await populateFilters();
+                // *** [수정] 전체 데이터가 로드된 후, 필터를 다시 적용하여
+                // 필터 메뉴의 카운트가 올바르게 표시되도록 합니다.
                 applyFiltersAndRender();
                 checkNewItemsForKeywords();
             }
@@ -229,17 +231,8 @@
             }, 500);
         }
         
-        function render() { 
-            elements.statusContainer.classList.add('hidden'); 
-            elements.resultsContainer.classList.remove('hidden'); 
-            renderActiveFilters(); 
-            if (filteredItems.length === 0) { 
-                elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
-            } else { 
-                // *** [수정] render 함수는 이제 처음 N개만 그리는 역할을 합니다. ***
-                displayData(filteredItems.slice(0, visibleItemCount)); 
-            } 
-        }
+        // *** [수정] render 함수가 displayData로 대체되었습니다. ***
+        // 이제 화면을 그리는 역할은 applyFiltersAndRender와 loadMoreItems가 명확히 나눠서 담당합니다.
 
         function displayData(items) { 
             elements.resultsContainer.innerHTML = items.map(item => { 
@@ -251,7 +244,6 @@
             }).join(''); 
         }
 
-        // *** [추가] 새로운 데이터를 '덧붙이는' 함수입니다 ***
         function appendData(items) {
             const newContent = items.map(item => {
                 const dday = calculateDday(item.pbanc_rcpt_end_dt); 
@@ -263,6 +255,7 @@
             elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
         }
 
+        // *** [수정] 필터 적용 시, 화면을 완전히 새로 그리도록 로직을 개선했습니다 ***
         function applyFiltersAndRender() { 
             let items = [...allApiData]; 
             if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
@@ -273,7 +266,16 @@
             
             filteredItems = items; 
             visibleItemCount = INITIAL_LOAD_COUNT;
-            render(); 
+
+            // 화면을 새로 그리는 로직
+            elements.statusContainer.classList.add('hidden'); 
+            elements.resultsContainer.classList.remove('hidden'); 
+            renderActiveFilters(); 
+            if (filteredItems.length === 0) { 
+                elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
+            } else { 
+                displayData(filteredItems.slice(0, visibleItemCount)); 
+            }
         }
 
         function renderActiveFilters() { let html = ''; if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; if (currentFilters.category !== 'all') html += `<span class="active-filter-tag" data-type="category">분야: ${currentFilters.category} <button>x</button></span>`; if (html) { html += `<button id="reset-filters-button" class="text-sm text-red-500 hover:underline ml-auto">모든 필터 초기화</button>`; } elements.activeFiltersContainer.innerHTML = html; elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { const type = e.target.parentElement.dataset.type; resetFilter(type); })); if(document.getElementById('reset-filters-button')) { document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); } }
