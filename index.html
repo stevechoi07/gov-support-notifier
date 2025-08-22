@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.4 - 디자인 개선</title>
+    <title>정부 지원사업 알리미 v11.4 - UX 개선</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -81,12 +81,16 @@
                     <button data-sort="default" class="control-button active px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">기본순</button>
                     <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
                     <button id="favorites-toggle" class="control-button w-full sm:w-auto px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500 shadow-md transition-colors">☆ 즐겨찾기 보기</button>
-                    <button id="compare-button" class="control-button w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
                 </div>
             </div>
 
             <div class="text-center border-t pt-4 mt-4">
                 <button id="toggle-filters-button" class="text-sm font-semibold text-sky-600 hover:underline">상세 필터 보기 ▼</button>
+            </div>
+            
+            <!-- '선택 항목 비교하기' 버튼을 이 위치로 이동 -->
+            <div class="mt-4 text-center">
+                 <button id="compare-button" class="control-button w-full px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
             </div>
         </div>
 
@@ -376,4 +380,4 @@
         function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
     </script>
 </body>
-</html>
+</html> 
