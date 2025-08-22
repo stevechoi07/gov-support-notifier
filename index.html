@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.2 - 무한 스크롤</title>
+    <title>정부 지원사업 알리미 v11.3 - 무한 스크롤</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -33,7 +33,7 @@
         
         <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.2</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.3</h1>
                 <p class="text-gray-600 mt-2">깔끔해진 필터로 더 편리하게 찾아보세요!</p>
             </header>
 
@@ -125,7 +125,6 @@
             addEventListeners();
             renderAlertKeywords();
             
-            // *** [수정] 데이터 로딩 방식을 더 단순하고 안정적으로 변경했습니다. ***
             const fullData = await fetchData(TOTAL_LOAD_COUNT);
             if (fullData) {
                 allApiData = fullData;
@@ -247,7 +246,6 @@
             elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
         }
 
-        // *** [수정] 필터 적용 시, 화면을 완전히 새로 그리도록 로직을 개선했습니다 ***
         function applyFiltersAndRender() { 
             let items = [...allApiData]; 
             if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
@@ -259,7 +257,6 @@
             filteredItems = items; 
             visibleItemCount = INITIAL_LOAD_COUNT;
 
-            // 화면을 새로 그리는 로직
             elements.statusContainer.classList.add('hidden'); 
             elements.resultsContainer.classList.remove('hidden'); 
             renderActiveFilters(); 
@@ -272,7 +269,7 @@
 
         function renderActiveFilters() { let html = ''; if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; if (currentFilters.category !== 'all') html += `<span class="active-filter-tag" data-type="category">분야: ${currentFilters.category} <button>x</button></span>`; if (html) { html += `<button id="reset-filters-button" class="text-sm text-red-500 hover:underline ml-auto">모든 필터 초기화</button>`; } elements.activeFiltersContainer.innerHTML = html; elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { const type = e.target.parentElement.dataset.type; resetFilter(type); })); if(document.getElementById('reset-filters-button')) { document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); } }
         function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-gray-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-gray-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
-        function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
+        function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
         function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
         function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); if (currentFilters.showFavorites) applyFiltersAndRender(); }
         function toggleComparison(checkbox) { const id = parseInt(checkbox.dataset.id); const index = comparisonList.indexOf(id); if (index > -1) comparisonList.splice(index, 1); else comparisonList.push(id); elements.compareButton.style.display = comparisonList.length > 0 ? 'block' : 'none'; }
