@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v10.9 - 무한 스크롤</title>
+    <title>정부 지원사업 알리미 v11.0 - 무한 스크롤</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -33,7 +33,7 @@
         
         <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v10.9</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.0</h1>
                 <p class="text-gray-600 mt-2">깔끔해진 필터로 더 편리하게 찾아보세요!</p>
             </header>
 
@@ -85,7 +85,6 @@
         <div id="status-container" class="text-center h-64 flex justify-center items-center"><div id="loading-indicator"><div class="loader mx-auto"></div><p class="text-gray-500 mt-4">최신 데이터를 불러오는 중입니다...</p></div><div id="error-message" class="hidden"></div></div>
         <main id="results-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
         
-        <!-- *** [변경] '더보기' 버튼이 사라지고, 자동 로딩을 위한 작은 스피너가 추가되었습니다 *** -->
         <div id="load-more-spinner" class="text-center mt-8 hidden">
             <div class="loader mx-auto"></div>
         </div>
@@ -105,7 +104,6 @@
         let currentFilters = { searchTerm: '', region: 'all', category: 'all', sort: 'default', showFavorites: false };
         let alertKeywords = [];
         let seenItems = [];
-        // *** [추가] 무한 스크롤 중복 실행을 막기 위한 변수(깃발)가 추가되었습니다 ***
         let isLoadingMore = false;
 
         const elements = { 
@@ -113,7 +111,7 @@
             regionSelect: document.getElementById('region-select'), 
             categorySelect: document.getElementById('category-select'), 
             activeFiltersContainer: document.getElementById('active-filters-container'), favoritesToggle: document.getElementById('favorites-toggle'), compareButton: document.getElementById('compare-button'), 
-            loadMoreSpinner: document.getElementById('load-more-spinner'), // 변경
+            loadMoreSpinner: document.getElementById('load-more-spinner'),
             modal: document.getElementById('comparison-modal'), modalBg: document.getElementById('comparison-modal-bg'), closeModalButton: document.getElementById('close-modal-button'), comparisonContent: document.getElementById('comparison-content'), toast: document.getElementById('toast-notification'), toggleFiltersButton: document.getElementById('toggle-filters-button'), collapsibleFilters: document.getElementById('collapsible-filters'),
             keywordInput: document.getElementById('keyword-input'), addKeywordButton: document.getElementById('add-keyword-button'), keywordTagsContainer: document.getElementById('keyword-tags-container'), keywordAlertModal: document.getElementById('keyword-alert-modal'), keywordAlertContent: document.getElementById('keyword-alert-content'), closeKeywordAlertButton: document.getElementById('close-keyword-alert-button')
         };
@@ -194,9 +192,7 @@
         }
 
         function addEventListeners() {
-            // *** [변경] '더보기' 버튼의 이벤트 리스너가 사라지고, 스크롤 이벤트 리스너가 추가되었습니다 ***
             window.addEventListener('scroll', handleScroll);
-
             elements.searchInput.addEventListener('input', e => { currentFilters.searchTerm = e.target.value.toLowerCase(); applyFiltersAndRender(); });
             elements.sortButtons.addEventListener('click', e => { if (e.target.tagName === 'BUTTON') { currentFilters.sort = e.target.dataset.sort; updateFilterUI(); applyFiltersAndRender(); } });
             elements.favoritesToggle.addEventListener('click', e => { currentFilters.showFavorites = !currentFilters.showFavorites; e.target.classList.toggle('active'); e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; applyFiltersAndRender(); });
@@ -213,34 +209,27 @@
             elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
         }
 
-        // *** [추가] 무한 스크롤을 처리하는 똑똑한 함수가 추가되었습니다 ***
         function handleScroll() {
-            // 사용자가 얼마나 스크롤했는지, 화면 높이가 얼마인지, 전체 페이지 높이가 얼마인지 계산합니다.
             const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-
-            // 페이지 맨 아래 근처(100px)까지 스크롤했고,
-            // 더 불러올 데이터가 남아있고,
-            // 현재 로딩 중이 아닐 때만 다음 데이터를 불러옵니다.
             if (clientHeight + scrollTop >= scrollHeight - 100 && visibleItemCount < filteredItems.length && !isLoadingMore) {
                 loadMoreItems();
             }
         }
 
-        // *** [추가] 다음 데이터를 불러오는 함수입니다 ***
+        // *** [변경] 로직을 '추가'하는 방식으로 수정했습니다 ***
         function loadMoreItems() {
-            isLoadingMore = true; // "지금 로딩 중!" 깃발을 듭니다.
-            elements.loadMoreSpinner.classList.remove('hidden'); // 로딩 스피너를 보여줍니다.
+            isLoadingMore = true;
+            elements.loadMoreSpinner.classList.remove('hidden');
 
-            // 스피너가 보일 시간을 주기 위해 아주 잠깐(0.5초) 기다렸다가 데이터를 불러옵니다.
             setTimeout(() => {
-                visibleItemCount += 12; // 보여줄 아이템 개수를 12개 늘립니다.
-                render(); // 화면을 다시 그립니다.
-                elements.loadMoreSpinner.classList.add('hidden'); // 로딩이 끝나면 스피너를 숨깁니다.
-                isLoadingMore = false; // "로딩 끝!" 깃발을 내립니다.
+                const nextItems = filteredItems.slice(visibleItemCount, visibleItemCount + 12);
+                appendData(nextItems); // 화면을 교체하는 'render' 대신 'appendData'를 호출합니다.
+                visibleItemCount += 12;
+                elements.loadMoreSpinner.classList.add('hidden');
+                isLoadingMore = false;
             }, 500);
         }
         
-        // *** [변경] render 함수에서 '더보기' 버튼 관련 로직이 사라졌습니다 ***
         function render() { 
             elements.statusContainer.classList.add('hidden'); 
             elements.resultsContainer.classList.remove('hidden'); 
@@ -248,19 +237,51 @@
             if (filteredItems.length === 0) { 
                 elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
             } else { 
-                displayData(filteredItems.slice(0, visibleItemCount)); 
+                // render 함수는 이제 처음 12개만 그리는 역할만 합니다.
+                displayData(filteredItems.slice(0, INITIAL_LOAD_COUNT)); 
             } 
         }
 
-        // ... (나머지 모든 JavaScript 함수들은 이전과 동일합니다) ...
-        function resetFilter(type) { if (type === 'searchTerm') { elements.searchInput.value = ''; currentFilters.searchTerm = ''; } else if (type === 'region') { elements.regionSelect.value = 'all'; currentFilters.region = 'all'; } else if (type === 'category') { elements.categorySelect.value = 'all'; currentFilters.category = 'all'; } applyFiltersAndRender(); }
-        function resetAllFilters() { elements.searchInput.value = ''; elements.regionSelect.value = 'all'; elements.categorySelect.value = 'all'; currentFilters = { ...currentFilters, searchTerm: '', region: 'all', category: 'all' }; applyFiltersAndRender(); }
-        function updateFilterUI() { elements.sortButtons.querySelectorAll('.control-button').forEach(btn => btn.classList.toggle('active', btn.dataset.sort === currentFilters.sort)); elements.regionSelect.value = currentFilters.region; elements.categorySelect.value = currentFilters.category; }
-        function applyFiltersAndRender() { let items = [...allApiData]; if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); if (currentFilters.category !== 'all') items = items.filter(item => item.supt_biz_clsfc === currentFilters.category); if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); filteredItems = items; visibleItemCount = 12; render(); }
-        function displayData(items) { elements.resultsContainer.innerHTML = items.map(item => { const dday = calculateDday(item.pbanc_rcpt_end_dt); const isFavorited = favorites.includes(item.pbanc_sn); const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); return ` <div class="bg-white rounded-xl shadow-md overflow-hidden relative"> ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''} <div class="p-6"> <div class="flex justify-between items-start"><span class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span><span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span></div> <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-black hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a> <p class="mt-2 text-gray-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p> <div class="details-content mt-4 pt-4 border-t text-sm text-gray-600 space-y-2"> <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p> </div> <div class="flex justify-between items-center mt-4 pt-4 border-t"> <div class="flex items-center gap-4"> <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}><span>비교</span></label> <button class="details-toggle text-sm font-semibold text-indigo-600 hover:underline">자세히 보기 ▼</button> </div> <div> <button class="share-button text-gray-400 hover:text-indigo-500" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button> <button class="favorite-button text-2xl text-gray-400 hover:text-amber-400 ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button> </div> </div> </div> </div>`; }).join(''); }
+        // *** [변경] 이 함수는 이제 화면의 모든 내용을 교체할 때만 사용됩니다 (초기 로딩, 필터 변경) ***
+        function displayData(items) { 
+            elements.resultsContainer.innerHTML = items.map(item => { 
+                const dday = calculateDday(item.pbanc_rcpt_end_dt); 
+                const isFavorited = favorites.includes(item.pbanc_sn); 
+                const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
+                const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); 
+                return ` <div class="bg-white rounded-xl shadow-md overflow-hidden relative"> ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''} <div class="p-6"> <div class="flex justify-between items-start"><span class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span><span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span></div> <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-black hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a> <p class="mt-2 text-gray-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p> <div class="details-content mt-4 pt-4 border-t text-sm text-gray-600 space-y-2"> <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p> </div> <div class="flex justify-between items-center mt-4 pt-4 border-t"> <div class="flex items-center gap-4"> <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}><span>비교</span></label> <button class="details-toggle text-sm font-semibold text-indigo-600 hover:underline">자세히 보기 ▼</button> </div> <div> <button class="share-button text-gray-400 hover:text-indigo-500" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button> <button class="favorite-button text-2xl text-gray-400 hover:text-amber-400 ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button> </div> </div> </div> </div>`; 
+            }).join(''); 
+        }
+
+        // *** [추가] 기존 내용 아래에 새로운 데이터를 '덧붙이는' 함수를 새로 만들었습니다 ***
+        function appendData(items) {
+            const newContent = items.map(item => {
+                const dday = calculateDday(item.pbanc_rcpt_end_dt); 
+                const isFavorited = favorites.includes(item.pbanc_sn); 
+                const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
+                const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); 
+                return ` <div class="bg-white rounded-xl shadow-md overflow-hidden relative"> ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''} <div class="p-6"> <div class="flex justify-between items-start"><span class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span><span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span></div> <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-black hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a> <p class="mt-2 text-gray-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p> <div class="details-content mt-4 pt-4 border-t text-sm text-gray-600 space-y-2"> <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p> </div> <div class="flex justify-between items-center mt-4 pt-4 border-t"> <div class="flex items-center gap-4"> <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}><span>비교</span></label> <button class="details-toggle text-sm font-semibold text-indigo-600 hover:underline">자세히 보기 ▼</button> </div> <div> <button class="share-button text-gray-400 hover:text-indigo-500" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button> <button class="favorite-button text-2xl text-gray-400 hover:text-amber-400 ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button> </div> </div> </div> </div>`; 
+            }).join('');
+            elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
+        }
+
+        // *** [변경] 필터를 바꾸면 처음부터 다시 그려야 하므로, visibleItemCount를 초기화합니다 ***
+        function applyFiltersAndRender() { 
+            let items = [...allApiData]; 
+            if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
+            if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
+            if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); 
+            if (currentFilters.category !== 'all') items = items.filter(item => item.supt_biz_clsfc === currentFilters.category); 
+            if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
+            
+            filteredItems = items; 
+            visibleItemCount = INITIAL_LOAD_COUNT; // 카운트 초기화
+            render(); 
+        }
+
         function renderActiveFilters() { let html = ''; if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; if (currentFilters.category !== 'all') html += `<span class="active-filter-tag" data-type="category">분야: ${currentFilters.category} <button>x</button></span>`; if (html) { html += `<button id="reset-filters-button" class="text-sm text-red-500 hover:underline ml-auto">모든 필터 초기화</button>`; } elements.activeFiltersContainer.innerHTML = html; elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { const type = e.target.parentElement.dataset.type; resetFilter(type); })); if(document.getElementById('reset-filters-button')) { document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); } }
         function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-gray-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-gray-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
-        function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
+        function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
         function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
         function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); if (currentFilters.showFavorites) applyFiltersAndRender(); }
         function toggleComparison(checkbox) { const id = parseInt(checkbox.dataset.id); const index = comparisonList.indexOf(id); if (index > -1) comparisonList.splice(index, 1); else comparisonList.push(id); elements.compareButton.style.display = comparisonList.length > 0 ? 'block' : 'none'; }
