@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.3 - 무한 스크롤</title>
+    <title>정부 지원사업 알리미 v11.3 - new개선</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -34,7 +34,7 @@
         <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.3</h1>
-                <p class="text-gray-600 mt-2">깔끔해진 필터로 더 편리하게 찾아보세요!</p>
+                <p class="text-gray-600 mt-2">안정성을 높이고 코드를 개선했어요!</p>
             </header>
 
             <div class="relative flex-grow mb-4">
@@ -105,6 +105,7 @@
         let alertKeywords = [];
         let seenItems = [];
         let isLoadingMore = false;
+        let searchTimeout;
 
         const elements = { 
             statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
@@ -133,27 +134,28 @@
                 checkNewItemsForKeywords();
             }
         }
-		
-		async function fetchData(perPage) {
-			const backendApiUrl = `/.netlify/functions/get-support-data?perPage=${perPage}`;
-			try {
-				const response = await fetch(backendApiUrl);
-				if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
-				const data = await response.json();
-				if (data && data.data) return data.data;
-				throw new Error(data.resultMsg || "백엔드로부터 유효한 데이터를 받지 못했습니다.");
-			} catch (error) {
-				console.error("데이터 요청 오류:", error);
-				elements.loadingIndicator.classList.add('hidden');
-				let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.";
-				if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올른지 확인해주세요.";
-				else friendlyMessage = `오류 발생: ${error.message}`;
-				elements.errorMessage.textContent = friendlyMessage;
-				elements.errorMessage.classList.remove('hidden');
-				return null;
-			}
-		}
-		
+        
+        async function fetchData(perPage) {
+            // Netlify 서버리스 함수를 호출합니다. 로컬 테스트 시 주소 확인이 필요합니다.
+            const backendApiUrl = `/.netlify/functions/get-support-data?perPage=${perPage}`;
+            try {
+                const response = await fetch(backendApiUrl);
+                if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
+                const data = await response.json();
+                if (data && data.data) return data.data;
+                throw new Error(data.resultMsg || "백엔드로부터 유효한 데이터를 받지 못했습니다.");
+            } catch (error) {
+                console.error("데이터 요청 오류:", error);
+                elements.loadingIndicator.classList.add('hidden');
+                let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.";
+                if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올바른지 확인해주세요.";
+                else friendlyMessage = `오류 발생: ${error.message}`;
+                elements.errorMessage.textContent = friendlyMessage;
+                elements.errorMessage.classList.remove('hidden');
+                return null;
+            }
+        }
+        
         async function populateFilters() {
             const regionCounts = {}, categoryCounts = {};
             allApiData.forEach(item => {
@@ -189,8 +191,14 @@
 
         function addEventListeners() {
             window.addEventListener('scroll', handleScroll);
-            elements.searchInput.addEventListener('input', e => { currentFilters.searchTerm = e.target.value.toLowerCase(); applyFiltersAndRender(); });
-            elements.sortButtons.addEventListener('click', e => { if (e.target.tagName === 'BUTTON') { currentFilters.sort = e.target.dataset.sort; updateFilterUI(); applyFiltersAndRender(); } });
+            elements.searchInput.addEventListener('input', e => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    currentFilters.searchTerm = e.target.value.toLowerCase();
+                    applyFiltersAndRender();
+                }, 300); // 300ms 디바운스
+            });
+            elements.sortButtons.addEventListener('click', e => { if (e.target.tagName === 'BUTTON' && e.target.dataset.sort) { currentFilters.sort = e.target.dataset.sort; updateFilterUI(); applyFiltersAndRender(); } });
             elements.favoritesToggle.addEventListener('click', e => { currentFilters.showFavorites = !currentFilters.showFavorites; e.target.classList.toggle('active'); e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; applyFiltersAndRender(); });
             elements.regionSelect.addEventListener('change', e => { currentFilters.region = e.target.value; applyFiltersAndRender(); });
             elements.categorySelect.addEventListener('change', e => { currentFilters.category = e.target.value; applyFiltersAndRender(); });
@@ -225,24 +233,50 @@
             }, 500);
         }
         
+        // --- 개선된 부분: HTML 생성을 하나의 함수로 통합 ---
+        function createItemHTML(item) {
+            const dday = calculateDday(item.pbanc_rcpt_end_dt); 
+            const isFavorited = favorites.includes(item.pbanc_sn); 
+            const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
+            const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); 
+            return `
+                <div class="bg-white rounded-xl shadow-md overflow-hidden relative">
+                    ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''}
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                            <span class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span>
+                            <span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span>
+                        </div>
+                        <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-black hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a>
+                        <p class="mt-2 text-gray-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p>
+                        <div class="details-content mt-4 pt-4 border-t text-sm text-gray-600 space-y-2">
+                            <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p>
+                        </div>
+                        <div class="flex justify-between items-center mt-4 pt-4 border-t">
+                            <div class="flex items-center gap-4">
+                                <label class="flex items-center space-x-2 text-sm cursor-pointer">
+                                    <input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}>
+                                    <span>비교</span>
+                                </label>
+                                <button class="details-toggle text-sm font-semibold text-indigo-600 hover:underline">자세히 보기 ▼</button>
+                            </div>
+                            <div>
+                                <button class="share-button text-gray-400 hover:text-indigo-500" data-url="${item.detl_pg_url}" title="공유하기">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
+                                </button>
+                                <button class="favorite-button text-2xl text-gray-400 hover:text-amber-400 ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        
         function displayData(items) { 
-            elements.resultsContainer.innerHTML = items.map(item => { 
-                const dday = calculateDday(item.pbanc_rcpt_end_dt); 
-                const isFavorited = favorites.includes(item.pbanc_sn); 
-                const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
-                const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); 
-                return ` <div class="bg-white rounded-xl shadow-md overflow-hidden relative"> ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''} <div class="p-6"> <div class="flex justify-between items-start"><span class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span><span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span></div> <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-black hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a> <p class="mt-2 text-gray-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p> <div class="details-content mt-4 pt-4 border-t text-sm text-gray-600 space-y-2"> <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p> </div> <div class="flex justify-between items-center mt-4 pt-4 border-t"> <div class="flex items-center gap-4"> <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}><span>비교</span></label> <button class="details-toggle text-sm font-semibold text-indigo-600 hover:underline">자세히 보기 ▼</button> </div> <div> <button class="share-button text-gray-400 hover:text-indigo-500" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button> <button class="favorite-button text-2xl text-gray-400 hover:text-amber-400 ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button> </div> </div> </div> </div>`; 
-            }).join(''); 
+            elements.resultsContainer.innerHTML = items.map(createItemHTML).join(''); 
         }
 
         function appendData(items) {
-            const newContent = items.map(item => {
-                const dday = calculateDday(item.pbanc_rcpt_end_dt); 
-                const isFavorited = favorites.includes(item.pbanc_sn); 
-                const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
-                const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); 
-                return ` <div class="bg-white rounded-xl shadow-md overflow-hidden relative"> ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''} <div class="p-6"> <div class="flex justify-between items-start"><span class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span><span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span></div> <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-black hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a> <p class="mt-2 text-gray-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p> <div class="details-content mt-4 pt-4 border-t text-sm text-gray-600 space-y-2"> <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p> </div> <div class="flex justify-between items-center mt-4 pt-4 border-t"> <div class="flex items-center gap-4"> <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}><span>비교</span></label> <button class="details-toggle text-sm font-semibold text-indigo-600 hover:underline">자세히 보기 ▼</button> </div> <div> <button class="share-button text-gray-400 hover:text-indigo-500" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button> <button class="favorite-button text-2xl text-gray-400 hover:text-amber-400 ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button> </div> </div> </div> </div>`; 
-            }).join('');
+            const newContent = items.map(createItemHTML).join('');
             elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
         }
 
@@ -267,9 +301,62 @@
             }
         }
 
-        function renderActiveFilters() { let html = ''; if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; if (currentFilters.category !== 'all') html += `<span class="active-filter-tag" data-type="category">분야: ${currentFilters.category} <button>x</button></span>`; if (html) { html += `<button id="reset-filters-button" class="text-sm text-red-500 hover:underline ml-auto">모든 필터 초기화</button>`; } elements.activeFiltersContainer.innerHTML = html; elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { const type = e.target.parentElement.dataset.type; resetFilter(type); })); if(document.getElementById('reset-filters-button')) { document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); } }
+        function renderActiveFilters() { 
+            let html = ''; 
+            if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; 
+            if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; 
+            if (currentFilters.category !== 'all') html += `<span class="active-filter-tag" data-type="category">분야: ${currentFilters.category} <button>x</button></span>`; 
+            if (html) { 
+                html += `<button id="reset-filters-button" class="text-sm text-red-500 hover:underline ml-auto">모든 필터 초기화</button>`; 
+            } 
+            elements.activeFiltersContainer.innerHTML = html; 
+            elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { 
+                const type = e.target.parentElement.dataset.type; 
+                resetFilter(type); 
+            })); 
+            if(document.getElementById('reset-filters-button')) { 
+                document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); 
+            } 
+        }
+
+        // --- 버그 수정: 누락된 함수들 추가 ---
+        function resetFilter(type) {
+            if (type === 'searchTerm') {
+                currentFilters.searchTerm = '';
+                elements.searchInput.value = '';
+            } else if (type === 'region') {
+                currentFilters.region = 'all';
+                elements.regionSelect.value = 'all';
+            } else if (type === 'category') {
+                currentFilters.category = 'all';
+                elements.categorySelect.value = 'all';
+            }
+            applyFiltersAndRender();
+        }
+
+        function resetAllFilters() {
+            currentFilters.searchTerm = '';
+            currentFilters.region = 'all';
+            currentFilters.category = 'all';
+            elements.searchInput.value = '';
+            elements.regionSelect.value = 'all';
+            elements.categorySelect.value = 'all';
+            applyFiltersAndRender();
+        }
+        
+        function updateFilterUI() {
+            elements.sortButtons.querySelectorAll('.control-button[data-sort]').forEach(button => {
+                if (button.dataset.sort === currentFilters.sort) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+        // --- 버그 수정 끝 ---
+
         function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-gray-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-gray-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
-        function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
+        function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
         function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
         function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); if (currentFilters.showFavorites) applyFiltersAndRender(); }
         function toggleComparison(checkbox) { const id = parseInt(checkbox.dataset.id); const index = comparisonList.indexOf(id); if (index > -1) comparisonList.splice(index, 1); else comparisonList.push(id); elements.compareButton.style.display = comparisonList.length > 0 ? 'block' : 'none'; }
