@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.0 - 무한 스크롤</title>
+    <title>정부 지원사업 알리미 v11.1 - 무한 스크롤</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -33,7 +33,7 @@
         
         <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.0</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🚀 정부 지원사업 알리미 v11.1</h1>
                 <p class="text-gray-600 mt-2">깔끔해진 필터로 더 편리하게 찾아보세요!</p>
             </header>
 
@@ -150,7 +150,7 @@
 				console.error("데이터 요청 오류:", error);
 				elements.loadingIndicator.classList.add('hidden');
 				let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.";
-				if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올바른지 확인해주세요.";
+				if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올른지 확인해주세요.";
 				else friendlyMessage = `오류 발생: ${error.message}`;
 				elements.errorMessage.textContent = friendlyMessage;
 				elements.errorMessage.classList.remove('hidden');
@@ -216,14 +216,13 @@
             }
         }
 
-        // *** [변경] 로직을 '추가'하는 방식으로 수정했습니다 ***
         function loadMoreItems() {
             isLoadingMore = true;
             elements.loadMoreSpinner.classList.remove('hidden');
 
             setTimeout(() => {
                 const nextItems = filteredItems.slice(visibleItemCount, visibleItemCount + 12);
-                appendData(nextItems); // 화면을 교체하는 'render' 대신 'appendData'를 호출합니다.
+                appendData(nextItems);
                 visibleItemCount += 12;
                 elements.loadMoreSpinner.classList.add('hidden');
                 isLoadingMore = false;
@@ -237,12 +236,12 @@
             if (filteredItems.length === 0) { 
                 elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
             } else { 
-                // render 함수는 이제 처음 12개만 그리는 역할만 합니다.
-                displayData(filteredItems.slice(0, INITIAL_LOAD_COUNT)); 
+                // *** [변경] 사서가 고정 규칙(INITIAL_LOAD_COUNT) 대신,
+                // 현재 보여줘야 할 책의 총 권수(visibleItemCount)를 보도록 수정했습니다! ***
+                displayData(filteredItems.slice(0, visibleItemCount)); 
             } 
         }
 
-        // *** [변경] 이 함수는 이제 화면의 모든 내용을 교체할 때만 사용됩니다 (초기 로딩, 필터 변경) ***
         function displayData(items) { 
             elements.resultsContainer.innerHTML = items.map(item => { 
                 const dday = calculateDday(item.pbanc_rcpt_end_dt); 
@@ -253,7 +252,6 @@
             }).join(''); 
         }
 
-        // *** [추가] 기존 내용 아래에 새로운 데이터를 '덧붙이는' 함수를 새로 만들었습니다 ***
         function appendData(items) {
             const newContent = items.map(item => {
                 const dday = calculateDday(item.pbanc_rcpt_end_dt); 
@@ -265,7 +263,6 @@
             elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
         }
 
-        // *** [변경] 필터를 바꾸면 처음부터 다시 그려야 하므로, visibleItemCount를 초기화합니다 ***
         function applyFiltersAndRender() { 
             let items = [...allApiData]; 
             if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
@@ -275,7 +272,7 @@
             if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
             
             filteredItems = items; 
-            visibleItemCount = INITIAL_LOAD_COUNT; // 카운트 초기화
+            visibleItemCount = INITIAL_LOAD_COUNT;
             render(); 
         }
 
