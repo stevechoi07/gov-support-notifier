@@ -3,12 +3,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // 'ads' 컬렉션에 대한 규칙
     match /ads/{adId} {
-      // allow read: 누구나 광고 목록을 볼 수 있습니다. (이전과 동일)
+      // allow read: 누구나 광고 목록을 볼 수 있습니다.
       allow read: if true;
 
-      // allow write: 오직 'admin-user'라는 특별 ID를 가진 관리자만
-      // 광고를 추가, 수정, 삭제할 수 있습니다. (보안 강화!)
-      allow write: if request.auth.uid == 'admin-user';
+      // allow write: '출입증'(인증)만 있으면 누구나 광고를
+      // 추가, 수정, 삭제할 수 있습니다. (최종 수정!)
+      allow write: if request.auth != null;
     }
   }
 }
