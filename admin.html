@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v2.4 (ON/OFF 기능)</title>
+    <title>광고 관리 페이지 v2.5 (시간대 오류 수정)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -93,7 +93,6 @@
             padding: 0.125rem 0.5rem;
             border-radius: 9999px;
         }
-        /* --- 1. 토글 스위치 스타일 추가 --- */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -336,8 +335,17 @@
           });
       }
       
+      // --- 1. 시간대(Timezone) 문제 해결을 위한 헬퍼 함수 추가 ---
+      function getTodayInKorea() {
+          const now = new Date();
+          const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+          const kstOffset = 9 * 60 * 60000;
+          const kstDate = new Date(utc + kstOffset);
+          return kstDate.toISOString().split('T')[0];
+      }
+
       function getAdStatus(ad) {
-          const today = new Date().toISOString().split('T')[0];
+          const today = getTodayInKorea(); // 한국 시간 기준으로 오늘 날짜 가져오기
           const start = ad.startDate;
           const end = ad.endDate;
 
@@ -353,13 +361,11 @@
           return `<span class="status-badge bg-green-200 text-green-600">진행중</span>`;
       }
 
-      // --- 2. 광고 목록에 토글 스위치 추가 ---
       function renderAdList() {
           adListContainer.innerHTML = '';
           if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`; return; }
           adList.forEach((ad) => {
               const adElement = document.createElement('div');
-              // isActive가 false일 때 흐리게 표시
               adElement.className = `p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4 transition-opacity ${ad.isActive === false ? 'opacity-40' : ''}`;
               adElement.dataset.id = ad.id;
               const mediaIcon = ad.mediaType === 'video' ? '🎬' : '🖼️';
@@ -368,7 +374,6 @@
               const periodText = (ad.startDate || ad.endDate) 
                 ? `${ad.startDate || '...'} ~ ${ad.endDate || '...'}`
                 : '항상 게시';
-              // isActive 상태에 따라 checked 속성 결정 (undefined일 경우 true로 간주)
               const isChecked = ad.isActive !== false ? 'checked' : '';
 
               adElement.innerHTML = `
@@ -403,20 +408,15 @@
           });
           document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
           document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
-          // --- 3. 토글 스위치에 이벤트 리스너 추가 ---
           document.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', handleToggleAdStatus));
       }
 
-      // --- 4. 토글 스위치 상태 변경 처리 함수 ---
       async function handleToggleAdStatus(event) {
           const id = event.target.dataset.id;
           const isActive = event.target.checked;
           try {
               const adRef = doc(db, "ads", id);
               await updateDoc(adRef, { isActive: isActive });
-              // 옵션: 시각적 피드백을 위해 리스트를 다시 렌더링할 수 있으나,
-              // onSnapshot이 실시간으로 반영하므로 필수는 아님.
-              // 여기서는 CSS로 즉각적인 피드백을 줌.
               const adElement = event.target.closest('[data-id]');
               if (isActive) {
                   adElement.classList.remove('opacity-40');
@@ -426,7 +426,6 @@
           } catch (error) {
               console.error("광고 상태 업데이트 실패:", error);
               alert("상태 변경에 실패했습니다. 다시 시도해주세요.");
-              // 실패 시 토글 상태를 원상 복구
               event.target.checked = !isActive;
           }
       }
@@ -581,7 +580,6 @@
           });
       }
 
-      // --- 5. 저장 데이터에 isActive 필드 추가 ---
       async function saveDataToFirestore(mediaUrl) {
           const adData = {
               title: adTitleInput.value,
@@ -598,13 +596,11 @@
               const existingAd = adList.find(ad => ad.id === editingAdId);
               adData.order = existingAd.order;
               adData.clickCount = existingAd.clickCount || 0;
-              // 수정 시에는 기존 isActive 값을 유지
               adData.isActive = existingAd.isActive !== false;
               await updateDoc(doc(db, "ads", editingAdId), adData);
           } else {
               adData.order = adList.length;
               adData.clickCount = 0;
-              // 새 광고는 기본적으로 ON 상태
               adData.isActive = true; 
               await addDoc(adsCollection, adData);
           }

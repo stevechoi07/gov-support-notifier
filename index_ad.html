@@ -177,10 +177,17 @@
           }
       }
 
-      // --- 1. 광고 데이터 로드 방식 수정 (Firebase 색인 문제 해결) ---
+      // --- 1. 시간대(Timezone) 문제 해결 ---
+      function getTodayInKorea() {
+          const now = new Date();
+          const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+          const kstOffset = 9 * 60 * 60000;
+          const kstDate = new Date(utc + kstOffset);
+          return kstDate.toISOString().split('T')[0];
+      }
+      
       async function loadAdData() {
           try {
-              // 일단 모든 광고를 순서대로 가져옵니다.
               const q = query(collection(db, "ads"), orderBy("order", "asc"));
               const querySnapshot = await getDocs(q);
               const rawAdData = [];
@@ -188,17 +195,14 @@
                   rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
               });
 
-              const today = new Date().toISOString().split('T')[0];
+              const today = getTodayInKorea(); // 한국 시간 기준으로 오늘 날짜 가져오기
 
-              // 자바스크립트에서 직접 필터링합니다.
               adDataList = rawAdData.filter(ad => {
-                  // 1. isActive가 false이면 광고 OFF 상태이므로 표시 안함
                   if (ad.isActive === false) return false;
 
                   const start = ad.startDate;
                   const end = ad.endDate;
 
-                  // 2. 날짜 필터링 (기존 로직 유지)
                   if (!start && !end) return true;
                   if (start && today < start) return false;
                   if (end && today > end) return false;
