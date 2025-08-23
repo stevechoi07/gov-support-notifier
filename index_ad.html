@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v12.5 - ON/OFF 기능</title>
+    <title>정부 지원사업 알리미 v12.6 (시간 설정 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -53,7 +53,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
                     이제 동영상 광고도 볼 수 있어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.5</span>
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.6</span>
                 </p>
             </header>
 
@@ -176,16 +176,8 @@
               checkNewItemsForKeywords();
           }
       }
-
-      // --- 1. 시간대(Timezone) 문제 해결 ---
-      function getTodayInKorea() {
-          const now = new Date();
-          const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-          const kstOffset = 9 * 60 * 60000;
-          const kstDate = new Date(utc + kstOffset);
-          return kstDate.toISOString().split('T')[0];
-      }
       
+      // --- 1. 시간 비교 로직 수정 ---
       async function loadAdData() {
           try {
               const q = query(collection(db, "ads"), orderBy("order", "asc"));
@@ -195,17 +187,17 @@
                   rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
               });
 
-              const today = getTodayInKorea(); // 한국 시간 기준으로 오늘 날짜 가져오기
+              const now = new Date(); // 현재 시간을 기준으로
 
               adDataList = rawAdData.filter(ad => {
                   if (ad.isActive === false) return false;
 
-                  const start = ad.startDate;
-                  const end = ad.endDate;
+                  const start = ad.startDate ? new Date(ad.startDate) : null;
+                  const end = ad.endDate ? new Date(ad.endDate) : null;
 
                   if (!start && !end) return true;
-                  if (start && today < start) return false;
-                  if (end && today > end) return false;
+                  if (start && now < start) return false;
+                  if (end && now > end) return false;
                   
                   return true;
               });

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v2.5 (시간대 오류 수정)</title>
+    <title>광고 관리 페이지 v2.6 (시간 설정 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -183,14 +183,15 @@
                                 <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
                                 <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
+                            <!-- --- 1. 날짜 및 시간 입력으로 변경 --- -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label for="ad-start-date" class="block text-sm font-medium text-slate-600">게시 시작일</label>
-                                    <input type="date" id="ad-start-date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                    <input type="datetime-local" id="ad-start-date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                 </div>
                                 <div>
                                     <label for="ad-end-date" class="block text-sm font-medium text-slate-600">게시 종료일</label>
-                                    <input type="date" id="ad-end-date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                    <input type="datetime-local" id="ad-end-date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                 </div>
                             </div>
                             <p class="text-xs text-slate-500 -mt-2">날짜를 지정하지 않으면 항상 게시됩니다.</p>
@@ -335,30 +336,34 @@
           });
       }
       
-      // --- 1. 시간대(Timezone) 문제 해결을 위한 헬퍼 함수 추가 ---
-      function getTodayInKorea() {
-          const now = new Date();
-          const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-          const kstOffset = 9 * 60 * 60000;
-          const kstDate = new Date(utc + kstOffset);
-          return kstDate.toISOString().split('T')[0];
-      }
-
+      // --- 2. 시간 비교 로직 수정 ---
       function getAdStatus(ad) {
-          const today = getTodayInKorea(); // 한국 시간 기준으로 오늘 날짜 가져오기
-          const start = ad.startDate;
-          const end = ad.endDate;
+          const now = new Date();
+          const start = ad.startDate ? new Date(ad.startDate) : null;
+          const end = ad.endDate ? new Date(ad.endDate) : null;
 
           if (!start && !end) {
               return `<span class="status-badge bg-slate-200 text-slate-600">상시</span>`;
           }
-          if (start && today < start) {
+          if (start && now < start) {
               return `<span class="status-badge bg-blue-200 text-blue-600">예정</span>`;
           }
-          if (end && today > end) {
+          if (end && now > end) {
               return `<span class="status-badge bg-red-200 text-red-600">종료</span>`;
           }
           return `<span class="status-badge bg-green-200 text-green-600">진행중</span>`;
+      }
+
+      // --- 3. 날짜 표시 형식 변경 ---
+      function formatDateTime(dateTimeString) {
+          if (!dateTimeString) return '...';
+          const date = new Date(dateTimeString);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day} ${hours}:${minutes}`;
       }
 
       function renderAdList() {
@@ -372,7 +377,7 @@
               const clickCount = ad.clickCount || 0;
               const statusBadge = getAdStatus(ad);
               const periodText = (ad.startDate || ad.endDate) 
-                ? `${ad.startDate || '...'} ~ ${ad.endDate || '...'}`
+                ? `${formatDateTime(ad.startDate)} ~ ${formatDateTime(ad.endDate)}`
                 : '항상 게시';
               const isChecked = ad.isActive !== false ? 'checked' : '';
 
