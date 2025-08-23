@@ -197,6 +197,8 @@
       let currentMediaUrl = '';
       let currentMediaType = 'image';
       let currentUploadTask = null;
+      // --- 5. 미리보기를 위한 임시 URL을 저장할 변수를 추가합니다. ---
+      let tempPreviewUrl = null;
 
       const authContainer = document.getElementById('auth-container');
       const adminPanel = document.getElementById('admin-panel');
@@ -301,6 +303,9 @@
           const file = event.target.files[0];
           if (!file) {
               fileNameDisplay.textContent = '선택된 파일 없음';
+              selectedMediaFile = null;
+              tempPreviewUrl = null;
+              updatePreview();
               return;
           }
 
@@ -312,7 +317,7 @@
           }
 
           selectedMediaFile = file; 
-          fileNameDisplay.textContent = file.name; // 파일 이름 표시
+          fileNameDisplay.textContent = file.name;
           
           if (file.type.startsWith('image/')) {
               currentMediaType = 'image';
@@ -325,8 +330,12 @@
               return;
           }
           
-          const tempPreviewUrl = URL.createObjectURL(file);
-          updatePreview(tempPreviewUrl, currentMediaType);
+          // 이전에 생성된 임시 URL이 있다면 메모리 누수 방지를 위해 해제합니다.
+          if (tempPreviewUrl) {
+              URL.revokeObjectURL(tempPreviewUrl);
+          }
+          tempPreviewUrl = URL.createObjectURL(file);
+          updatePreview();
       }
 
       function openModal() { adModal.classList.remove('hidden'); }
@@ -355,6 +364,11 @@
           adMediaFileInput.value = '';
           fileNameDisplay.textContent = '선택된 파일 없음';
           adPreview.innerHTML = '';
+
+          if (tempPreviewUrl) {
+              URL.revokeObjectURL(tempPreviewUrl);
+              tempPreviewUrl = null;
+          }
       }
 
       function handleAddNewAd() {
@@ -364,7 +378,7 @@
           currentMediaType = 'image';
           modalTitle.textContent = "새 광고 추가";
           resetModalState();
-          updatePreview(); // 빈 미리보기를 보여주기 위해 호출
+          updatePreview();
           openModal();
       }
 
@@ -381,7 +395,7 @@
               adDescriptionInput.value = ad.description;
               adLinkInput.value = ad.link;
               fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
-              updatePreview(ad.mediaUrl, ad.mediaType);
+              updatePreview();
               openModal();
           }
       }
@@ -480,24 +494,25 @@
           }
       }
 
-      // --- 5. 미리보기 함수를 index_ad.html과 동일한 구조로 완전히 변경합니다. ---
-      function updatePreview(tempUrl = null, type = 'image') {
+      // --- 6. 미리보기 함수를 대폭 수정하여 버그를 해결합니다. ---
+      function updatePreview() {
           const title = adTitleInput.value || "광고 제목";
           const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
           const link = adLinkInput.value || "#";
           
-          const mediaSrc = tempUrl || currentMediaUrl;
-          const mediaTypeToDisplay = tempUrl ? type : currentMediaType;
-
+          // 파일이 새로 선택되었으면 임시 URL을, 아니면 기존 URL을 사용합니다.
+          const mediaSrc = tempPreviewUrl || currentMediaUrl;
+          
           let mediaElement = '';
           if (mediaSrc) {
-              if (mediaTypeToDisplay === 'video') {
+              // 파일 종류는 항상 최신 상태(currentMediaType)를 따릅니다.
+              if (currentMediaType === 'video') {
                   mediaElement = `<video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
               } else {
                   mediaElement = `<img src="${mediaSrc}" alt="Ad preview">`;
               }
           } else {
-              mediaElement = `<div class="flex items-center justify-center h-full bg-slate-200"><span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span></div>`;
+              mediaElement = `<div class="flex items-center justify-center h-full bg-slate-200 rounded-xl"><span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span></div>`;
           }
 
           adPreview.innerHTML = `
