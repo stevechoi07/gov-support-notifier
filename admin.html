@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v1.4</title>
+    <title>광고 관리 페이지 v1.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -29,11 +29,24 @@
         #media-upload-status {
             transition: opacity 0.3s;
         }
-        /* 미리보기 영상 스타일 */
-        #ad-preview video {
+        #ad-preview video, #ad-preview img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        /* --- 1. 업로드 진행률 바 스타일 추가 --- */
+        .progress-bar {
+            width: 100%;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            height: 8px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            background-color: #3b82f6;
+            height: 100%;
+            width: 0%;
+            transition: width 0.2s ease-in-out;
         }
     </style>
 </head>
@@ -82,10 +95,20 @@
                             <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
                         <div>
-                            <!-- --- 1. 파일 선택 창이 이미지와 동영상을 모두 받도록 변경합니다. --- -->
                             <label for="ad-media-file" class="block text-sm font-medium text-slate-600">광고 미디어 (이미지/동영상)</label>
                             <input type="file" id="ad-media-file" accept="image/png, image/jpeg, image/gif, video/mp4, video/webm" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
-                            <p id="media-upload-status" class="mt-1 text-xs text-sky-600 font-semibold opacity-0"></p>
+                            <!-- --- 2. 파일 규격 및 용량 안내 문구 추가 --- -->
+                            <p class="mt-1 text-xs text-slate-500">권장: 16:9 비율의 이미지 또는 동영상, 최대 50MB</p>
+                            <!-- --- 3. 업로드 진행률을 표시할 UI 추가 --- -->
+                            <div id="media-upload-status" class="mt-2 space-y-1 opacity-0">
+                                <div class="flex justify-between text-xs font-semibold text-sky-600">
+                                    <span id="upload-label">업로드 중...</span>
+                                    <span id="upload-progress">0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                                </div>
+                            </div>
                         </div>
                         <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors flex justify-center items-center gap-2">저장하기</button>
                     </div>
@@ -103,7 +126,8 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
       import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-      import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
+      // --- 4. 업로드 진행률 추적을 위해 uploadBytesResumable를 가져옵니다. ---
+      import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
@@ -123,10 +147,9 @@
 
       let adList = [];
       let editingAdId = null;
-      // --- 2. 변수 이름을 더 명확하게 변경하고, 미디어 종류를 저장할 변수를 추가합니다. ---
       let selectedMediaFile = null; 
       let currentMediaUrl = '';
-      let currentMediaType = 'image'; // 'image' 또는 'video'
+      let currentMediaType = 'image';
 
       const authContainer = document.getElementById('auth-container');
       const adminPanel = document.getElementById('admin-panel');
@@ -141,10 +164,13 @@
       const adTitleInput = document.getElementById('ad-title');
       const adDescriptionInput = document.getElementById('ad-description');
       const adLinkInput = document.getElementById('ad-link');
-      const adMediaFileInput = document.getElementById('ad-media-file'); // ID 변경
+      const adMediaFileInput = document.getElementById('ad-media-file');
       const saveAdButton = document.getElementById('save-ad-button');
       const adPreview = document.getElementById('ad-preview');
       const mediaUploadStatus = document.getElementById('media-upload-status');
+      const uploadLabel = document.getElementById('upload-label');
+      const uploadProgress = document.getElementById('upload-progress');
+      const progressBarFill = document.getElementById('progress-bar-fill');
 
       loginButton.addEventListener('click', handleLogin);
       passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
@@ -152,7 +178,7 @@
       closeModalButton.addEventListener('click', closeModal);
       saveAdButton.addEventListener('click', handleSaveAd);
       [adTitleInput, adDescriptionInput, adLinkInput].forEach(input => input.addEventListener('input', updatePreview));
-      adMediaFileInput.addEventListener('change', handleFileUpload); // 함수 이름 변경
+      adMediaFileInput.addEventListener('change', handleFileUpload);
 
       async function handleLogin() { /* 이전과 동일 */ 
           const password = passwordInput.value;
@@ -197,14 +223,13 @@
               },
           });
       }
-      function renderAdList() { /* 이전과 동일, 단 이미지 대신 미디어 URL 사용 */
+      function renderAdList() { /* 이전과 동일 */
           adListContainer.innerHTML = '';
           if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`; return; }
           adList.forEach((ad) => {
               const adElement = document.createElement('div');
               adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
               adElement.dataset.id = ad.id;
-              // --- 3. 목록에 미디어 종류를 아이콘으로 표시해줍니다. ---
               const mediaIcon = ad.mediaType === 'video' ? '🎬' : '🖼️';
               adElement.innerHTML = `
                   <div class="flex items-center w-full">
@@ -224,10 +249,16 @@
           document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
       }
 
-      // --- 4. 파일 선택 시, 이미지와 동영상을 구분해서 처리합니다. ---
       function handleFileUpload(event) {
           const file = event.target.files[0];
           if (!file) return;
+
+          // --- 5. 파일 용량 체크 (50MB) ---
+          if (file.size > 50 * 1024 * 1024) {
+              alert('파일 크기는 50MB를 초과할 수 없습니다.');
+              adMediaFileInput.value = ''; // 파일 선택 초기화
+              return;
+          }
 
           selectedMediaFile = file; 
           
@@ -273,12 +304,13 @@
               adDescriptionInput.value = ad.description;
               adLinkInput.value = ad.link;
               adMediaFileInput.value = '';
-              updatePreview();
+              // --- 6. 미리보기 수정: 수정 시에도 기존 미디어를 제대로 보여줍니다. ---
+              updatePreview(ad.mediaUrl, ad.mediaType);
               openModal();
           }
       }
 
-      async function handleDeleteAd(event) {
+      async function handleDeleteAd(event) { /* 이전과 동일 */
           const idToDelete = event.target.dataset.id;
           const adToDelete = adList.find(ad => ad.id === idToDelete);
           if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
@@ -295,7 +327,7 @@
           }
       }
 
-      // --- 5. 저장 시, 미디어 종류(mediaType)도 함께 저장합니다. ---
+      // --- 7. 저장 함수를 실시간 진행률을 표시하도록 대폭 수정합니다. ---
       async function handleSaveAd() {
           if (!adTitleInput.value.trim()) {
               alert('광고 제목을 입력해주세요!');
@@ -306,21 +338,38 @@
           saveAdButton.disabled = true;
           saveAdButton.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
 
-          let mediaUrlToSave = currentMediaUrl;
-
           try {
-              if (selectedMediaFile) {
-                  mediaUploadStatus.textContent = '미디어 파일 업로드 중...';
-                  mediaUploadStatus.style.opacity = 1;
+              let mediaUrlToSave = currentMediaUrl;
 
-                  const fileName = `ad_${Date.now()}_${selectedMediaFile.name}`;
-                  const folder = currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
-                  const storageRef = ref(storage, `${folder}/${fileName}`);
-                  
-                  const snapshot = await uploadBytes(storageRef, selectedMediaFile);
-                  mediaUrlToSave = await getDownloadURL(snapshot.ref);
-                  
-                  mediaUploadStatus.textContent = '업로드 완료!';
+              if (selectedMediaFile) {
+                  // Promise를 사용해 업로드 과정을 비동기적으로 처리합니다.
+                  mediaUrlToSave = await new Promise((resolve, reject) => {
+                      mediaUploadStatus.style.opacity = 1;
+                      const fileName = `ad_${Date.now()}_${selectedMediaFile.name}`;
+                      const folder = currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
+                      const storageRef = ref(storage, `${folder}/${fileName}`);
+                      
+                      const uploadTask = uploadBytesResumable(storageRef, selectedMediaFile);
+
+                      // 'state_changed' 이벤트를 감지하여 진행률을 업데이트합니다.
+                      uploadTask.on('state_changed', 
+                          (snapshot) => {
+                              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                              uploadProgress.textContent = `${Math.round(progress)}%`;
+                              progressBarFill.style.width = `${progress}%`;
+                          }, 
+                          (error) => {
+                              console.error("Upload failed:", error);
+                              reject(error); // 오류 발생 시 Promise를 실패 처리
+                          }, 
+                          async () => {
+                              // 업로드 완료 후 다운로드 URL을 받아와 Promise를 성공 처리
+                              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                              resolve(downloadURL);
+                          }
+                      );
+                  });
+                  uploadLabel.textContent = '업로드 완료!';
               }
 
               const newAdData = {
@@ -328,8 +377,8 @@
                   title: adTitleInput.value,
                   description: adDescriptionInput.value,
                   link: adLinkInput.value,
-                  mediaUrl: mediaUrlToSave, // 필드 이름 변경
-                  mediaType: currentMediaType, // 미디어 종류 저장
+                  mediaUrl: mediaUrlToSave,
+                  mediaType: currentMediaType,
                   order: editingAdId ? adList.find(ad => ad.id === editingAdId).order : adList.length
               };
 
@@ -347,10 +396,12 @@
               saveAdButton.disabled = false;
               saveAdButton.innerHTML = `저장하기`;
               mediaUploadStatus.style.opacity = 0;
+              uploadProgress.textContent = '0%';
+              progressBarFill.style.width = '0%';
+              uploadLabel.textContent = '업로드 중...';
           }
       }
 
-      // --- 6. 미리보기 함수가 파일 종류에 따라 이미지 또는 비디오를 보여줍니다. ---
       function updatePreview(tempUrl = null, type = currentMediaType) {
           const title = adTitleInput.value || "광고 제목";
           const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
@@ -364,15 +415,10 @@
           }
 
           if (type === 'video') {
-              adPreview.innerHTML = `
-                  <video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
-          } else { // 기본값은 이미지
-              adPreview.innerHTML = `
-                  <img src="${mediaSrc}" alt="Ad preview" class="w-full h-full object-cover">`;
+              adPreview.innerHTML = `<video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
+          } else {
+              adPreview.innerHTML = `<img src="${mediaSrc}" alt="Ad preview">`;
           }
-          
-          // 미리보기 위에 제목, 설명 등을 겹쳐서 보여주는 것도 가능합니다.
-          // 여기서는 미디어만 보여주도록 단순화했습니다.
       }
     </script>
 </body>
