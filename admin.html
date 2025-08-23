@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v1.1</title>
+    <title>광고 관리 페이지 v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -64,7 +64,7 @@
                  <div class="grid md:grid-cols-2 gap-8">
                     <div class="space-y-4">
                         <div>
-                            <label for="ad-title" class="block text-sm font-medium text-slate-600">광고 제목</label>
+                            <label for="ad-title" class="block text-sm font-medium text-slate-600">광고 제목 (필수)</label>
                             <input type="text" id="ad-title" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
                         <div>
@@ -243,7 +243,7 @@
               adElement.innerHTML = `
                   <div class="flex items-center w-full">
                       <div class="drag-handle text-slate-400 mr-4 cursor-grab">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                       </div>
                       <div class="flex-grow flex items-center space-x-4 overflow-hidden">
                           <img src="${ad.imageUrl || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'}" alt="${ad.title}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">
@@ -301,7 +301,13 @@
       }
 
       async function handleSaveAd() {
-          // --- 1. 로딩 시작: 버튼을 비활성화하고 내용을 바꿉니다. ---
+          // --- 1. 문지기 코드: 광고 제목이 비어있는지 검사합니다. ---
+          if (!adTitleInput.value.trim()) {
+              alert('광고 제목을 입력해주세요!');
+              adTitleInput.focus(); // 사용자가 바로 입력할 수 있도록 커서를 옮겨줍니다.
+              return; // 함수를 여기서 중단시킵니다.
+          }
+
           saveAdButton.disabled = true;
           saveAdButton.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
 
@@ -327,7 +333,6 @@
               console.error("저장 중 오류 발생:", error);
               alert("데이터를 저장하는 데 실패했습니다. 다시 시도해주세요.");
           } finally {
-              // --- 2. 로딩 끝: 작업이 성공하든 실패하든, 버튼을 원래 상태로 되돌립니다. ---
               saveAdButton.disabled = false;
               saveAdButton.innerHTML = `저장하기`;
           }
