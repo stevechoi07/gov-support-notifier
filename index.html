@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v12.2 - 파트너 기능</title>
+    <title>정부 지원사업 알리미 v12.8 (iframe 파트너스 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -42,6 +42,19 @@
             height: 100%;
             object-fit: cover;
         }
+        .iframe-ad-wrapper {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .iframe-ad-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
     </style>
 </head>
 <body class="bg-slate-100">
@@ -53,7 +66,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
                     이제 동영상 광고도 볼 수 있어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.2</span>
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.8</span>
                 </p>
             </header>
 
@@ -121,7 +134,7 @@
     <!-- Firebase SDK 추가 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-      import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
@@ -176,15 +189,31 @@
               checkNewItemsForKeywords();
           }
       }
-
+      
       async function loadAdData() {
           try {
               const q = query(collection(db, "ads"), orderBy("order", "asc"));
               const querySnapshot = await getDocs(q);
-              adDataList = [];
+              const rawAdData = [];
               querySnapshot.forEach((doc) => {
-                  adDataList.push(doc.data());
+                  rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
               });
+
+              const now = new Date();
+
+              adDataList = rawAdData.filter(ad => {
+                  if (ad.isActive === false) return false;
+
+                  const start = ad.startDate ? new Date(ad.startDate) : null;
+                  const end = ad.endDate ? new Date(ad.endDate) : null;
+
+                  if (!start && !end) return true;
+                  if (start && now < start) return false;
+                  if (end && now > end) return false;
+                  
+                  return true;
+              });
+
           } catch (error) {
               console.error("Error loading ads from Firestore:", error);
               adDataList = [];
@@ -211,7 +240,7 @@
             }
         }
         
-      async function populateFilters() { /* 이전과 동일 */
+      async function populateFilters() {
             const regionCounts = {}, categoryCounts = {};
             allApiData.forEach(item => {
                 if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
@@ -238,7 +267,7 @@
             }
         }
 
-      function addEventListeners() { /* 이전과 동일 */
+      function addEventListeners() {
             window.addEventListener('scroll', handleScroll);
             elements.searchInput.addEventListener('input', e => {
                 clearTimeout(searchTimeout);
@@ -251,7 +280,31 @@
             elements.favoritesToggle.addEventListener('click', e => { currentFilters.showFavorites = !currentFilters.showFavorites; e.target.classList.toggle('active'); e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; applyFiltersAndRender(); });
             elements.regionSelect.addEventListener('change', e => { currentFilters.region = e.target.value; applyFiltersAndRender(); });
             elements.categorySelect.addEventListener('change', e => { currentFilters.category = e.target.value; applyFiltersAndRender(); });
-            elements.resultsContainer.addEventListener('click', e => { const target = e.target; const button = target.closest('button'); if (button) { if (button.classList.contains('favorite-button')) toggleFavorite(button); if (button.classList.contains('share-button')) shareLink(button); if (button.classList.contains('details-toggle')) toggleDetails(button); } const checkbox = target.closest('.compare-checkbox'); if (checkbox) toggleComparison(checkbox); });
+            
+            elements.resultsContainer.addEventListener('click', e => {
+                const target = e.target;
+                
+                const adLink = target.closest('.ad-link');
+                if (adLink) {
+                    e.preventDefault();
+                    const adId = adLink.dataset.id;
+                    const adUrl = adLink.href;
+                    if (adId) {
+                        handleAdClick(adId);
+                    }
+                    window.open(adUrl, '_blank');
+                }
+
+                const button = target.closest('button');
+                if (button) {
+                    if (button.classList.contains('favorite-button')) toggleFavorite(button);
+                    if (button.classList.contains('share-button')) shareLink(button);
+                    if (button.classList.contains('details-toggle')) toggleDetails(button);
+                }
+                const checkbox = target.closest('.compare-checkbox');
+                if (checkbox) toggleComparison(checkbox);
+            });
+
             elements.compareButton.addEventListener('click', showComparisonModal);
             elements.modalBg.addEventListener('click', () => elements.modal.classList.add('hidden'));
             elements.closeModalButton.addEventListener('click', () => elements.modal.classList.add('hidden'));
@@ -262,14 +315,25 @@
             elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
         }
 
-      function handleScroll() { /* 이전과 동일 */
+      async function handleAdClick(adId) {
+          try {
+              const adRef = doc(db, "ads", adId);
+              await updateDoc(adRef, {
+                  clickCount: increment(1)
+              });
+          } catch (error) {
+              console.error("클릭 카운트 업데이트 실패:", error);
+          }
+      }
+
+      function handleScroll() {
             const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
             if (clientHeight + scrollTop >= scrollHeight - 100 && visibleItemCount < filteredItems.length && !isLoadingMore) {
                 loadMoreItems();
             }
         }
 
-      function loadMoreItems() { /* 이전과 동일 */
+      function loadMoreItems() {
             isLoadingMore = true;
             elements.loadMoreSpinner.classList.remove('hidden');
             setTimeout(() => {
@@ -281,9 +345,20 @@
             }, 500);
         }
         
-      // --- 1. 광고 카드 생성 함수에 파트너스 문구 로직 추가 ---
+      // --- 1. iframe 광고에 파트너스 문구 추가 ---
       function createItemHTML(item) {
           if (item.isAd) {
+              const partnersText = item.isPartners 
+                  ? `<p class="text-xs text-slate-500 text-center">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
+                  : '';
+
+              if (item.adType === 'iframe') {
+                  return `<div class="iframe-ad-wrapper">
+                              <div class="iframe-ad-container">${item.iframeCode || ''}</div>
+                              ${partnersText}
+                          </div>`;
+              }
+
               let mediaElement = '';
               const mediaUrl = item.mediaUrl || '';
               const mediaType = item.mediaType || 'image';
@@ -298,11 +373,6 @@
                   mediaElement = `<img src="https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here" alt="${item.title}">`;
               }
 
-              // isPartners가 true일 때만 문구를 생성합니다.
-              const partnersText = item.isPartners 
-                  ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
-                  : '';
-
               return `
               <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative flex flex-col">
                   <div class="ad-media-container">
@@ -313,22 +383,21 @@
                            <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
                            <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
                       </div>
-                      <a href="${item.link}" target="_blank" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
+                      <a href="${item.link}" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
                       <p class="mt-2 text-slate-600 text-sm flex-grow">${item.description || ''}</p>
                       
-                      <!-- 파트너스 문구가 들어갈 자리 -->
                       <div class="mt-auto">
                           ${partnersText}
                       </div>
 
                       <div class="mt-4 pt-4 border-t text-right">
-                           <a href="${item.link}" target="_blank" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                           <a href="${item.link}" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
                       </div>
                   </div>
               </div>`;
           }
 
-          // (기존 지원사업 카드 코드는 동일)
+          // 지원사업 카드
           const dday = calculateDday(item.pbanc_rcpt_end_dt); 
           const isFavorited = favorites.includes(item.pbanc_sn); 
           const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
@@ -365,16 +434,16 @@
               </div>`;
       }
         
-      function displayData(items) { /* 이전과 동일 */
+      function displayData(items) {
             elements.resultsContainer.innerHTML = items.map(createItemHTML).join(''); 
         }
 
-      function appendData(items) { /* 이전과 동일 */
+      function appendData(items) {
             const newContent = items.map(createItemHTML).join('');
             elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
         }
 
-      function applyFiltersAndRender() { /* 이전과 동일 */
+      function applyFiltersAndRender() {
             let items = [...allApiData]; 
             if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
             if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
@@ -409,7 +478,7 @@
             }
         }
 
-      function renderActiveFilters() { /* 이전과 동일 */
+      function renderActiveFilters() {
             let html = ''; 
             if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; 
             if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; 
@@ -427,7 +496,7 @@
             } 
         }
 
-      function resetFilter(type) { /* 이전과 동일 */
+      function resetFilter(type) {
             if (type === 'searchTerm') {
                 currentFilters.searchTerm = ''; elements.searchInput.value = '';
             } else if (type === 'region') {
@@ -438,13 +507,13 @@
             applyFiltersAndRender();
         }
 
-      function resetAllFilters() { /* 이전과 동일 */
+      function resetAllFilters() {
             currentFilters.searchTerm = ''; currentFilters.region = 'all'; currentFilters.category = 'all';
             elements.searchInput.value = ''; elements.regionSelect.value = 'all'; elements.categorySelect.value = 'all';
             applyFiltersAndRender();
         }
         
-      function updateFilterUI() { /* 이전과 동일 */
+      function updateFilterUI() {
             elements.sortButtons.querySelectorAll('.control-button[data-sort]').forEach(button => {
                 if (button.dataset.sort === currentFilters.sort) { button.classList.add('active'); } 
                 else { button.classList.remove('active'); }
