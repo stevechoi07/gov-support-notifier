@@ -10,7 +10,7 @@
         body { font-family: 'Noto Sans KR', sans-serif; }
     </style>
 </head>
-<body class="bg-slate-100 flex items-center justify-center min-h-screen">
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
     <div id="auth-container" class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
         <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인</h1>
@@ -20,80 +20,182 @@
     </div>
 
     <div id="admin-panel" class="hidden w-full max-w-4xl p-8 bg-white rounded-xl shadow-lg">
-        <h1 class="text-2xl font-bold text-slate-800 mb-6">📝 광고 카드 관리</h1>
-        
-        <div class="grid md:grid-cols-2 gap-8">
-            <!-- 광고 수정 폼 -->
-            <div class="space-y-4">
-                <div>
-                    <label for="ad-title" class="block text-sm font-medium text-slate-600">광고 제목</label>
-                    <input type="text" id="ad-title" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                </div>
-                <div>
-                    <label for="ad-description" class="block text-sm font-medium text-slate-600">광고 설명</label>
-                    <textarea id="ad-description" rows="4" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
-                </div>
-                <div>
-                    <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
-                    <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                </div>
-                <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors">광고 저장하기</button>
-            </div>
-
-            <!-- 광고 미리보기 -->
-            <div>
-                <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
-                <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative">
-                    <!-- 미리보기 내용은 JS로 채워집니다 -->
-                </div>
-            </div>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">📝 광고 카드 목록 관리</h1>
+            <button id="add-new-ad-button" class="px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">새 광고 추가</button>
         </div>
+        
+        <div id="ad-list-container" class="space-y-4">
+            <!-- 광고 목록이 여기에 표시됩니다. -->
+        </div>
+
         <div class="mt-8 text-center border-t pt-4">
             <a href="index.html" class="text-sky-600 hover:underline">메인 페이지로 돌아가기 &rarr;</a>
         </div>
     </div>
 
-    <script>
-        const CORRECT_PASSWORD = "admin"; // 간단한 비밀번호 설정
+    <!-- 광고 수정/추가 모달 -->
+    <div id="ad-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h2 id="modal-title" class="text-xl font-bold">새 광고 추가</h2>
+                <button id="close-modal-button" class="text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                 <div class="grid md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="ad-title" class="block text-sm font-medium text-slate-600">광고 제목</label>
+                            <input type="text" id="ad-title" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label for="ad-description" class="block text-sm font-medium text-slate-600">광고 설명</label>
+                            <textarea id="ad-description" rows="4" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                        </div>
+                        <div>
+                            <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
+                            <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors">저장하기</button>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
+                        <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+
+    <script>
+        const CORRECT_PASSWORD = "admin"; 
+        let adList = [];
+        let editingAdIndex = -1; // -1이면 새 광고 추가, 0 이상이면 해당 인덱스 광고 수정
+
+        // --- DOM 요소 가져오기 ---
         const authContainer = document.getElementById('auth-container');
         const adminPanel = document.getElementById('admin-panel');
         const passwordInput = document.getElementById('password-input');
         const loginButton = document.getElementById('login-button');
         const authError = document.getElementById('auth-error');
-
+        const adListContainer = document.getElementById('ad-list-container');
+        const addNewAdButton = document.getElementById('add-new-ad-button');
+        
+        // --- 모달 관련 DOM 요소 ---
+        const adModal = document.getElementById('ad-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const closeModalButton = document.getElementById('close-modal-button');
         const adTitleInput = document.getElementById('ad-title');
         const adDescriptionInput = document.getElementById('ad-description');
         const adLinkInput = document.getElementById('ad-link');
         const saveAdButton = document.getElementById('save-ad-button');
         const adPreview = document.getElementById('ad-preview');
 
-        // 로그인 시도
-        loginButton.addEventListener('click', () => {
+        // --- 이벤트 리스너 ---
+        loginButton.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+        addNewAdButton.addEventListener('click', handleAddNewAd);
+        closeModalButton.addEventListener('click', closeModal);
+        saveAdButton.addEventListener('click', handleSaveAd);
+        [adTitleInput, adDescriptionInput, adLinkInput].forEach(input => input.addEventListener('input', updatePreview));
+
+
+        // --- 함수들 ---
+        function handleLogin() {
             if (passwordInput.value === CORRECT_PASSWORD) {
                 authContainer.classList.add('hidden');
                 adminPanel.classList.remove('hidden');
-                loadAdForEditing();
+                loadAdList();
+                renderAdList();
             } else {
                 authError.classList.remove('hidden');
             }
-        });
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                loginButton.click();
-            }
-        });
+        }
 
-        // 수정/저장/미리보기 로직
-        function loadAdForEditing() {
-            const savedAd = localStorage.getItem('adData');
-            if (savedAd) {
-                const ad = JSON.parse(savedAd);
-                adTitleInput.value = ad.title;
-                adDescriptionInput.value = ad.description;
-                adLinkInput.value = ad.link;
+        function loadAdList() {
+            const savedAdList = localStorage.getItem('adDataList');
+            adList = savedAdList ? JSON.parse(savedAdList) : [];
+        }
+
+        function saveAdList() {
+            localStorage.setItem('adDataList', JSON.stringify(adList));
+        }
+
+        function renderAdList() {
+            adListContainer.innerHTML = ''; // 목록 초기화
+            if (adList.length === 0) {
+                adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`;
+                return;
             }
+            adList.forEach((ad, index) => {
+                const adElement = document.createElement('div');
+                adElement.className = 'flex justify-between items-center p-4 border rounded-lg bg-slate-50';
+                adElement.innerHTML = `
+                    <p class="font-semibold text-slate-700 truncate pr-4">${ad.title}</p>
+                    <div class="flex-shrink-0 space-x-2">
+                        <button class="edit-ad-button text-sm text-sky-600 hover:underline" data-index="${index}">수정</button>
+                        <button class="delete-ad-button text-sm text-red-600 hover:underline" data-index="${index}">삭제</button>
+                    </div>
+                `;
+                adListContainer.appendChild(adElement);
+            });
+
+            // 수정 및 삭제 버튼에 이벤트 리스너 추가
+            document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
+            document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
+        }
+
+        function openModal() { adModal.classList.remove('hidden'); }
+        function closeModal() { adModal.classList.add('hidden'); }
+
+        function handleAddNewAd() {
+            editingAdIndex = -1;
+            modalTitle.textContent = "새 광고 추가";
+            adTitleInput.value = '';
+            adDescriptionInput.value = '';
+            adLinkInput.value = '';
             updatePreview();
+            openModal();
+        }
+
+        function handleEditAd(event) {
+            editingAdIndex = parseInt(event.target.dataset.index);
+            const ad = adList[editingAdIndex];
+            modalTitle.textContent = "광고 수정";
+            adTitleInput.value = ad.title;
+            adDescriptionInput.value = ad.description;
+            adLinkInput.value = ad.link;
+            updatePreview();
+            openModal();
+        }
+
+        function handleDeleteAd(event) {
+            const indexToDelete = parseInt(event.target.dataset.index);
+            if (confirm(`'${adList[indexToDelete].title}' 광고를 정말 삭제하시겠습니까?`)) {
+                adList.splice(indexToDelete, 1);
+                saveAdList();
+                renderAdList();
+            }
+        }
+
+        function handleSaveAd() {
+            const newAdData = {
+                isAd: true,
+                title: adTitleInput.value,
+                description: adDescriptionInput.value,
+                link: adLinkInput.value
+            };
+
+            if (editingAdIndex === -1) { // 새 광고 추가
+                adList.push(newAdData);
+            } else { // 기존 광고 수정
+                adList[editingAdIndex] = newAdData;
+            }
+            
+            saveAdList();
+            renderAdList();
+            closeModal();
         }
 
         function updatePreview() {
@@ -114,21 +216,6 @@
                     </div>
                 </div>`;
         }
-
-        adTitleInput.addEventListener('input', updatePreview);
-        adDescriptionInput.addEventListener('input', updatePreview);
-        adLinkInput.addEventListener('input', updatePreview);
-
-        saveAdButton.addEventListener('click', () => {
-            const adDataToSave = {
-                isAd: true,
-                title: adTitleInput.value,
-                description: adDescriptionInput.value,
-                link: adLinkInput.value
-            };
-            localStorage.setItem('adData', JSON.stringify(adDataToSave));
-            alert('광고 내용이 성공적으로 저장되었습니다!');
-        });
     </script>
 </body>
 </html>

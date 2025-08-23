@@ -121,7 +121,7 @@
         let seenItems = [];
         let isLoadingMore = false;
         let searchTimeout;
-        let adData; // 광고 데이터를 담을 변수
+        let adDataList = []; // 광고 데이터를 배열로 관리
 
         const elements = { 
             statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
@@ -153,17 +153,17 @@
         }
 
         function loadAdData() {
-            const savedAd = localStorage.getItem('adData');
-            if (savedAd) {
-                adData = JSON.parse(savedAd);
+            const savedAdList = localStorage.getItem('adDataList');
+            if (savedAdList) {
+                adDataList = JSON.parse(savedAdList);
             } else {
-                // 저장된 광고가 없으면 기본 광고를 사용
-                adData = {
+                // 저장된 광고가 없으면 기본 예시 광고를 사용
+                adDataList = [{
                     isAd: true,
-                    title: "🚀 창업의 모든 것, 여기서 시작하세요!",
+                    title: "� 창업의 모든 것, 여기서 시작하세요!",
                     description: "사업 계획서 작성부터 투자 유치까지, 전문가의 컨설팅을 받아보세요. 지금 바로 상담 신청!",
                     link: "#"
-                };
+                }];
             }
         }
         
@@ -336,12 +336,20 @@
             if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
             
             const itemsWithAds = [];
-            for (let i = 0; i < items.length; i++) {
-                itemsWithAds.push(items[i]);
-                if ((i + 1) % 7 === 0) {
-                    itemsWithAds.push(adData);
+            let adIndex = 0;
+            if (adDataList.length > 0) {
+                for (let i = 0; i < items.length; i++) {
+                    itemsWithAds.push(items[i]);
+                    if ((i + 1) % 7 === 0) {
+                        const currentAd = adDataList[adIndex % adDataList.length];
+                        itemsWithAds.push(currentAd);
+                        adIndex++;
+                    }
                 }
+            } else {
+                 items.forEach(item => itemsWithAds.push(item));
             }
+
             filteredItems = itemsWithAds;
 
             visibleItemCount = INITIAL_LOAD_COUNT;
