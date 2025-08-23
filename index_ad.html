@@ -3,468 +3,574 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v12.2 - 파트너 기능</title>
+    <title>광고 관리 페이지 v2.2 (클릭 카운트 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #38bdf8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .control-button.active { background-color: #0ea5e9; color: white; border-color: #0ea5e9; }
-        .favorite-button.favorited { color: #f59e0b; }
-        #toast-notification { transition: opacity 0.3s, transform 0.3s; }
-        .new-badge { animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
-        .details-content.expanded { max-height: 500px; }
-        .active-filter-tag, .keyword-tag { display: inline-flex; align-items: center; background-color: #e0f2fe; color: #075985; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; }
-        .active-filter-tag button, .keyword-tag button { margin-left: 0.5rem; color: #0ea5e9; font-weight: bold; }
-        #collapsible-filters { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
-        #collapsible-filters.expanded { max-height: 1000px; }
-        #keyword-alert-modal { transition: opacity 0.3s; }
-        #keyword-alert-modal.hidden { opacity: 0; pointer-events: none; }
-        .sticky-header {
-            backdrop-filter: saturate(180%) blur(10px);
-            -webkit-backdrop-filter: saturate(180%) blur(10px);
+        .drag-handle { cursor: grab; }
+        .sortable-ghost { background: #e0f2fe; opacity: 0.5; }
+        #login-button:disabled, #save-ad-button:disabled { 
+            background-color: #94a3b8; 
+            cursor: not-allowed; 
         }
-        .ad-media-container {
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #media-upload-status {
+            transition: opacity 0.3s;
+        }
+        .preview-media-container {
             position: relative;
             width: 100%;
             padding-top: 56.25%; /* 16:9 비율 */
             background-color: #e2e8f0;
+            border-radius: 0.5rem; /* 상단 모서리 둥글게 */
         }
-        .ad-media-container img,
-        .ad-media-container video {
+        .preview-media-container img,
+        .preview-media-container video {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            border-radius: 0.5rem;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            height: 8px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            background-color: #3b82f6;
+            height: 100%;
+            width: 0%;
+            transition: width 0.2s ease-in-out;
+        }
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .file-input-button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .file-input-button:hover {
+            background-color: #2563eb;
+        }
+        .file-input-hidden {
+            display: none;
+        }
+        .file-name-display {
+            font-size: 0.875rem;
+            color: #475569;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 </head>
-<body class="bg-slate-100">
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
-    <div class="container mx-auto p-4 sm:p-6 md:p-8">
-        
-        <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
-            <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
-                <p class="text-slate-600 mt-2">
-                    이제 동영상 광고도 볼 수 있어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.2</span>
-                </p>
-            </header>
-
-            <!-- 필터 및 검색 UI -->
-            <div class="relative flex-grow mb-4">
-                <input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </div>
-            <div id="collapsible-filters" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4 pt-4 border-t">
-                    <div>
-                        <label for="region-select" class="text-sm font-semibold text-slate-500 mb-2 block">지역</label>
-                        <select id="region-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
-                            <option value="all">모든 지역</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="category-select" class="text-sm font-semibold text-slate-500 mb-2 block">사업분야</label>
-                        <select id="category-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
-                            <option value="all">모든 사업분야</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="pt-4 border-t">
-                     <h3 class="text-sm font-semibold text-slate-500 mb-2">키워드 알림 설정 (방문 시 알림)</h3>
-                     <div class="flex gap-2">
-                         <input type="text" id="keyword-input" placeholder="알림받을 키워드 입력" class="flex-grow min-w-0 px-3 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
-                         <button id="add-keyword-button" class="px-4 py-1 bg-sky-500 text-white rounded-lg text-sm font-semibold hover:bg-sky-600 shadow-md transition-colors">추가</button>
-                     </div>
-                     <div id="keyword-tags-container" class="flex flex-wrap gap-2 mt-2 min-h-[34px]"></div>
-                </div>
-                <div id="active-filters-container" class="flex flex-wrap gap-2 items-center pt-4 border-t min-h-[41px]"></div>
-                <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
-                    <button data-sort="default" class="control-button active px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">기본순</button>
-                    <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
-                    <button id="favorites-toggle" class="control-button w-full sm:w-auto px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500 shadow-md transition-colors">☆ 즐겨찾기 보기</button>
-                </div>
-            </div>
-            <div class="text-center border-t pt-4 mt-4">
-                <button id="toggle-filters-button" class="text-sm font-semibold text-sky-600 hover:underline">상세 필터 보기 ▼</button>
-            </div>
-            <div class="mt-4 text-center">
-                 <button id="compare-button" class="control-button w-full px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
-            </div>
-        </div>
-
-        <div id="status-container" class="text-center h-64 flex justify-center items-center"><div id="loading-indicator"><div class="loader mx-auto"></div><p class="text-slate-500 mt-4">최신 데이터를 불러오는 중입니다...</p></div><div id="error-message" class="hidden"></div></div>
-        <main id="results-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
-        
-        <div id="load-more-spinner" class="text-center mt-8 hidden">
-            <div class="loader mx-auto"></div>
-        </div>
-
-        <footer class="text-center mt-12 text-sm text-slate-500">
-            <p>본 데이터는 공공데이터포털(K-Startup) API를 통해 제공받았습니다.</p>
-            <a href="admin.html" target="_blank" class="text-sky-600 hover:underline mt-2 inline-block">광고 관리</a>
-        </footer>
+    <div id="auth-container" class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
+        <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인</h1>
+        <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+        <button id="login-button" class="w-full mt-4 px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">로그인</button>
+        <p id="auth-message" class="text-sm text-center mt-4 hidden"></p>
     </div>
 
-    <!-- 모달 UI -->
-    <div id="comparison-modal" class="fixed inset-0 z-50 hidden"><div id="comparison-modal-bg" class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white rounded-lg shadow-xl m-4 md:m-8 max-w-6xl mx-auto max-h-[90vh] flex flex-col"><div class="flex justify-between items-center p-4 border-b"><h2 class="text-xl font-bold">지원사업 비교하기</h2><button id="close-modal-button" class="text-2xl">&times;</button></div><div id="comparison-content" class="p-4 overflow-auto"></div></div></div>
-    <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
-    <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
-    
+    <div id="admin-panel" class="hidden w-full max-w-4xl p-4 sm:p-8 bg-white rounded-xl shadow-lg">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+            <h1 class="text-2xl font-bold text-slate-800">📝 광고 카드 목록 관리</h1>
+            <button id="add-new-ad-button" class="w-full sm:w-auto px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">새 광고 추가</button>
+        </div>
+        
+        <div id="ad-list-container" class="space-y-4"></div>
+
+        <div class="mt-8 text-center border-t pt-4">
+            <a href="index_ad.html" class="text-sky-600 hover:underline">메인 페이지로 돌아가기 &rarr;</a>
+        </div>
+    </div>
+
+    <!-- 광고 수정/추가 모달 -->
+    <div id="ad-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-start p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h2 id="modal-title" class="text-xl font-bold">새 광고 추가</h2>
+                <button id="close-modal-button" class="text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                 <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4 flex flex-col">
+                        <div class="flex-grow space-y-4">
+                            <div>
+                                <label for="ad-title" class="block text-sm font-medium text-slate-600">광고 제목 (필수)</label>
+                                <input type="text" id="ad-title" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <div>
+                                <label for="ad-description" class="block text-sm font-medium text-slate-600">광고 설명</label>
+                                <textarea id="ad-description" rows="3" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                                <div class="flex items-center mt-2">
+                                    <input id="is-partners-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+                                    <label for="is-partners-checkbox" class="ml-2 block text-sm text-slate-700">쿠팡 파트너스 문구 포함</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
+                                <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600">광고 미디어 (이미지/동영상)</label>
+                                <div class="file-input-wrapper mt-1">
+                                    <label for="ad-media-file" class="file-input-button">파일 선택</label>
+                                    <span id="file-name-display" class="file-name-display">선택된 파일 없음</span>
+                                    <input type="file" id="ad-media-file" accept="image/png, image/jpeg, image/gif, video/mp4, video/webm" class="file-input-hidden">
+                                </div>
+                                <p class="mt-1 text-xs text-slate-500">권장: 16:9 비율, 최대 50MB</p>
+                                <div id="media-upload-status" class="mt-2 space-y-1 opacity-0">
+                                    <div class="flex justify-between text-xs font-semibold text-sky-600">
+                                        <span id="upload-label">업로드 중...</span>
+                                        <span id="upload-progress">0%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors flex justify-center items-center gap-2">저장하기</button>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
+                        <div id="ad-preview" class="bg-white rounded-xl shadow-md overflow-hidden relative"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK 추가 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-      import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+      import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
         authDomain: "gtree-f3d92.firebaseapp.com",
         projectId: "gtree-f3d92",
-        storageBucket: "gtree-f3d92.firebasestorage.app",
+        storageBucket: "gtree-f3d92.appspot.com", // .firebasestorage.app 에서 .appspot.com 으로 변경될 수 있습니다.
         messagingSenderId: "857408421677",
         appId: "1:857408421677:web:56b75913c99317f1ae5da4",
         measurementId: "G-4T4J4KXGNH"
       };
 
       const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
       const db = getFirestore(app);
+      const storage = getStorage(app);
+      const adsCollection = collection(db, "ads");
 
-      // --- JavaScript 코드 시작 ---
-      const INITIAL_LOAD_COUNT = 12;
-      const TOTAL_LOAD_COUNT = 500; 
-      let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
-      let visibleItemCount = 12;
-      let currentFilters = { searchTerm: '', region: 'all', category: 'all', sort: 'default', showFavorites: false };
-      let alertKeywords = [];
-      let seenItems = [];
-      let isLoadingMore = false;
-      let searchTimeout;
-      let adDataList = [];
+      let adList = [];
+      let editingAdId = null;
+      let selectedMediaFile = null; 
+      let currentMediaUrl = '';
+      let currentMediaType = 'image';
+      let currentUploadTask = null;
+      let tempPreviewUrl = null;
 
-      const elements = { 
-          statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
-          regionSelect: document.getElementById('region-select'), 
-          categorySelect: document.getElementById('category-select'), 
-          activeFiltersContainer: document.getElementById('active-filters-container'), favoritesToggle: document.getElementById('favorites-toggle'), compareButton: document.getElementById('compare-button'), 
-          loadMoreSpinner: document.getElementById('load-more-spinner'),
-          modal: document.getElementById('comparison-modal'), modalBg: document.getElementById('comparison-modal-bg'), closeModalButton: document.getElementById('close-modal-button'), comparisonContent: document.getElementById('comparison-content'), toast: document.getElementById('toast-notification'), toggleFiltersButton: document.getElementById('toggle-filters-button'), collapsibleFilters: document.getElementById('collapsible-filters'),
-          keywordInput: document.getElementById('keyword-input'), addKeywordButton: document.getElementById('add-keyword-button'), keywordTagsContainer: document.getElementById('keyword-tags-container'), keywordAlertModal: document.getElementById('keyword-alert-modal'), keywordAlertContent: document.getElementById('keyword-alert-content'), closeKeywordAlertButton: document.getElementById('close-keyword-alert-button')
-      };
+      const authContainer = document.getElementById('auth-container');
+      const adminPanel = document.getElementById('admin-panel');
+      const passwordInput = document.getElementById('password-input');
+      const loginButton = document.getElementById('login-button');
+      const authMessage = document.getElementById('auth-message');
+      const adListContainer = document.getElementById('ad-list-container');
+      const addNewAdButton = document.getElementById('add-new-ad-button');
+      const adModal = document.getElementById('ad-modal');
+      const modalTitle = document.getElementById('modal-title');
+      const closeModalButton = document.getElementById('close-modal-button');
+      const adTitleInput = document.getElementById('ad-title');
+      const adDescriptionInput = document.getElementById('ad-description');
+      const isPartnersCheckbox = document.getElementById('is-partners-checkbox');
+      const adLinkInput = document.getElementById('ad-link');
+      const adMediaFileInput = document.getElementById('ad-media-file');
+      const saveAdButton = document.getElementById('save-ad-button');
+      const adPreview = document.getElementById('ad-preview');
+      const mediaUploadStatus = document.getElementById('media-upload-status');
+      const uploadLabel = document.getElementById('upload-label');
+      const uploadProgress = document.getElementById('upload-progress');
+      const progressBarFill = document.getElementById('progress-bar-fill');
+      const fileNameDisplay = document.getElementById('file-name-display');
 
-      document.addEventListener('DOMContentLoaded', initialize);
+      loginButton.addEventListener('click', handleLogin);
+      passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+      addNewAdButton.addEventListener('click', handleAddNewAd);
+      closeModalButton.addEventListener('click', closeModal);
+      saveAdButton.addEventListener('click', handleSaveAd);
+      
+      [adTitleInput, adDescriptionInput, adLinkInput, isPartnersCheckbox].forEach(input => {
+          input.addEventListener('input', () => updatePreview());
+      });
+      adMediaFileInput.addEventListener('change', handleFileUpload);
 
-      async function initialize() {
-          await loadAdData();
-          favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-          alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
-          seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
-          addEventListeners();
-          renderAlertKeywords();
-          
-          const fullData = await fetchData(TOTAL_LOAD_COUNT);
-          if (fullData) {
-              allApiData = fullData;
-              await populateFilters();
-              applyFiltersAndRender();
-              checkNewItemsForKeywords();
-          }
+      async function handleLogin() {
+          const password = passwordInput.value;
+          if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
+          loginButton.disabled = true; loginButton.textContent = "로그인 중..."; showAuthMessage("비밀번호를 확인 중입니다...", false);
+          try {
+              // Netlify Function을 사용한 로그인 방식 (기존 코드 유지)
+              const response = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: password }) });
+              const result = await response.json();
+              if (response.ok && result.success) {
+                  await signInWithCustomToken(auth, result.token);
+                  authContainer.classList.add('hidden'); adminPanel.classList.remove('hidden');
+                  listenToAds(); initSortable();
+              } else { showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true); }
+          } catch (error) { console.error('Login error:', error); showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
+          } finally { loginButton.disabled = false; loginButton.textContent = "로그인"; }
+      }
+      function listenToAds() {
+        const q = query(adsCollection, orderBy("order", "asc"));
+        onSnapshot(q, (querySnapshot) => {
+            adList = [];
+            querySnapshot.forEach((doc) => { adList.push({ id: doc.id, ...doc.data() }); });
+            renderAdList();
+        });
+      }
+      function showAuthMessage(message, isError) {
+          authMessage.textContent = message;
+          authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
+          authMessage.classList.remove('hidden');
+      }
+      function initSortable() {
+          new Sortable(adListContainer, {
+              handle: '.drag-handle', animation: 150,
+              onEnd: async function (evt) {
+                  const movedItem = adList.splice(evt.oldIndex, 1)[0];
+                  adList.splice(evt.newIndex, 0, movedItem);
+                  const batch = writeBatch(db);
+                  adList.forEach((ad, index) => {
+                      const docRef = doc(db, "ads", ad.id);
+                      batch.update(docRef, { order: index });
+                  });
+                  await batch.commit(); renderAdList();
+              },
+          });
       }
 
-      async function loadAdData() {
-          try {
-              const q = query(collection(db, "ads"), orderBy("order", "asc"));
-              const querySnapshot = await getDocs(q);
-              adDataList = [];
-              querySnapshot.forEach((doc) => {
-                  adDataList.push(doc.data());
-              });
-          } catch (error) {
-              console.error("Error loading ads from Firestore:", error);
-              adDataList = [];
+      // --- 1. 클릭 카운트 표시 기능 추가 ---
+      function renderAdList() {
+          adListContainer.innerHTML = '';
+          if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`; return; }
+          adList.forEach((ad) => {
+              const adElement = document.createElement('div');
+              adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
+              adElement.dataset.id = ad.id;
+              const mediaIcon = ad.mediaType === 'video' ? '🎬' : '🖼️';
+              // clickCount가 없는 경우를 대비해 0으로 기본값 설정
+              const clickCount = ad.clickCount || 0;
+
+              adElement.innerHTML = `
+                  <div class="flex items-center w-full">
+                      <div class="drag-handle text-slate-400 mr-4 cursor-grab"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
+                      <div class="flex-grow flex items-center space-x-4 overflow-hidden">
+                          <div class="w-12 h-12 flex-shrink-0 bg-slate-200 rounded-md flex items-center justify-center text-2xl">${mediaIcon}</div>
+                          <div class="flex-grow overflow-hidden">
+                            <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
+                            <div class="flex items-center text-sm text-slate-500 mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                <span>${clickCount}</span>
+                            </div>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="w-full sm:w-auto flex-shrink-0 flex sm:flex-col justify-end gap-2">
+                      <button class="edit-ad-button text-sm text-sky-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">수정</button>
+                      <button class="delete-ad-button text-sm text-red-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">삭제</button>
+                  </div>`;
+              adListContainer.appendChild(adElement);
+          });
+          document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
+          document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
+      }
+
+      function handleFileUpload(event) {
+          const file = event.target.files[0];
+          if (!file) {
+              fileNameDisplay.textContent = '선택된 파일 없음';
+              selectedMediaFile = null;
+              if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
+              tempPreviewUrl = null;
+              updatePreview();
+              return;
           }
+
+          if (file.size > 50 * 1024 * 1024) {
+              alert('파일 크기는 50MB를 초과할 수 없습니다.');
+              adMediaFileInput.value = '';
+              fileNameDisplay.textContent = '선택된 파일 없음';
+              return;
+          }
+
+          selectedMediaFile = file; 
+          fileNameDisplay.textContent = file.name;
+          
+          if (file.type.startsWith('image/')) {
+              currentMediaType = 'image';
+          } else if (file.type.startsWith('video/')) {
+              currentMediaType = 'video';
+          } else {
+              alert("이미지 또는 동영상 파일만 업로드할 수 있습니다.");
+              adMediaFileInput.value = '';
+              fileNameDisplay.textContent = '선택된 파일 없음';
+              return;
+          }
+          
+          if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
+          tempPreviewUrl = URL.createObjectURL(file);
+          updatePreview();
+      }
+
+      function openModal() { adModal.classList.remove('hidden'); }
+      
+      function closeModal() {
+          if (currentUploadTask) {
+              currentUploadTask.cancel();
+              currentUploadTask = null;
+          }
+          adModal.classList.add('hidden');
+          resetModalState();
       }
       
-      async function fetchData(perPage) {
-            const backendApiUrl = `/.netlify/functions/get-support-data?perPage=${perPage}`;
-            try {
-                const response = await fetch(backendApiUrl);
-                if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
-                const data = await response.json();
-                if (data && data.data) return data.data;
-                throw new Error(data.resultMsg || "백엔드로부터 유효한 데이터를 받지 못했습니다.");
-            } catch (error) {
-                console.error("데이터 요청 오류:", error);
-                elements.loadingIndicator.classList.add('hidden');
-                let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.";
-                if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올바른지 확인해주세요.";
-                else friendlyMessage = `오류 발생: ${error.message}`;
-                elements.errorMessage.textContent = friendlyMessage;
-                elements.errorMessage.classList.remove('hidden');
-                return null;
-            }
-        }
-        
-      async function populateFilters() { /* 이전과 동일 */
-            const regionCounts = {}, categoryCounts = {};
-            allApiData.forEach(item => {
-                if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
-                if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
-            });
-            const createAndAppendOption = (selectElement, text, value) => {
-                const option = document.createElement('option');
-                option.value = value; option.textContent = text;
-                selectElement.appendChild(option);
-            };
-            elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiData.length +')</option>';
-            const sortedRegions = Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko'));
-            for (const region of sortedRegions) {
-                const count = regionCounts[region];
-                createAndAppendOption(elements.regionSelect, `${region} (${count})`, region);
-            }
-            elements.categorySelect.innerHTML = '<option value="all">모든 사업분야 ('+ allApiData.length +')</option>';
-            const sortedCategories = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko'));
-            for (const category of sortedCategories) {
-                const count = categoryCounts[category];
-                let displayText = category;
-                if (category.includes('기술개발(R&D)')) { displayText = '기술개발'; }
-                createAndAppendOption(elements.categorySelect, `${displayText} (${count})`, category);
-            }
-        }
+      function resetModalState() {
+          saveAdButton.disabled = false;
+          saveAdButton.innerHTML = `저장하기`;
+          
+          mediaUploadStatus.style.opacity = 0;
+          uploadProgress.textContent = '0%';
+          progressBarFill.style.width = '0%';
+          uploadLabel.textContent = '업로드 중...';
 
-      function addEventListeners() { /* 이전과 동일 */
-            window.addEventListener('scroll', handleScroll);
-            elements.searchInput.addEventListener('input', e => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    currentFilters.searchTerm = e.target.value.toLowerCase();
-                    applyFiltersAndRender();
-                }, 300);
-            });
-            elements.sortButtons.addEventListener('click', e => { if (e.target.tagName === 'BUTTON' && e.target.dataset.sort) { currentFilters.sort = e.target.dataset.sort; updateFilterUI(); applyFiltersAndRender(); } });
-            elements.favoritesToggle.addEventListener('click', e => { currentFilters.showFavorites = !currentFilters.showFavorites; e.target.classList.toggle('active'); e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; applyFiltersAndRender(); });
-            elements.regionSelect.addEventListener('change', e => { currentFilters.region = e.target.value; applyFiltersAndRender(); });
-            elements.categorySelect.addEventListener('change', e => { currentFilters.category = e.target.value; applyFiltersAndRender(); });
-            elements.resultsContainer.addEventListener('click', e => { const target = e.target; const button = target.closest('button'); if (button) { if (button.classList.contains('favorite-button')) toggleFavorite(button); if (button.classList.contains('share-button')) shareLink(button); if (button.classList.contains('details-toggle')) toggleDetails(button); } const checkbox = target.closest('.compare-checkbox'); if (checkbox) toggleComparison(checkbox); });
-            elements.compareButton.addEventListener('click', showComparisonModal);
-            elements.modalBg.addEventListener('click', () => elements.modal.classList.add('hidden'));
-            elements.closeModalButton.addEventListener('click', () => elements.modal.classList.add('hidden'));
-            elements.toggleFiltersButton.addEventListener('click', () => { const filters = elements.collapsibleFilters; const button = elements.toggleFiltersButton; filters.classList.toggle('expanded'); button.innerHTML = filters.classList.contains('expanded') ? '상세 필터 접기 ▲' : '상세 필터 보기 ▼'; });
-            elements.addKeywordButton.addEventListener('click', addKeyword);
-            elements.keywordInput.addEventListener('keypress', e => { if (e.key === 'Enter') addKeyword(); });
-            elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
-            elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
-        }
+          adTitleInput.value = '';
+          adDescriptionInput.value = '';
+          adLinkInput.value = '';
+          isPartnersCheckbox.checked = false;
+          adMediaFileInput.value = '';
+          fileNameDisplay.textContent = '선택된 파일 없음';
+          adPreview.innerHTML = '';
 
-      function handleScroll() { /* 이전과 동일 */
-            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-            if (clientHeight + scrollTop >= scrollHeight - 100 && visibleItemCount < filteredItems.length && !isLoadingMore) {
-                loadMoreItems();
-            }
-        }
+          if (tempPreviewUrl) {
+              URL.revokeObjectURL(tempPreviewUrl);
+              tempPreviewUrl = null;
+          }
+      }
 
-      function loadMoreItems() { /* 이전과 동일 */
-            isLoadingMore = true;
-            elements.loadMoreSpinner.classList.remove('hidden');
-            setTimeout(() => {
-                const nextItems = filteredItems.slice(visibleItemCount, visibleItemCount + 12);
-                appendData(nextItems);
-                visibleItemCount += 12;
-                elements.loadMoreSpinner.classList.add('hidden');
-                isLoadingMore = false;
-            }, 500);
-        }
-        
-      // --- 1. 광고 카드 생성 함수에 파트너스 문구 로직 추가 ---
-      function createItemHTML(item) {
-          if (item.isAd) {
-              let mediaElement = '';
-              const mediaUrl = item.mediaUrl || '';
-              const mediaType = item.mediaType || 'image';
+      function handleAddNewAd() {
+          editingAdId = null;
+          selectedMediaFile = null;
+          currentMediaUrl = '';
+          currentMediaType = 'image';
+          modalTitle.textContent = "새 광고 추가";
+          resetModalState();
+          updatePreview();
+          openModal();
+      }
 
-              if (mediaUrl) {
-                  if (mediaType === 'video') {
-                      mediaElement = `<video autoplay loop muted playsinline src="${mediaUrl}"></video>`;
-                  } else {
-                      mediaElement = `<img src="${mediaUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Error';">`;
+      function handleEditAd(event) {
+          editingAdId = event.target.dataset.id;
+          const ad = adList.find(ad => ad.id === editingAdId);
+          if (ad) {
+              resetModalState();
+              selectedMediaFile = null;
+              currentMediaUrl = ad.mediaUrl || '';
+              currentMediaType = ad.mediaType || 'image';
+              modalTitle.textContent = "광고 수정";
+              adTitleInput.value = ad.title;
+              adDescriptionInput.value = ad.description;
+              adLinkInput.value = ad.link;
+              isPartnersCheckbox.checked = ad.isPartners || false;
+              fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
+              updatePreview();
+              openModal();
+          }
+      }
+
+      async function handleDeleteAd(event) {
+          const idToDelete = event.target.dataset.id;
+          const adToDelete = adList.find(ad => ad.id === idToDelete);
+          if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
+              try {
+                  await deleteDoc(doc(db, "ads", idToDelete));
+                  if (adToDelete.mediaUrl) {
+                      const storageRef = ref(storage, adToDelete.mediaUrl);
+                      await deleteObject(storageRef);
                   }
-              } else {
-                  mediaElement = `<img src="https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here" alt="${item.title}">`;
+              } catch (error) {
+                  // 파일이 없는 경우 등 삭제 오류는 무시하고 진행
+                  console.warn("Could not delete file from storage:", error.message);
               }
+          }
+      }
 
-              // isPartners가 true일 때만 문구를 생성합니다.
-              const partnersText = item.isPartners 
-                  ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
-                  : '';
+      async function uploadMediaFile() {
+          return new Promise((resolve, reject) => {
+              mediaUploadStatus.style.opacity = 1;
+              const fileName = `ad_${Date.now()}_${selectedMediaFile.name}`;
+              const folder = currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
+              const storageRef = ref(storage, `${folder}/${fileName}`);
+              
+              currentUploadTask = uploadBytesResumable(storageRef, selectedMediaFile);
 
-              return `
-              <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative flex flex-col">
-                  <div class="ad-media-container">
-                      ${mediaElement}
-                  </div>
-                  <div class="p-4 flex-grow flex flex-col">
-                      <div class="flex justify-between items-start">
-                           <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
-                           <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
-                      </div>
-                      <a href="${item.link}" target="_blank" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
-                      <p class="mt-2 text-slate-600 text-sm flex-grow">${item.description || ''}</p>
-                      
-                      <!-- 파트너스 문구가 들어갈 자리 -->
-                      <div class="mt-auto">
-                          ${partnersText}
-                      </div>
+              currentUploadTask.on('state_changed', 
+                  (snapshot) => {
+                      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                      uploadProgress.textContent = `${Math.round(progress)}%`;
+                      progressBarFill.style.width = `${progress}%`;
+                  }, 
+                  (error) => {
+                      console.error("Upload failed:", error);
+                      currentUploadTask = null;
+                      reject(error); 
+                  }, 
+                  async () => {
+                      const downloadURL = await getDownloadURL(currentUploadTask.snapshot.ref);
+                      currentUploadTask = null;
+                      resolve(downloadURL);
+                  }
+              );
+          });
+      }
 
-                      <div class="mt-4 pt-4 border-t text-right">
-                           <a href="${item.link}" target="_blank" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
-                      </div>
-                  </div>
-              </div>`;
+      // --- 2. 저장 데이터에 clickCount 필드 추가 ---
+      async function saveDataToFirestore(mediaUrl) {
+          const adData = {
+              title: adTitleInput.value,
+              description: adDescriptionInput.value,
+              link: adLinkInput.value,
+              isPartners: isPartnersCheckbox.checked,
+              mediaUrl: mediaUrl,
+              mediaType: currentMediaType,
+          };
+
+          if (editingAdId) {
+              // 수정 시에는 기존 order 와 clickCount 값을 유지
+              const existingAd = adList.find(ad => ad.id === editingAdId);
+              adData.order = existingAd.order;
+              adData.clickCount = existingAd.clickCount || 0;
+              await updateDoc(doc(db, "ads", editingAdId), adData);
+          } else {
+              // 새 광고 추가 시 order 와 clickCount 초기화
+              adData.order = adList.length;
+              adData.clickCount = 0; // 클릭 카운터 초기값 0으로 설정
+              await addDoc(adsCollection, adData);
+          }
+      }
+
+      async function handleSaveAd() {
+          if (!adTitleInput.value.trim()) {
+              alert('광고 제목을 입력해주세요!');
+              adTitleInput.focus();
+              return;
           }
 
-          // (기존 지원사업 카드 코드는 동일)
-          const dday = calculateDday(item.pbanc_rcpt_end_dt); 
-          const isFavorited = favorites.includes(item.pbanc_sn); 
-          const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
-          const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); 
-          return `
-              <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative">
-                  ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''}
-                  <div class="p-6">
-                      <div class="flex justify-between items-start">
-                          <span class="text-sm font-semibold text-sky-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span>
-                          <span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span>
-                      </div>
-                      <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a>
-                      <p class="mt-2 text-slate-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p>
-                      <div class="details-content mt-4 pt-4 border-t text-sm text-slate-600 space-y-2">
-                          <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p>
-                      </div>
-                      <div class="flex justify-between items-center mt-4 pt-4 border-t">
-                          <div class="flex items-center gap-4">
-                              <label class="flex items-center space-x-2 text-sm cursor-pointer">
-                                  <input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}>
-                                  <span>비교</span>
-                              </label>
-                              <button class="details-toggle text-sm font-semibold text-sky-600 hover:underline">자세히 보기 ▼</button>
-                          </div>
-                          <div>
-                              <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기">
-                                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
-                              </button>
-                              <button class="favorite-button text-2xl text-slate-400 hover:text-amber-400 transition-colors ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
-                          </div>
-                      </div>
+          saveAdButton.disabled = true;
+          saveAdButton.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+
+          try {
+              let mediaUrlToSave = currentMediaUrl;
+
+              if (selectedMediaFile) {
+                  // 수정 시 기존 파일이 있었다면 삭제
+                  if (editingAdId && currentMediaUrl) {
+                      try {
+                          const oldFileRef = ref(storage, currentMediaUrl);
+                          await deleteObject(oldFileRef);
+                      } catch (error) {
+                          console.warn("Could not delete old file from storage:", error.message);
+                      }
+                  }
+                  mediaUrlToSave = await uploadMediaFile();
+                  uploadLabel.textContent = '업로드 완료!';
+              }
+              
+              await saveDataToFirestore(mediaUrlToSave);
+              
+              closeModal();
+
+          } catch (error) {
+              console.error("저장 중 오류 발생:", error);
+              alert("작업에 실패했습니다. 인터넷 연결을 확인하거나 다시 시도해주세요.");
+              saveAdButton.disabled = false;
+              saveAdButton.innerHTML = `저장하기`;
+              mediaUploadStatus.style.opacity = 0;
+          }
+      }
+
+      function updatePreview() {
+          const title = adTitleInput.value || "광고 제목";
+          const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
+          const link = adLinkInput.value || "#";
+          const isPartners = isPartnersCheckbox.checked;
+
+          const mediaSrc = tempPreviewUrl || currentMediaUrl;
+          
+          let mediaElement = '';
+          if (mediaSrc) {
+              const type = tempPreviewUrl ? currentMediaType : (adList.find(ad => ad.id === editingAdId)?.mediaType || 'image');
+              if (type === 'video') {
+                  mediaElement = `<video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
+              } else {
+                  mediaElement = `<img src="${mediaSrc}" alt="Ad preview">`;
+              }
+          } else {
+              mediaElement = `<div class="flex items-center justify-center h-full bg-slate-200 rounded-t-xl"><span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span></div>`;
+          }
+
+          const partnersText = isPartners 
+              ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
+              : '';
+
+          adPreview.innerHTML = `
+              <div class="preview-media-container">
+                  ${mediaElement}
+              </div>
+              <div class="p-4 flex-grow flex flex-col">
+                  <div class="flex justify-between items-start">
+                       <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
+                       <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
+                  </div>
+                  <a href="${link}" onclick="return false;" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${title}</a>
+                  <p class="mt-2 text-slate-600 text-sm flex-grow">${description}</p>
+                  
+                  <div class="mt-auto">
+                      ${partnersText}
+                  </div>
+
+                  <div class="mt-4 pt-4 border-t text-right">
+                       <a href="${link}" onclick="return false;" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
                   </div>
               </div>`;
       }
-        
-      function displayData(items) { /* 이전과 동일 */
-            elements.resultsContainer.innerHTML = items.map(createItemHTML).join(''); 
-        }
-
-      function appendData(items) { /* 이전과 동일 */
-            const newContent = items.map(createItemHTML).join('');
-            elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
-        }
-
-      function applyFiltersAndRender() { /* 이전과 동일 */
-            let items = [...allApiData]; 
-            if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
-            if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
-            if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); 
-            if (currentFilters.category !== 'all') items = items.filter(item => item.supt_biz_clsfc === currentFilters.category); 
-            if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
-            
-            const itemsWithAds = [];
-            let adIndex = 0;
-            if (adDataList.length > 0) {
-                for (let i = 0; i < items.length; i++) {
-                    itemsWithAds.push(items[i]);
-                    if ((i + 1) % 7 === 0) {
-                        const currentAd = adDataList[adIndex % adDataList.length];
-                        itemsWithAds.push(currentAd);
-                        adIndex++;
-                    }
-                }
-            } else {
-                 items.forEach(item => itemsWithAds.push(item));
-            }
-
-            filteredItems = itemsWithAds;
-            visibleItemCount = INITIAL_LOAD_COUNT;
-            elements.statusContainer.classList.add('hidden'); 
-            elements.resultsContainer.classList.remove('hidden'); 
-            renderActiveFilters(); 
-            if (filteredItems.length === 0) { 
-                elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
-            } else { 
-                displayData(filteredItems.slice(0, visibleItemCount)); 
-            }
-        }
-
-      function renderActiveFilters() { /* 이전과 동일 */
-            let html = ''; 
-            if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; 
-            if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; 
-            if (currentFilters.category !== 'all') html += `<span class="active-filter-tag" data-type="category">분야: ${currentFilters.category} <button>x</button></span>`; 
-            if (html) { 
-                html += `<button id="reset-filters-button" class="text-sm text-red-500 hover:underline ml-auto">모든 필터 초기화</button>`; 
-            } 
-            elements.activeFiltersContainer.innerHTML = html; 
-            elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { 
-                const type = e.target.parentElement.dataset.type; 
-                resetFilter(type); 
-            })); 
-            if(document.getElementById('reset-filters-button')) { 
-                document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); 
-            } 
-        }
-
-      function resetFilter(type) { /* 이전과 동일 */
-            if (type === 'searchTerm') {
-                currentFilters.searchTerm = ''; elements.searchInput.value = '';
-            } else if (type === 'region') {
-                currentFilters.region = 'all'; elements.regionSelect.value = 'all';
-            } else if (type === 'category') {
-                currentFilters.category = 'all'; elements.categorySelect.value = 'all';
-            }
-            applyFiltersAndRender();
-        }
-
-      function resetAllFilters() { /* 이전과 동일 */
-            currentFilters.searchTerm = ''; currentFilters.region = 'all'; currentFilters.category = 'all';
-            elements.searchInput.value = ''; elements.regionSelect.value = 'all'; elements.categorySelect.value = 'all';
-            applyFiltersAndRender();
-        }
-        
-      function updateFilterUI() { /* 이전과 동일 */
-            elements.sortButtons.querySelectorAll('.control-button[data-sort]').forEach(button => {
-                if (button.dataset.sort === currentFilters.sort) { button.classList.add('active'); } 
-                else { button.classList.remove('active'); }
-            });
-        }
-
-      // --- (이하 헬퍼 함수들은 이전과 동일) ---
-      function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
-      function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
-      function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
-      function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); if (currentFilters.showFavorites) applyFiltersAndRender(); }
-      function toggleComparison(checkbox) { const id = parseInt(checkbox.dataset.id); const index = comparisonList.indexOf(id); if (index > -1) comparisonList.splice(index, 1); else comparisonList.push(id); elements.compareButton.style.display = comparisonList.length > 0 ? 'block' : 'none'; }
-      function showComparisonModal() { const itemsToCompare = allApiData.filter(item => comparisonList.includes(item.pbanc_sn)); const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-slate-100"><th class="p-2 w-1/5">항목</th>'; itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); tableHTML += '</tr></thead><tbody>'; Object.keys(headers).forEach(key => { tableHTML += `<tr class="border-b"><td class="font-bold p-2 align-top">${headers[key]}</td>`; itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); tableHTML += '</tr>'; }); tableHTML += '</tbody></table></div>'; elements.comparisonContent.innerHTML = tableHTML; elements.modal.classList.remove('hidden'); }
-      function shareLink(button) { const url = button.dataset.url; const textArea = document.createElement("textarea"); textArea.value = url; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); showToast("링크가 복사되었습니다!"); } catch (err) { showToast("링크 복사에 실패했습니다.", true); } document.body.removeChild(textArea); }
-      function showToast(message, isError = false) { elements.toast.textContent = message; elements.toast.className = `fixed bottom-10 right-10 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 ${isError ? 'bg-red-500' : 'bg-slate-800'}`; elements.toast.classList.remove('opacity-0', 'translate-y-4'); setTimeout(() => { elements.toast.classList.add('opacity-0', 'translate-y-4'); }, 2000); }
-      function addKeyword() { const keyword = elements.keywordInput.value.trim(); if (keyword && !alertKeywords.includes(keyword)) { alertKeywords.push(keyword); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); elements.keywordInput.value = ''; } }
-      function renderAlertKeywords() { if (alertKeywords.length === 0) { elements.keywordTagsContainer.innerHTML = '<span class="text-xs text-slate-400">알림 받을 키워드를 추가해보세요.</span>'; return; } elements.keywordTagsContainer.innerHTML = alertKeywords.map((keyword, index) => ` <span class="keyword-tag">${keyword} <button data-index="${index}">x</button></span> `).join(''); }
-      function handleKeywordTagClick(e) { if (e.target.tagName === 'BUTTON') { const index = parseInt(e.target.dataset.index); alertKeywords.splice(index, 1); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); } }
-      function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiData.length === 0) return; const currentItemIds = allApiData.map(item => item.pbanc_sn); const newItems = allApiData.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
-      function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
     </script>
 </body>
 </html>

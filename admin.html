@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v2.1 (파트너 기능)</title>
+    <title>광고 관리 페이지 v2.2 (클릭 카운트 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -129,7 +129,6 @@
                             <div>
                                 <label for="ad-description" class="block text-sm font-medium text-slate-600">광고 설명</label>
                                 <textarea id="ad-description" rows="3" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
-                                <!-- --- 1. 파트너스 문구 체크박스 추가 --- -->
                                 <div class="flex items-center mt-2">
                                     <input id="is-partners-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
                                     <label for="is-partners-checkbox" class="ml-2 block text-sm text-slate-700">쿠팡 파트너스 문구 포함</label>
@@ -180,7 +179,7 @@
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
         authDomain: "gtree-f3d92.firebaseapp.com",
         projectId: "gtree-f3d92",
-        storageBucket: "gtree-f3d92.firebasestorage.app",
+        storageBucket: "gtree-f3d92.appspot.com", // .firebasestorage.app 에서 .appspot.com 으로 변경될 수 있습니다.
         messagingSenderId: "857408421677",
         appId: "1:857408421677:web:56b75913c99317f1ae5da4",
         measurementId: "G-4T4J4KXGNH"
@@ -212,7 +211,6 @@
       const closeModalButton = document.getElementById('close-modal-button');
       const adTitleInput = document.getElementById('ad-title');
       const adDescriptionInput = document.getElementById('ad-description');
-      // --- 2. 파트너스 체크박스 Element 가져오기 ---
       const isPartnersCheckbox = document.getElementById('is-partners-checkbox');
       const adLinkInput = document.getElementById('ad-link');
       const adMediaFileInput = document.getElementById('ad-media-file');
@@ -230,17 +228,17 @@
       closeModalButton.addEventListener('click', closeModal);
       saveAdButton.addEventListener('click', handleSaveAd);
       
-      // --- 3. 파트너스 체크박스에도 이벤트 리스너 추가 ---
       [adTitleInput, adDescriptionInput, adLinkInput, isPartnersCheckbox].forEach(input => {
           input.addEventListener('input', () => updatePreview());
       });
       adMediaFileInput.addEventListener('change', handleFileUpload);
 
-      async function handleLogin() { /* 이전과 동일 */ 
+      async function handleLogin() {
           const password = passwordInput.value;
           if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
           loginButton.disabled = true; loginButton.textContent = "로그인 중..."; showAuthMessage("비밀번호를 확인 중입니다...", false);
           try {
+              // Netlify Function을 사용한 로그인 방식 (기존 코드 유지)
               const response = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: password }) });
               const result = await response.json();
               if (response.ok && result.success) {
@@ -251,7 +249,7 @@
           } catch (error) { console.error('Login error:', error); showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
           } finally { loginButton.disabled = false; loginButton.textContent = "로그인"; }
       }
-      function listenToAds() { /* 이전과 동일 */
+      function listenToAds() {
         const q = query(adsCollection, orderBy("order", "asc"));
         onSnapshot(q, (querySnapshot) => {
             adList = [];
@@ -259,12 +257,12 @@
             renderAdList();
         });
       }
-      function showAuthMessage(message, isError) { /* 이전과 동일 */
+      function showAuthMessage(message, isError) {
           authMessage.textContent = message;
           authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
           authMessage.classList.remove('hidden');
       }
-      function initSortable() { /* 이전과 동일 */
+      function initSortable() {
           new Sortable(adListContainer, {
               handle: '.drag-handle', animation: 150,
               onEnd: async function (evt) {
@@ -279,7 +277,9 @@
               },
           });
       }
-      function renderAdList() { /* 이전과 동일 */
+
+      // --- 1. 클릭 카운트 표시 기능 추가 ---
+      function renderAdList() {
           adListContainer.innerHTML = '';
           if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`; return; }
           adList.forEach((ad) => {
@@ -287,12 +287,21 @@
               adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
               adElement.dataset.id = ad.id;
               const mediaIcon = ad.mediaType === 'video' ? '🎬' : '🖼️';
+              // clickCount가 없는 경우를 대비해 0으로 기본값 설정
+              const clickCount = ad.clickCount || 0;
+
               adElement.innerHTML = `
                   <div class="flex items-center w-full">
                       <div class="drag-handle text-slate-400 mr-4 cursor-grab"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
                       <div class="flex-grow flex items-center space-x-4 overflow-hidden">
                           <div class="w-12 h-12 flex-shrink-0 bg-slate-200 rounded-md flex items-center justify-center text-2xl">${mediaIcon}</div>
-                          <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
+                          <div class="flex-grow overflow-hidden">
+                            <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
+                            <div class="flex items-center text-sm text-slate-500 mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                <span>${clickCount}</span>
+                            </div>
+                          </div>
                       </div>
                   </div>
                   <div class="w-full sm:w-auto flex-shrink-0 flex sm:flex-col justify-end gap-2">
@@ -365,7 +374,7 @@
           adTitleInput.value = '';
           adDescriptionInput.value = '';
           adLinkInput.value = '';
-          isPartnersCheckbox.checked = false; // 체크박스 초기화
+          isPartnersCheckbox.checked = false;
           adMediaFileInput.value = '';
           fileNameDisplay.textContent = '선택된 파일 없음';
           adPreview.innerHTML = '';
@@ -399,14 +408,14 @@
               adTitleInput.value = ad.title;
               adDescriptionInput.value = ad.description;
               adLinkInput.value = ad.link;
-              isPartnersCheckbox.checked = ad.isPartners || false; // 저장된 값으로 체크박스 설정
+              isPartnersCheckbox.checked = ad.isPartners || false;
               fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
               updatePreview();
               openModal();
           }
       }
 
-      async function handleDeleteAd(event) { /* 이전과 동일 */
+      async function handleDeleteAd(event) {
           const idToDelete = event.target.dataset.id;
           const adToDelete = adList.find(ad => ad.id === idToDelete);
           if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
@@ -417,12 +426,13 @@
                       await deleteObject(storageRef);
                   }
               } catch (error) {
+                  // 파일이 없는 경우 등 삭제 오류는 무시하고 진행
                   console.warn("Could not delete file from storage:", error.message);
               }
           }
       }
 
-      async function uploadMediaFile() { /* 이전과 동일 */
+      async function uploadMediaFile() {
           return new Promise((resolve, reject) => {
               mediaUploadStatus.style.opacity = 1;
               const fileName = `ad_${Date.now()}_${selectedMediaFile.name}`;
@@ -451,27 +461,32 @@
           });
       }
 
-      // --- 4. 저장 데이터에 isPartners 필드 추가 ---
+      // --- 2. 저장 데이터에 clickCount 필드 추가 ---
       async function saveDataToFirestore(mediaUrl) {
           const adData = {
-              isAd: true,
               title: adTitleInput.value,
               description: adDescriptionInput.value,
               link: adLinkInput.value,
-              isPartners: isPartnersCheckbox.checked, // 체크박스 상태 저장
+              isPartners: isPartnersCheckbox.checked,
               mediaUrl: mediaUrl,
               mediaType: currentMediaType,
-              order: editingAdId ? adList.find(ad => ad.id === editingAdId).order : adList.length
           };
 
           if (editingAdId) {
+              // 수정 시에는 기존 order 와 clickCount 값을 유지
+              const existingAd = adList.find(ad => ad.id === editingAdId);
+              adData.order = existingAd.order;
+              adData.clickCount = existingAd.clickCount || 0;
               await updateDoc(doc(db, "ads", editingAdId), adData);
           } else {
+              // 새 광고 추가 시 order 와 clickCount 초기화
+              adData.order = adList.length;
+              adData.clickCount = 0; // 클릭 카운터 초기값 0으로 설정
               await addDoc(adsCollection, adData);
           }
       }
 
-      async function handleSaveAd() { /* 이전과 동일 */
+      async function handleSaveAd() {
           if (!adTitleInput.value.trim()) {
               alert('광고 제목을 입력해주세요!');
               adTitleInput.focus();
@@ -485,6 +500,15 @@
               let mediaUrlToSave = currentMediaUrl;
 
               if (selectedMediaFile) {
+                  // 수정 시 기존 파일이 있었다면 삭제
+                  if (editingAdId && currentMediaUrl) {
+                      try {
+                          const oldFileRef = ref(storage, currentMediaUrl);
+                          await deleteObject(oldFileRef);
+                      } catch (error) {
+                          console.warn("Could not delete old file from storage:", error.message);
+                      }
+                  }
                   mediaUrlToSave = await uploadMediaFile();
                   uploadLabel.textContent = '업로드 완료!';
               }
@@ -502,7 +526,6 @@
           }
       }
 
-      // --- 5. 미리보기에 파트너스 문구 추가 로직 ---
       function updatePreview() {
           const title = adTitleInput.value || "광고 제목";
           const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
@@ -520,7 +543,7 @@
                   mediaElement = `<img src="${mediaSrc}" alt="Ad preview">`;
               }
           } else {
-              mediaElement = `<div class="flex items-center justify-center h-full bg-slate-200 rounded-xl"><span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span></div>`;
+              mediaElement = `<div class="flex items-center justify-center h-full bg-slate-200 rounded-t-xl"><span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span></div>`;
           }
 
           const partnersText = isPartners 
@@ -539,7 +562,6 @@
                   <a href="${link}" onclick="return false;" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${title}</a>
                   <p class="mt-2 text-slate-600 text-sm flex-grow">${description}</p>
                   
-                  <!-- 파트너스 문구가 들어갈 자리 -->
                   <div class="mt-auto">
                       ${partnersText}
                   </div>
