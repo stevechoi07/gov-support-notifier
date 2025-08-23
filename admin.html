@@ -24,16 +24,16 @@
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
     <div id="auth-container" class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
-        <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인 v11.11</h1>
+        <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인</h1>
         <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
         <button id="login-button" class="w-full mt-4 px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">로그인</button>
         <p id="auth-message" class="text-sm text-center mt-4 hidden"></p>
     </div>
 
-    <div id="admin-panel" class="hidden w-full max-w-4xl p-8 bg-white rounded-xl shadow-lg">
-        <div class="flex justify-between items-center mb-6">
+    <div id="admin-panel" class="hidden w-full max-w-4xl p-4 sm:p-8 bg-white rounded-xl shadow-lg">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
             <h1 class="text-2xl font-bold text-slate-800">📝 광고 카드 목록 관리</h1>
-            <button id="add-new-ad-button" class="px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">새 광고 추가</button>
+            <button id="add-new-ad-button" class="w-full sm:w-auto px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">새 광고 추가</button>
         </div>
         
         <div id="ad-list-container" class="space-y-4">
@@ -46,8 +46,8 @@
     </div>
 
     <!-- 광고 수정/추가 모달 -->
-    <div id="ad-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl">
+    <div id="ad-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-start p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
             <div class="flex justify-between items-center p-4 border-b">
                 <h2 id="modal-title" class="text-xl font-bold">새 광고 추가</h2>
                 <button id="close-modal-button" class="text-2xl">&times;</button>
@@ -74,7 +74,7 @@
                         </div>
                         <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors">저장하기</button>
                     </div>
-                    <div>
+                    <div class="mt-4 md:mt-0">
                         <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
                         <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative">
                             <!-- 미리보기 내용은 JS로 채워집니다 -->
@@ -144,7 +144,6 @@
                     renderAdList();
                     initSortable();
                 } else {
-                    // 서버에서 보내준 메시지를 보여주거나, 기본 메시지를 보여줌
                     showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
                 }
             } catch (error) {
@@ -204,18 +203,21 @@
             }
             adList.forEach((ad, index) => {
                 const adElement = document.createElement('div');
-                adElement.className = 'flex items-center p-4 border rounded-lg bg-slate-50';
+                // --- UX 개선: 모바일에서는 세로, 데스크톱에서는 가로로 배치 ---
+                adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
                 adElement.innerHTML = `
-                    <div class="drag-handle text-slate-400 mr-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                    <div class="flex items-center w-full">
+                        <div class="drag-handle text-slate-400 mr-4 cursor-grab">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                        </div>
+                        <div class="flex-grow flex items-center space-x-4 overflow-hidden">
+                            <img src="${ad.imageUrl || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'}" alt="${ad.title}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">
+                            <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
+                        </div>
                     </div>
-                    <div class="flex-grow flex items-center space-x-4 overflow-hidden">
-                        <img src="${ad.imageUrl || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'}" alt="${ad.title}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">
-                        <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
-                    </div>
-                    <div class="flex-shrink-0 space-x-2 ml-4">
-                        <button class="edit-ad-button text-sm text-sky-600 hover:underline" data-index="${index}">수정</button>
-                        <button class="delete-ad-button text-sm text-red-600 hover:underline" data-index="${index}">삭제</button>
+                    <div class="w-full sm:w-auto flex-shrink-0 flex sm:flex-col justify-end gap-2">
+                        <button class="edit-ad-button text-sm text-sky-600 hover:underline px-3 py-1 bg-white rounded-md border" data-index="${index}">수정</button>
+                        <button class="delete-ad-button text-sm text-red-600 hover:underline px-3 py-1 bg-white rounded-md border" data-index="${index}">삭제</button>
                     </div>
                 `;
                 adListContainer.appendChild(adElement);
