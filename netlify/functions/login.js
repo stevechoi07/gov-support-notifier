@@ -2,7 +2,7 @@
 
 // 이 파일은 프로젝트의 netlify/functions 폴더 안에 저장해야 합니다.
 // 진짜 비밀번호는 이 파일 안에 안전하게 보관됩니다.
-const CORRECT_PASSWORD = "supersecretpassword123"; // 실제 운영 시에는 더 복잡한 비밀번호를 사용하세요.
+const CORRECT_PASSWORD = "rmfpdlxmxmfl!!"; // 실제 운영 시에는 더 복잡한 비밀번호를 사용하세요.
 
 exports.handler = async function(event, context) {
   // POST 요청만 처리하도록 설정

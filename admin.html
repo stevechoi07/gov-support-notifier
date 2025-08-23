@@ -144,11 +144,12 @@
                     renderAdList();
                     initSortable();
                 } else {
-                    showAuthMessage("비밀번호가 틀렸습니다.", true);
+                    // 서버에서 보내준 메시지를 보여주거나, 기본 메시지를 보여줌
+                    showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                showAuthMessage("로그인 중 오류가 발생했습니다.", true);
+                showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
             } finally {
                 loginButton.disabled = false;
                 loginButton.textContent = "로그인";
