@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.7 - 광고 기능 추가</title>
+    <title>정부 지원사업 알리미 v11.8_AD_Admin</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -41,8 +41,8 @@
             <header class="text-center mb-6">
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
-                    사용자 경험을 위해 UI를 개선했어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v11.7</span>
+                    광고 관리 기능이 추가되었어요!
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v11.8_AD_Admin</span>
                 </p>
             </header>
 
@@ -101,7 +101,10 @@
             <div class="loader mx-auto"></div>
         </div>
 
-        <footer class="text-center mt-12 text-sm text-slate-500"><p>본 데이터는 공공데이터포털(K-Startup) API를 통해 제공받았습니다.</p></footer>
+        <footer class="text-center mt-12 text-sm text-slate-500">
+            <p>본 데이터는 공공데이터포털(K-Startup) API를 통해 제공받았습니다.</p>
+            <a href="admin.html" target="_blank" class="text-sky-600 hover:underline mt-2 inline-block">광고 관리</a>
+        </footer>
     </div>
 
     <div id="comparison-modal" class="fixed inset-0 z-50 hidden"><div id="comparison-modal-bg" class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white rounded-lg shadow-xl m-4 md:m-8 max-w-6xl mx-auto max-h-[90vh] flex flex-col"><div class="flex justify-between items-center p-4 border-b"><h2 class="text-xl font-bold">지원사업 비교하기</h2><button id="close-modal-button" class="text-2xl">&times;</button></div><div id="comparison-content" class="p-4 overflow-auto"></div></div></div>
@@ -118,16 +121,7 @@
         let seenItems = [];
         let isLoadingMore = false;
         let searchTimeout;
-
-        // --- 광고 카드 데이터 (예시) ---
-        const adData = {
-            isAd: true,
-            title: "🚀 창업의 모든 것, 여기서 시작하세요!",
-            description: "사업 계획서 작성부터 투자 유치까지, 전문가의 컨설팅을 받아보세요. 지금 바로 상담 신청!",
-            link: "#",
-            imageUrl: "https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here"
-        };
-
+        let adData; // 광고 데이터를 담을 변수
 
         const elements = { 
             statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
@@ -142,6 +136,7 @@
         document.addEventListener('DOMContentLoaded', initialize);
 
         async function initialize() {
+            loadAdData(); // 광고 데이터 로드
             favorites = JSON.parse(localStorage.getItem('favorites')) || [];
             alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
             seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
@@ -154,6 +149,21 @@
                 await populateFilters();
                 applyFiltersAndRender();
                 checkNewItemsForKeywords();
+            }
+        }
+
+        function loadAdData() {
+            const savedAd = localStorage.getItem('adData');
+            if (savedAd) {
+                adData = JSON.parse(savedAd);
+            } else {
+                // 저장된 광고가 없으면 기본 광고를 사용
+                adData = {
+                    isAd: true,
+                    title: "🚀 창업의 모든 것, 여기서 시작하세요!",
+                    description: "사업 계획서 작성부터 투자 유치까지, 전문가의 컨설팅을 받아보세요. 지금 바로 상담 신청!",
+                    link: "#"
+                };
             }
         }
         
@@ -255,7 +265,6 @@
         }
         
         function createItemHTML(item) {
-            // --- 광고 카드 삽입 ---
             if (item.isAd) {
                 return `
                 <div class="bg-slate-200 rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative">
@@ -273,7 +282,6 @@
                 </div>`;
             }
 
-            // --- 기존 공고 카드 ---
             const dday = calculateDday(item.pbanc_rcpt_end_dt); 
             const isFavorited = favorites.includes(item.pbanc_sn); 
             const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
@@ -327,17 +335,14 @@
             if (currentFilters.category !== 'all') items = items.filter(item => item.supt_biz_clsfc === currentFilters.category); 
             if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
             
-            // --- 광고 카드 삽입 로직 ---
             const itemsWithAds = [];
             for (let i = 0; i < items.length; i++) {
                 itemsWithAds.push(items[i]);
-                // 7번째 아이템마다 광고를 추가합니다. (i+1) % 7 === 0
                 if ((i + 1) % 7 === 0) {
                     itemsWithAds.push(adData);
                 }
             }
             filteredItems = itemsWithAds;
-            // --- 로직 끝 ---
 
             visibleItemCount = INITIAL_LOAD_COUNT;
 
