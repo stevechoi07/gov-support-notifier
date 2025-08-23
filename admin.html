@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v2.0 (최종 완성)</title>
+    <title>광고 관리 페이지 v2.1 (파트너 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -129,6 +129,11 @@
                             <div>
                                 <label for="ad-description" class="block text-sm font-medium text-slate-600">광고 설명</label>
                                 <textarea id="ad-description" rows="3" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                                <!-- --- 1. 파트너스 문구 체크박스 추가 --- -->
+                                <div class="flex items-center mt-2">
+                                    <input id="is-partners-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+                                    <label for="is-partners-checkbox" class="ml-2 block text-sm text-slate-700">쿠팡 파트너스 문구 포함</label>
+                                </div>
                             </div>
                             <div>
                                 <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
@@ -207,6 +212,8 @@
       const closeModalButton = document.getElementById('close-modal-button');
       const adTitleInput = document.getElementById('ad-title');
       const adDescriptionInput = document.getElementById('ad-description');
+      // --- 2. 파트너스 체크박스 Element 가져오기 ---
+      const isPartnersCheckbox = document.getElementById('is-partners-checkbox');
       const adLinkInput = document.getElementById('ad-link');
       const adMediaFileInput = document.getElementById('ad-media-file');
       const saveAdButton = document.getElementById('save-ad-button');
@@ -222,8 +229,9 @@
       addNewAdButton.addEventListener('click', handleAddNewAd);
       closeModalButton.addEventListener('click', closeModal);
       saveAdButton.addEventListener('click', handleSaveAd);
-      // --- 1. 이벤트 리스너 호출 방식을 수정하여 버그를 해결합니다. ---
-      [adTitleInput, adDescriptionInput, adLinkInput].forEach(input => {
+      
+      // --- 3. 파트너스 체크박스에도 이벤트 리스너 추가 ---
+      [adTitleInput, adDescriptionInput, adLinkInput, isPartnersCheckbox].forEach(input => {
           input.addEventListener('input', () => updatePreview());
       });
       adMediaFileInput.addEventListener('change', handleFileUpload);
@@ -357,6 +365,7 @@
           adTitleInput.value = '';
           adDescriptionInput.value = '';
           adLinkInput.value = '';
+          isPartnersCheckbox.checked = false; // 체크박스 초기화
           adMediaFileInput.value = '';
           fileNameDisplay.textContent = '선택된 파일 없음';
           adPreview.innerHTML = '';
@@ -390,6 +399,7 @@
               adTitleInput.value = ad.title;
               adDescriptionInput.value = ad.description;
               adLinkInput.value = ad.link;
+              isPartnersCheckbox.checked = ad.isPartners || false; // 저장된 값으로 체크박스 설정
               fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
               updatePreview();
               openModal();
@@ -441,12 +451,14 @@
           });
       }
 
-      async function saveDataToFirestore(mediaUrl) { /* 이전과 동일 */
+      // --- 4. 저장 데이터에 isPartners 필드 추가 ---
+      async function saveDataToFirestore(mediaUrl) {
           const adData = {
               isAd: true,
               title: adTitleInput.value,
               description: adDescriptionInput.value,
               link: adLinkInput.value,
+              isPartners: isPartnersCheckbox.checked, // 체크박스 상태 저장
               mediaUrl: mediaUrl,
               mediaType: currentMediaType,
               order: editingAdId ? adList.find(ad => ad.id === editingAdId).order : adList.length
@@ -490,16 +502,17 @@
           }
       }
 
+      // --- 5. 미리보기에 파트너스 문구 추가 로직 ---
       function updatePreview() {
           const title = adTitleInput.value || "광고 제목";
           const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
           const link = adLinkInput.value || "#";
-          
+          const isPartners = isPartnersCheckbox.checked;
+
           const mediaSrc = tempPreviewUrl || currentMediaUrl;
           
           let mediaElement = '';
           if (mediaSrc) {
-              // --- 2. 버그 수정: 파일 선택 시 결정된 미디어 타입을 사용하도록 수정 ---
               const type = tempPreviewUrl ? currentMediaType : (adList.find(ad => ad.id === editingAdId)?.mediaType || 'image');
               if (type === 'video') {
                   mediaElement = `<video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
@@ -509,6 +522,10 @@
           } else {
               mediaElement = `<div class="flex items-center justify-center h-full bg-slate-200 rounded-xl"><span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span></div>`;
           }
+
+          const partnersText = isPartners 
+              ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
+              : '';
 
           adPreview.innerHTML = `
               <div class="preview-media-container">
@@ -521,6 +538,12 @@
                   </div>
                   <a href="${link}" onclick="return false;" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${title}</a>
                   <p class="mt-2 text-slate-600 text-sm flex-grow">${description}</p>
+                  
+                  <!-- 파트너스 문구가 들어갈 자리 -->
+                  <div class="mt-auto">
+                      ${partnersText}
+                  </div>
+
                   <div class="mt-4 pt-4 border-t text-right">
                        <a href="${link}" onclick="return false;" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
                   </div>
