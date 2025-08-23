@@ -1,4 +1,4 @@
-# Netlify 빌드 및 함수 설정을 위한 최종 지시서
+  # Netlify 빌드 및 함수 설정을 위한 최종 지시서
 
 [build]
   command = "npm install"
