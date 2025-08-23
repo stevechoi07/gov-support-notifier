@@ -1,6 +1,19 @@
+# Netlify 빌드 및 함수 설정을 위한 최종 지시서
+
 [build]
   command = "npm install"
   publish = "."
 
 [functions]
-  directory = "netlify/functions"
+  # '비밀 요원'들이 있는 폴더의 위치를 알려줍니다.
+  directory = "netlify/functions/"
+  
+  # '비밀 요원'들이 node.js로 만들어졌음을 알려주고,
+  # 장비 목록(package.json)에 있는 모든 장비를 포함하도록 지시합니다.
+  node_bundler = "esbuild"
+  included_files = ["node_modules/**"]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200

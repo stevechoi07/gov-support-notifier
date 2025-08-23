@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 (TESTING)</title>
+    <title>광고 관리 페이지 - Firestore</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -17,74 +17,317 @@
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
     <div id="auth-container" class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
-        <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인 (테스트 모드)</h1>
+        <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인</h1>
         <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
         <button id="login-button" class="w-full mt-4 px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">로그인</button>
         <p id="auth-message" class="text-sm text-center mt-4 hidden"></p>
     </div>
 
     <div id="admin-panel" class="hidden w-full max-w-4xl p-4 sm:p-8 bg-white rounded-xl shadow-lg">
-        <h1 class="text-2xl font-bold text-center text-green-600">🎉 테스트 성공!</h1>
-        <p class="text-center mt-4 text-slate-600">
-            서버와의 연결은 정상이지만, Firebase 장비(SDK)에 문제가 있습니다.<br>
-            이 화면이 보인다고 알려주시면, 다음 해결 방법을 안내해 드릴게요!
-        </p>
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+            <h1 class="text-2xl font-bold text-slate-800">📝 광고 카드 목록 관리</h1>
+            <button id="add-new-ad-button" class="w-full sm:w-auto px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">새 광고 추가</button>
+        </div>
+        
+        <div id="ad-list-container" class="space-y-4">
+            <!-- Firestore에서 불러온 광고 목록이 여기에 표시됩니다. -->
+        </div>
+
         <div class="mt-8 text-center border-t pt-4">
             <a href="index.html" class="text-sky-600 hover:underline">메인 페이지로 돌아가기 &rarr;</a>
         </div>
     </div>
-    
-    <script>
-        const passwordInput = document.getElementById('password-input');
-        const loginButton = document.getElementById('login-button');
-        const authMessage = document.getElementById('auth-message');
-        const authContainer = document.getElementById('auth-container');
-        const adminPanel = document.getElementById('admin-panel');
 
-        loginButton.addEventListener('click', handleLogin);
-        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+    <!-- 광고 수정/추가 모달 -->
+    <div id="ad-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-start p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h2 id="modal-title" class="text-xl font-bold">새 광고 추가</h2>
+                <button id="close-modal-button" class="text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                 <div class="grid md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="ad-title" class="block text-sm font-medium text-slate-600">광고 제목</label>
+                            <input type="text" id="ad-title" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label for="ad-description" class="block text-sm font-medium text-slate-600">광고 설명</label>
+                            <textarea id="ad-description" rows="3" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                        </div>
+                        <div>
+                            <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
+                            <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label for="ad-image" class="block text-sm font-medium text-slate-600">광고 이미지</label>
+                            <input type="file" id="ad-image" accept="image/png, image/jpeg, image/gif" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+                            <p class="mt-1 text-xs text-slate-500">권장 사이즈: 600x300 픽셀 (가로가 긴 이미지)</p>
+                        </div>
+                        <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors">저장하기</button>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
+                        <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        async function handleLogin() {
-            const password = passwordInput.value;
-            if (!password) {
-                showAuthMessage("비밀번호를 입력해주세요.", true);
-                return;
-            }
+    <!-- Firebase SDK 추가 -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+      import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-            loginButton.disabled = true;
-            loginButton.textContent = "로그인 중...";
-            showAuthMessage("테스트 서버에 연결 중입니다...", false);
+      // 1단계에서 복사한 firebaseConfig 정보를 여기에 붙여넣으세요.
+      const firebaseConfig = {
+		apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
+		authDomain: "gtree-f3d92.firebaseapp.com",
+		projectId: "gtree-f3d92",
+		storageBucket: "gtree-f3d92.firebasestorage.app",
+		messagingSenderId: "857408421677",
+		appId: "1:857408421677:web:56b75913c99317f1ae5da4",
+		measurementId: "G-4T4J4KXGNH"
+      };
 
-            try {
-                const response = await fetch('/.netlify/functions/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: password })
-                });
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const adsCollection = collection(db, "ads");
 
-                const result = await response.json();
+      let adList = [];
+      let editingAdId = null; // 이제 ID로 수정할 광고를 찾습니다.
+      let currentImageBase64 = '';
 
-                if (response.ok && result.success) {
-                    // 테스트 성공 시, Firebase 연결 없이 바로 관리자 패널을 보여줍니다.
-                    authContainer.classList.add('hidden');
-                    adminPanel.classList.remove('hidden');
-                } else {
-                    showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
-            } finally {
-                loginButton.disabled = false;
-                loginButton.textContent = "로그인";
-            }
-        }
+      const authContainer = document.getElementById('auth-container');
+      const adminPanel = document.getElementById('admin-panel');
+      const passwordInput = document.getElementById('password-input');
+      const loginButton = document.getElementById('login-button');
+      const authMessage = document.getElementById('auth-message');
+      const adListContainer = document.getElementById('ad-list-container');
+      const addNewAdButton = document.getElementById('add-new-ad-button');
+      
+      const adModal = document.getElementById('ad-modal');
+      const modalTitle = document.getElementById('modal-title');
+      const closeModalButton = document.getElementById('close-modal-button');
+      const adTitleInput = document.getElementById('ad-title');
+      const adDescriptionInput = document.getElementById('ad-description');
+      const adLinkInput = document.getElementById('ad-link');
+      const adImageInput = document.getElementById('ad-image');
+      const saveAdButton = document.getElementById('save-ad-button');
+      const adPreview = document.getElementById('ad-preview');
 
-        function showAuthMessage(message, isError) {
-            authMessage.textContent = message;
-            authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
-            authMessage.classList.remove('hidden');
-        }
+      loginButton.addEventListener('click', handleLogin);
+      passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+      addNewAdButton.addEventListener('click', handleAddNewAd);
+      closeModalButton.addEventListener('click', closeModal);
+      saveAdButton.addEventListener('click', handleSaveAd);
+      [adTitleInput, adDescriptionInput, adLinkInput].forEach(input => input.addEventListener('input', updatePreview));
+      adImageInput.addEventListener('change', handleImageUpload);
+
+      async function handleLogin() {
+          const password = passwordInput.value;
+          if (!password) {
+              showAuthMessage("비밀번호를 입력해주세요.", true);
+              return;
+          }
+
+          loginButton.disabled = true;
+          loginButton.textContent = "로그인 중...";
+          showAuthMessage("비밀번호를 확인 중입니다...", false);
+
+          try {
+              const response = await fetch('/.netlify/functions/login', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ password: password })
+              });
+
+              const result = await response.json();
+
+              if (response.ok && result.success) {
+                  // 서버에서 받은 토큰으로 Firebase에 로그인
+                  await signInWithCustomToken(auth, result.token);
+                  
+                  authContainer.classList.add('hidden');
+                  adminPanel.classList.remove('hidden');
+                  listenToAds(); // 실시간으로 광고 목록 감지 시작
+                  initSortable();
+              } else {
+                  showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
+              }
+          } catch (error) {
+              console.error('Login error:', error);
+              showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
+          } finally {
+              loginButton.disabled = false;
+              loginButton.textContent = "로그인";
+          }
+      }
+      
+      function listenToAds() {
+        const q = query(adsCollection, orderBy("order", "asc"));
+        onSnapshot(q, (querySnapshot) => {
+            adList = [];
+            querySnapshot.forEach((doc) => {
+                adList.push({ id: doc.id, ...doc.data() });
+            });
+            renderAdList();
+        });
+      }
+
+      function showAuthMessage(message, isError) {
+          authMessage.textContent = message;
+          authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
+          authMessage.classList.remove('hidden');
+      }
+
+      function initSortable() {
+          new Sortable(adListContainer, {
+              handle: '.drag-handle',
+              animation: 150,
+              onEnd: async function (evt) {
+                  const movedItem = adList.splice(evt.oldIndex, 1)[0];
+                  adList.splice(evt.newIndex, 0, movedItem);
+                  
+                  // Firestore의 순서를 업데이트하는 로직
+                  const batch = writeBatch(db);
+                  adList.forEach((ad, index) => {
+                      const docRef = doc(db, "ads", ad.id);
+                      batch.update(docRef, { order: index });
+                  });
+                  await batch.commit();
+                  renderAdList();
+              },
+          });
+      }
+
+      function handleImageUpload(event) {
+          const file = event.target.files[0];
+          if (file) {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                  currentImageBase64 = e.target.result;
+                  updatePreview();
+              };
+              reader.readAsDataURL(file);
+          }
+      }
+
+      function renderAdList() {
+          adListContainer.innerHTML = '';
+          if (adList.length === 0) {
+              adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`;
+              return;
+          }
+          adList.forEach((ad, index) => {
+              const adElement = document.createElement('div');
+              adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
+              adElement.dataset.id = ad.id; // Firestore 문서 ID를 저장
+              adElement.innerHTML = `
+                  <div class="flex items-center w-full">
+                      <div class="drag-handle text-slate-400 mr-4 cursor-grab">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                      </div>
+                      <div class="flex-grow flex items-center space-x-4 overflow-hidden">
+                          <img src="${ad.imageUrl || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'}" alt="${ad.title}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">
+                          <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
+                      </div>
+                  </div>
+                  <div class="w-full sm:w-auto flex-shrink-0 flex sm:flex-col justify-end gap-2">
+                      <button class="edit-ad-button text-sm text-sky-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">수정</button>
+                      <button class="delete-ad-button text-sm text-red-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">삭제</button>
+                  </div>
+              `;
+              adListContainer.appendChild(adElement);
+          });
+
+          document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
+          document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
+      }
+
+      function openModal() { adModal.classList.remove('hidden'); }
+      function closeModal() { adModal.classList.add('hidden'); }
+
+      function handleAddNewAd() {
+          editingAdId = null;
+          modalTitle.textContent = "새 광고 추가";
+          adTitleInput.value = '';
+          adDescriptionInput.value = '';
+          adLinkInput.value = '';
+          adImageInput.value = '';
+          currentImageBase64 = '';
+          updatePreview();
+          openModal();
+      }
+
+      function handleEditAd(event) {
+          editingAdId = event.target.dataset.id;
+          const ad = adList.find(ad => ad.id === editingAdId);
+          if (ad) {
+              modalTitle.textContent = "광고 수정";
+              adTitleInput.value = ad.title;
+              adDescriptionInput.value = ad.description;
+              adLinkInput.value = ad.link;
+              adImageInput.value = '';
+              currentImageBase64 = ad.imageUrl || '';
+              updatePreview();
+              openModal();
+          }
+      }
+
+      async function handleDeleteAd(event) {
+          const idToDelete = event.target.dataset.id;
+          const adToDelete = adList.find(ad => ad.id === idToDelete);
+          if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
+              await deleteDoc(doc(db, "ads", idToDelete));
+              // onSnapshot이 자동으로 목록을 다시 렌더링합니다.
+          }
+      }
+
+      async function handleSaveAd() {
+          const newAdData = {
+              isAd: true,
+              title: adTitleInput.value,
+              description: adDescriptionInput.value,
+              link: adLinkInput.value,
+              imageUrl: currentImageBase64,
+              order: editingAdId ? adList.find(ad => ad.id === editingAdId).order : adList.length
+          };
+
+          if (editingAdId) { // 수정
+              const docRef = doc(db, "ads", editingAdId);
+              await updateDoc(docRef, newAdData);
+          } else { // 추가
+              await addDoc(adsCollection, newAdData);
+          }
+          
+          closeModal();
+      }
+
+      function updatePreview() {
+          const title = adTitleInput.value || "광고 제목";
+          const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
+          const link = adLinkInput.value || "#";
+          const imageSrc = currentImageBase64 || 'https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Preview';
+
+          adPreview.innerHTML = `
+              <img src="${imageSrc}" alt="Ad preview" class="w-full h-32 object-cover">
+              <div class="p-6">
+                  <div class="flex justify-between items-start">
+                       <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
+                       <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
+                  </div>
+                  <a href="${link}" onclick="return false;" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${title}</a>
+                  <p class="mt-2 text-slate-600 text-sm">${description}</p>
+                  <div class="mt-4 pt-4 border-t text-right">
+                       <a href="${link}" onclick="return false;" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                  </div>
+              </div>`;
+      }
     </script>
 </body>
 </html>

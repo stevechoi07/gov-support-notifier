@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>광고 관리 페이지 (TESTING)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .drag-handle { cursor: grab; }
+        .sortable-ghost { background: #e0f2fe; opacity: 0.5; }
+        #login-button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="auth-container" class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
+        <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인 (테스트 모드)</h1>
+        <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+        <button id="login-button" class="w-full mt-4 px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">로그인</button>
+        <p id="auth-message" class="text-sm text-center mt-4 hidden"></p>
+    </div>
+
+    <div id="admin-panel" class="hidden w-full max-w-4xl p-4 sm:p-8 bg-white rounded-xl shadow-lg">
+        <h1 class="text-2xl font-bold text-center text-green-600">🎉 테스트 성공!</h1>
+        <p class="text-center mt-4 text-slate-600">
+            서버와의 연결은 정상이지만, Firebase 장비(SDK)에 문제가 있습니다.<br>
+            이 화면이 보인다고 알려주시면, 다음 해결 방법을 안내해 드릴게요!
+        </p>
+        <div class="mt-8 text-center border-t pt-4">
+            <a href="index.html" class="text-sky-600 hover:underline">메인 페이지로 돌아가기 &rarr;</a>
+        </div>
+    </div>
+    
+    <script>
+        const passwordInput = document.getElementById('password-input');
+        const loginButton = document.getElementById('login-button');
+        const authMessage = document.getElementById('auth-message');
+        const authContainer = document.getElementById('auth-container');
+        const adminPanel = document.getElementById('admin-panel');
+
+        loginButton.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+
+        async function handleLogin() {
+            const password = passwordInput.value;
+            if (!password) {
+                showAuthMessage("비밀번호를 입력해주세요.", true);
+                return;
+            }
+
+            loginButton.disabled = true;
+            loginButton.textContent = "로그인 중...";
+            showAuthMessage("테스트 서버에 연결 중입니다...", false);
+
+            try {
+                const response = await fetch('/.netlify/functions/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // 테스트 성공 시, Firebase 연결 없이 바로 관리자 패널을 보여줍니다.
+                    authContainer.classList.add('hidden');
+                    adminPanel.classList.remove('hidden');
+                } else {
+                    showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = "로그인";
+            }
+        }
+
+        function showAuthMessage(message, isError) {
+            authMessage.textContent = message;
+            authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
+            authMessage.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
