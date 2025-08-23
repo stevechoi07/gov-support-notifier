@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.6 - UI 개선</title>
+    <title>정부 지원사업 알리미 v11.7 - 광고 기능 추가</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -13,7 +13,6 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #38bdf8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* --- 디자인 개선 --- */
         .control-button.active { background-color: #0ea5e9; color: white; border-color: #0ea5e9; }
         .favorite-button.favorited { color: #f59e0b; }
         #toast-notification { transition: opacity 0.3s, transform 0.3s; }
@@ -28,7 +27,6 @@
         #keyword-alert-modal { transition: opacity 0.3s; }
         #keyword-alert-modal.hidden { opacity: 0; pointer-events: none; }
         
-        /* 반투명 헤더를 위한 스타일 */
         .sticky-header {
             backdrop-filter: saturate(180%) blur(10px);
             -webkit-backdrop-filter: saturate(180%) blur(10px);
@@ -41,11 +39,10 @@
         
         <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="text-center mb-6">
-                <!-- --- UI 개선: 버전 정보를 h1에서 p 태그로 이동 --- -->
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
                     사용자 경험을 위해 UI를 개선했어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v11.6</span>
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v11.7</span>
                 </p>
             </header>
 
@@ -112,7 +109,6 @@
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
     <script>
-        // JavaScript 로직은 변경되지 않았습니다.
         const INITIAL_LOAD_COUNT = 12;
         const TOTAL_LOAD_COUNT = 500; 
         let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
@@ -122,6 +118,16 @@
         let seenItems = [];
         let isLoadingMore = false;
         let searchTimeout;
+
+        // --- 광고 카드 데이터 (예시) ---
+        const adData = {
+            isAd: true,
+            title: "🚀 창업의 모든 것, 여기서 시작하세요!",
+            description: "사업 계획서 작성부터 투자 유치까지, 전문가의 컨설팅을 받아보세요. 지금 바로 상담 신청!",
+            link: "#",
+            imageUrl: "https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here"
+        };
+
 
         const elements = { 
             statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
@@ -249,6 +255,25 @@
         }
         
         function createItemHTML(item) {
+            // --- 광고 카드 삽입 ---
+            if (item.isAd) {
+                return `
+                <div class="bg-slate-200 rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                             <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
+                             <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
+                        </div>
+                        <a href="${item.link}" target="_blank" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
+                        <p class="mt-2 text-slate-600 text-sm">${item.description}</p>
+                        <div class="mt-4 pt-4 border-t text-right">
+                             <a href="${item.link}" target="_blank" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            // --- 기존 공고 카드 ---
             const dday = calculateDday(item.pbanc_rcpt_end_dt); 
             const isFavorited = favorites.includes(item.pbanc_sn); 
             const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
@@ -302,7 +327,18 @@
             if (currentFilters.category !== 'all') items = items.filter(item => item.supt_biz_clsfc === currentFilters.category); 
             if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
             
-            filteredItems = items; 
+            // --- 광고 카드 삽입 로직 ---
+            const itemsWithAds = [];
+            for (let i = 0; i < items.length; i++) {
+                itemsWithAds.push(items[i]);
+                // 7번째 아이템마다 광고를 추가합니다. (i+1) % 7 === 0
+                if ((i + 1) % 7 === 0) {
+                    itemsWithAds.push(adData);
+                }
+            }
+            filteredItems = itemsWithAds;
+            // --- 로직 끝 ---
+
             visibleItemCount = INITIAL_LOAD_COUNT;
 
             elements.statusContainer.classList.add('hidden'); 
@@ -382,4 +418,4 @@
         function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
     </script>
 </body>
-</html> 
+</html>
