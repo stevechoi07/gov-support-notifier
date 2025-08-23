@@ -120,9 +120,8 @@
     
     <!-- Firebase SDK 추가 -->
     <script type="module">
-      // --- 1. Firestore SDK에서 'where' 함수 추가로 가져오기 ---
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-      import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
@@ -178,11 +177,11 @@
           }
       }
 
-      // --- 2. 광고 데이터 로드 시, ON 상태인 광고만 가져오도록 수정 ---
+      // --- 1. 광고 데이터 로드 방식 수정 (Firebase 색인 문제 해결) ---
       async function loadAdData() {
           try {
-              // where("isActive", "==", true) 조건을 추가하여 ON 상태인 광고만 가져옵니다.
-              const q = query(collection(db, "ads"), where("isActive", "==", true), orderBy("order", "asc"));
+              // 일단 모든 광고를 순서대로 가져옵니다.
+              const q = query(collection(db, "ads"), orderBy("order", "asc"));
               const querySnapshot = await getDocs(q);
               const rawAdData = [];
               querySnapshot.forEach((doc) => {
@@ -191,19 +190,24 @@
 
               const today = new Date().toISOString().split('T')[0];
 
+              // 자바스크립트에서 직접 필터링합니다.
               adDataList = rawAdData.filter(ad => {
+                  // 1. isActive가 false이면 광고 OFF 상태이므로 표시 안함
+                  if (ad.isActive === false) return false;
+
                   const start = ad.startDate;
                   const end = ad.endDate;
+
+                  // 2. 날짜 필터링 (기존 로직 유지)
                   if (!start && !end) return true;
                   if (start && today < start) return false;
                   if (end && today > end) return false;
+                  
                   return true;
               });
 
           } catch (error) {
               console.error("Error loading ads from Firestore:", error);
-              // Firestore에서 색인(index)이 필요하다는 에러가 발생할 수 있습니다.
-              // 콘솔에 나오는 링크를 클릭하여 색인을 생성해주세요.
               adDataList = [];
           }
       }
