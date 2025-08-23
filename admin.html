@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v2.3 (게시일 설정 기능)</title>
+    <title>광고 관리 페이지 v2.4 (ON/OFF 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -93,6 +93,46 @@
             padding: 0.125rem 0.5rem;
             border-radius: 9999px;
         }
+        /* --- 1. 토글 스위치 스타일 추가 --- */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #2563eb;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(16px);
+        }
     </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
@@ -144,7 +184,6 @@
                                 <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
                                 <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
-                            <!-- --- 1. 게시일 설정 UI 추가 --- -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label for="ad-start-date" class="block text-sm font-medium text-slate-600">게시 시작일</label>
@@ -297,7 +336,6 @@
           });
       }
       
-      // --- 2. 광고 상태 뱃지 생성 헬퍼 함수 ---
       function getAdStatus(ad) {
           const today = new Date().toISOString().split('T')[0];
           const start = ad.startDate;
@@ -306,25 +344,23 @@
           if (!start && !end) {
               return `<span class="status-badge bg-slate-200 text-slate-600">상시</span>`;
           }
-
           if (start && today < start) {
               return `<span class="status-badge bg-blue-200 text-blue-600">예정</span>`;
           }
-          
           if (end && today > end) {
               return `<span class="status-badge bg-red-200 text-red-600">종료</span>`;
           }
-
           return `<span class="status-badge bg-green-200 text-green-600">진행중</span>`;
       }
 
-      // --- 3. 광고 목록 렌더링 시 상태 뱃지 및 기간 표시 ---
+      // --- 2. 광고 목록에 토글 스위치 추가 ---
       function renderAdList() {
           adListContainer.innerHTML = '';
           if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`; return; }
           adList.forEach((ad) => {
               const adElement = document.createElement('div');
-              adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
+              // isActive가 false일 때 흐리게 표시
+              adElement.className = `p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4 transition-opacity ${ad.isActive === false ? 'opacity-40' : ''}`;
               adElement.dataset.id = ad.id;
               const mediaIcon = ad.mediaType === 'video' ? '🎬' : '🖼️';
               const clickCount = ad.clickCount || 0;
@@ -332,6 +368,8 @@
               const periodText = (ad.startDate || ad.endDate) 
                 ? `${ad.startDate || '...'} ~ ${ad.endDate || '...'}`
                 : '항상 게시';
+              // isActive 상태에 따라 checked 속성 결정 (undefined일 경우 true로 간주)
+              const isChecked = ad.isActive !== false ? 'checked' : '';
 
               adElement.innerHTML = `
                   <div class="flex items-center w-full">
@@ -342,18 +380,22 @@
                             <p class="font-semibold text-slate-700 truncate flex items-center gap-2">${ad.title} ${statusBadge}</p>
                             <div class="flex items-center text-sm text-slate-500 mt-1 gap-4">
                                 <div class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                     <span>${clickCount}</span>
                                 </div>
                                 <div class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                                     <span>${periodText}</span>
                                 </div>
                             </div>
                           </div>
                       </div>
                   </div>
-                  <div class="w-full sm:w-auto flex-shrink-0 flex sm:flex-col justify-end gap-2">
+                  <div class="w-full sm:w-auto flex-shrink-0 flex items-center sm:flex-col justify-end gap-2">
+                      <label class="toggle-switch">
+                          <input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked}>
+                          <span class="toggle-slider"></span>
+                      </label>
                       <button class="edit-ad-button text-sm text-sky-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">수정</button>
                       <button class="delete-ad-button text-sm text-red-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">삭제</button>
                   </div>`;
@@ -361,6 +403,32 @@
           });
           document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
           document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
+          // --- 3. 토글 스위치에 이벤트 리스너 추가 ---
+          document.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', handleToggleAdStatus));
+      }
+
+      // --- 4. 토글 스위치 상태 변경 처리 함수 ---
+      async function handleToggleAdStatus(event) {
+          const id = event.target.dataset.id;
+          const isActive = event.target.checked;
+          try {
+              const adRef = doc(db, "ads", id);
+              await updateDoc(adRef, { isActive: isActive });
+              // 옵션: 시각적 피드백을 위해 리스트를 다시 렌더링할 수 있으나,
+              // onSnapshot이 실시간으로 반영하므로 필수는 아님.
+              // 여기서는 CSS로 즉각적인 피드백을 줌.
+              const adElement = event.target.closest('[data-id]');
+              if (isActive) {
+                  adElement.classList.remove('opacity-40');
+              } else {
+                  adElement.classList.add('opacity-40');
+              }
+          } catch (error) {
+              console.error("광고 상태 업데이트 실패:", error);
+              alert("상태 변경에 실패했습니다. 다시 시도해주세요.");
+              // 실패 시 토글 상태를 원상 복구
+              event.target.checked = !isActive;
+          }
       }
 
       function handleFileUpload(event) {
@@ -513,7 +581,7 @@
           });
       }
 
-      // --- 4. 저장 데이터에 startDate, endDate 필드 추가 ---
+      // --- 5. 저장 데이터에 isActive 필드 추가 ---
       async function saveDataToFirestore(mediaUrl) {
           const adData = {
               title: adTitleInput.value,
@@ -522,18 +590,22 @@
               isPartners: isPartnersCheckbox.checked,
               mediaUrl: mediaUrl,
               mediaType: currentMediaType,
-              startDate: adStartDateInput.value, // 시작일 저장
-              endDate: adEndDateInput.value,     // 종료일 저장
+              startDate: adStartDateInput.value,
+              endDate: adEndDateInput.value,
           };
 
           if (editingAdId) {
               const existingAd = adList.find(ad => ad.id === editingAdId);
               adData.order = existingAd.order;
               adData.clickCount = existingAd.clickCount || 0;
+              // 수정 시에는 기존 isActive 값을 유지
+              adData.isActive = existingAd.isActive !== false;
               await updateDoc(doc(db, "ads", editingAdId), adData);
           } else {
               adData.order = adList.length;
               adData.clickCount = 0;
+              // 새 광고는 기본적으로 ON 상태
+              adData.isActive = true; 
               await addDoc(adsCollection, adData);
           }
       }
@@ -544,8 +616,6 @@
               adTitleInput.focus();
               return;
           }
-
-          // 시작일이 종료일보다 늦으면 안됨
           if (adStartDateInput.value && adEndDateInput.value && adStartDateInput.value > adEndDateInput.value) {
               alert('게시 종료일은 시작일보다 빠를 수 없습니다.');
               return;

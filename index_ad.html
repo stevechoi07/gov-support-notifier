@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v12.4 - 게시일 설정 기능</title>
+    <title>정부 지원사업 알리미 v12.5 - ON/OFF 기능</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -53,7 +53,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
                     이제 동영상 광고도 볼 수 있어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.4</span>
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.5</span>
                 </p>
             </header>
 
@@ -120,8 +120,9 @@
     
     <!-- Firebase SDK 추가 -->
     <script type="module">
+      // --- 1. Firestore SDK에서 'where' 함수 추가로 가져오기 ---
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-      import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
@@ -177,39 +178,32 @@
           }
       }
 
-      // --- 1. 광고 데이터 로드 시, 날짜 필터링 기능 추가 ---
+      // --- 2. 광고 데이터 로드 시, ON 상태인 광고만 가져오도록 수정 ---
       async function loadAdData() {
           try {
-              const q = query(collection(db, "ads"), orderBy("order", "asc"));
+              // where("isActive", "==", true) 조건을 추가하여 ON 상태인 광고만 가져옵니다.
+              const q = query(collection(db, "ads"), where("isActive", "==", true), orderBy("order", "asc"));
               const querySnapshot = await getDocs(q);
               const rawAdData = [];
               querySnapshot.forEach((doc) => {
                   rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
               });
 
-              // 오늘 날짜를 'YYYY-MM-DD' 형식으로 가져옵니다.
               const today = new Date().toISOString().split('T')[0];
 
-              // 필터링: 오늘 날짜에 맞는 광고만 adDataList에 추가합니다.
               adDataList = rawAdData.filter(ad => {
                   const start = ad.startDate;
                   const end = ad.endDate;
-
-                  // 1. 시작일과 종료일이 모두 없으면 항상 게시 (true)
                   if (!start && !end) return true;
-
-                  // 2. 시작일이 있고, 오늘이 시작일 전이면 게시 안 함 (false)
                   if (start && today < start) return false;
-
-                  // 3. 종료일이 있고, 오늘이 종료일 후면 게시 안 함 (false)
                   if (end && today > end) return false;
-
-                  // 위의 조건에 걸리지 않으면 모두 게시 (true)
                   return true;
               });
 
           } catch (error) {
               console.error("Error loading ads from Firestore:", error);
+              // Firestore에서 색인(index)이 필요하다는 에러가 발생할 수 있습니다.
+              // 콘솔에 나오는 링크를 클릭하여 색인을 생성해주세요.
               adDataList = [];
           }
       }
