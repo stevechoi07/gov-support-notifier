@@ -3,22 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지</title>
+    <title>광고 관리 페이지 - Firestore</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- SortableJS 라이브러리 추가 -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; }
         .drag-handle { cursor: grab; }
-        .sortable-ghost {
-            background: #e0f2fe;
-            opacity: 0.5;
-        }
-        #login-button:disabled {
-            background-color: #94a3b8;
-            cursor: not-allowed;
-        }
+        .sortable-ghost { background: #e0f2fe; opacity: 0.5; }
+        #login-button:disabled { background-color: #94a3b8; cursor: not-allowed; }
     </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
@@ -37,7 +30,7 @@
         </div>
         
         <div id="ad-list-container" class="space-y-4">
-            <!-- 광고 목록이 여기에 표시됩니다. -->
+            <!-- Firestore에서 불러온 광고 목록이 여기에 표시됩니다. -->
         </div>
 
         <div class="mt-8 text-center border-t pt-4">
@@ -76,234 +69,265 @@
                     </div>
                     <div class="mt-4 md:mt-0">
                         <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
-                        <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative">
-                            <!-- 미리보기 내용은 JS로 채워집니다 -->
-                        </div>
+                        <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Firebase SDK 추가 -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+      import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-    <script>
-        let adList = [];
-        let editingAdIndex = -1;
-        let currentImageBase64 = '';
+      // 1단계에서 복사한 firebaseConfig 정보를 여기에 붙여넣으세요.
+      const firebaseConfig = {
+		apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
+		authDomain: "gtree-f3d92.firebaseapp.com",
+		projectId: "gtree-f3d92",
+		storageBucket: "gtree-f3d92.firebasestorage.app",
+		messagingSenderId: "857408421677",
+		appId: "1:857408421677:web:56b75913c99317f1ae5da4",
+		measurementId: "G-4T4J4KXGNH"
+      };
 
-        const authContainer = document.getElementById('auth-container');
-        const adminPanel = document.getElementById('admin-panel');
-        const passwordInput = document.getElementById('password-input');
-        const loginButton = document.getElementById('login-button');
-        const authMessage = document.getElementById('auth-message');
-        const adListContainer = document.getElementById('ad-list-container');
-        const addNewAdButton = document.getElementById('add-new-ad-button');
-        
-        const adModal = document.getElementById('ad-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const closeModalButton = document.getElementById('close-modal-button');
-        const adTitleInput = document.getElementById('ad-title');
-        const adDescriptionInput = document.getElementById('ad-description');
-        const adLinkInput = document.getElementById('ad-link');
-        const adImageInput = document.getElementById('ad-image');
-        const saveAdButton = document.getElementById('save-ad-button');
-        const adPreview = document.getElementById('ad-preview');
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const adsCollection = collection(db, "ads");
 
-        loginButton.addEventListener('click', handleLogin);
-        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
-        addNewAdButton.addEventListener('click', handleAddNewAd);
-        closeModalButton.addEventListener('click', closeModal);
-        saveAdButton.addEventListener('click', handleSaveAd);
-        [adTitleInput, adDescriptionInput, adLinkInput].forEach(input => input.addEventListener('input', updatePreview));
-        adImageInput.addEventListener('change', handleImageUpload);
+      let adList = [];
+      let editingAdId = null; // 이제 ID로 수정할 광고를 찾습니다.
+      let currentImageBase64 = '';
 
-        async function handleLogin() {
-            const password = passwordInput.value;
-            if (!password) {
-                showAuthMessage("비밀번호를 입력해주세요.", true);
-                return;
-            }
+      const authContainer = document.getElementById('auth-container');
+      const adminPanel = document.getElementById('admin-panel');
+      const passwordInput = document.getElementById('password-input');
+      const loginButton = document.getElementById('login-button');
+      const authMessage = document.getElementById('auth-message');
+      const adListContainer = document.getElementById('ad-list-container');
+      const addNewAdButton = document.getElementById('add-new-ad-button');
+      
+      const adModal = document.getElementById('ad-modal');
+      const modalTitle = document.getElementById('modal-title');
+      const closeModalButton = document.getElementById('close-modal-button');
+      const adTitleInput = document.getElementById('ad-title');
+      const adDescriptionInput = document.getElementById('ad-description');
+      const adLinkInput = document.getElementById('ad-link');
+      const adImageInput = document.getElementById('ad-image');
+      const saveAdButton = document.getElementById('save-ad-button');
+      const adPreview = document.getElementById('ad-preview');
 
-            loginButton.disabled = true;
-            loginButton.textContent = "로그인 중...";
-            showAuthMessage("비밀번호를 확인 중입니다...", false);
+      loginButton.addEventListener('click', handleLogin);
+      passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+      addNewAdButton.addEventListener('click', handleAddNewAd);
+      closeModalButton.addEventListener('click', closeModal);
+      saveAdButton.addEventListener('click', handleSaveAd);
+      [adTitleInput, adDescriptionInput, adLinkInput].forEach(input => input.addEventListener('input', updatePreview));
+      adImageInput.addEventListener('change', handleImageUpload);
 
-            try {
-                const response = await fetch('/.netlify/functions/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: password })
-                });
+      async function handleLogin() {
+          const password = passwordInput.value;
+          if (!password) {
+              showAuthMessage("비밀번호를 입력해주세요.", true);
+              return;
+          }
 
-                const result = await response.json();
+          loginButton.disabled = true;
+          loginButton.textContent = "로그인 중...";
+          showAuthMessage("비밀번호를 확인 중입니다...", false);
 
-                if (response.ok && result.success) {
-                    authContainer.classList.add('hidden');
-                    adminPanel.classList.remove('hidden');
-                    loadAdList();
-                    renderAdList();
-                    initSortable();
-                } else {
-                    showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
-            } finally {
-                loginButton.disabled = false;
-                loginButton.textContent = "로그인";
-            }
-        }
+          try {
+              const response = await fetch('/.netlify/functions/login', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ password: password })
+              });
 
-        function showAuthMessage(message, isError) {
-            authMessage.textContent = message;
-            authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
-            authMessage.classList.remove('hidden');
-        }
+              const result = await response.json();
 
-        function initSortable() {
-            new Sortable(adListContainer, {
-                handle: '.drag-handle',
-                animation: 150,
-                onEnd: function (evt) {
-                    const movedItem = adList.splice(evt.oldIndex, 1)[0];
-                    adList.splice(evt.newIndex, 0, movedItem);
-                    saveAdList();
-                    renderAdList();
-                },
+              if (response.ok && result.success) {
+                  // 서버에서 받은 토큰으로 Firebase에 로그인
+                  await signInWithCustomToken(auth, result.token);
+                  
+                  authContainer.classList.add('hidden');
+                  adminPanel.classList.remove('hidden');
+                  listenToAds(); // 실시간으로 광고 목록 감지 시작
+                  initSortable();
+              } else {
+                  showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
+              }
+          } catch (error) {
+              console.error('Login error:', error);
+              showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
+          } finally {
+              loginButton.disabled = false;
+              loginButton.textContent = "로그인";
+          }
+      }
+      
+      function listenToAds() {
+        const q = query(adsCollection, orderBy("order", "asc"));
+        onSnapshot(q, (querySnapshot) => {
+            adList = [];
+            querySnapshot.forEach((doc) => {
+                adList.push({ id: doc.id, ...doc.data() });
             });
-        }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    currentImageBase64 = e.target.result;
-                    updatePreview();
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function loadAdList() {
-            const savedAdList = localStorage.getItem('adDataList');
-            adList = savedAdList ? JSON.parse(savedAdList) : [];
-        }
-
-        function saveAdList() {
-            localStorage.setItem('adDataList', JSON.stringify(adList));
-        }
-
-        function renderAdList() {
-            adListContainer.innerHTML = '';
-            if (adList.length === 0) {
-                adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`;
-                return;
-            }
-            adList.forEach((ad, index) => {
-                const adElement = document.createElement('div');
-                // --- UX 개선: 모바일에서는 세로, 데스크톱에서는 가로로 배치 ---
-                adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
-                adElement.innerHTML = `
-                    <div class="flex items-center w-full">
-                        <div class="drag-handle text-slate-400 mr-4 cursor-grab">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                        </div>
-                        <div class="flex-grow flex items-center space-x-4 overflow-hidden">
-                            <img src="${ad.imageUrl || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'}" alt="${ad.title}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">
-                            <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
-                        </div>
-                    </div>
-                    <div class="w-full sm:w-auto flex-shrink-0 flex sm:flex-col justify-end gap-2">
-                        <button class="edit-ad-button text-sm text-sky-600 hover:underline px-3 py-1 bg-white rounded-md border" data-index="${index}">수정</button>
-                        <button class="delete-ad-button text-sm text-red-600 hover:underline px-3 py-1 bg-white rounded-md border" data-index="${index}">삭제</button>
-                    </div>
-                `;
-                adListContainer.appendChild(adElement);
-            });
-
-            document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
-            document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
-        }
-
-        function openModal() { adModal.classList.remove('hidden'); }
-        function closeModal() { adModal.classList.add('hidden'); }
-
-        function handleAddNewAd() {
-            editingAdIndex = -1;
-            modalTitle.textContent = "새 광고 추가";
-            adTitleInput.value = '';
-            adDescriptionInput.value = '';
-            adLinkInput.value = '';
-            adImageInput.value = '';
-            currentImageBase64 = '';
-            updatePreview();
-            openModal();
-        }
-
-        function handleEditAd(event) {
-            editingAdIndex = parseInt(event.target.dataset.index);
-            const ad = adList[editingAdIndex];
-            modalTitle.textContent = "광고 수정";
-            adTitleInput.value = ad.title;
-            adDescriptionInput.value = ad.description;
-            adLinkInput.value = ad.link;
-            adImageInput.value = '';
-            currentImageBase64 = ad.imageUrl || '';
-            updatePreview();
-            openModal();
-        }
-
-        function handleDeleteAd(event) {
-            const indexToDelete = parseInt(event.target.dataset.index);
-            if (confirm(`'${adList[indexToDelete].title}' 광고를 정말 삭제하시겠습니까?`)) {
-                adList.splice(indexToDelete, 1);
-                saveAdList();
-                renderAdList();
-            }
-        }
-
-        function handleSaveAd() {
-            const newAdData = {
-                isAd: true,
-                title: adTitleInput.value,
-                description: adDescriptionInput.value,
-                link: adLinkInput.value,
-                imageUrl: currentImageBase64
-            };
-
-            if (editingAdIndex === -1) {
-                adList.push(newAdData);
-            } else {
-                adList[editingAdIndex] = newAdData;
-            }
-            
-            saveAdList();
             renderAdList();
-            closeModal();
-        }
+        });
+      }
 
-        function updatePreview() {
-            const title = adTitleInput.value || "광고 제목";
-            const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
-            const link = adLinkInput.value || "#";
-            const imageSrc = currentImageBase64 || 'https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Preview';
+      function showAuthMessage(message, isError) {
+          authMessage.textContent = message;
+          authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
+          authMessage.classList.remove('hidden');
+      }
 
-            adPreview.innerHTML = `
-                <img src="${imageSrc}" alt="Ad preview" class="w-full h-32 object-cover">
-                <div class="p-6">
-                    <div class="flex justify-between items-start">
-                         <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
-                         <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
-                    </div>
-                    <a href="${link}" onclick="return false;" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${title}</a>
-                    <p class="mt-2 text-slate-600 text-sm">${description}</p>
-                    <div class="mt-4 pt-4 border-t text-right">
-                         <a href="${link}" onclick="return false;" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
-                    </div>
-                </div>`;
-        }
+      function initSortable() {
+          new Sortable(adListContainer, {
+              handle: '.drag-handle',
+              animation: 150,
+              onEnd: async function (evt) {
+                  const movedItem = adList.splice(evt.oldIndex, 1)[0];
+                  adList.splice(evt.newIndex, 0, movedItem);
+                  
+                  // Firestore의 순서를 업데이트하는 로직
+                  const batch = writeBatch(db);
+                  adList.forEach((ad, index) => {
+                      const docRef = doc(db, "ads", ad.id);
+                      batch.update(docRef, { order: index });
+                  });
+                  await batch.commit();
+                  renderAdList();
+              },
+          });
+      }
+
+      function handleImageUpload(event) {
+          const file = event.target.files[0];
+          if (file) {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                  currentImageBase64 = e.target.result;
+                  updatePreview();
+              };
+              reader.readAsDataURL(file);
+          }
+      }
+
+      function renderAdList() {
+          adListContainer.innerHTML = '';
+          if (adList.length === 0) {
+              adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`;
+              return;
+          }
+          adList.forEach((ad, index) => {
+              const adElement = document.createElement('div');
+              adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
+              adElement.dataset.id = ad.id; // Firestore 문서 ID를 저장
+              adElement.innerHTML = `
+                  <div class="flex items-center w-full">
+                      <div class="drag-handle text-slate-400 mr-4 cursor-grab">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                      </div>
+                      <div class="flex-grow flex items-center space-x-4 overflow-hidden">
+                          <img src="${ad.imageUrl || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'}" alt="${ad.title}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">
+                          <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
+                      </div>
+                  </div>
+                  <div class="w-full sm:w-auto flex-shrink-0 flex sm:flex-col justify-end gap-2">
+                      <button class="edit-ad-button text-sm text-sky-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">수정</button>
+                      <button class="delete-ad-button text-sm text-red-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">삭제</button>
+                  </div>
+              `;
+              adListContainer.appendChild(adElement);
+          });
+
+          document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
+          document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
+      }
+
+      function openModal() { adModal.classList.remove('hidden'); }
+      function closeModal() { adModal.classList.add('hidden'); }
+
+      function handleAddNewAd() {
+          editingAdId = null;
+          modalTitle.textContent = "새 광고 추가";
+          adTitleInput.value = '';
+          adDescriptionInput.value = '';
+          adLinkInput.value = '';
+          adImageInput.value = '';
+          currentImageBase64 = '';
+          updatePreview();
+          openModal();
+      }
+
+      function handleEditAd(event) {
+          editingAdId = event.target.dataset.id;
+          const ad = adList.find(ad => ad.id === editingAdId);
+          if (ad) {
+              modalTitle.textContent = "광고 수정";
+              adTitleInput.value = ad.title;
+              adDescriptionInput.value = ad.description;
+              adLinkInput.value = ad.link;
+              adImageInput.value = '';
+              currentImageBase64 = ad.imageUrl || '';
+              updatePreview();
+              openModal();
+          }
+      }
+
+      async function handleDeleteAd(event) {
+          const idToDelete = event.target.dataset.id;
+          const adToDelete = adList.find(ad => ad.id === idToDelete);
+          if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
+              await deleteDoc(doc(db, "ads", idToDelete));
+              // onSnapshot이 자동으로 목록을 다시 렌더링합니다.
+          }
+      }
+
+      async function handleSaveAd() {
+          const newAdData = {
+              isAd: true,
+              title: adTitleInput.value,
+              description: adDescriptionInput.value,
+              link: adLinkInput.value,
+              imageUrl: currentImageBase64,
+              order: editingAdId ? adList.find(ad => ad.id === editingAdId).order : adList.length
+          };
+
+          if (editingAdId) { // 수정
+              const docRef = doc(db, "ads", editingAdId);
+              await updateDoc(docRef, newAdData);
+          } else { // 추가
+              await addDoc(adsCollection, newAdData);
+          }
+          
+          closeModal();
+      }
+
+      function updatePreview() {
+          const title = adTitleInput.value || "광고 제목";
+          const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
+          const link = adLinkInput.value || "#";
+          const imageSrc = currentImageBase64 || 'https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Preview';
+
+          adPreview.innerHTML = `
+              <img src="${imageSrc}" alt="Ad preview" class="w-full h-32 object-cover">
+              <div class="p-6">
+                  <div class="flex justify-between items-start">
+                       <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
+                       <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
+                  </div>
+                  <a href="${link}" onclick="return false;" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${title}</a>
+                  <p class="mt-2 text-slate-600 text-sm">${description}</p>
+                  <div class="mt-4 pt-4 border-t text-right">
+                       <a href="${link}" onclick="return false;" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                  </div>
+              </div>`;
+      }
     </script>
 </body>
 </html>

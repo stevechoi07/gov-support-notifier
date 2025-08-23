@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.11_AD_Admin</title>
-    <!-- Tailwind CSS -->
+    <title>정부 지원사업 알리미 v12 - Firestore 연동</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #38bdf8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .control-button.active { background-color: #0ea5e9; color: white; border-color: #0ea5e9; }
         .favorite-button.favorited { color: #f59e0b; }
         #toast-notification { transition: opacity 0.3s, transform 0.3s; }
@@ -26,7 +23,6 @@
         #collapsible-filters.expanded { max-height: 1000px; }
         #keyword-alert-modal { transition: opacity 0.3s; }
         #keyword-alert-modal.hidden { opacity: 0; pointer-events: none; }
-        
         .sticky-header {
             backdrop-filter: saturate(180%) blur(10px);
             -webkit-backdrop-filter: saturate(180%) blur(10px);
@@ -41,16 +37,16 @@
             <header class="text-center mb-6">
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
-                    관리자 로그인이 더 안전해졌어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v11.11_AD_Admin</span>
+                    데이터베이스를 연동하여 더욱 강력해졌어요!
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.0</span>
                 </p>
             </header>
 
+            <!-- 필터 및 검색 UI (변경 없음) -->
             <div class="relative flex-grow mb-4">
                 <input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                 <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
-            
             <div id="collapsible-filters" class="space-y-4">
                 <div class="grid grid-cols-2 gap-4 pt-4 border-t">
                     <div>
@@ -66,7 +62,6 @@
                         </select>
                     </div>
                 </div>
-                
                 <div class="pt-4 border-t">
                      <h3 class="text-sm font-semibold text-slate-500 mb-2">키워드 알림 설정 (방문 시 알림)</h3>
                      <div class="flex gap-2">
@@ -75,20 +70,16 @@
                      </div>
                      <div id="keyword-tags-container" class="flex flex-wrap gap-2 mt-2 min-h-[34px]"></div>
                 </div>
-
                 <div id="active-filters-container" class="flex flex-wrap gap-2 items-center pt-4 border-t min-h-[41px]"></div>
-
                 <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
                     <button data-sort="default" class="control-button active px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">기본순</button>
                     <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
                     <button id="favorites-toggle" class="control-button w-full sm:w-auto px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500 shadow-md transition-colors">☆ 즐겨찾기 보기</button>
                 </div>
             </div>
-
             <div class="text-center border-t pt-4 mt-4">
                 <button id="toggle-filters-button" class="text-sm font-semibold text-sky-600 hover:underline">상세 필터 보기 ▼</button>
             </div>
-            
             <div class="mt-4 text-center">
                  <button id="compare-button" class="control-button w-full px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
             </div>
@@ -107,67 +98,96 @@
         </footer>
     </div>
 
+    <!-- 모달 UI (변경 없음) -->
     <div id="comparison-modal" class="fixed inset-0 z-50 hidden"><div id="comparison-modal-bg" class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white rounded-lg shadow-xl m-4 md:m-8 max-w-6xl mx-auto max-h-[90vh] flex flex-col"><div class="flex justify-between items-center p-4 border-b"><h2 class="text-xl font-bold">지원사업 비교하기</h2><button id="close-modal-button" class="text-2xl">&times;</button></div><div id="comparison-content" class="p-4 overflow-auto"></div></div></div>
     <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
-    <script>
-        const INITIAL_LOAD_COUNT = 12;
-        const TOTAL_LOAD_COUNT = 500; 
-        let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
-        let visibleItemCount = 12;
-        let currentFilters = { searchTerm: '', region: 'all', category: 'all', sort: 'default', showFavorites: false };
-        let alertKeywords = [];
-        let seenItems = [];
-        let isLoadingMore = false;
-        let searchTimeout;
-        let adDataList = [];
+    <!-- Firebase SDK 추가 -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-        const elements = { 
-            statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
-            regionSelect: document.getElementById('region-select'), 
-            categorySelect: document.getElementById('category-select'), 
-            activeFiltersContainer: document.getElementById('active-filters-container'), favoritesToggle: document.getElementById('favorites-toggle'), compareButton: document.getElementById('compare-button'), 
-            loadMoreSpinner: document.getElementById('load-more-spinner'),
-            modal: document.getElementById('comparison-modal'), modalBg: document.getElementById('comparison-modal-bg'), closeModalButton: document.getElementById('close-modal-button'), comparisonContent: document.getElementById('comparison-content'), toast: document.getElementById('toast-notification'), toggleFiltersButton: document.getElementById('toggle-filters-button'), collapsibleFilters: document.getElementById('collapsible-filters'),
-            keywordInput: document.getElementById('keyword-input'), addKeywordButton: document.getElementById('add-keyword-button'), keywordTagsContainer: document.getElementById('keyword-tags-container'), keywordAlertModal: document.getElementById('keyword-alert-modal'), keywordAlertContent: document.getElementById('keyword-alert-content'), closeKeywordAlertButton: document.getElementById('close-keyword-alert-button')
-        };
+      // 1단계에서 복사한 firebaseConfig 정보를 여기에 붙여넣으세요.
+      const firebaseConfig = {
+		apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
+		authDomain: "gtree-f3d92.firebaseapp.com",
+		projectId: "gtree-f3d92",
+		storageBucket: "gtree-f3d92.firebasestorage.app",
+		messagingSenderId: "857408421677",
+		appId: "1:857408421677:web:56b75913c99317f1ae5da4",
+		measurementId: "G-4T4J4KXGNH"
+      };
 
-        document.addEventListener('DOMContentLoaded', initialize);
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
 
-        async function initialize() {
-            loadAdData();
-            favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-            alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
-            seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
-            addEventListeners();
-            renderAlertKeywords();
-            
-            const fullData = await fetchData(TOTAL_LOAD_COUNT);
-            if (fullData) {
-                allApiData = fullData;
-                await populateFilters();
-                applyFiltersAndRender();
-                checkNewItemsForKeywords();
-            }
-        }
+      // --- 기존 JavaScript 코드 시작 ---
+      const INITIAL_LOAD_COUNT = 12;
+      const TOTAL_LOAD_COUNT = 500; 
+      let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
+      let visibleItemCount = 12;
+      let currentFilters = { searchTerm: '', region: 'all', category: 'all', sort: 'default', showFavorites: false };
+      let alertKeywords = [];
+      let seenItems = [];
+      let isLoadingMore = false;
+      let searchTimeout;
+      let adDataList = [];
 
-        function loadAdData() {
-            const savedAdList = localStorage.getItem('adDataList');
-            if (savedAdList) {
-                adDataList = JSON.parse(savedAdList);
-            } else {
-                adDataList = [{
-                    isAd: true,
-                    title: "🚀 창업의 모든 것, 여기서 시작하세요!",
-                    description: "사업 계획서 작성부터 투자 유치까지, 전문가의 컨설팅을 받아보세요.",
-                    link: "#",
-                    imageUrl: ""
-                }];
-            }
-        }
-        
-        async function fetchData(perPage) {
+      const elements = { 
+          statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
+          regionSelect: document.getElementById('region-select'), 
+          categorySelect: document.getElementById('category-select'), 
+          activeFiltersContainer: document.getElementById('active-filters-container'), favoritesToggle: document.getElementById('favorites-toggle'), compareButton: document.getElementById('compare-button'), 
+          loadMoreSpinner: document.getElementById('load-more-spinner'),
+          modal: document.getElementById('comparison-modal'), modalBg: document.getElementById('comparison-modal-bg'), closeModalButton: document.getElementById('close-modal-button'), comparisonContent: document.getElementById('comparison-content'), toast: document.getElementById('toast-notification'), toggleFiltersButton: document.getElementById('toggle-filters-button'), collapsibleFilters: document.getElementById('collapsible-filters'),
+          keywordInput: document.getElementById('keyword-input'), addKeywordButton: document.getElementById('add-keyword-button'), keywordTagsContainer: document.getElementById('keyword-tags-container'), keywordAlertModal: document.getElementById('keyword-alert-modal'), keywordAlertContent: document.getElementById('keyword-alert-content'), closeKeywordAlertButton: document.getElementById('close-keyword-alert-button')
+      };
+
+      document.addEventListener('DOMContentLoaded', initialize);
+
+      async function initialize() {
+          await loadAdData(); // Firestore에서 광고 데이터 로드
+          favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+          alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
+          seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
+          addEventListeners();
+          renderAlertKeywords();
+          
+          const fullData = await fetchData(TOTAL_LOAD_COUNT);
+          if (fullData) {
+              allApiData = fullData;
+              await populateFilters();
+              applyFiltersAndRender();
+              checkNewItemsForKeywords();
+          }
+      }
+
+      // Firestore에서 광고 데이터를 불러오도록 수정
+      async function loadAdData() {
+          try {
+              const q = query(collection(db, "ads"), orderBy("order", "asc"));
+              const querySnapshot = await getDocs(q);
+              adDataList = [];
+              querySnapshot.forEach((doc) => {
+                  adDataList.push(doc.data());
+              });
+          } catch (error) {
+              console.error("Error loading ads from Firestore:", error);
+              // 에러 발생 시 기본 광고 사용
+              adDataList = [{
+                  isAd: true,
+                  title: "🚀 광고를 불러오지 못했습니다.",
+                  description: "관리자에게 문의해주세요.",
+                  link: "#",
+                  imageUrl: ""
+              }];
+          }
+      }
+      
+      // 이하 JavaScript 코드는 v11.11과 대부분 동일합니다.
+      // (fetchData, populateFilters, event listeners, createItemHTML 등...)
+      async function fetchData(perPage) {
             const backendApiUrl = `/.netlify/functions/get-support-data?perPage=${perPage}`;
             try {
                 const response = await fetch(backendApiUrl);
