@@ -42,7 +42,7 @@
                 </p>
             </header>
 
-            <!-- 필터 및 검색 UI (변경 없음) -->
+            <!-- 필터 및 검색 UI -->
             <div class="relative flex-grow mb-4">
                 <input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                 <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -98,7 +98,7 @@
         </footer>
     </div>
 
-    <!-- 모달 UI (변경 없음) -->
+    <!-- 모달 UI -->
     <div id="comparison-modal" class="fixed inset-0 z-50 hidden"><div id="comparison-modal-bg" class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white rounded-lg shadow-xl m-4 md:m-8 max-w-6xl mx-auto max-h-[90vh] flex flex-col"><div class="flex justify-between items-center p-4 border-b"><h2 class="text-xl font-bold">지원사업 비교하기</h2><button id="close-modal-button" class="text-2xl">&times;</button></div><div id="comparison-content" class="p-4 overflow-auto"></div></div></div>
     <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
@@ -108,21 +108,21 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-      // 1단계에서 복사한 firebaseConfig 정보를 여기에 붙여넣으세요.
+      // ⭐️ 여기에 본인의 Firebase 프로젝트 설정 정보를 붙여넣으세요!
       const firebaseConfig = {
-		apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
-		authDomain: "gtree-f3d92.firebaseapp.com",
-		projectId: "gtree-f3d92",
-		storageBucket: "gtree-f3d92.firebasestorage.app",
-		messagingSenderId: "857408421677",
-		appId: "1:857408421677:web:56b75913c99317f1ae5da4",
-		measurementId: "G-4T4J4KXGNH"
+        apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
+        authDomain: "gtree-f3d92.firebaseapp.com",
+        projectId: "gtree-f3d92",
+        storageBucket: "gtree-f3d92.firebasestorage.app",
+        messagingSenderId: "857408421677",
+        appId: "1:857408421677:web:56b75913c99317f1ae5da4",
+        measurementId: "G-4T4J4KXGNH"
       };
 
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      // --- 기존 JavaScript 코드 시작 ---
+      // --- JavaScript 코드 시작 ---
       const INITIAL_LOAD_COUNT = 12;
       const TOTAL_LOAD_COUNT = 500; 
       let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
@@ -147,7 +147,7 @@
       document.addEventListener('DOMContentLoaded', initialize);
 
       async function initialize() {
-          await loadAdData(); // Firestore에서 광고 데이터 로드
+          await loadAdData();
           favorites = JSON.parse(localStorage.getItem('favorites')) || [];
           alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
           seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
@@ -163,7 +163,6 @@
           }
       }
 
-      // Firestore에서 광고 데이터를 불러오도록 수정
       async function loadAdData() {
           try {
               const q = query(collection(db, "ads"), orderBy("order", "asc"));
@@ -174,19 +173,10 @@
               });
           } catch (error) {
               console.error("Error loading ads from Firestore:", error);
-              // 에러 발생 시 기본 광고 사용
-              adDataList = [{
-                  isAd: true,
-                  title: "🚀 광고를 불러오지 못했습니다.",
-                  description: "관리자에게 문의해주세요.",
-                  link: "#",
-                  imageUrl: ""
-              }];
+              adDataList = [];
           }
       }
       
-      // 이하 JavaScript 코드는 v11.11과 대부분 동일합니다.
-      // (fetchData, populateFilters, event listeners, createItemHTML 등...)
       async function fetchData(perPage) {
             const backendApiUrl = `/.netlify/functions/get-support-data?perPage=${perPage}`;
             try {
@@ -453,4 +443,4 @@
         function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
     </script>
 </body>
-</html>
+</html> 
