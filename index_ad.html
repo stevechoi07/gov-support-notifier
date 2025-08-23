@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v12.3 - 클릭 카운트 기능</title>
+    <title>정부 지원사업 알리미 v12.4 - 게시일 설정 기능</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -53,7 +53,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
                     이제 동영상 광고도 볼 수 있어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.3</span>
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.4</span>
                 </p>
             </header>
 
@@ -120,7 +120,6 @@
     
     <!-- Firebase SDK 추가 -->
     <script type="module">
-      // --- 1. Firestore SDK에서 필요한 함수들 추가로 가져오기 ---
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
@@ -178,16 +177,37 @@
           }
       }
 
-      // --- 2. 광고 데이터 불러올 때 문서 ID도 함께 저장 (오류 수정) ---
+      // --- 1. 광고 데이터 로드 시, 날짜 필터링 기능 추가 ---
       async function loadAdData() {
           try {
               const q = query(collection(db, "ads"), orderBy("order", "asc"));
               const querySnapshot = await getDocs(q);
-              adDataList = [];
+              const rawAdData = [];
               querySnapshot.forEach((doc) => {
-                  // isAd: true 속성을 추가해서 광고 데이터임을 명확히 표시합니다.
-                  adDataList.push({ id: doc.id, ...doc.data(), isAd: true });
+                  rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
               });
+
+              // 오늘 날짜를 'YYYY-MM-DD' 형식으로 가져옵니다.
+              const today = new Date().toISOString().split('T')[0];
+
+              // 필터링: 오늘 날짜에 맞는 광고만 adDataList에 추가합니다.
+              adDataList = rawAdData.filter(ad => {
+                  const start = ad.startDate;
+                  const end = ad.endDate;
+
+                  // 1. 시작일과 종료일이 모두 없으면 항상 게시 (true)
+                  if (!start && !end) return true;
+
+                  // 2. 시작일이 있고, 오늘이 시작일 전이면 게시 안 함 (false)
+                  if (start && today < start) return false;
+
+                  // 3. 종료일이 있고, 오늘이 종료일 후면 게시 안 함 (false)
+                  if (end && today > end) return false;
+
+                  // 위의 조건에 걸리지 않으면 모두 게시 (true)
+                  return true;
+              });
+
           } catch (error) {
               console.error("Error loading ads from Firestore:", error);
               adDataList = [];
@@ -241,7 +261,6 @@
             }
         }
 
-      // --- 3. 광고 클릭을 처리하는 이벤트 리스너 추가 ---
       function addEventListeners() {
             window.addEventListener('scroll', handleScroll);
             elements.searchInput.addEventListener('input', e => {
@@ -259,19 +278,17 @@
             elements.resultsContainer.addEventListener('click', e => {
                 const target = e.target;
                 
-                // 광고 카드 링크 클릭 처리 (문지기 기능!)
                 const adLink = target.closest('.ad-link');
                 if (adLink) {
-                    e.preventDefault(); // 1. 일단 원래 링크로 가는 행동을 멈춰!
+                    e.preventDefault();
                     const adId = adLink.dataset.id;
                     const adUrl = adLink.href;
                     if (adId) {
-                        handleAdClick(adId); // 2. 우리 할 일(클릭 수 올리기) 먼저 하고
+                        handleAdClick(adId);
                     }
-                    window.open(adUrl, '_blank'); // 3. 원래 가려던 곳으로 보내주기
+                    window.open(adUrl, '_blank');
                 }
 
-                // 기존 버튼들 처리
                 const button = target.closest('button');
                 if (button) {
                     if (button.classList.contains('favorite-button')) toggleFavorite(button);
@@ -292,11 +309,9 @@
             elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
         }
 
-      // --- 4. 광고 클릭 시 카운트를 1 증가시키는 함수 ---
       async function handleAdClick(adId) {
           try {
               const adRef = doc(db, "ads", adId);
-              // increment(1)을 사용하여 안전하게 카운트를 1 증가시킵니다.
               await updateDoc(adRef, {
                   clickCount: increment(1)
               });
@@ -324,9 +339,7 @@
             }, 500);
         }
         
-      // --- 5. 광고/지원사업 구별하여 HTML 생성 (오류 수정) ---
       function createItemHTML(item) {
-          // item.isAd 속성이 true이면 광고 카드를, 아니면 지원사업 카드를 만듭니다.
           if (item.isAd) {
               let mediaElement = '';
               const mediaUrl = item.mediaUrl || '';
@@ -346,7 +359,6 @@
                   ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
                   : '';
 
-              // a 태그에 ad-link 클래스와 data-id 속성을 추가합니다.
               return `
               <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative flex flex-col">
                   <div class="ad-media-container">
@@ -371,7 +383,6 @@
               </div>`;
           }
 
-          // 지원사업 카드 코드는 기존과 동일
           const dday = calculateDday(item.pbanc_rcpt_end_dt); 
           const isFavorited = favorites.includes(item.pbanc_sn); 
           const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
