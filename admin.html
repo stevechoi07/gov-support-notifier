@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v1.2</title>
+    <title>광고 관리 페이지 v1.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -15,7 +15,6 @@
             background-color: #94a3b8; 
             cursor: not-allowed; 
         }
-        /* 로딩 스피너 애니메이션 */
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -26,6 +25,15 @@
         }
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+        #media-upload-status {
+            transition: opacity 0.3s;
+        }
+        /* 미리보기 영상 스타일 */
+        #ad-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -44,9 +52,7 @@
             <button id="add-new-ad-button" class="w-full sm:w-auto px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">새 광고 추가</button>
         </div>
         
-        <div id="ad-list-container" class="space-y-4">
-            <!-- Firestore에서 불러온 광고 목록이 여기에 표시됩니다. -->
-        </div>
+        <div id="ad-list-container" class="space-y-4"></div>
 
         <div class="mt-8 text-center border-t pt-4">
             <a href="index_ad.html" class="text-sky-600 hover:underline">메인 페이지로 돌아가기 &rarr;</a>
@@ -76,15 +82,16 @@
                             <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
                         <div>
-                            <label for="ad-image" class="block text-sm font-medium text-slate-600">광고 이미지</label>
-                            <input type="file" id="ad-image" accept="image/png, image/jpeg, image/gif" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
-                            <p class="mt-1 text-xs text-slate-500">권장 사이즈: 600x300 픽셀 (가로가 긴 이미지)</p>
+                            <!-- --- 1. 파일 선택 창이 이미지와 동영상을 모두 받도록 변경합니다. --- -->
+                            <label for="ad-media-file" class="block text-sm font-medium text-slate-600">광고 미디어 (이미지/동영상)</label>
+                            <input type="file" id="ad-media-file" accept="image/png, image/jpeg, image/gif, video/mp4, video/webm" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+                            <p id="media-upload-status" class="mt-1 text-xs text-sky-600 font-semibold opacity-0"></p>
                         </div>
                         <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors flex justify-center items-center gap-2">저장하기</button>
                     </div>
                     <div class="mt-4 md:mt-0">
                         <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
-                        <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative"></div>
+                        <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative aspect-video flex items-center justify-center"></div>
                     </div>
                 </div>
             </div>
@@ -96,13 +103,13 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
       import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
-      // ⭐️ 여기에 본인의 Firebase 프로젝트 설정 정보를 붙여넣으세요!
       const firebaseConfig = {
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
         authDomain: "gtree-f3d92.firebaseapp.com",
         projectId: "gtree-f3d92",
-        storageBucket: "gtree-f3d92.firebasestorage.app",
+        storageBucket: "gtree-f3d92.appspot.com",
         messagingSenderId: "857408421677",
         appId: "1:857408421677:web:56b75913c99317f1ae5da4",
         measurementId: "G-4T4J4KXGNH"
@@ -111,11 +118,15 @@
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
+      const storage = getStorage(app);
       const adsCollection = collection(db, "ads");
 
       let adList = [];
       let editingAdId = null;
-      let currentImageBase64 = '';
+      // --- 2. 변수 이름을 더 명확하게 변경하고, 미디어 종류를 저장할 변수를 추가합니다. ---
+      let selectedMediaFile = null; 
+      let currentMediaUrl = '';
+      let currentMediaType = 'image'; // 'image' 또는 'video'
 
       const authContainer = document.getElementById('auth-container');
       const adminPanel = document.getElementById('admin-panel');
@@ -124,16 +135,16 @@
       const authMessage = document.getElementById('auth-message');
       const adListContainer = document.getElementById('ad-list-container');
       const addNewAdButton = document.getElementById('add-new-ad-button');
-      
       const adModal = document.getElementById('ad-modal');
       const modalTitle = document.getElementById('modal-title');
       const closeModalButton = document.getElementById('close-modal-button');
       const adTitleInput = document.getElementById('ad-title');
       const adDescriptionInput = document.getElementById('ad-description');
       const adLinkInput = document.getElementById('ad-link');
-      const adImageInput = document.getElementById('ad-image');
+      const adMediaFileInput = document.getElementById('ad-media-file'); // ID 변경
       const saveAdButton = document.getElementById('save-ad-button');
       const adPreview = document.getElementById('ad-preview');
+      const mediaUploadStatus = document.getElementById('media-upload-status');
 
       loginButton.addEventListener('click', handleLogin);
       passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
@@ -141,125 +152,96 @@
       closeModalButton.addEventListener('click', closeModal);
       saveAdButton.addEventListener('click', handleSaveAd);
       [adTitleInput, adDescriptionInput, adLinkInput].forEach(input => input.addEventListener('input', updatePreview));
-      adImageInput.addEventListener('change', handleImageUpload);
+      adMediaFileInput.addEventListener('change', handleFileUpload); // 함수 이름 변경
 
-      async function handleLogin() {
+      async function handleLogin() { /* 이전과 동일 */ 
           const password = passwordInput.value;
-          if (!password) {
-              showAuthMessage("비밀번호를 입력해주세요.", true);
-              return;
-          }
-
-          loginButton.disabled = true;
-          loginButton.textContent = "로그인 중...";
-          showAuthMessage("비밀번호를 확인 중입니다...", false);
-
+          if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
+          loginButton.disabled = true; loginButton.textContent = "로그인 중..."; showAuthMessage("비밀번호를 확인 중입니다...", false);
           try {
-              const response = await fetch('/.netlify/functions/login', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ password: password })
-              });
-
+              const response = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: password }) });
               const result = await response.json();
-
               if (response.ok && result.success) {
                   await signInWithCustomToken(auth, result.token);
-                  
-                  authContainer.classList.add('hidden');
-                  adminPanel.classList.remove('hidden');
-                  listenToAds();
-                  initSortable();
-              } else {
-                  showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
-              }
-          } catch (error) {
-              console.error('Login error:', error);
-              showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
-          } finally {
-              loginButton.disabled = false;
-              loginButton.textContent = "로그인";
-          }
+                  authContainer.classList.add('hidden'); adminPanel.classList.remove('hidden');
+                  listenToAds(); initSortable();
+              } else { showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true); }
+          } catch (error) { console.error('Login error:', error); showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
+          } finally { loginButton.disabled = false; loginButton.textContent = "로그인"; }
       }
-      
-      function listenToAds() {
+      function listenToAds() { /* 이전과 동일 */
         const q = query(adsCollection, orderBy("order", "asc"));
         onSnapshot(q, (querySnapshot) => {
             adList = [];
-            querySnapshot.forEach((doc) => {
-                adList.push({ id: doc.id, ...doc.data() });
-            });
+            querySnapshot.forEach((doc) => { adList.push({ id: doc.id, ...doc.data() }); });
             renderAdList();
         });
       }
-
-      function showAuthMessage(message, isError) {
+      function showAuthMessage(message, isError) { /* 이전과 동일 */
           authMessage.textContent = message;
           authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
           authMessage.classList.remove('hidden');
       }
-
-      function initSortable() {
+      function initSortable() { /* 이전과 동일 */
           new Sortable(adListContainer, {
-              handle: '.drag-handle',
-              animation: 150,
+              handle: '.drag-handle', animation: 150,
               onEnd: async function (evt) {
                   const movedItem = adList.splice(evt.oldIndex, 1)[0];
                   adList.splice(evt.newIndex, 0, movedItem);
-                  
                   const batch = writeBatch(db);
                   adList.forEach((ad, index) => {
                       const docRef = doc(db, "ads", ad.id);
                       batch.update(docRef, { order: index });
                   });
-                  await batch.commit();
-                  renderAdList();
+                  await batch.commit(); renderAdList();
               },
           });
       }
-
-      function handleImageUpload(event) {
-          const file = event.target.files[0];
-          if (file) {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                  currentImageBase64 = e.target.result;
-                  updatePreview();
-              };
-              reader.readAsDataURL(file);
-          }
-      }
-
-      function renderAdList() {
+      function renderAdList() { /* 이전과 동일, 단 이미지 대신 미디어 URL 사용 */
           adListContainer.innerHTML = '';
-          if (adList.length === 0) {
-              adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`;
-              return;
-          }
-          adList.forEach((ad, index) => {
+          if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`; return; }
+          adList.forEach((ad) => {
               const adElement = document.createElement('div');
               adElement.className = 'p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4';
               adElement.dataset.id = ad.id;
+              // --- 3. 목록에 미디어 종류를 아이콘으로 표시해줍니다. ---
+              const mediaIcon = ad.mediaType === 'video' ? '🎬' : '🖼️';
               adElement.innerHTML = `
                   <div class="flex items-center w-full">
-                      <div class="drag-handle text-slate-400 mr-4 cursor-grab">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                      </div>
+                      <div class="drag-handle text-slate-400 mr-4 cursor-grab"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
                       <div class="flex-grow flex items-center space-x-4 overflow-hidden">
-                          <img src="${ad.imageUrl || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'}" alt="${ad.title}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">
+                          <div class="w-12 h-12 flex-shrink-0 bg-slate-200 rounded-md flex items-center justify-center text-2xl">${mediaIcon}</div>
                           <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
                       </div>
                   </div>
                   <div class="w-full sm:w-auto flex-shrink-0 flex sm:flex-col justify-end gap-2">
                       <button class="edit-ad-button text-sm text-sky-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">수정</button>
                       <button class="delete-ad-button text-sm text-red-600 hover:underline px-3 py-1 bg-white rounded-md border" data-id="${ad.id}">삭제</button>
-                  </div>
-              `;
+                  </div>`;
               adListContainer.appendChild(adElement);
           });
-
           document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
           document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
+      }
+
+      // --- 4. 파일 선택 시, 이미지와 동영상을 구분해서 처리합니다. ---
+      function handleFileUpload(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          selectedMediaFile = file; 
+          
+          if (file.type.startsWith('image/')) {
+              currentMediaType = 'image';
+          } else if (file.type.startsWith('video/')) {
+              currentMediaType = 'video';
+          } else {
+              alert("이미지 또는 동영상 파일만 업로드할 수 있습니다.");
+              return;
+          }
+          
+          const tempPreviewUrl = URL.createObjectURL(file);
+          updatePreview(tempPreviewUrl, currentMediaType);
       }
 
       function openModal() { adModal.classList.remove('hidden'); }
@@ -267,12 +249,14 @@
 
       function handleAddNewAd() {
           editingAdId = null;
+          selectedMediaFile = null;
+          currentMediaUrl = '';
+          currentMediaType = 'image';
           modalTitle.textContent = "새 광고 추가";
           adTitleInput.value = '';
           adDescriptionInput.value = '';
           adLinkInput.value = '';
-          adImageInput.value = '';
-          currentImageBase64 = '';
+          adMediaFileInput.value = '';
           updatePreview();
           openModal();
       }
@@ -281,12 +265,14 @@
           editingAdId = event.target.dataset.id;
           const ad = adList.find(ad => ad.id === editingAdId);
           if (ad) {
+              selectedMediaFile = null;
+              currentMediaUrl = ad.mediaUrl || '';
+              currentMediaType = ad.mediaType || 'image';
               modalTitle.textContent = "광고 수정";
               adTitleInput.value = ad.title;
               adDescriptionInput.value = ad.description;
               adLinkInput.value = ad.link;
-              adImageInput.value = '';
-              currentImageBase64 = ad.imageUrl || '';
+              adMediaFileInput.value = '';
               updatePreview();
               openModal();
           }
@@ -296,34 +282,59 @@
           const idToDelete = event.target.dataset.id;
           const adToDelete = adList.find(ad => ad.id === idToDelete);
           if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
-              await deleteDoc(doc(db, "ads", idToDelete));
+              try {
+                  await deleteDoc(doc(db, "ads", idToDelete));
+                  if (adToDelete.mediaUrl) {
+                      const mediaRef = ref(storage, adToDelete.mediaUrl);
+                      await deleteObject(mediaRef);
+                  }
+              } catch (error) {
+                  console.error("삭제 중 오류 발생: ", error);
+                  alert("삭제 중 오류가 발생했습니다.");
+              }
           }
       }
 
+      // --- 5. 저장 시, 미디어 종류(mediaType)도 함께 저장합니다. ---
       async function handleSaveAd() {
-          // --- 1. 문지기 코드: 광고 제목이 비어있는지 검사합니다. ---
           if (!adTitleInput.value.trim()) {
               alert('광고 제목을 입력해주세요!');
-              adTitleInput.focus(); // 사용자가 바로 입력할 수 있도록 커서를 옮겨줍니다.
-              return; // 함수를 여기서 중단시킵니다.
+              adTitleInput.focus();
+              return;
           }
 
           saveAdButton.disabled = true;
           saveAdButton.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
 
+          let mediaUrlToSave = currentMediaUrl;
+
           try {
+              if (selectedMediaFile) {
+                  mediaUploadStatus.textContent = '미디어 파일 업로드 중...';
+                  mediaUploadStatus.style.opacity = 1;
+
+                  const fileName = `ad_${Date.now()}_${selectedMediaFile.name}`;
+                  const folder = currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
+                  const storageRef = ref(storage, `${folder}/${fileName}`);
+                  
+                  const snapshot = await uploadBytes(storageRef, selectedMediaFile);
+                  mediaUrlToSave = await getDownloadURL(snapshot.ref);
+                  
+                  mediaUploadStatus.textContent = '업로드 완료!';
+              }
+
               const newAdData = {
                   isAd: true,
                   title: adTitleInput.value,
                   description: adDescriptionInput.value,
                   link: adLinkInput.value,
-                  imageUrl: currentImageBase64,
+                  mediaUrl: mediaUrlToSave, // 필드 이름 변경
+                  mediaType: currentMediaType, // 미디어 종류 저장
                   order: editingAdId ? adList.find(ad => ad.id === editingAdId).order : adList.length
               };
 
               if (editingAdId) {
-                  const docRef = doc(db, "ads", editingAdId);
-                  await updateDoc(docRef, newAdData);
+                  await updateDoc(doc(db, "ads", editingAdId), newAdData);
               } else {
                   await addDoc(adsCollection, newAdData);
               }
@@ -335,28 +346,33 @@
           } finally {
               saveAdButton.disabled = false;
               saveAdButton.innerHTML = `저장하기`;
+              mediaUploadStatus.style.opacity = 0;
           }
       }
 
-      function updatePreview() {
+      // --- 6. 미리보기 함수가 파일 종류에 따라 이미지 또는 비디오를 보여줍니다. ---
+      function updatePreview(tempUrl = null, type = currentMediaType) {
           const title = adTitleInput.value || "광고 제목";
           const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
           const link = adLinkInput.value || "#";
-          const imageSrc = currentImageBase64 || 'https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Preview';
+          
+          const mediaSrc = tempUrl || currentMediaUrl;
 
-          adPreview.innerHTML = `
-              <img src="${imageSrc}" alt="Ad preview" class="w-full h-32 object-cover">
-              <div class="p-6">
-                  <div class="flex justify-between items-start">
-                       <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
-                       <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
-                  </div>
-                  <a href="${link}" onclick="return false;" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${title}</a>
-                  <p class="mt-2 text-slate-600 text-sm">${description}</p>
-                  <div class="mt-4 pt-4 border-t text-right">
-                       <a href="${link}" onclick="return false;" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
-                  </div>
-              </div>`;
+          if (!mediaSrc) {
+              adPreview.innerHTML = `<span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span>`;
+              return;
+          }
+
+          if (type === 'video') {
+              adPreview.innerHTML = `
+                  <video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
+          } else { // 기본값은 이미지
+              adPreview.innerHTML = `
+                  <img src="${mediaSrc}" alt="Ad preview" class="w-full h-full object-cover">`;
+          }
+          
+          // 미리보기 위에 제목, 설명 등을 겹쳐서 보여주는 것도 가능합니다.
+          // 여기서는 미디어만 보여주도록 단순화했습니다.
       }
     </script>
 </body>
