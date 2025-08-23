@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지</title>
+    <title>광고 관리 페이지 v1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -11,7 +11,22 @@
         body { font-family: 'Noto Sans KR', sans-serif; }
         .drag-handle { cursor: grab; }
         .sortable-ghost { background: #e0f2fe; opacity: 0.5; }
-        #login-button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        #login-button:disabled, #save-ad-button:disabled { 
+            background-color: #94a3b8; 
+            cursor: not-allowed; 
+        }
+        /* 로딩 스피너 애니메이션 */
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
@@ -65,7 +80,7 @@
                             <input type="file" id="ad-image" accept="image/png, image/jpeg, image/gif" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
                             <p class="mt-1 text-xs text-slate-500">권장 사이즈: 600x300 픽셀 (가로가 긴 이미지)</p>
                         </div>
-                        <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors">저장하기</button>
+                        <button id="save-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors flex justify-center items-center gap-2">저장하기</button>
                     </div>
                     <div class="mt-4 md:mt-0">
                         <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
@@ -286,23 +301,36 @@
       }
 
       async function handleSaveAd() {
-          const newAdData = {
-              isAd: true,
-              title: adTitleInput.value,
-              description: adDescriptionInput.value,
-              link: adLinkInput.value,
-              imageUrl: currentImageBase64,
-              order: editingAdId ? adList.find(ad => ad.id === editingAdId).order : adList.length
-          };
+          // --- 1. 로딩 시작: 버튼을 비활성화하고 내용을 바꿉니다. ---
+          saveAdButton.disabled = true;
+          saveAdButton.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
 
-          if (editingAdId) {
-              const docRef = doc(db, "ads", editingAdId);
-              await updateDoc(docRef, newAdData);
-          } else {
-              await addDoc(adsCollection, newAdData);
+          try {
+              const newAdData = {
+                  isAd: true,
+                  title: adTitleInput.value,
+                  description: adDescriptionInput.value,
+                  link: adLinkInput.value,
+                  imageUrl: currentImageBase64,
+                  order: editingAdId ? adList.find(ad => ad.id === editingAdId).order : adList.length
+              };
+
+              if (editingAdId) {
+                  const docRef = doc(db, "ads", editingAdId);
+                  await updateDoc(docRef, newAdData);
+              } else {
+                  await addDoc(adsCollection, newAdData);
+              }
+              
+              closeModal();
+          } catch (error) {
+              console.error("저장 중 오류 발생:", error);
+              alert("데이터를 저장하는 데 실패했습니다. 다시 시도해주세요.");
+          } finally {
+              // --- 2. 로딩 끝: 작업이 성공하든 실패하든, 버튼을 원래 상태로 되돌립니다. ---
+              saveAdButton.disabled = false;
+              saveAdButton.innerHTML = `저장하기`;
           }
-          
-          closeModal();
       }
 
       function updatePreview() {
