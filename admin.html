@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v2.6 (시간 설정 기능)</title>
+    <title>광고 관리 페이지 v2.7 (iframe 광고 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -11,7 +11,7 @@
         body { font-family: 'Noto Sans KR', sans-serif; }
         .drag-handle { cursor: grab; }
         .sortable-ghost { background: #e0f2fe; opacity: 0.5; }
-        #login-button:disabled, #save-ad-button:disabled { 
+        #login-button:disabled, #save-ad-button:disabled, #save-iframe-ad-button:disabled { 
             background-color: #94a3b8; 
             cursor: not-allowed; 
         }
@@ -34,7 +34,7 @@
             width: 100%;
             padding-top: 56.25%; /* 16:9 비율 */
             background-color: #e2e8f0;
-            border-radius: 0.5rem; /* 상단 모서리 둥글게 */
+            border-radius: 0.5rem;
         }
         .preview-media-container img,
         .preview-media-container video {
@@ -146,7 +146,11 @@
     <div id="admin-panel" class="hidden w-full max-w-4xl p-4 sm:p-8 bg-white rounded-xl shadow-lg">
         <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
             <h1 class="text-2xl font-bold text-slate-800">📝 광고 카드 목록 관리</h1>
-            <button id="add-new-ad-button" class="w-full sm:w-auto px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">새 광고 추가</button>
+            <!-- --- 1. 광고 추가 버튼 분리 --- -->
+            <div class="flex gap-2">
+                <button id="add-new-iframe-ad-button" class="w-full sm:w-auto px-4 py-2 bg-indigo-500 text-white rounded-lg font-semibold hover:bg-indigo-600 shadow-md transition-colors">새 iframe 광고</button>
+                <button id="add-new-ad-button" class="w-full sm:w-auto px-4 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">새 카드 광고</button>
+            </div>
         </div>
         
         <div id="ad-list-container" class="space-y-4"></div>
@@ -156,11 +160,11 @@
         </div>
     </div>
 
-    <!-- 광고 수정/추가 모달 -->
+    <!-- 카드 광고 수정/추가 모달 -->
     <div id="ad-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-start p-4 overflow-y-auto">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
             <div class="flex justify-between items-center p-4 border-b">
-                <h2 id="modal-title" class="text-xl font-bold">새 광고 추가</h2>
+                <h2 id="modal-title" class="text-xl font-bold">새 카드 광고 추가</h2>
                 <button id="close-modal-button" class="text-2xl">&times;</button>
             </div>
             <div class="p-6">
@@ -183,7 +187,6 @@
                                 <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
                                 <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
-                            <!-- --- 1. 날짜 및 시간 입력으로 변경 --- -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label for="ad-start-date" class="block text-sm font-medium text-slate-600">게시 시작일</label>
@@ -225,6 +228,41 @@
         </div>
     </div>
 
+    <!-- --- 2. iframe 광고 수정/추가 모달 추가 --- -->
+    <div id="iframe-ad-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-start p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-xl my-8">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h2 id="iframe-modal-title" class="text-xl font-bold">새 iframe 광고 추가</h2>
+                <button id="close-iframe-modal-button" class="text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="iframe-ad-title" class="block text-sm font-medium text-slate-600">광고 제목 (관리용, 필수)</label>
+                    <input type="text" id="iframe-ad-title" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <div>
+                    <label for="iframe-ad-code" class="block text-sm font-medium text-slate-600">iframe 광고 코드 (필수)</label>
+                    <textarea id="iframe-ad-code" rows="6" placeholder='<iframe src="..."></iframe>' class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono text-sm"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="iframe-ad-start-date" class="block text-sm font-medium text-slate-600">게시 시작일</label>
+                        <input type="datetime-local" id="iframe-ad-start-date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label for="iframe-ad-end-date" class="block text-sm font-medium text-slate-600">게시 종료일</label>
+                        <input type="datetime-local" id="iframe-ad-end-date" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 -mt-2">날짜를 지정하지 않으면 항상 게시됩니다.</p>
+                <div class="pt-4 border-t">
+                    <button id="save-iframe-ad-button" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors flex justify-center items-center gap-2">저장하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Firebase SDK 추가 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
@@ -262,6 +300,8 @@
       const loginButton = document.getElementById('login-button');
       const authMessage = document.getElementById('auth-message');
       const adListContainer = document.getElementById('ad-list-container');
+      
+      // 카드 광고 UI
       const addNewAdButton = document.getElementById('add-new-ad-button');
       const adModal = document.getElementById('ad-modal');
       const modalTitle = document.getElementById('modal-title');
@@ -281,16 +321,34 @@
       const progressBarFill = document.getElementById('progress-bar-fill');
       const fileNameDisplay = document.getElementById('file-name-display');
 
+      // --- 3. iframe 광고 UI 요소 가져오기 ---
+      const addNewIframeAdButton = document.getElementById('add-new-iframe-ad-button');
+      const iframeAdModal = document.getElementById('iframe-ad-modal');
+      const iframeModalTitle = document.getElementById('iframe-modal-title');
+      const closeIframeModalButton = document.getElementById('close-iframe-modal-button');
+      const iframeAdTitleInput = document.getElementById('iframe-ad-title');
+      const iframeAdCodeInput = document.getElementById('iframe-ad-code');
+      const iframeAdStartDateInput = document.getElementById('iframe-ad-start-date');
+      const iframeAdEndDateInput = document.getElementById('iframe-ad-end-date');
+      const saveIframeAdButton = document.getElementById('save-iframe-ad-button');
+
       loginButton.addEventListener('click', handleLogin);
       passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
-      addNewAdButton.addEventListener('click', handleAddNewAd);
-      closeModalButton.addEventListener('click', closeModal);
-      saveAdButton.addEventListener('click', handleSaveAd);
       
+      // 카드 광고 모달 이벤트
+      addNewAdButton.addEventListener('click', handleAddNewAd);
+      closeModalButton.addEventListener('click', () => adModal.classList.add('hidden'));
+      saveAdButton.addEventListener('click', handleSaveAd);
       [adTitleInput, adDescriptionInput, adLinkInput, isPartnersCheckbox].forEach(input => {
           input.addEventListener('input', () => updatePreview());
       });
       adMediaFileInput.addEventListener('change', handleFileUpload);
+      
+      // --- 4. iframe 광고 모달 이벤트 추가 ---
+      addNewIframeAdButton.addEventListener('click', handleAddNewIframeAd);
+      closeIframeModalButton.addEventListener('click', () => iframeAdModal.classList.add('hidden'));
+      saveIframeAdButton.addEventListener('click', handleSaveIframeAd);
+
 
       async function handleLogin() {
           const password = passwordInput.value;
@@ -336,44 +394,34 @@
           });
       }
       
-      // --- 2. 시간 비교 로직 수정 ---
       function getAdStatus(ad) {
           const now = new Date();
           const start = ad.startDate ? new Date(ad.startDate) : null;
           const end = ad.endDate ? new Date(ad.endDate) : null;
 
-          if (!start && !end) {
-              return `<span class="status-badge bg-slate-200 text-slate-600">상시</span>`;
-          }
-          if (start && now < start) {
-              return `<span class="status-badge bg-blue-200 text-blue-600">예정</span>`;
-          }
-          if (end && now > end) {
-              return `<span class="status-badge bg-red-200 text-red-600">종료</span>`;
-          }
+          if (!start && !end) return `<span class="status-badge bg-slate-200 text-slate-600">상시</span>`;
+          if (start && now < start) return `<span class="status-badge bg-blue-200 text-blue-600">예정</span>`;
+          if (end && now > end) return `<span class="status-badge bg-red-200 text-red-600">종료</span>`;
           return `<span class="status-badge bg-green-200 text-green-600">진행중</span>`;
       }
 
-      // --- 3. 날짜 표시 형식 변경 ---
       function formatDateTime(dateTimeString) {
           if (!dateTimeString) return '...';
           const date = new Date(dateTimeString);
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
-          return `${year}-${month}-${day} ${hours}:${minutes}`;
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
       }
 
+      // --- 5. 광고 종류에 따라 다르게 렌더링 ---
       function renderAdList() {
           adListContainer.innerHTML = '';
-          if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다. '새 광고 추가' 버튼을 눌러 광고를 등록해보세요.</p>`; return; }
+          if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-4">등록된 광고가 없습니다.</p>`; return; }
           adList.forEach((ad) => {
               const adElement = document.createElement('div');
               adElement.className = `p-4 border rounded-lg bg-slate-50 flex flex-col sm:flex-row sm:items-center gap-4 transition-opacity ${ad.isActive === false ? 'opacity-40' : ''}`;
               adElement.dataset.id = ad.id;
-              const mediaIcon = ad.mediaType === 'video' ? '🎬' : '🖼️';
+              
+              const isIframe = ad.adType === 'iframe';
+              const mediaIcon = isIframe ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>` : (ad.mediaType === 'video' ? '🎬' : '🖼️');
               const clickCount = ad.clickCount || 0;
               const statusBadge = getAdStatus(ad);
               const periodText = (ad.startDate || ad.endDate) 
@@ -389,12 +437,12 @@
                           <div class="flex-grow overflow-hidden">
                             <p class="font-semibold text-slate-700 truncate flex items-center gap-2">${ad.title} ${statusBadge}</p>
                             <div class="flex items-center text-sm text-slate-500 mt-1 gap-4">
-                                <div class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                <div class="flex items-center ${isIframe ? 'hidden' : ''}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                     <span>${clickCount}</span>
                                 </div>
                                 <div class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                                     <span>${periodText}</span>
                                 </div>
                             </div>
@@ -471,27 +519,14 @@
           tempPreviewUrl = URL.createObjectURL(file);
           updatePreview();
       }
-
-      function openModal() { adModal.classList.remove('hidden'); }
       
-      function closeModal() {
-          if (currentUploadTask) {
-              currentUploadTask.cancel();
-              currentUploadTask = null;
-          }
-          adModal.classList.add('hidden');
-          resetModalState();
-      }
-      
-      function resetModalState() {
+      function resetCardModalState() {
           saveAdButton.disabled = false;
           saveAdButton.innerHTML = `저장하기`;
-          
           mediaUploadStatus.style.opacity = 0;
           uploadProgress.textContent = '0%';
           progressBarFill.style.width = '0%';
           uploadLabel.textContent = '업로드 중...';
-
           adTitleInput.value = '';
           adDescriptionInput.value = '';
           adLinkInput.value = '';
@@ -501,7 +536,6 @@
           adMediaFileInput.value = '';
           fileNameDisplay.textContent = '선택된 파일 없음';
           adPreview.innerHTML = '';
-
           if (tempPreviewUrl) {
               URL.revokeObjectURL(tempPreviewUrl);
               tempPreviewUrl = null;
@@ -513,30 +547,58 @@
           selectedMediaFile = null;
           currentMediaUrl = '';
           currentMediaType = 'image';
-          modalTitle.textContent = "새 광고 추가";
-          resetModalState();
+          modalTitle.textContent = "새 카드 광고 추가";
+          resetCardModalState();
           updatePreview();
-          openModal();
+          adModal.classList.remove('hidden');
       }
 
+      // --- 6. iframe 광고 추가/수정 함수 ---
+      function resetIframeModalState() {
+          iframeAdTitleInput.value = '';
+          iframeAdCodeInput.value = '';
+          iframeAdStartDateInput.value = '';
+          iframeAdEndDateInput.value = '';
+          saveIframeAdButton.disabled = false;
+          saveIframeAdButton.innerHTML = '저장하기';
+      }
+
+      function handleAddNewIframeAd() {
+          editingAdId = null;
+          iframeModalTitle.textContent = "새 iframe 광고 추가";
+          resetIframeModalState();
+          iframeAdModal.classList.remove('hidden');
+      }
+      
+      // --- 7. 수정 버튼 클릭 시 광고 종류에 따라 다른 모달 열기 ---
       function handleEditAd(event) {
           editingAdId = event.target.dataset.id;
           const ad = adList.find(ad => ad.id === editingAdId);
-          if (ad) {
-              resetModalState();
+          if (!ad) return;
+
+          if (ad.adType === 'iframe') {
+              resetIframeModalState();
+              iframeModalTitle.textContent = "iframe 광고 수정";
+              iframeAdTitleInput.value = ad.title;
+              iframeAdCodeInput.value = ad.iframeCode || '';
+              iframeAdStartDateInput.value = ad.startDate || '';
+              iframeAdEndDateInput.value = ad.endDate || '';
+              iframeAdModal.classList.remove('hidden');
+          } else {
+              resetCardModalState();
               selectedMediaFile = null;
               currentMediaUrl = ad.mediaUrl || '';
               currentMediaType = ad.mediaType || 'image';
-              modalTitle.textContent = "광고 수정";
+              modalTitle.textContent = "카드 광고 수정";
               adTitleInput.value = ad.title;
-              adDescriptionInput.value = ad.description;
-              adLinkInput.value = ad.link;
+              adDescriptionInput.value = ad.description || '';
+              adLinkInput.value = ad.link || '';
               isPartnersCheckbox.checked = ad.isPartners || false;
               adStartDateInput.value = ad.startDate || '';
               adEndDateInput.value = ad.endDate || '';
               fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
               updatePreview();
-              openModal();
+              adModal.classList.remove('hidden');
           }
       }
 
@@ -545,13 +607,16 @@
           const adToDelete = adList.find(ad => ad.id === idToDelete);
           if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
               try {
-                  await deleteDoc(doc(db, "ads", idToDelete));
+                  // 카드 광고인 경우에만 Storage 파일 삭제
                   if (adToDelete.mediaUrl) {
                       const storageRef = ref(storage, adToDelete.mediaUrl);
                       await deleteObject(storageRef);
                   }
+                  await deleteDoc(doc(db, "ads", idToDelete));
               } catch (error) {
                   console.warn("Could not delete file from storage:", error.message);
+                  // Firestore 문서 삭제는 계속 진행
+                  await deleteDoc(doc(db, "ads", idToDelete)).catch(e => console.error("Error deleting document:", e));
               }
           }
       }
@@ -571,44 +636,13 @@
                       uploadProgress.textContent = `${Math.round(progress)}%`;
                       progressBarFill.style.width = `${progress}%`;
                   }, 
-                  (error) => {
-                      console.error("Upload failed:", error);
-                      currentUploadTask = null;
-                      reject(error); 
-                  }, 
+                  (error) => { reject(error); }, 
                   async () => {
                       const downloadURL = await getDownloadURL(currentUploadTask.snapshot.ref);
-                      currentUploadTask = null;
                       resolve(downloadURL);
                   }
               );
           });
-      }
-
-      async function saveDataToFirestore(mediaUrl) {
-          const adData = {
-              title: adTitleInput.value,
-              description: adDescriptionInput.value,
-              link: adLinkInput.value,
-              isPartners: isPartnersCheckbox.checked,
-              mediaUrl: mediaUrl,
-              mediaType: currentMediaType,
-              startDate: adStartDateInput.value,
-              endDate: adEndDateInput.value,
-          };
-
-          if (editingAdId) {
-              const existingAd = adList.find(ad => ad.id === editingAdId);
-              adData.order = existingAd.order;
-              adData.clickCount = existingAd.clickCount || 0;
-              adData.isActive = existingAd.isActive !== false;
-              await updateDoc(doc(db, "ads", editingAdId), adData);
-          } else {
-              adData.order = adList.length;
-              adData.clickCount = 0;
-              adData.isActive = true; 
-              await addDoc(adsCollection, adData);
-          }
       }
 
       async function handleSaveAd() {
@@ -633,24 +667,90 @@
                       try {
                           const oldFileRef = ref(storage, currentMediaUrl);
                           await deleteObject(oldFileRef);
-                      } catch (error) {
-                          console.warn("Could not delete old file from storage:", error.message);
-                      }
+                      } catch (error) { console.warn("Could not delete old file:", error.message); }
                   }
                   mediaUrlToSave = await uploadMediaFile();
                   uploadLabel.textContent = '업로드 완료!';
               }
               
-              await saveDataToFirestore(mediaUrlToSave);
+              const adData = {
+                  adType: 'card', // 광고 타입: 카드
+                  title: adTitleInput.value,
+                  description: adDescriptionInput.value,
+                  link: adLinkInput.value,
+                  isPartners: isPartnersCheckbox.checked,
+                  mediaUrl: mediaUrlToSave,
+                  mediaType: currentMediaType,
+                  startDate: adStartDateInput.value,
+                  endDate: adEndDateInput.value,
+              };
+
+              if (editingAdId) {
+                  const existingAd = adList.find(ad => ad.id === editingAdId);
+                  adData.order = existingAd.order;
+                  adData.clickCount = existingAd.clickCount || 0;
+                  adData.isActive = existingAd.isActive !== false;
+                  await updateDoc(doc(db, "ads", editingAdId), adData);
+              } else {
+                  adData.order = adList.length;
+                  adData.clickCount = 0;
+                  adData.isActive = true; 
+                  await addDoc(adsCollection, adData);
+              }
               
-              closeModal();
+              adModal.classList.add('hidden');
 
           } catch (error) {
               console.error("저장 중 오류 발생:", error);
-              alert("작업에 실패했습니다. 인터넷 연결을 확인하거나 다시 시도해주세요.");
+              alert("작업에 실패했습니다.");
               saveAdButton.disabled = false;
               saveAdButton.innerHTML = `저장하기`;
-              mediaUploadStatus.style.opacity = 0;
+          }
+      }
+
+      // --- 8. iframe 광고 저장 로직 ---
+      async function handleSaveIframeAd() {
+          const title = iframeAdTitleInput.value.trim();
+          const code = iframeAdCodeInput.value.trim();
+
+          if (!title) { alert('광고 제목을 입력해주세요!'); iframeAdTitleInput.focus(); return; }
+          if (!code) { alert('iframe 코드를 입력해주세요!'); iframeAdCodeInput.focus(); return; }
+          if (iframeAdStartDateInput.value && iframeAdEndDateInput.value && iframeAdStartDateInput.value > iframeAdEndDateInput.value) {
+              alert('게시 종료일은 시작일보다 빠를 수 없습니다.');
+              return;
+          }
+
+          saveIframeAdButton.disabled = true;
+          saveIframeAdButton.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+
+          try {
+              const adData = {
+                  adType: 'iframe', // 광고 타입: iframe
+                  title: title,
+                  iframeCode: code,
+                  startDate: iframeAdStartDateInput.value,
+                  endDate: iframeAdEndDateInput.value,
+              };
+
+              if (editingAdId) {
+                  const existingAd = adList.find(ad => ad.id === editingAdId);
+                  adData.order = existingAd.order;
+                  adData.clickCount = 0; // iframe 광고는 클릭 카운트 없음
+                  adData.isActive = existingAd.isActive !== false;
+                  await updateDoc(doc(db, "ads", editingAdId), adData);
+              } else {
+                  adData.order = adList.length;
+                  adData.clickCount = 0;
+                  adData.isActive = true; 
+                  await addDoc(adsCollection, adData);
+              }
+
+              iframeAdModal.classList.add('hidden');
+          } catch (error) {
+              console.error("iframe 광고 저장 중 오류:", error);
+              alert("작업에 실패했습니다.");
+              saveIframeAdButton.disabled = false;
+              saveIframeAdButton.innerHTML = '저장하기';
           }
       }
 

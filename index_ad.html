@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v12.6 (시간 설정 기능)</title>
+    <title>정부 지원사업 알리미 v12.7 (iframe 광고 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -42,6 +42,12 @@
             height: 100%;
             object-fit: cover;
         }
+        .iframe-ad-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
     </style>
 </head>
 <body class="bg-slate-100">
@@ -53,7 +59,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
                     이제 동영상 광고도 볼 수 있어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.6</span>
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.7</span>
                 </p>
             </header>
 
@@ -177,7 +183,6 @@
           }
       }
       
-      // --- 1. 시간 비교 로직 수정 ---
       async function loadAdData() {
           try {
               const q = query(collection(db, "ads"), orderBy("order", "asc"));
@@ -187,7 +192,7 @@
                   rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
               });
 
-              const now = new Date(); // 현재 시간을 기준으로
+              const now = new Date();
 
               adDataList = rawAdData.filter(ad => {
                   if (ad.isActive === false) return false;
@@ -333,8 +338,15 @@
             }, 500);
         }
         
+      // --- 2. 광고 종류에 따라 다르게 렌더링 ---
       function createItemHTML(item) {
           if (item.isAd) {
+              // iframe 광고일 경우
+              if (item.adType === 'iframe') {
+                  return `<div class="iframe-ad-container">${item.iframeCode || ''}</div>`;
+              }
+
+              // 카드 광고일 경우 (기존 로직)
               let mediaElement = '';
               const mediaUrl = item.mediaUrl || '';
               const mediaType = item.mediaType || 'image';
@@ -377,6 +389,7 @@
               </div>`;
           }
 
+          // 지원사업 카드
           const dday = calculateDday(item.pbanc_rcpt_end_dt); 
           const isFavorited = favorites.includes(item.pbanc_sn); 
           const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
