@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v1.5</title>
+    <title>광고 관리 페이지 v1.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -34,7 +34,6 @@
             height: 100%;
             object-fit: cover;
         }
-        /* --- 1. 업로드 진행률 바 스타일 추가 --- */
         .progress-bar {
             width: 100%;
             background-color: #e5e7eb;
@@ -97,9 +96,7 @@
                         <div>
                             <label for="ad-media-file" class="block text-sm font-medium text-slate-600">광고 미디어 (이미지/동영상)</label>
                             <input type="file" id="ad-media-file" accept="image/png, image/jpeg, image/gif, video/mp4, video/webm" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
-                            <!-- --- 2. 파일 규격 및 용량 안내 문구 추가 --- -->
                             <p class="mt-1 text-xs text-slate-500">권장: 16:9 비율의 이미지 또는 동영상, 최대 50MB</p>
-                            <!-- --- 3. 업로드 진행률을 표시할 UI 추가 --- -->
                             <div id="media-upload-status" class="mt-2 space-y-1 opacity-0">
                                 <div class="flex justify-between text-xs font-semibold text-sky-600">
                                     <span id="upload-label">업로드 중...</span>
@@ -126,7 +123,6 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
       import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-      // --- 4. 업로드 진행률 추적을 위해 uploadBytesResumable를 가져옵니다. ---
       import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
       const firebaseConfig = {
@@ -150,6 +146,8 @@
       let selectedMediaFile = null; 
       let currentMediaUrl = '';
       let currentMediaType = 'image';
+      // --- 1. 현재 진행 중인 업로드 작업을 추적하기 위한 변수를 추가합니다. ---
+      let currentUploadTask = null;
 
       const authContainer = document.getElementById('auth-container');
       const adminPanel = document.getElementById('admin-panel');
@@ -233,7 +231,7 @@
               const mediaIcon = ad.mediaType === 'video' ? '🎬' : '🖼️';
               adElement.innerHTML = `
                   <div class="flex items-center w-full">
-                      <div class="drag-handle text-slate-400 mr-4 cursor-grab"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
+                      <div class="drag-handle text-slate-400 mr-4 cursor-grab"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
                       <div class="flex-grow flex items-center space-x-4 overflow-hidden">
                           <div class="w-12 h-12 flex-shrink-0 bg-slate-200 rounded-md flex items-center justify-center text-2xl">${mediaIcon}</div>
                           <p class="font-semibold text-slate-700 truncate">${ad.title}</p>
@@ -253,10 +251,9 @@
           const file = event.target.files[0];
           if (!file) return;
 
-          // --- 5. 파일 용량 체크 (50MB) ---
           if (file.size > 50 * 1024 * 1024) {
               alert('파일 크기는 50MB를 초과할 수 없습니다.');
-              adMediaFileInput.value = ''; // 파일 선택 초기화
+              adMediaFileInput.value = '';
               return;
           }
 
@@ -268,6 +265,7 @@
               currentMediaType = 'video';
           } else {
               alert("이미지 또는 동영상 파일만 업로드할 수 있습니다.");
+              adMediaFileInput.value = '';
               return;
           }
           
@@ -276,7 +274,34 @@
       }
 
       function openModal() { adModal.classList.remove('hidden'); }
-      function closeModal() { adModal.classList.add('hidden'); }
+      
+      // --- 2. 모달을 닫을 때, 진행 중인 업로드를 취소하고 상태를 초기화합니다. ---
+      function closeModal() {
+          if (currentUploadTask) {
+              currentUploadTask.cancel();
+              currentUploadTask = null;
+          }
+          adModal.classList.add('hidden');
+          // 모달이 닫힐 때 버튼과 프로그레스 바 상태를 확실히 초기화합니다.
+          resetModalState();
+      }
+      
+      // --- 3. 모달의 상태를 깨끗하게 초기화하는 함수를 만듭니다. ---
+      function resetModalState() {
+          saveAdButton.disabled = false;
+          saveAdButton.innerHTML = `저장하기`;
+          
+          mediaUploadStatus.style.opacity = 0;
+          uploadProgress.textContent = '0%';
+          progressBarFill.style.width = '0%';
+          uploadLabel.textContent = '업로드 중...';
+
+          adTitleInput.value = '';
+          adDescriptionInput.value = '';
+          adLinkInput.value = '';
+          adMediaFileInput.value = '';
+          adPreview.innerHTML = `<span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span>`;
+      }
 
       function handleAddNewAd() {
           editingAdId = null;
@@ -284,11 +309,8 @@
           currentMediaUrl = '';
           currentMediaType = 'image';
           modalTitle.textContent = "새 광고 추가";
-          adTitleInput.value = '';
-          adDescriptionInput.value = '';
-          adLinkInput.value = '';
-          adMediaFileInput.value = '';
-          updatePreview();
+          // resetModalState 함수로 모든 상태를 한번에 초기화합니다.
+          resetModalState();
           openModal();
       }
 
@@ -296,6 +318,7 @@
           editingAdId = event.target.dataset.id;
           const ad = adList.find(ad => ad.id === editingAdId);
           if (ad) {
+              resetModalState(); // 먼저 상태를 깨끗하게 초기화합니다.
               selectedMediaFile = null;
               currentMediaUrl = ad.mediaUrl || '';
               currentMediaType = ad.mediaType || 'image';
@@ -303,8 +326,6 @@
               adTitleInput.value = ad.title;
               adDescriptionInput.value = ad.description;
               adLinkInput.value = ad.link;
-              adMediaFileInput.value = '';
-              // --- 6. 미리보기 수정: 수정 시에도 기존 미디어를 제대로 보여줍니다. ---
               updatePreview(ad.mediaUrl, ad.mediaType);
               openModal();
           }
@@ -327,7 +348,6 @@
           }
       }
 
-      // --- 7. 저장 함수를 실시간 진행률을 표시하도록 대폭 수정합니다. ---
       async function handleSaveAd() {
           if (!adTitleInput.value.trim()) {
               alert('광고 제목을 입력해주세요!');
@@ -342,29 +362,29 @@
               let mediaUrlToSave = currentMediaUrl;
 
               if (selectedMediaFile) {
-                  // Promise를 사용해 업로드 과정을 비동기적으로 처리합니다.
                   mediaUrlToSave = await new Promise((resolve, reject) => {
                       mediaUploadStatus.style.opacity = 1;
                       const fileName = `ad_${Date.now()}_${selectedMediaFile.name}`;
                       const folder = currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
                       const storageRef = ref(storage, `${folder}/${fileName}`);
                       
-                      const uploadTask = uploadBytesResumable(storageRef, selectedMediaFile);
+                      currentUploadTask = uploadBytesResumable(storageRef, selectedMediaFile);
 
-                      // 'state_changed' 이벤트를 감지하여 진행률을 업데이트합니다.
-                      uploadTask.on('state_changed', 
+                      currentUploadTask.on('state_changed', 
                           (snapshot) => {
                               const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                               uploadProgress.textContent = `${Math.round(progress)}%`;
                               progressBarFill.style.width = `${progress}%`;
                           }, 
                           (error) => {
+                              // --- 4. 업로드 실패 시, 에러를 처리하고 작업을 중단합니다. ---
                               console.error("Upload failed:", error);
-                              reject(error); // 오류 발생 시 Promise를 실패 처리
+                              currentUploadTask = null; // 작업 추적 종료
+                              reject(error); 
                           }, 
                           async () => {
-                              // 업로드 완료 후 다운로드 URL을 받아와 Promise를 성공 처리
-                              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                              const downloadURL = await getDownloadURL(currentUploadTask.snapshot.ref);
+                              currentUploadTask = null; // 작업 추적 종료
                               resolve(downloadURL);
                           }
                       );
@@ -391,30 +411,27 @@
               closeModal();
           } catch (error) {
               console.error("저장 중 오류 발생:", error);
-              alert("데이터를 저장하는 데 실패했습니다. 다시 시도해주세요.");
-          } finally {
+              // --- 5. 업로드 실패를 포함한 모든 에러 발생 시 사용자에게 알립니다. ---
+              alert("작업에 실패했습니다. 인터넷 연결을 확인하거나 다시 시도해주세요.");
+              // 실패 시에도 버튼 상태를 원래대로 되돌립니다.
               saveAdButton.disabled = false;
               saveAdButton.innerHTML = `저장하기`;
               mediaUploadStatus.style.opacity = 0;
-              uploadProgress.textContent = '0%';
-              progressBarFill.style.width = '0%';
-              uploadLabel.textContent = '업로드 중...';
-          }
+          } 
+          // --- 6. finally 블록을 제거하여, 성공적으로 닫힐 때만 상태가 초기화되도록 합니다. ---
       }
 
-      function updatePreview(tempUrl = null, type = currentMediaType) {
-          const title = adTitleInput.value || "광고 제목";
-          const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
-          const link = adLinkInput.value || "#";
-          
+      function updatePreview(tempUrl = null, type = 'image') {
+          // --- 7. 미리보기 로직을 수정하여, 수정 시에도 타입을 제대로 전달받도록 합니다. ---
           const mediaSrc = tempUrl || currentMediaUrl;
+          const mediaTypeToDisplay = tempUrl ? type : currentMediaType;
 
           if (!mediaSrc) {
               adPreview.innerHTML = `<span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span>`;
               return;
           }
 
-          if (type === 'video') {
+          if (mediaTypeToDisplay === 'video') {
               adPreview.innerHTML = `<video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
           } else {
               adPreview.innerHTML = `<img src="${mediaSrc}" alt="Ad preview">`;
