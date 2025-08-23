@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v11.8_AD_Admin</title>
+    <title>정부 지원사업 알리미 v11.10_AD_Admin</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -41,8 +41,8 @@
             <header class="text-center mb-6">
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
-                    광고 관리 기능이 추가되었어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v11.8_AD_Admin</span>
+                    광고 순서를 마음대로 바꿔보세요!
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v11.10_AD_Admin</span>
                 </p>
             </header>
 
@@ -112,6 +112,8 @@
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
     <script>
+        // 이 페이지의 JavaScript는 변경되지 않았습니다.
+        // 광고 순서 로직은 admin.html에서 저장한 순서를 그대로 따르기 때문에 자동으로 반영됩니다.
         const INITIAL_LOAD_COUNT = 12;
         const TOTAL_LOAD_COUNT = 500; 
         let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
@@ -121,7 +123,7 @@
         let seenItems = [];
         let isLoadingMore = false;
         let searchTimeout;
-        let adDataList = []; // 광고 데이터를 배열로 관리
+        let adDataList = [];
 
         const elements = { 
             statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
@@ -136,7 +138,7 @@
         document.addEventListener('DOMContentLoaded', initialize);
 
         async function initialize() {
-            loadAdData(); // 광고 데이터 로드
+            loadAdData();
             favorites = JSON.parse(localStorage.getItem('favorites')) || [];
             alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
             seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
@@ -157,12 +159,12 @@
             if (savedAdList) {
                 adDataList = JSON.parse(savedAdList);
             } else {
-                // 저장된 광고가 없으면 기본 예시 광고를 사용
                 adDataList = [{
                     isAd: true,
                     title: "� 창업의 모든 것, 여기서 시작하세요!",
-                    description: "사업 계획서 작성부터 투자 유치까지, 전문가의 컨설팅을 받아보세요. 지금 바로 상담 신청!",
-                    link: "#"
+                    description: "사업 계획서 작성부터 투자 유치까지, 전문가의 컨설팅을 받아보세요.",
+                    link: "#",
+                    imageUrl: ""
                 }];
             }
         }
@@ -266,8 +268,10 @@
         
         function createItemHTML(item) {
             if (item.isAd) {
+                const imageSrc = item.imageUrl || 'https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here';
                 return `
                 <div class="bg-slate-200 rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative">
+                    <img src="${imageSrc}" alt="${item.title}" class="w-full h-32 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Error';">
                     <div class="p-6">
                         <div class="flex justify-between items-start">
                              <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
