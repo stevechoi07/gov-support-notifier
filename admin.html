@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v1.8 (최종 수정)</title>
+    <title>광고 관리 페이지 v1.9 (UI/UX 개선)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -29,10 +29,23 @@
         #media-upload-status {
             transition: opacity 0.3s;
         }
-        #ad-preview video, #ad-preview img {
+        /* --- 1. 미리보기 미디어 컨테이너 스타일 개선 --- */
+        .preview-media-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 비율 */
+            background-color: #e2e8f0;
+            border-radius: 0.5rem; /* 상단 모서리 둥글게 */
+        }
+        .preview-media-container img,
+        .preview-media-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            border-radius: 0.5rem;
         }
         .progress-bar {
             width: 100%;
@@ -46,6 +59,35 @@
             height: 100%;
             width: 0%;
             transition: width 0.2s ease-in-out;
+        }
+        /* --- 2. 파일 선택 버튼을 위한 스타일 --- */
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .file-input-button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .file-input-button:hover {
+            background-color: #2563eb;
+        }
+        .file-input-hidden {
+            display: none;
+        }
+        .file-name-display {
+            font-size: 0.875rem;
+            color: #475569;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 </head>
@@ -79,31 +121,39 @@
                 <button id="close-modal-button" class="text-2xl">&times;</button>
             </div>
             <div class="p-6">
-                 <div class="grid md:grid-cols-2 gap-8">
-                    <div class="space-y-4">
-                        <div>
-                            <label for="ad-title" class="block text-sm font-medium text-slate-600">광고 제목 (필수)</label>
-                            <input type="text" id="ad-title" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                        </div>
-                        <div>
-                            <label for="ad-description" class="block text-sm font-medium text-slate-600">광고 설명</label>
-                            <textarea id="ad-description" rows="3" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
-                        </div>
-                        <div>
-                            <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
-                            <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                        </div>
-                        <div>
-                            <label for="ad-media-file" class="block text-sm font-medium text-slate-600">광고 미디어 (이미지/동영상)</label>
-                            <input type="file" id="ad-media-file" accept="image/png, image/jpeg, image/gif, video/mp4, video/webm" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
-                            <p class="mt-1 text-xs text-slate-500">권장: 16:9 비율의 이미지 또는 동영상, 최대 50MB</p>
-                            <div id="media-upload-status" class="mt-2 space-y-1 opacity-0">
-                                <div class="flex justify-between text-xs font-semibold text-sky-600">
-                                    <span id="upload-label">업로드 중...</span>
-                                    <span id="upload-progress">0%</span>
+                 <!-- --- 3. 레이아웃 간격 조정 (gap-8 -> gap-6) --- -->
+                 <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4 flex flex-col">
+                        <div class="flex-grow space-y-4">
+                            <div>
+                                <label for="ad-title" class="block text-sm font-medium text-slate-600">광고 제목 (필수)</label>
+                                <input type="text" id="ad-title" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <div>
+                                <label for="ad-description" class="block text-sm font-medium text-slate-600">광고 설명</label>
+                                <textarea id="ad-description" rows="3" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                            </div>
+                            <div>
+                                <label for="ad-link" class="block text-sm font-medium text-slate-600">연결 링크 (URL)</label>
+                                <input type="url" id="ad-link" placeholder="https://example.com" class="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600">광고 미디어 (이미지/동영상)</label>
+                                <!-- --- 4. 파일 선택 버튼 UI 개선 --- -->
+                                <div class="file-input-wrapper mt-1">
+                                    <label for="ad-media-file" class="file-input-button">파일 선택</label>
+                                    <span id="file-name-display" class="file-name-display">선택된 파일 없음</span>
+                                    <input type="file" id="ad-media-file" accept="image/png, image/jpeg, image/gif, video/mp4, video/webm" class="file-input-hidden">
                                 </div>
-                                <div class="progress-bar">
-                                    <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                                <p class="mt-1 text-xs text-slate-500">권장: 16:9 비율, 최대 50MB</p>
+                                <div id="media-upload-status" class="mt-2 space-y-1 opacity-0">
+                                    <div class="flex justify-between text-xs font-semibold text-sky-600">
+                                        <span id="upload-label">업로드 중...</span>
+                                        <span id="upload-progress">0%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -111,7 +161,7 @@
                     </div>
                     <div class="mt-4 md:mt-0">
                         <h2 class="text-lg font-bold text-slate-700 mb-2">미리보기</h2>
-                        <div id="ad-preview" class="bg-slate-200 rounded-xl shadow-md overflow-hidden relative aspect-video flex items-center justify-center"></div>
+                        <div id="ad-preview" class="bg-white rounded-xl shadow-md overflow-hidden relative"></div>
                     </div>
                 </div>
             </div>
@@ -129,7 +179,6 @@
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
         authDomain: "gtree-f3d92.firebaseapp.com",
         projectId: "gtree-f3d92",
-        // --- 1. 드디어 진짜 보관함 주소로 수정했습니다! ---
         storageBucket: "gtree-f3d92.firebasestorage.app",
         messagingSenderId: "857408421677",
         appId: "1:857408421677:web:56b75913c99317f1ae5da4",
@@ -169,6 +218,7 @@
       const uploadLabel = document.getElementById('upload-label');
       const uploadProgress = document.getElementById('upload-progress');
       const progressBarFill = document.getElementById('progress-bar-fill');
+      const fileNameDisplay = document.getElementById('file-name-display');
 
       loginButton.addEventListener('click', handleLogin);
       passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
@@ -249,15 +299,20 @@
 
       function handleFileUpload(event) {
           const file = event.target.files[0];
-          if (!file) return;
+          if (!file) {
+              fileNameDisplay.textContent = '선택된 파일 없음';
+              return;
+          }
 
           if (file.size > 50 * 1024 * 1024) {
               alert('파일 크기는 50MB를 초과할 수 없습니다.');
               adMediaFileInput.value = '';
+              fileNameDisplay.textContent = '선택된 파일 없음';
               return;
           }
 
           selectedMediaFile = file; 
+          fileNameDisplay.textContent = file.name; // 파일 이름 표시
           
           if (file.type.startsWith('image/')) {
               currentMediaType = 'image';
@@ -266,6 +321,7 @@
           } else {
               alert("이미지 또는 동영상 파일만 업로드할 수 있습니다.");
               adMediaFileInput.value = '';
+              fileNameDisplay.textContent = '선택된 파일 없음';
               return;
           }
           
@@ -297,7 +353,8 @@
           adDescriptionInput.value = '';
           adLinkInput.value = '';
           adMediaFileInput.value = '';
-          adPreview.innerHTML = `<span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span>`;
+          fileNameDisplay.textContent = '선택된 파일 없음';
+          adPreview.innerHTML = '';
       }
 
       function handleAddNewAd() {
@@ -307,6 +364,7 @@
           currentMediaType = 'image';
           modalTitle.textContent = "새 광고 추가";
           resetModalState();
+          updatePreview(); // 빈 미리보기를 보여주기 위해 호출
           openModal();
       }
 
@@ -322,12 +380,13 @@
               adTitleInput.value = ad.title;
               adDescriptionInput.value = ad.description;
               adLinkInput.value = ad.link;
+              fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
               updatePreview(ad.mediaUrl, ad.mediaType);
               openModal();
           }
       }
 
-      async function handleDeleteAd(event) {
+      async function handleDeleteAd(event) { /* 이전과 동일 */
           const idToDelete = event.target.dataset.id;
           const adToDelete = adList.find(ad => ad.id === idToDelete);
           if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
@@ -343,7 +402,7 @@
           }
       }
 
-      async function uploadMediaFile() {
+      async function uploadMediaFile() { /* 이전과 동일 */
           return new Promise((resolve, reject) => {
               mediaUploadStatus.style.opacity = 1;
               const fileName = `ad_${Date.now()}_${selectedMediaFile.name}`;
@@ -372,7 +431,7 @@
           });
       }
 
-      async function saveDataToFirestore(mediaUrl) {
+      async function saveDataToFirestore(mediaUrl) { /* 이전과 동일 */
           const adData = {
               isAd: true,
               title: adTitleInput.value,
@@ -390,7 +449,7 @@
           }
       }
 
-      async function handleSaveAd() {
+      async function handleSaveAd() { /* 이전과 동일 */
           if (!adTitleInput.value.trim()) {
               alert('광고 제목을 입력해주세요!');
               adTitleInput.focus();
@@ -421,20 +480,41 @@
           }
       }
 
+      // --- 5. 미리보기 함수를 index_ad.html과 동일한 구조로 완전히 변경합니다. ---
       function updatePreview(tempUrl = null, type = 'image') {
+          const title = adTitleInput.value || "광고 제목";
+          const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
+          const link = adLinkInput.value || "#";
+          
           const mediaSrc = tempUrl || currentMediaUrl;
           const mediaTypeToDisplay = tempUrl ? type : currentMediaType;
 
-          if (!mediaSrc) {
-              adPreview.innerHTML = `<span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span>`;
-              return;
+          let mediaElement = '';
+          if (mediaSrc) {
+              if (mediaTypeToDisplay === 'video') {
+                  mediaElement = `<video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
+              } else {
+                  mediaElement = `<img src="${mediaSrc}" alt="Ad preview">`;
+              }
+          } else {
+              mediaElement = `<div class="flex items-center justify-center h-full bg-slate-200"><span class="text-slate-500 text-sm">미리보기가 여기에 표시됩니다.</span></div>`;
           }
 
-          if (mediaTypeToDisplay === 'video') {
-              adPreview.innerHTML = `<video autoplay loop muted playsinline src="${mediaSrc}"></video>`;
-          } else {
-              adPreview.innerHTML = `<img src="${mediaSrc}" alt="Ad preview">`;
-          }
+          adPreview.innerHTML = `
+              <div class="preview-media-container">
+                  ${mediaElement}
+              </div>
+              <div class="p-4 flex-grow flex flex-col">
+                  <div class="flex justify-between items-start">
+                       <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
+                       <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
+                  </div>
+                  <a href="${link}" onclick="return false;" class="block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${title}</a>
+                  <p class="mt-2 text-slate-600 text-sm flex-grow">${description}</p>
+                  <div class="mt-4 pt-4 border-t text-right">
+                       <a href="${link}" onclick="return false;" class="text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                  </div>
+              </div>`;
       }
     </script>
 </body>
