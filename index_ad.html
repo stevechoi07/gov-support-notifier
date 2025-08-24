@@ -77,10 +77,10 @@
         }
         .skeleton-line.h-4 { height: 1rem; }
         .skeleton-line.h-6 { height: 1.5rem; }
-        .skeleton-line.w-1/3 { width: 33.333333%; }
-        .skeleton-line.w-1/4 { width: 25%; }
+        .skeleton-line.w-1-3 { width: 33.333333%; }
+        .skeleton-line.w-1-4 { width: 25%; }
         .skeleton-line.w-full { width: 100%; }
-        .skeleton-line.w-1/2 { width: 50%; }
+        .skeleton-line.w-1-2 { width: 50%; }
         @keyframes shimmer {
             0% { background-position: -1000px 0; }
             100% { background-position: 1000px 0; }
@@ -99,17 +99,18 @@
         <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <!-- 헤더 구조 변경: 아이콘 위치 조정을 위해 items-start 클래스 추가 -->
             <header class="flex justify-between items-start mb-6">
-                <!-- 좌측: 상세 필터 토글 버튼 (햄버거 아이콘) -->
-                <button id="toggle-filters-button" class="p-2 rounded-md hover:bg-slate-200 transition-colors">
+                <!-- 좌측: 상세 필터 토글 버튼 (햄버거 아이콘) - 패딩 조정 -->
+                <button id="toggle-filters-button" class="p-1 rounded-md hover:bg-slate-200 transition-colors">
                     <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
 
                 <!-- 중앙: 제목 및 부제목 -->
                 <div class="text-center -mt-1">
                     <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
-                    <p class="text-slate-600 mt-2 text-sm md:text-base">
-                        K-Startup 공고, 청년창업, R&D 지원금 정보
-                        <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v16.0</span>
+                    <!-- 부제목을 flex로 변경하여 한 줄로 표현 -->
+                    <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
+                        <span>K-Startup 공고, 청년창업, R&D 지원금 정보</span>
+                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v16.0</span>
                     </p>
                 </div>
 
