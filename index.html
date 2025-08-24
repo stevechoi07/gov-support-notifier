@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v12.8 (iframe 파트너스 기능)</title>
+    
+    <!-- SEO 최적화 태그 시작 -->
+    <title>정부 지원사업 알리미 | K-Startup 공고, 청년창업, R&D 지원금 정보</title>
+    <meta name="description" content="최신 정부 지원사업 공고를 한 곳에서 확인하세요. K-Startup, 청년창업, 소상공인, R&D 지원금 등 맞춤형 필터와 키워드 알림으로 놓치지 마세요.">
+    <meta name="keywords" content="정부지원사업, K-Startup, 창업지원, 청년창업, 소상공인 지원, R&D, 정책자금, 지원금, 사업공고">
+    <!-- SEO 최적화 태그 끝 -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -65,8 +71,8 @@
             <header class="text-center mb-6">
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
-                    이제 동영상 광고도 볼 수 있어요!
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v12.8</span>
+                    K-Startup 공고, 청년창업, R&D 지원금 정보
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v13.1</span>
                 </p>
             </header>
 
@@ -102,7 +108,6 @@
                 <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
                     <button data-sort="default" class="control-button active px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">기본순</button>
                     <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
-                    <button id="favorites-toggle" class="control-button w-full sm:w-auto px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500 shadow-md transition-colors">☆ 즐겨찾기 보기</button>
                 </div>
             </div>
             <div class="text-center border-t pt-4 mt-4">
@@ -110,6 +115,10 @@
             </div>
             <div class="mt-4 text-center">
                  <button id="compare-button" class="control-button w-full px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
+            </div>
+            <!-- '즐겨찾기 보기' 버튼 위치 이동 및 기본 숨김 처리 -->
+            <div class="mt-2 text-center">
+                <button id="favorites-toggle" class="control-button w-full px-4 py-2 bg-amber-400 text-white rounded-lg text-sm font-semibold hover:bg-amber-500 shadow-md transition-colors hidden">☆ 즐겨찾기 보기</button>
             </div>
         </div>
 
@@ -178,6 +187,8 @@
           favorites = JSON.parse(localStorage.getItem('favorites')) || [];
           alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
           seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
+          
+          updateFavoritesButtonVisibility(); // 페이지 로드 시 즐겨찾기 버튼 상태 업데이트
           addEventListeners();
           renderAlertKeywords();
           
@@ -345,7 +356,6 @@
             }, 500);
         }
         
-      // --- 1. iframe 광고에 파트너스 문구 추가 ---
       function createItemHTML(item) {
           if (item.isAd) {
               const partnersText = item.isPartners 
@@ -520,12 +530,54 @@
             });
         }
 
-      // --- (이하 헬퍼 함수들은 이전과 동일) ---
       function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
       function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
       function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
-      function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); if (currentFilters.showFavorites) applyFiltersAndRender(); }
-      function toggleComparison(checkbox) { const id = parseInt(checkbox.dataset.id); const index = comparisonList.indexOf(id); if (index > -1) comparisonList.splice(index, 1); else comparisonList.push(id); elements.compareButton.style.display = comparisonList.length > 0 ? 'block' : 'none'; }
+      
+      // '즐겨찾기 보기' 버튼 표시/숨김 로직 추가
+      function toggleFavorite(button) { 
+          const id = parseInt(button.dataset.id); 
+          const index = favorites.indexOf(id); 
+          if (index > -1) { 
+              favorites.splice(index, 1); 
+              button.classList.remove('favorited'); 
+              button.textContent = '☆'; 
+          } else { 
+              favorites.push(id); 
+              button.classList.add('favorited'); 
+              button.textContent = '★'; 
+          } 
+          localStorage.setItem('favorites', JSON.stringify(favorites)); 
+          updateFavoritesButtonVisibility(); // 즐겨찾기 상태 변경 시 버튼 업데이트
+          if (currentFilters.showFavorites) {
+              applyFiltersAndRender();
+          }
+      }
+
+      function toggleComparison(checkbox) { 
+          const id = parseInt(checkbox.dataset.id); 
+          const index = comparisonList.indexOf(id); 
+          if (index > -1) {
+              comparisonList.splice(index, 1);
+          } else {
+              comparisonList.push(id);
+          }
+          elements.compareButton.classList.toggle('hidden', comparisonList.length === 0);
+      }
+      
+      // '즐겨찾기 보기' 버튼의 표시 상태를 관리하는 새 함수
+      function updateFavoritesButtonVisibility() {
+          elements.favoritesToggle.classList.toggle('hidden', favorites.length === 0);
+          
+          // 만약 즐겨찾기 목록이 비었는데 '즐겨찾기 보기' 모드였다면, 전체 보기로 전환
+          if (favorites.length === 0 && currentFilters.showFavorites) {
+              currentFilters.showFavorites = false;
+              elements.favoritesToggle.classList.remove('active');
+              elements.favoritesToggle.innerHTML = '☆ 즐겨찾기 보기';
+              applyFiltersAndRender();
+          }
+      }
+
       function showComparisonModal() { const itemsToCompare = allApiData.filter(item => comparisonList.includes(item.pbanc_sn)); const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-slate-100"><th class="p-2 w-1/5">항목</th>'; itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); tableHTML += '</tr></thead><tbody>'; Object.keys(headers).forEach(key => { tableHTML += `<tr class="border-b"><td class="font-bold p-2 align-top">${headers[key]}</td>`; itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); tableHTML += '</tr>'; }); tableHTML += '</tbody></table></div>'; elements.comparisonContent.innerHTML = tableHTML; elements.modal.classList.remove('hidden'); }
       function shareLink(button) { const url = button.dataset.url; const textArea = document.createElement("textarea"); textArea.value = url; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); showToast("링크가 복사되었습니다!"); } catch (err) { showToast("링크 복사에 실패했습니다.", true); } document.body.removeChild(textArea); }
       function showToast(message, isError = false) { elements.toast.textContent = message; elements.toast.className = `fixed bottom-10 right-10 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 ${isError ? 'bg-red-500' : 'bg-slate-800'}`; elements.toast.classList.remove('opacity-0', 'translate-y-4'); setTimeout(() => { elements.toast.classList.add('opacity-0', 'translate-y-4'); }, 2000); }
