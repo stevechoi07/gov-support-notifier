@@ -61,6 +61,35 @@
             align-items: center;
             width: 100%;
         }
+        
+        /* --- 스켈레톤 UI 스타일 시작 --- */
+        .skeleton-card {
+            background-color: #fff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            overflow: hidden;
+        }
+        .skeleton-line {
+            background-color: #e2e8f0;
+            border-radius: 0.25rem;
+            animation: shimmer 1.5s infinite linear;
+        }
+        .skeleton-line.h-4 { height: 1rem; }
+        .skeleton-line.h-6 { height: 1.5rem; }
+        .skeleton-line.w-1-3 { width: 33.333333%; }
+        .skeleton-line.w-1-4 { width: 25%; }
+        .skeleton-line.w-full { width: 100%; }
+        .skeleton-line.w-1-2 { width: 50%; }
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .skeleton-line {
+            background-image: linear-gradient(to right, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%);
+            background-size: 2000px 100%;
+        }
+        /* --- 스켈레톤 UI 스타일 끝 --- */
     </style>
 </head>
 <body class="bg-slate-100">
@@ -68,12 +97,26 @@
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         
         <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
-            <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
-                <p class="text-slate-600 mt-2">
-                    K-Startup 공고, 청년창업, R&D 지원금 정보
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v14.0</span>
-                </p>
+            <!-- 헤더 구조 변경: 하단 여백을 mb-6에서 mb-4로 수정 -->
+            <header class="flex justify-between items-start mb-4">
+                <!-- 좌측: 상세 필터 토글 버튼 (햄버거 아이콘) - 패딩 및 아이콘 크기 조정 -->
+                <button id="toggle-filters-button" class="p-1 rounded-md hover:bg-slate-200 transition-colors">
+                    <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+
+                <!-- 중앙: 제목 및 부제목 -->
+                <div class="text-center -mt-1">
+                    <!-- 반응형 글자 크기 및 단어 단위 줄바꿈 적용 -->
+                    <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 break-keep">🚀 정부 지원사업 알리미</h1>
+                    <!-- 부제목을 flex로 변경하여 한 줄로 표현 -->
+                    <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
+                        <span>K-Startup, 청년창업, R&D 지원금</span>
+                      <!--  <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v16.0</span> -->
+                    </p>
+                </div>
+
+                <!-- 우측: 중앙 정렬을 위한 빈 공간 - 버튼 크기에 맞춰 조정 -->
+                <div class="w-10 h-10"></div>
             </header>
 
             <!-- 필터 및 검색 UI -->
@@ -89,11 +132,9 @@
                             <option value="all">모든 지역</option>
                         </select>
                     </div>
-                    <!-- 사업분야: select에서 checkbox container로 변경 -->
                     <div>
                         <label class="text-sm font-semibold text-slate-500 mb-2 block">사업분야 (중복 가능)</label>
                         <div id="category-checkbox-container" class="max-h-40 overflow-y-auto space-y-2 p-2 border rounded-lg bg-white">
-                            <!-- 자바스크립트로 체크박스 채워짐 -->
                         </div>
                     </div>
                 </div>
@@ -111,9 +152,7 @@
                     <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
                 </div>
             </div>
-            <div class="text-center border-t pt-4 mt-4">
-                <button id="toggle-filters-button" class="text-sm font-semibold text-sky-600 hover:underline">상세 필터 보기 ▼</button>
-            </div>
+            <!-- 기존 상세 필터 보기 버튼 위치 제거 -->
             <div class="mt-4 text-center">
                  <button id="compare-button" class="control-button w-full px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
             </div>
@@ -122,7 +161,49 @@
             </div>
         </div>
 
-        <div id="status-container" class="text-center h-64 flex justify-center items-center"><div id="loading-indicator"><div class="loader mx-auto"></div><p class="text-slate-500 mt-4">최신 데이터를 불러오는 중입니다...</p></div><div id="error-message" class="hidden"></div></div>
+        <!-- status-container를 스켈레톤 로더로 교체 -->
+        <div id="status-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 스켈레톤 카드 (초기 로딩 시 보여줄 가짜 카드) -->
+            <div class="skeleton-card space-y-4">
+                <div class="flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/3"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+                <div class="skeleton-line h-6 w-full"></div>
+                <div class="skeleton-line h-4 w-1/2"></div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+            </div>
+            <div class="skeleton-card space-y-4 hidden md:block">
+                <div class="flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/3"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+                <div class="skeleton-line h-6 w-full"></div>
+                <div class="skeleton-line h-4 w-1/2"></div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+            </div>
+            <div class="skeleton-card space-y-4 hidden lg:block">
+                <div class="flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/3"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+                <div class="skeleton-line h-6 w-full"></div>
+                <div class="skeleton-line h-4 w-1/2"></div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+            </div>
+            <!-- 오류 메시지 영역 -->
+            <div id="error-message" class="hidden col-span-full text-center"></div>
+        </div>
+
         <main id="results-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
         
         <div id="load-more-spinner" class="text-center mt-8 hidden">
@@ -163,7 +244,6 @@
       const TOTAL_LOAD_COUNT = 500; 
       let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
       let visibleItemCount = 12;
-      // category 필터를 문자열에서 배열로 변경
       let currentFilters = { searchTerm: '', region: 'all', category: [], sort: 'default', showFavorites: false };
       let alertKeywords = [];
       let seenItems = [];
@@ -172,26 +252,42 @@
       let adDataList = [];
 
       const elements = { 
-          statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
+          statusContainer: document.getElementById('status-container'), 
+          errorMessage: document.getElementById('error-message'), 
+          resultsContainer: document.getElementById('results-container'), 
+          searchInput: document.getElementById('search-input'), 
+          sortButtons: document.getElementById('sort-buttons'),
           regionSelect: document.getElementById('region-select'), 
-          // categorySelect 대신 checkbox-container를 사용
           categoryCheckboxContainer: document.getElementById('category-checkbox-container'), 
-          activeFiltersContainer: document.getElementById('active-filters-container'), favoritesToggle: document.getElementById('favorites-toggle'), compareButton: document.getElementById('compare-button'), 
+          activeFiltersContainer: document.getElementById('active-filters-container'), 
+          favoritesToggle: document.getElementById('favorites-toggle'), 
+          compareButton: document.getElementById('compare-button'), 
           loadMoreSpinner: document.getElementById('load-more-spinner'),
-          modal: document.getElementById('comparison-modal'), modalBg: document.getElementById('comparison-modal-bg'), closeModalButton: document.getElementById('close-modal-button'), comparisonContent: document.getElementById('comparison-content'), toast: document.getElementById('toast-notification'), toggleFiltersButton: document.getElementById('toggle-filters-button'), collapsibleFilters: document.getElementById('collapsible-filters'),
-          keywordInput: document.getElementById('keyword-input'), addKeywordButton: document.getElementById('add-keyword-button'), keywordTagsContainer: document.getElementById('keyword-tags-container'), keywordAlertModal: document.getElementById('keyword-alert-modal'), keywordAlertContent: document.getElementById('keyword-alert-content'), closeKeywordAlertButton: document.getElementById('close-keyword-alert-button')
+          modal: document.getElementById('comparison-modal'), 
+          modalBg: document.getElementById('comparison-modal-bg'), 
+          closeModalButton: document.getElementById('close-modal-button'), 
+          comparisonContent: document.getElementById('comparison-content'), 
+          toast: document.getElementById('toast-notification'), 
+          toggleFiltersButton: document.getElementById('toggle-filters-button'), 
+          collapsibleFilters: document.getElementById('collapsible-filters'),
+          keywordInput: document.getElementById('keyword-input'), 
+          addKeywordButton: document.getElementById('add-keyword-button'), 
+          keywordTagsContainer: document.getElementById('keyword-tags-container'), 
+          keywordAlertModal: document.getElementById('keyword-alert-modal'), 
+          keywordAlertContent: document.getElementById('keyword-alert-content'), 
+          closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
       };
 
       document.addEventListener('DOMContentLoaded', initialize);
 
       async function initialize() {
+          addEventListeners();
           await loadAdData();
           favorites = JSON.parse(localStorage.getItem('favorites')) || [];
           alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
           seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
           
           updateFavoritesButtonVisibility(); 
-          addEventListeners();
           renderAlertKeywords();
           
           const fullData = await fetchData(TOTAL_LOAD_COUNT);
@@ -216,14 +312,11 @@
 
               adDataList = rawAdData.filter(ad => {
                   if (ad.isActive === false) return false;
-
                   const start = ad.startDate ? new Date(ad.startDate) : null;
                   const end = ad.endDate ? new Date(ad.endDate) : null;
-
                   if (!start && !end) return true;
                   if (start && now < start) return false;
                   if (end && now > end) return false;
-                  
                   return true;
               });
 
@@ -243,7 +336,7 @@
                 throw new Error(data.resultMsg || "백엔드로부터 유효한 데이터를 받지 못했습니다.");
             } catch (error) {
                 console.error("데이터 요청 오류:", error);
-                elements.loadingIndicator.classList.add('hidden');
+                elements.statusContainer.classList.add('hidden'); // 스켈레톤 숨기기
                 let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.";
                 if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올바른지 확인해주세요.";
                 else friendlyMessage = `오류 발생: ${error.message}`;
@@ -260,7 +353,6 @@
                 if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
             });
 
-            // 지역 필터 채우기 (기존과 동일)
             elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiData.length +')</option>';
             const sortedRegions = Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko'));
             for (const region of sortedRegions) {
@@ -271,7 +363,6 @@
                 elements.regionSelect.appendChild(option);
             }
 
-            // 사업분야 필터를 체크박스로 채우기
             elements.categoryCheckboxContainer.innerHTML = '';
             const sortedCategories = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko'));
             for (const category of sortedCategories) {
@@ -301,7 +392,6 @@
             elements.favoritesToggle.addEventListener('click', e => { currentFilters.showFavorites = !currentFilters.showFavorites; e.target.classList.toggle('active'); e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; applyFiltersAndRender(); });
             elements.regionSelect.addEventListener('change', e => { currentFilters.region = e.target.value; applyFiltersAndRender(); });
             
-            // categorySelect 대신 checkbox-container에 이벤트 리스너 추가
             elements.categoryCheckboxContainer.addEventListener('change', e => {
                 if (e.target.classList.contains('category-checkbox')) {
                     const checkedCategories = [];
@@ -320,9 +410,7 @@
                     e.preventDefault();
                     const adId = adLink.dataset.id;
                     const adUrl = adLink.href;
-                    if (adId) {
-                        handleAdClick(adId);
-                    }
+                    if (adId) handleAdClick(adId);
                     window.open(adUrl, '_blank');
                 }
                 const button = target.closest('button');
@@ -338,7 +426,12 @@
             elements.compareButton.addEventListener('click', showComparisonModal);
             elements.modalBg.addEventListener('click', () => elements.modal.classList.add('hidden'));
             elements.closeModalButton.addEventListener('click', () => elements.modal.classList.add('hidden'));
-            elements.toggleFiltersButton.addEventListener('click', () => { const filters = elements.collapsibleFilters; const button = elements.toggleFiltersButton; filters.classList.toggle('expanded'); button.innerHTML = filters.classList.contains('expanded') ? '상세 필터 접기 ▲' : '상세 필터 보기 ▼'; });
+            
+            // 상세 필터 토글 버튼 이벤트 리스너 (텍스트 변경 로직 제거)
+            elements.toggleFiltersButton.addEventListener('click', () => { 
+                elements.collapsibleFilters.classList.toggle('expanded');
+            });
+
             elements.addKeywordButton.addEventListener('click', addKeyword);
             elements.keywordInput.addEventListener('keypress', e => { if (e.key === 'Enter') addKeyword(); });
             elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
@@ -412,7 +505,7 @@
                            <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
                            <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
                       </div>
-                      <a href="${item.link}" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
+                      <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
                       <p class="mt-2 text-slate-600 text-sm flex-grow">${item.description || ''}</p>
                       
                       <div class="mt-auto">
@@ -420,7 +513,7 @@
                       </div>
 
                       <div class="mt-4 pt-4 border-t text-right">
-                           <a href="${item.link}" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                           <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
                       </div>
                   </div>
               </div>`;
@@ -472,43 +565,48 @@
         }
 
       function applyFiltersAndRender() {
-            let items = [...allApiData]; 
-            if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
-            if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
-            if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); 
-            
-            // 사업분야 필터 로직 변경 (OR 조건)
-            if (currentFilters.category.length > 0) {
-                items = items.filter(item => currentFilters.category.includes(item.supt_biz_clsfc));
-            }
-            
-            if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
-            
-            const itemsWithAds = [];
-            let adIndex = 0;
-            if (adDataList.length > 0) {
-                for (let i = 0; i < items.length; i++) {
-                    itemsWithAds.push(items[i]);
-                    if ((i + 1) % 7 === 0) {
-                        const currentAd = adDataList[adIndex % adDataList.length];
-                        itemsWithAds.push(currentAd);
-                        adIndex++;
-                    }
-                }
-            } else {
-                 items.forEach(item => itemsWithAds.push(item));
-            }
+            elements.resultsContainer.classList.add('hidden');
+            elements.statusContainer.classList.remove('hidden'); // 필터링 시작 시 스켈레톤 보이기
 
-            filteredItems = itemsWithAds;
-            visibleItemCount = INITIAL_LOAD_COUNT;
-            elements.statusContainer.classList.add('hidden'); 
-            elements.resultsContainer.classList.remove('hidden'); 
-            renderActiveFilters(); 
-            if (filteredItems.length === 0) { 
-                elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
-            } else { 
-                displayData(filteredItems.slice(0, visibleItemCount)); 
-            }
+            // 필터링 작업이 오래 걸리는 것처럼 보이게 잠시 딜레이
+            setTimeout(() => {
+                let items = [...allApiData]; 
+                if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
+                if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
+                if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); 
+                
+                if (currentFilters.category.length > 0) {
+                    items = items.filter(item => currentFilters.category.includes(item.supt_biz_clsfc));
+                }
+                
+                if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
+                
+                const itemsWithAds = [];
+                let adIndex = 0;
+                if (adDataList.length > 0) {
+                    for (let i = 0; i < items.length; i++) {
+                        itemsWithAds.push(items[i]);
+                        if ((i + 1) % 7 === 0) {
+                            const currentAd = adDataList[adIndex % adDataList.length];
+                            itemsWithAds.push(currentAd);
+                            adIndex++;
+                        }
+                    }
+                } else {
+                     items.forEach(item => itemsWithAds.push(item));
+                }
+
+                filteredItems = itemsWithAds;
+                visibleItemCount = INITIAL_LOAD_COUNT;
+                elements.statusContainer.classList.add('hidden'); 
+                elements.resultsContainer.classList.remove('hidden'); 
+                renderActiveFilters(); 
+                if (filteredItems.length === 0) { 
+                    elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
+                } else { 
+                    displayData(filteredItems.slice(0, visibleItemCount)); 
+                }
+            }, 200); // 0.2초 딜레이
         }
 
       function renderActiveFilters() {
@@ -516,7 +614,6 @@
             if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; 
             if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; 
             
-            // 선택된 사업분야 태그들을 렌더링
             if (currentFilters.category.length > 0) {
                 currentFilters.category.forEach(cat => {
                     html += `<span class="active-filter-tag" data-type="category" data-value="${cat}">분야: ${cat} <button>x</button></span>`;
@@ -530,7 +627,7 @@
             elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { 
                 const tagElement = e.target.parentElement;
                 const type = tagElement.dataset.type; 
-                const value = tagElement.dataset.value; // 카테고리 태그의 경우 value가 있음
+                const value = tagElement.dataset.value; 
                 resetFilter(type, value); 
             })); 
             if(document.getElementById('reset-filters-button')) { 
@@ -546,9 +643,7 @@
                 currentFilters.region = 'all'; 
                 elements.regionSelect.value = 'all';
             } else if (type === 'category') {
-                // 특정 카테고리만 필터에서 제거
                 currentFilters.category = currentFilters.category.filter(cat => cat !== value);
-                // UI 체크박스도 해제
                 const checkboxToUncheck = elements.categoryCheckboxContainer.querySelector(`.category-checkbox[value="${value}"]`);
                 if (checkboxToUncheck) checkboxToUncheck.checked = false;
             }
@@ -558,10 +653,9 @@
       function resetAllFilters() {
             currentFilters.searchTerm = ''; 
             currentFilters.region = 'all'; 
-            currentFilters.category = []; // 카테고리 필터 초기화
+            currentFilters.category = []; 
             elements.searchInput.value = ''; 
             elements.regionSelect.value = 'all';
-            // 모든 카테고리 체크박스 해제
             elements.categoryCheckboxContainer.querySelectorAll('.category-checkbox:checked').forEach(checkbox => checkbox.checked = false);
             applyFiltersAndRender();
         }
@@ -625,6 +719,7 @@
       function handleKeywordTagClick(e) { if (e.target.tagName === 'BUTTON') { const index = parseInt(e.target.dataset.index); alertKeywords.splice(index, 1); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); } }
       function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiData.length === 0) return; const currentItemIds = allApiData.map(item => item.pbanc_sn); const newItems = allApiData.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
       function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
+      
     </script>
 </body>
 </html>
