@@ -61,16 +61,33 @@
             align-items: center;
             width: 100%;
         }
+        
         /* --- 스켈레톤 UI 스타일 시작 --- */
         .skeleton-card {
-            background-color: #e2e8f0;
+            background-color: #fff;
             border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             padding: 1.5rem;
+            overflow: hidden;
         }
         .skeleton-line {
-            background-color: #cbd5e1;
+            background-color: #e2e8f0;
             border-radius: 0.25rem;
-            height: 1rem;
+            animation: shimmer 1.5s infinite linear;
+        }
+        .skeleton-line.h-4 { height: 1rem; }
+        .skeleton-line.h-6 { height: 1.5rem; }
+        .skeleton-line.w-1/3 { width: 33.333333%; }
+        .skeleton-line.w-1/4 { width: 25%; }
+        .skeleton-line.w-full { width: 100%; }
+        .skeleton-line.w-1/2 { width: 50%; }
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .skeleton-line {
+            background-image: linear-gradient(to right, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%);
+            background-size: 2000px 100%;
         }
         /* --- 스켈레톤 UI 스타일 끝 --- */
     </style>
@@ -80,12 +97,24 @@
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         
         <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
-            <header class="text-center mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
-                <p class="text-slate-600 mt-2">
-                    K-Startup 공고, 청년창업, R&D 지원금 정보
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v15.0</span>
-                </p>
+            <!-- 헤더 구조 변경 -->
+            <header class="flex justify-between items-center mb-6">
+                <!-- 좌측: 상세 필터 토글 버튼 (햄버거 아이콘) -->
+                <button id="toggle-filters-button" class="p-2 rounded-md hover:bg-slate-200 transition-colors">
+                    <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+
+                <!-- 중앙: 제목 및 부제목 -->
+                <div class="text-center">
+                    <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
+                    <p class="text-slate-600 mt-2 text-sm md:text-base">
+                        K-Startup 공고, 청년창업, R&D 지원금 정보
+                        <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v15.6-test</span>
+                    </p>
+                </div>
+
+                <!-- 우측: 중앙 정렬을 위한 빈 공간 -->
+                <div class="w-10 h-10"></div>
             </header>
 
             <!-- 필터 및 검색 UI -->
@@ -121,9 +150,7 @@
                     <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
                 </div>
             </div>
-            <div class="text-center border-t pt-4 mt-4">
-                <button id="toggle-filters-button" class="text-sm font-semibold text-sky-600 hover:underline">상세 필터 보기 ▼</button>
-            </div>
+            <!-- 기존 상세 필터 보기 버튼 위치 제거 -->
             <div class="mt-4 text-center">
                  <button id="compare-button" class="control-button w-full px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
             </div>
@@ -132,11 +159,47 @@
             </div>
         </div>
 
-        <!-- status-container는 이제 스켈레톤 로더와 에러 메시지만을 위한 공간이 됩니다. -->
-        <div id="status-container">
-            <!-- 스켈레톤 로더 UI -->
-            <div id="skeleton-loader" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            <div id="error-message" class="hidden text-center"></div>
+        <!-- status-container를 스켈레톤 로더로 교체 -->
+        <div id="status-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 스켈레톤 카드 (초기 로딩 시 보여줄 가짜 카드) -->
+            <div class="skeleton-card space-y-4">
+                <div class="flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/3"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+                <div class="skeleton-line h-6 w-full"></div>
+                <div class="skeleton-line h-4 w-1/2"></div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+            </div>
+            <div class="skeleton-card space-y-4 hidden md:block">
+                <div class="flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/3"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+                <div class="skeleton-line h-6 w-full"></div>
+                <div class="skeleton-line h-4 w-1/2"></div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+            </div>
+            <div class="skeleton-card space-y-4 hidden lg:block">
+                <div class="flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/3"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+                <div class="skeleton-line h-6 w-full"></div>
+                <div class="skeleton-line h-4 w-1/2"></div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center">
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                    <div class="skeleton-line h-4 w-1/4"></div>
+                </div>
+            </div>
+            <!-- 오류 메시지 영역 -->
+            <div id="error-message" class="hidden col-span-full text-center"></div>
         </div>
 
         <main id="results-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
@@ -156,12 +219,6 @@
     <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
-    <!-- "메인으로 돌아오기" 안내 배너 -->
-    <div id="back-to-main-toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-sky-600 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 transition-all duration-300 pointer-events-none z-50">
-        <span>🔍 공고를 새 탭에서 열었어요. 여기로 돌아와 계속 탐색하세요!</span>
-        <button id="back-to-main-toast-close" class="ml-4 font-bold text-lg leading-none">&times;</button>
-    </div>
-
     <!-- Firebase SDK 추가 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
@@ -194,7 +251,6 @@
 
       const elements = { 
           statusContainer: document.getElementById('status-container'), 
-          skeletonLoader: document.getElementById('skeleton-loader'), // 스켈레톤 로더 추가
           errorMessage: document.getElementById('error-message'), 
           resultsContainer: document.getElementById('results-container'), 
           searchInput: document.getElementById('search-input'), 
@@ -218,22 +274,18 @@
           keywordAlertModal: document.getElementById('keyword-alert-modal'), 
           keywordAlertContent: document.getElementById('keyword-alert-content'), 
           closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
-          // "돌아오기" 배너 요소 추가
-          backToMainToast: document.getElementById('back-to-main-toast'),
-          backToMainToastClose: document.getElementById('back-to-main-toast-close')
       };
 
       document.addEventListener('DOMContentLoaded', initialize);
 
       async function initialize() {
-          showSkeletonLoader(); // *** 변경점: 초기화 시작 시 스켈레톤 로더 표시
+          addEventListeners();
           await loadAdData();
           favorites = JSON.parse(localStorage.getItem('favorites')) || [];
           alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
           seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
           
           updateFavoritesButtonVisibility(); 
-          addEventListeners();
           renderAlertKeywords();
           
           const fullData = await fetchData(TOTAL_LOAD_COUNT);
@@ -245,36 +297,7 @@
           }
       }
       
-      // --- 신규 함수: 스켈레톤 로더 UI를 생성하고 표시 ---
-      function showSkeletonLoader() {
-          let skeletonHTML = '';
-          for (let i = 0; i < INITIAL_LOAD_COUNT; i++) {
-              skeletonHTML += `
-              <div class="skeleton-card animate-pulse">
-                  <div class="flex justify-between items-start mb-2">
-                      <div class="skeleton-line w-1/3"></div>
-                      <div class="skeleton-line w-1/6"></div>
-                  </div>
-                  <div class="skeleton-line w-full h-6 mb-4"></div>
-                  <div class="skeleton-line w-3/4 mb-6"></div>
-                  <div class="border-t border-slate-300 pt-4 flex justify-between items-center">
-                      <div class="skeleton-line w-1/4"></div>
-                      <div class="flex gap-2">
-                          <div class="w-8 h-8 rounded-full bg-slate-300"></div>
-                          <div class="w-8 h-8 rounded-full bg-slate-300"></div>
-                      </div>
-                  </div>
-              </div>
-              `;
-          }
-          elements.skeletonLoader.innerHTML = skeletonHTML;
-          elements.skeletonLoader.classList.remove('hidden');
-          elements.resultsContainer.classList.add('hidden');
-          elements.errorMessage.classList.add('hidden');
-      }
-
       async function loadAdData() {
-          // ... (기존 코드와 동일)
           try {
               const q = query(collection(db, "ads"), orderBy("order", "asc"));
               const querySnapshot = await getDocs(q);
@@ -311,18 +334,17 @@
                 throw new Error(data.resultMsg || "백엔드로부터 유효한 데이터를 받지 못했습니다.");
             } catch (error) {
                 console.error("데이터 요청 오류:", error);
-                elements.skeletonLoader.classList.add('hidden'); // *** 변경점: 오류 발생 시 스켈레톤 숨김
-                let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.";
-                if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 서버에 연결할 수 없습니다.";
+                elements.statusContainer.classList.add('hidden'); // 스켈레톤 숨기기
+                let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.";
+                if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올바른지 확인해주세요.";
                 else friendlyMessage = `오류 발생: ${error.message}`;
                 elements.errorMessage.textContent = friendlyMessage;
                 elements.errorMessage.classList.remove('hidden');
                 return null;
             }
-      }
+        }
         
       async function populateFilters() {
-            // ... (기존 코드와 동일)
             const regionCounts = {}, categoryCounts = {};
             allApiData.forEach(item => {
                 if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
@@ -353,7 +375,7 @@
                 `;
                 elements.categoryCheckboxContainer.appendChild(label);
             }
-      }
+        }
 
       function addEventListeners() {
             window.addEventListener('scroll', handleScroll);
@@ -388,7 +410,6 @@
                     const adUrl = adLink.href;
                     if (adId) handleAdClick(adId);
                     window.open(adUrl, '_blank');
-                    showBackToMainToast(); // *** 변경점: 광고 링크 클릭 시에도 배너 표시
                 }
                 const button = target.closest('button');
                 if (button) {
@@ -398,47 +419,42 @@
                 }
                 const checkbox = target.closest('.compare-checkbox');
                 if (checkbox) toggleComparison(checkbox);
-
-                // *** 변경점: 공고 제목 링크 클릭 감지
-                const link = target.closest('a[target="_blank"]');
-                if (link && !link.classList.contains('ad-link')) {
-                    showBackToMainToast();
-                }
             });
 
             elements.compareButton.addEventListener('click', showComparisonModal);
             elements.modalBg.addEventListener('click', () => elements.modal.classList.add('hidden'));
             elements.closeModalButton.addEventListener('click', () => elements.modal.classList.add('hidden'));
-            elements.toggleFiltersButton.addEventListener('click', () => { const filters = elements.collapsibleFilters; const button = elements.toggleFiltersButton; filters.classList.toggle('expanded'); button.innerHTML = filters.classList.contains('expanded') ? '상세 필터 접기 ▲' : '상세 필터 보기 ▼'; });
+            
+            // 상세 필터 토글 버튼 이벤트 리스너 (텍스트 변경 로직 제거)
+            elements.toggleFiltersButton.addEventListener('click', () => { 
+                elements.collapsibleFilters.classList.toggle('expanded');
+            });
+
             elements.addKeywordButton.addEventListener('click', addKeyword);
             elements.keywordInput.addEventListener('keypress', e => { if (e.key === 'Enter') addKeyword(); });
             elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
             elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
-
-            // *** 변경점: "돌아오기" 배너 닫기 버튼 이벤트
-            elements.backToMainToastClose.addEventListener('click', hideBackToMainToast);
         }
 
       async function handleAdClick(adId) {
-          // ... (기존 코드와 동일)
           try {
               const adRef = doc(db, "ads", adId);
-              await updateDoc(adRef, { clickCount: increment(1) });
+              await updateDoc(adRef, {
+                  clickCount: increment(1)
+              });
           } catch (error) {
               console.error("클릭 카운트 업데이트 실패:", error);
           }
       }
 
       function handleScroll() {
-            // ... (기존 코드와 동일)
             const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
             if (clientHeight + scrollTop >= scrollHeight - 100 && visibleItemCount < filteredItems.length && !isLoadingMore) {
                 loadMoreItems();
             }
-      }
+        }
 
       function loadMoreItems() {
-            // ... (기존 코드와 동일)
             isLoadingMore = true;
             elements.loadMoreSpinner.classList.remove('hidden');
             setTimeout(() => {
@@ -448,10 +464,9 @@
                 elements.loadMoreSpinner.classList.add('hidden');
                 isLoadingMore = false;
             }, 500);
-      }
+        }
         
       function createItemHTML(item) {
-          // ... (기존 코드와 동일, 변경 없음)
           if (item.isAd) {
               const partnersText = item.isPartners 
                   ? `<p class="text-xs text-slate-500 text-left">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
@@ -488,7 +503,7 @@
                            <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
                            <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
                       </div>
-                      <a href="${item.link}" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
+                      <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
                       <p class="mt-2 text-slate-600 text-sm flex-grow">${item.description || ''}</p>
                       
                       <div class="mt-auto">
@@ -496,7 +511,7 @@
                       </div>
 
                       <div class="mt-4 pt-4 border-t text-right">
-                           <a href="${item.link}" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                           <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
                       </div>
                   </div>
               </div>`;
@@ -540,56 +555,57 @@
         
       function displayData(items) {
             elements.resultsContainer.innerHTML = items.map(createItemHTML).join(''); 
-      }
+        }
 
       function appendData(items) {
             const newContent = items.map(createItemHTML).join('');
             elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
-      }
+        }
 
       function applyFiltersAndRender() {
-            let items = [...allApiData]; 
-            if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
-            if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
-            if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); 
-            
-            if (currentFilters.category.length > 0) {
-                items = items.filter(item => currentFilters.category.includes(item.supt_biz_clsfc));
-            }
-            
-            if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
-            
-            const itemsWithAds = [];
-            let adIndex = 0;
-            if (adDataList.length > 0) {
-                for (let i = 0; i < items.length; i++) {
-                    itemsWithAds.push(items[i]);
-                    if ((i + 1) % 7 === 0) {
-                        const currentAd = adDataList[adIndex % adDataList.length];
-                        itemsWithAds.push(currentAd);
-                        adIndex++;
-                    }
+            elements.resultsContainer.classList.add('hidden');
+            elements.statusContainer.classList.remove('hidden'); // 필터링 시작 시 스켈레톤 보이기
+
+            // 필터링 작업이 오래 걸리는 것처럼 보이게 잠시 딜레이
+            setTimeout(() => {
+                let items = [...allApiData]; 
+                if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
+                if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
+                if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); 
+                
+                if (currentFilters.category.length > 0) {
+                    items = items.filter(item => currentFilters.category.includes(item.supt_biz_clsfc));
                 }
-            } else {
-                 items.forEach(item => itemsWithAds.push(item));
-            }
+                
+                if (currentFilters.sort === 'deadline') items.sort((a, b) => calculateDday(a.pbanc_rcpt_end_dt).days - calculateDday(b.pbanc_rcpt_end_dt).days); 
+                
+                const itemsWithAds = [];
+                let adIndex = 0;
+                if (adDataList.length > 0) {
+                    for (let i = 0; i < items.length; i++) {
+                        itemsWithAds.push(items[i]);
+                        if ((i + 1) % 7 === 0) {
+                            const currentAd = adDataList[adIndex % adDataList.length];
+                            itemsWithAds.push(currentAd);
+                            adIndex++;
+                        }
+                    }
+                } else {
+                     items.forEach(item => itemsWithAds.push(item));
+                }
 
-            filteredItems = itemsWithAds;
-            visibleItemCount = INITIAL_LOAD_COUNT;
-            
-            // *** 변경점: 스켈레톤 숨기고 실제 데이터 표시
-            elements.skeletonLoader.classList.add('hidden'); 
-            elements.resultsContainer.classList.remove('hidden'); 
-
-            renderActiveFilters(); 
-            if (filteredItems.length === 0) { 
-                elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
-            } else { 
-                displayData(filteredItems.slice(0, visibleItemCount)); 
-            }
-      }
-      
-      // ... (이하 나머지 함수들은 기존 코드와 대부분 동일)
+                filteredItems = itemsWithAds;
+                visibleItemCount = INITIAL_LOAD_COUNT;
+                elements.statusContainer.classList.add('hidden'); 
+                elements.resultsContainer.classList.remove('hidden'); 
+                renderActiveFilters(); 
+                if (filteredItems.length === 0) { 
+                    elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
+                } else { 
+                    displayData(filteredItems.slice(0, visibleItemCount)); 
+                }
+            }, 200); // 0.2초 딜레이
+        }
 
       function renderActiveFilters() {
             let html = ''; 
@@ -609,13 +625,13 @@
             elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { 
                 const tagElement = e.target.parentElement;
                 const type = tagElement.dataset.type; 
-                const value = tagElement.dataset.value;
+                const value = tagElement.dataset.value; 
                 resetFilter(type, value); 
             })); 
             if(document.getElementById('reset-filters-button')) { 
                 document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); 
             } 
-      }
+        }
 
       function resetFilter(type, value) {
             if (type === 'searchTerm') {
@@ -630,24 +646,24 @@
                 if (checkboxToUncheck) checkboxToUncheck.checked = false;
             }
             applyFiltersAndRender();
-      }
+        }
 
       function resetAllFilters() {
             currentFilters.searchTerm = ''; 
             currentFilters.region = 'all'; 
-            currentFilters.category = [];
+            currentFilters.category = []; 
             elements.searchInput.value = ''; 
             elements.regionSelect.value = 'all';
             elements.categoryCheckboxContainer.querySelectorAll('.category-checkbox:checked').forEach(checkbox => checkbox.checked = false);
             applyFiltersAndRender();
-      }
+        }
         
       function updateFilterUI() {
             elements.sortButtons.querySelectorAll('.control-button[data-sort]').forEach(button => {
                 if (button.dataset.sort === currentFilters.sort) { button.classList.add('active'); } 
                 else { button.classList.remove('active'); }
             });
-      }
+        }
 
       function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
       function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
@@ -702,16 +718,6 @@
       function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiData.length === 0) return; const currentItemIds = allApiData.map(item => item.pbanc_sn); const newItems = allApiData.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
       function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
       
-      // --- 신규 함수: "돌아오기" 배너 표시/숨김 ---
-      function showBackToMainToast() {
-        const toast = elements.backToMainToast;
-        toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-      }
-
-      function hideBackToMainToast() {
-        const toast = elements.backToMainToast;
-        toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-      }
     </script>
 </body>
 </html>
