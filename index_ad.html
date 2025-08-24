@@ -61,6 +61,18 @@
             align-items: center;
             width: 100%;
         }
+        /* --- 스켈레톤 UI 스타일 시작 --- */
+        .skeleton-card {
+            background-color: #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+        .skeleton-line {
+            background-color: #cbd5e1;
+            border-radius: 0.25rem;
+            height: 1rem;
+        }
+        /* --- 스켈레톤 UI 스타일 끝 --- */
     </style>
 </head>
 <body class="bg-slate-100">
@@ -72,7 +84,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🚀 정부 지원사업 알리미</h1>
                 <p class="text-slate-600 mt-2">
                     K-Startup 공고, 청년창업, R&D 지원금 정보
-                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v14.0</span>
+                    <span class="ml-2 text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full align-middle">v15.0</span>
                 </p>
             </header>
 
@@ -89,11 +101,9 @@
                             <option value="all">모든 지역</option>
                         </select>
                     </div>
-                    <!-- 사업분야: select에서 checkbox container로 변경 -->
                     <div>
                         <label class="text-sm font-semibold text-slate-500 mb-2 block">사업분야 (중복 가능)</label>
                         <div id="category-checkbox-container" class="max-h-40 overflow-y-auto space-y-2 p-2 border rounded-lg bg-white">
-                            <!-- 자바스크립트로 체크박스 채워짐 -->
                         </div>
                     </div>
                 </div>
@@ -122,7 +132,13 @@
             </div>
         </div>
 
-        <div id="status-container" class="text-center h-64 flex justify-center items-center"><div id="loading-indicator"><div class="loader mx-auto"></div><p class="text-slate-500 mt-4">최신 데이터를 불러오는 중입니다...</p></div><div id="error-message" class="hidden"></div></div>
+        <!-- status-container는 이제 스켈레톤 로더와 에러 메시지만을 위한 공간이 됩니다. -->
+        <div id="status-container">
+            <!-- 스켈레톤 로더 UI -->
+            <div id="skeleton-loader" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="error-message" class="hidden text-center"></div>
+        </div>
+
         <main id="results-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
         
         <div id="load-more-spinner" class="text-center mt-8 hidden">
@@ -140,6 +156,12 @@
     <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
+    <!-- "메인으로 돌아오기" 안내 배너 -->
+    <div id="back-to-main-toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-sky-600 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 transition-all duration-300 pointer-events-none z-50">
+        <span>🔍 공고를 새 탭에서 열었어요. 여기로 돌아와 계속 탐색하세요!</span>
+        <button id="back-to-main-toast-close" class="ml-4 font-bold text-lg leading-none">&times;</button>
+    </div>
+
     <!-- Firebase SDK 추가 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
@@ -163,7 +185,6 @@
       const TOTAL_LOAD_COUNT = 500; 
       let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
       let visibleItemCount = 12;
-      // category 필터를 문자열에서 배열로 변경
       let currentFilters = { searchTerm: '', region: 'all', category: [], sort: 'default', showFavorites: false };
       let alertKeywords = [];
       let seenItems = [];
@@ -172,19 +193,40 @@
       let adDataList = [];
 
       const elements = { 
-          statusContainer: document.getElementById('status-container'), loadingIndicator: document.getElementById('loading-indicator'), errorMessage: document.getElementById('error-message'), resultsContainer: document.getElementById('results-container'), searchInput: document.getElementById('search-input'), sortButtons: document.getElementById('sort-buttons'),
+          statusContainer: document.getElementById('status-container'), 
+          skeletonLoader: document.getElementById('skeleton-loader'), // 스켈레톤 로더 추가
+          errorMessage: document.getElementById('error-message'), 
+          resultsContainer: document.getElementById('results-container'), 
+          searchInput: document.getElementById('search-input'), 
+          sortButtons: document.getElementById('sort-buttons'),
           regionSelect: document.getElementById('region-select'), 
-          // categorySelect 대신 checkbox-container를 사용
           categoryCheckboxContainer: document.getElementById('category-checkbox-container'), 
-          activeFiltersContainer: document.getElementById('active-filters-container'), favoritesToggle: document.getElementById('favorites-toggle'), compareButton: document.getElementById('compare-button'), 
+          activeFiltersContainer: document.getElementById('active-filters-container'), 
+          favoritesToggle: document.getElementById('favorites-toggle'), 
+          compareButton: document.getElementById('compare-button'), 
           loadMoreSpinner: document.getElementById('load-more-spinner'),
-          modal: document.getElementById('comparison-modal'), modalBg: document.getElementById('comparison-modal-bg'), closeModalButton: document.getElementById('close-modal-button'), comparisonContent: document.getElementById('comparison-content'), toast: document.getElementById('toast-notification'), toggleFiltersButton: document.getElementById('toggle-filters-button'), collapsibleFilters: document.getElementById('collapsible-filters'),
-          keywordInput: document.getElementById('keyword-input'), addKeywordButton: document.getElementById('add-keyword-button'), keywordTagsContainer: document.getElementById('keyword-tags-container'), keywordAlertModal: document.getElementById('keyword-alert-modal'), keywordAlertContent: document.getElementById('keyword-alert-content'), closeKeywordAlertButton: document.getElementById('close-keyword-alert-button')
+          modal: document.getElementById('comparison-modal'), 
+          modalBg: document.getElementById('comparison-modal-bg'), 
+          closeModalButton: document.getElementById('close-modal-button'), 
+          comparisonContent: document.getElementById('comparison-content'), 
+          toast: document.getElementById('toast-notification'), 
+          toggleFiltersButton: document.getElementById('toggle-filters-button'), 
+          collapsibleFilters: document.getElementById('collapsible-filters'),
+          keywordInput: document.getElementById('keyword-input'), 
+          addKeywordButton: document.getElementById('add-keyword-button'), 
+          keywordTagsContainer: document.getElementById('keyword-tags-container'), 
+          keywordAlertModal: document.getElementById('keyword-alert-modal'), 
+          keywordAlertContent: document.getElementById('keyword-alert-content'), 
+          closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
+          // "돌아오기" 배너 요소 추가
+          backToMainToast: document.getElementById('back-to-main-toast'),
+          backToMainToastClose: document.getElementById('back-to-main-toast-close')
       };
 
       document.addEventListener('DOMContentLoaded', initialize);
 
       async function initialize() {
+          showSkeletonLoader(); // *** 변경점: 초기화 시작 시 스켈레톤 로더 표시
           await loadAdData();
           favorites = JSON.parse(localStorage.getItem('favorites')) || [];
           alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
@@ -203,7 +245,36 @@
           }
       }
       
+      // --- 신규 함수: 스켈레톤 로더 UI를 생성하고 표시 ---
+      function showSkeletonLoader() {
+          let skeletonHTML = '';
+          for (let i = 0; i < INITIAL_LOAD_COUNT; i++) {
+              skeletonHTML += `
+              <div class="skeleton-card animate-pulse">
+                  <div class="flex justify-between items-start mb-2">
+                      <div class="skeleton-line w-1/3"></div>
+                      <div class="skeleton-line w-1/6"></div>
+                  </div>
+                  <div class="skeleton-line w-full h-6 mb-4"></div>
+                  <div class="skeleton-line w-3/4 mb-6"></div>
+                  <div class="border-t border-slate-300 pt-4 flex justify-between items-center">
+                      <div class="skeleton-line w-1/4"></div>
+                      <div class="flex gap-2">
+                          <div class="w-8 h-8 rounded-full bg-slate-300"></div>
+                          <div class="w-8 h-8 rounded-full bg-slate-300"></div>
+                      </div>
+                  </div>
+              </div>
+              `;
+          }
+          elements.skeletonLoader.innerHTML = skeletonHTML;
+          elements.skeletonLoader.classList.remove('hidden');
+          elements.resultsContainer.classList.add('hidden');
+          elements.errorMessage.classList.add('hidden');
+      }
+
       async function loadAdData() {
+          // ... (기존 코드와 동일)
           try {
               const q = query(collection(db, "ads"), orderBy("order", "asc"));
               const querySnapshot = await getDocs(q);
@@ -216,14 +287,11 @@
 
               adDataList = rawAdData.filter(ad => {
                   if (ad.isActive === false) return false;
-
                   const start = ad.startDate ? new Date(ad.startDate) : null;
                   const end = ad.endDate ? new Date(ad.endDate) : null;
-
                   if (!start && !end) return true;
                   if (start && now < start) return false;
                   if (end && now > end) return false;
-                  
                   return true;
               });
 
@@ -243,24 +311,24 @@
                 throw new Error(data.resultMsg || "백엔드로부터 유효한 데이터를 받지 못했습니다.");
             } catch (error) {
                 console.error("데이터 요청 오류:", error);
-                elements.loadingIndicator.classList.add('hidden');
-                let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.";
-                if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올바른지 확인해주세요.";
+                elements.skeletonLoader.classList.add('hidden'); // *** 변경점: 오류 발생 시 스켈레톤 숨김
+                let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.";
+                if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 서버에 연결할 수 없습니다.";
                 else friendlyMessage = `오류 발생: ${error.message}`;
                 elements.errorMessage.textContent = friendlyMessage;
                 elements.errorMessage.classList.remove('hidden');
                 return null;
             }
-        }
+      }
         
       async function populateFilters() {
+            // ... (기존 코드와 동일)
             const regionCounts = {}, categoryCounts = {};
             allApiData.forEach(item => {
                 if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
                 if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
             });
 
-            // 지역 필터 채우기 (기존과 동일)
             elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiData.length +')</option>';
             const sortedRegions = Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko'));
             for (const region of sortedRegions) {
@@ -271,7 +339,6 @@
                 elements.regionSelect.appendChild(option);
             }
 
-            // 사업분야 필터를 체크박스로 채우기
             elements.categoryCheckboxContainer.innerHTML = '';
             const sortedCategories = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko'));
             for (const category of sortedCategories) {
@@ -286,7 +353,7 @@
                 `;
                 elements.categoryCheckboxContainer.appendChild(label);
             }
-        }
+      }
 
       function addEventListeners() {
             window.addEventListener('scroll', handleScroll);
@@ -301,7 +368,6 @@
             elements.favoritesToggle.addEventListener('click', e => { currentFilters.showFavorites = !currentFilters.showFavorites; e.target.classList.toggle('active'); e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; applyFiltersAndRender(); });
             elements.regionSelect.addEventListener('change', e => { currentFilters.region = e.target.value; applyFiltersAndRender(); });
             
-            // categorySelect 대신 checkbox-container에 이벤트 리스너 추가
             elements.categoryCheckboxContainer.addEventListener('change', e => {
                 if (e.target.classList.contains('category-checkbox')) {
                     const checkedCategories = [];
@@ -320,10 +386,9 @@
                     e.preventDefault();
                     const adId = adLink.dataset.id;
                     const adUrl = adLink.href;
-                    if (adId) {
-                        handleAdClick(adId);
-                    }
+                    if (adId) handleAdClick(adId);
                     window.open(adUrl, '_blank');
+                    showBackToMainToast(); // *** 변경점: 광고 링크 클릭 시에도 배너 표시
                 }
                 const button = target.closest('button');
                 if (button) {
@@ -333,6 +398,12 @@
                 }
                 const checkbox = target.closest('.compare-checkbox');
                 if (checkbox) toggleComparison(checkbox);
+
+                // *** 변경점: 공고 제목 링크 클릭 감지
+                const link = target.closest('a[target="_blank"]');
+                if (link && !link.classList.contains('ad-link')) {
+                    showBackToMainToast();
+                }
             });
 
             elements.compareButton.addEventListener('click', showComparisonModal);
@@ -343,27 +414,31 @@
             elements.keywordInput.addEventListener('keypress', e => { if (e.key === 'Enter') addKeyword(); });
             elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
             elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
+
+            // *** 변경점: "돌아오기" 배너 닫기 버튼 이벤트
+            elements.backToMainToastClose.addEventListener('click', hideBackToMainToast);
         }
 
       async function handleAdClick(adId) {
+          // ... (기존 코드와 동일)
           try {
               const adRef = doc(db, "ads", adId);
-              await updateDoc(adRef, {
-                  clickCount: increment(1)
-              });
+              await updateDoc(adRef, { clickCount: increment(1) });
           } catch (error) {
               console.error("클릭 카운트 업데이트 실패:", error);
           }
       }
 
       function handleScroll() {
+            // ... (기존 코드와 동일)
             const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
             if (clientHeight + scrollTop >= scrollHeight - 100 && visibleItemCount < filteredItems.length && !isLoadingMore) {
                 loadMoreItems();
             }
-        }
+      }
 
       function loadMoreItems() {
+            // ... (기존 코드와 동일)
             isLoadingMore = true;
             elements.loadMoreSpinner.classList.remove('hidden');
             setTimeout(() => {
@@ -373,9 +448,10 @@
                 elements.loadMoreSpinner.classList.add('hidden');
                 isLoadingMore = false;
             }, 500);
-        }
+      }
         
       function createItemHTML(item) {
+          // ... (기존 코드와 동일, 변경 없음)
           if (item.isAd) {
               const partnersText = item.isPartners 
                   ? `<p class="text-xs text-slate-500 text-left">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
@@ -464,12 +540,12 @@
         
       function displayData(items) {
             elements.resultsContainer.innerHTML = items.map(createItemHTML).join(''); 
-        }
+      }
 
       function appendData(items) {
             const newContent = items.map(createItemHTML).join('');
             elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
-        }
+      }
 
       function applyFiltersAndRender() {
             let items = [...allApiData]; 
@@ -477,7 +553,6 @@
             if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
             if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); 
             
-            // 사업분야 필터 로직 변경 (OR 조건)
             if (currentFilters.category.length > 0) {
                 items = items.filter(item => currentFilters.category.includes(item.supt_biz_clsfc));
             }
@@ -501,22 +576,26 @@
 
             filteredItems = itemsWithAds;
             visibleItemCount = INITIAL_LOAD_COUNT;
-            elements.statusContainer.classList.add('hidden'); 
+            
+            // *** 변경점: 스켈레톤 숨기고 실제 데이터 표시
+            elements.skeletonLoader.classList.add('hidden'); 
             elements.resultsContainer.classList.remove('hidden'); 
+
             renderActiveFilters(); 
             if (filteredItems.length === 0) { 
                 elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.'}</p>`; 
             } else { 
                 displayData(filteredItems.slice(0, visibleItemCount)); 
             }
-        }
+      }
+      
+      // ... (이하 나머지 함수들은 기존 코드와 대부분 동일)
 
       function renderActiveFilters() {
             let html = ''; 
             if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; 
             if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; 
             
-            // 선택된 사업분야 태그들을 렌더링
             if (currentFilters.category.length > 0) {
                 currentFilters.category.forEach(cat => {
                     html += `<span class="active-filter-tag" data-type="category" data-value="${cat}">분야: ${cat} <button>x</button></span>`;
@@ -530,13 +609,13 @@
             elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { 
                 const tagElement = e.target.parentElement;
                 const type = tagElement.dataset.type; 
-                const value = tagElement.dataset.value; // 카테고리 태그의 경우 value가 있음
+                const value = tagElement.dataset.value;
                 resetFilter(type, value); 
             })); 
             if(document.getElementById('reset-filters-button')) { 
                 document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); 
             } 
-        }
+      }
 
       function resetFilter(type, value) {
             if (type === 'searchTerm') {
@@ -546,32 +625,29 @@
                 currentFilters.region = 'all'; 
                 elements.regionSelect.value = 'all';
             } else if (type === 'category') {
-                // 특정 카테고리만 필터에서 제거
                 currentFilters.category = currentFilters.category.filter(cat => cat !== value);
-                // UI 체크박스도 해제
                 const checkboxToUncheck = elements.categoryCheckboxContainer.querySelector(`.category-checkbox[value="${value}"]`);
                 if (checkboxToUncheck) checkboxToUncheck.checked = false;
             }
             applyFiltersAndRender();
-        }
+      }
 
       function resetAllFilters() {
             currentFilters.searchTerm = ''; 
             currentFilters.region = 'all'; 
-            currentFilters.category = []; // 카테고리 필터 초기화
+            currentFilters.category = [];
             elements.searchInput.value = ''; 
             elements.regionSelect.value = 'all';
-            // 모든 카테고리 체크박스 해제
             elements.categoryCheckboxContainer.querySelectorAll('.category-checkbox:checked').forEach(checkbox => checkbox.checked = false);
             applyFiltersAndRender();
-        }
+      }
         
       function updateFilterUI() {
             elements.sortButtons.querySelectorAll('.control-button[data-sort]').forEach(button => {
                 if (button.dataset.sort === currentFilters.sort) { button.classList.add('active'); } 
                 else { button.classList.remove('active'); }
             });
-        }
+      }
 
       function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
       function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
@@ -625,6 +701,17 @@
       function handleKeywordTagClick(e) { if (e.target.tagName === 'BUTTON') { const index = parseInt(e.target.dataset.index); alertKeywords.splice(index, 1); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); } }
       function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiData.length === 0) return; const currentItemIds = allApiData.map(item => item.pbanc_sn); const newItems = allApiData.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
       function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
+      
+      // --- 신규 함수: "돌아오기" 배너 표시/숨김 ---
+      function showBackToMainToast() {
+        const toast = elements.backToMainToast;
+        toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+      }
+
+      function hideBackToMainToast() {
+        const toast = elements.backToMainToast;
+        toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+      }
     </script>
 </body>
 </html>
