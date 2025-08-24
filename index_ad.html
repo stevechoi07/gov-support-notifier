@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정부 지원사업 알리미 v12.8 (iframe 파트너스 기능)</title>
+    
+    <!-- SEO 최적화 태그 시작 -->
+    <title>정부 지원사업 알리미 | K-Startup 공고, 청년창업, R&D 지원금 정보</title>
+    <meta name="description" content="최신 정부 지원사업 공고를 한 곳에서 확인하세요. K-Startup, 청년창업, 소상공인, R&D 지원금 등 맞춤형 필터와 키워드 알림으로 놓치지 마세요.">
+    <meta name="keywords" content="정부지원사업, K-Startup, 창업지원, 청년창업, 소상공인 지원, R&D, 정책자금, 지원금, 사업공고">
+    <!-- SEO 최적화 태그 끝 -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -345,11 +351,10 @@
             }, 500);
         }
         
-      // --- 1. iframe 광고에 파트너스 문구 추가 ---
       function createItemHTML(item) {
           if (item.isAd) {
               const partnersText = item.isPartners 
-                  ? `<p class="text-xs text-slate-500 text-center">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
+                  ? `<p class="text-xs text-slate-500 text-left">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
                   : '';
 
               if (item.adType === 'iframe') {
@@ -520,7 +525,6 @@
             });
         }
 
-      // --- (이하 헬퍼 함수들은 이전과 동일) ---
       function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
       function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
       function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
