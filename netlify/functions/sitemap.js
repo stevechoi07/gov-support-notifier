@@ -1,10 +1,6 @@
 // Netlify 서버리스 함수는 Node.js 환경에서 실행됩니다.
 // 이 함수는 HTTP 요청이 들어올 때마다 실행되어 동적으로 사이트맵을 생성합니다.
 
-// 'node-fetch' 라이브러리는 서버 환경에서 fetch API를 사용하기 위해 필요합니다.
-// 이제 Node.js의 내장 fetch API를 사용하므로 이 라이브러리는 필요하지 않습니다.
-// 따라서 이 코드를 사용하려면 'netlify/functions' 폴더의 'package.json' 파일을 삭제해야 합니다.
-
 /**
  * Netlify 함수 핸들러
  * @param {object} event - HTTP 요청에 대한 정보 (예: 경로, 헤더, 본문)
@@ -16,7 +12,7 @@ exports.handler = async (event, context) => {
   const sitemapHeader = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
   const sitemapFooter = `</urlset>`;
-  const version = "1.0.3"; // 이 부분을 원하는 버전으로 변경하세요.
+  const version = "1.0.7"; // 이 부분을 원하는 버전으로 변경하세요.
 
   try {
     // 1. 공공데이터포털 API를 직접 호출하는 대신,
@@ -36,8 +32,17 @@ exports.handler = async (event, context) => {
     const baseUrl = 'https://kfund.ai'; // 사용자 웹앱의 기본 도메인
     
     // API 응답 구조에 맞춰 데이터 배열을 가져옵니다.
-    // 실제 API 응답 구조를 확인하고 'data.items'와 같이 수정해야 합니다.
-    const items = apiData.items || [];
+    // 'data' 속성 안에 'data' 속성이 또 있는지 확인
+    const items = (apiData.data && apiData.data.data) ? apiData.data.data : apiData.data || [];
+    
+    if (items.length === 0) {
+      console.log('No items found in API response.');
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/xml' },
+        body: `${sitemapHeader}\n<!-- Sitemap Version: ${version} -->\n  <url>\n    <loc>${baseUrl}</loc>\n  </url>\n${sitemapFooter}`
+      };
+    }
     
     const urlEntries = items.map(item => {
       // 무한스크롤 페이지 내 각 항목에 대한 고유 URL을 생성합니다.
