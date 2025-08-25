@@ -11,6 +11,9 @@
   # '비밀 요원'들이 node.js로 만들어졌음을 알려주고,
   # 장비 목록(package.json)을 똑똑하게 처리하도록 지시합니다.
   node_bundler = "esbuild"
+  
+   # 이 부분이 중요합니다! 함수가 'node-fetch'를 외부 모듈로 인식하게 합니다.
+  external_node_modules = ["node-fetch"]
 
 [[redirects]]
   from = "/api/*"
