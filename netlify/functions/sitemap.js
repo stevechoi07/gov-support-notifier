@@ -1,6 +1,12 @@
 // Netlify 서버리스 함수는 Node.js 환경에서 실행됩니다.
 // 이 함수는 HTTP 요청이 들어올 때마다 실행되어 동적으로 사이트맵을 생성합니다.
 
+// 'node-fetch' 라이브러리는 서버 환경에서 fetch API를 사용하기 위해 필요합니다.
+// 이 코드를 사용하려면 'package.json'에 의존성 추가가 필요합니다.
+// 넷플리파이는 자동으로 esbuild를 사용해 라이브러리를 번들링합니다.
+// npm install node-fetch@2.6.1 을 실행하여 의존성을 추가해 주세요.
+const fetch = require('node-fetch');
+
 /**
  * Netlify 함수 핸들러
  * @param {object} event - HTTP 요청에 대한 정보 (예: 경로, 헤더, 본문)
@@ -14,26 +20,32 @@ exports.handler = async (event, context) => {
   const sitemapFooter = `</urlset>`;
 
   try {
-    // 1. 정부 지원사업 API 데이터 가져오기 (실제 API 호출)
-    // 이 부분은 사용자의 실제 API 엔드포인트에 맞춰 수정해야 합니다.
-    // 여기서는 예시 데이터로 대체하겠습니다.
-    const mockApiData = [
-      { id: '12345' },
-      { id: '67890' },
-      { id: '98765' },
-      { id: '43210' },
-      { id: '77777' },
-      { id: '88888' },
-      { id: '99999' },
-    ];
+    // 1. 환경 변수에서 API 키를 안전하게 불러옵니다.
+    // 'GOV_API_KEY'는 넷플리파이 설정에서 직접 등록해야 합니다.
+    const serviceKey = process.env.GOV_API_KEY;
+    if (!serviceKey) {
+      throw new Error("Missing GOV_API_KEY environment variable.");
+    }
     
-    // 이 부분에 실제 API를 호출하는 코드를 작성하세요.
-    // 예시: const response = await fetch('https://api.example.com/gov-projects');
-    // 예시: const data = await response.json();
+    // 2. 실제 정부 지원사업 API 호출
+    // API 주소와 파라미터는 실제 API 문서에 따라 수정해야 합니다.
+    const apiEndpoint = `https://apis.data.go.kr/1230000/api/govsupports?serviceKey=${encodeURIComponent(serviceKey)}&pageNo=1&numOfRows=1000&dataType=json`;
 
-    // 2. 가져온 데이터를 기반으로 URL 목록을 생성합니다.
+    // API 호출
+    const response = await fetch(apiEndpoint);
+    if (!response.ok) {
+        throw new Error(`API request failed with status: ${response.status}`);
+    }
+    const apiData = await response.json();
+
+    // 3. 가져온 데이터를 기반으로 URL 목록을 생성합니다.
     const baseUrl = 'https://kfund.ai'; // 사용자 웹앱의 기본 도메인
-    const urlEntries = mockApiData.map(item => {
+
+    // API 응답 구조에 맞춰 데이터 배열을 가져옵니다.
+    // 실제 API 응답 구조를 확인하고 'data.items'와 같이 수정해야 합니다.
+    const items = apiData.items || [];
+    
+    const urlEntries = items.map(item => {
       // 무한스크롤 페이지 내 각 항목에 대한 고유 URL을 생성합니다.
       // 예시 URL: https://kfund.ai/?id=12345
       const loc = `${baseUrl}/?id=${item.id}`;
@@ -42,10 +54,10 @@ exports.handler = async (event, context) => {
   </url>`;
     }).join('\n');
 
-    // 3. 완전한 사이트맵 XML 문자열을 만듭니다.
+    // 4. 완전한 사이트맵 XML 문자열을 만듭니다.
     const sitemapContent = `${sitemapHeader}\n  <url>\n    <loc>${baseUrl}</loc>\n  </url>\n${urlEntries}\n${sitemapFooter}`;
 
-    // 4. HTTP 응답을 반환합니다.
+    // 5. HTTP 응답을 반환합니다.
     return {
       statusCode: 200,
       headers: {
