@@ -2,10 +2,8 @@
 // 이 함수는 HTTP 요청이 들어올 때마다 실행되어 동적으로 사이트맵을 생성합니다.
 
 // 'node-fetch' 라이브러리는 서버 환경에서 fetch API를 사용하기 위해 필요합니다.
-// 이 코드를 사용하려면 'package.json'에 의존성 추가가 필요합니다.
-// 넷플리파이는 자동으로 esbuild를 사용해 라이브러리를 번들링합니다.
-// npm install node-fetch@2.6.1 을 실행하여 의존성을 추가해 주세요.
-const fetch = require('node-fetch');
+// 이제 Node.js의 내장 fetch API를 사용하므로 이 라이브러리는 필요하지 않습니다.
+// 따라서 이 코드를 사용하려면 'netlify/functions' 폴더의 'package.json' 파일을 삭제해야 합니다.
 
 /**
  * Netlify 함수 핸들러
@@ -18,7 +16,7 @@ exports.handler = async (event, context) => {
   const sitemapHeader = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
   const sitemapFooter = `</urlset>`;
-  const version = "1.0.2"; // 이 부분을 원하는 버전으로 변경하세요.
+  const version = "1.0.3"; // 이 부분을 원하는 버전으로 변경하세요.
 
   try {
     // 1. 공공데이터포털 API를 직접 호출하는 대신,
@@ -27,6 +25,7 @@ exports.handler = async (event, context) => {
     const targetUrl = `https://kfund.ai/api/get-support-data?perPage=${perPage}`;
 
     // 2. 우리 웹앱의 프록시 함수에 데이터를 요청합니다.
+    // 이제 Node.js의 내장 fetch API를 사용합니다.
     const response = await fetch(targetUrl);
     if (!response.ok) {
         throw new Error(`Proxy API request failed with status: ${response.status}`);
