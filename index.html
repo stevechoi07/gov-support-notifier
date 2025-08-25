@@ -97,11 +97,11 @@
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         
         <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
-            <!-- 헤더 구조 변경: 하단 여백을 mb-6에서 mb-4로 수정 -->
-            <header class="flex justify-between items-start mb-4">
-                <!-- 좌측: 상세 필터 토글 버튼 (햄버거 아이콘) - 패딩 및 아이콘 크기 조정 -->
+            <!-- 헤더 구조 변경: 하단 여백을 mb-4에서 mb-2로 수정 -->
+            <header class="flex justify-between items-start mb-2">
+                <!-- 좌측: 상세 필터 토글 버튼 (햄버거 아이콘) - 아이콘 크기 조정 -->
                 <button id="toggle-filters-button" class="p-1 rounded-md hover:bg-slate-200 transition-colors">
-                    <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    <svg class="w-9 h-9 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
 
                 <!-- 중앙: 제목 및 부제목 -->
@@ -111,12 +111,12 @@
                     <!-- 부제목을 flex로 변경하여 한 줄로 표현 -->
                     <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
                         <span>K-Startup, 청년창업, R&D 지원금</span>
-                      <!--  <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v16.0</span> -->
+                        <!-- <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v16.0</span> -->
                     </p>
                 </div>
 
                 <!-- 우측: 중앙 정렬을 위한 빈 공간 - 버튼 크기에 맞춰 조정 -->
-                <div class="w-10 h-10"></div>
+                <div class="w-11 h-11"></div>
             </header>
 
             <!-- 필터 및 검색 UI -->
@@ -125,6 +125,11 @@
                 <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             <div id="collapsible-filters" class="space-y-4">
+                <!-- 정렬 버튼 위치 이동 -->
+                <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
+                    <button data-sort="default" class="control-button active px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">기본순</button>
+                    <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                     <div>
                         <label for="region-select" class="text-sm font-semibold text-slate-500 mb-2 block">지역</label>
@@ -139,7 +144,7 @@
                     </div>
                 </div>
                 <div class="pt-4 border-t">
-                     <h3 class="text-sm font-semibold text-slate-500 mb-2">키워드 알림 설정 (방문 시 알림)</h3>
+                     <h3 class="text-sm font-semibold text-slate-500 mb-2">키워드 알림 설정</h3>
                      <div class="flex gap-2">
                          <input type="text" id="keyword-input" placeholder="알림받을 키워드 입력" class="flex-grow min-w-0 px-3 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
                          <button id="add-keyword-button" class="px-4 py-1 bg-sky-500 text-white rounded-lg text-sm font-semibold hover:bg-sky-600 shadow-md transition-colors">추가</button>
@@ -147,10 +152,6 @@
                      <div id="keyword-tags-container" class="flex flex-wrap gap-2 mt-2 min-h-[34px]"></div>
                 </div>
                 <div id="active-filters-container" class="flex flex-wrap gap-2 items-center pt-4 border-t min-h-[41px]"></div>
-                <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
-                    <button data-sort="default" class="control-button active px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">기본순</button>
-                    <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
-                </div>
             </div>
             <!-- 기존 상세 필터 보기 버튼 위치 제거 -->
             <div class="mt-4 text-center">
