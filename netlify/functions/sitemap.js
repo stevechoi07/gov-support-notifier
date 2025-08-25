@@ -24,23 +24,22 @@ exports.handler = async (event, context) => {
     // 'GOV_API_KEY'는 넷플리파이 설정에서 직접 등록해야 합니다.
     const serviceKey = process.env.GOV_API_KEY;
     if (!serviceKey) {
-      throw new Error("Missing GOV_API_KEY environment variable.");
+      throw new Error("API 키가 설정되지 않았습니다.");
     }
     
-    // 2. 실제 정부 지원사업 API 호출
-    // API 주소와 파라미터는 실제 API 문서에 따라 수정해야 합니다.
-    const apiEndpoint = `https://apis.data.go.kr/B552735/kisedKstartupService01?serviceKey=${encodeURIComponent(serviceKey)}`;
+    // 2. 정부 데이터 서버에 보낼 실제 주소를 조립합니다.
+    const targetUrl = `http://apis.data.go.kr/B552735/kisedKstartupService01/getAnnouncementInformation01?serviceKey=${encodeURIComponent(serviceKey)}&page=1&perPage=150&returnType=json`;
 
-    // API 호출
-    const response = await fetch(apiEndpoint);
+    // 3. 정부 서버에 데이터를 요청합니다.
+    const response = await fetch(targetUrl);
     if (!response.ok) {
         throw new Error(`API request failed with status: ${response.status}`);
     }
     const apiData = await response.json();
 
-    // 3. 가져온 데이터를 기반으로 URL 목록을 생성합니다.
+    // 4. 가져온 데이터를 기반으로 URL 목록을 생성합니다.
     const baseUrl = 'https://kfund.ai'; // 사용자 웹앱의 기본 도메인
-
+    
     // API 응답 구조에 맞춰 데이터 배열을 가져옵니다.
     // 실제 API 응답 구조를 확인하고 'data.items'와 같이 수정해야 합니다.
     const items = apiData.items || [];
@@ -54,10 +53,10 @@ exports.handler = async (event, context) => {
   </url>`;
     }).join('\n');
 
-    // 4. 완전한 사이트맵 XML 문자열을 만듭니다.
+    // 5. 완전한 사이트맵 XML 문자열을 만듭니다.
     const sitemapContent = `${sitemapHeader}\n  <url>\n    <loc>${baseUrl}</loc>\n  </url>\n${urlEntries}\n${sitemapFooter}`;
 
-    // 5. HTTP 응답을 반환합니다.
+    // 6. HTTP 응답을 반환합니다.
     return {
       statusCode: 200,
       headers: {
