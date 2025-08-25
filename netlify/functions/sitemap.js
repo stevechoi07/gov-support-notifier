@@ -18,26 +18,22 @@ exports.handler = async (event, context) => {
   const sitemapHeader = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
   const sitemapFooter = `</urlset>`;
+  const version = "1.0.0"; // 이 부분을 원하는 버전으로 변경하세요.
 
   try {
-    // 1. 환경 변수에서 API 키를 안전하게 불러옵니다.
-    // 'GOV_API_KEY'는 넷플리파이 설정에서 직접 등록해야 합니다.
-    const serviceKey = process.env.GOV_API_KEY;
-    if (!serviceKey) {
-      throw new Error("API 키가 설정되지 않았습니다.");
-    }
-    
-    // 2. 정부 데이터 서버에 보낼 실제 주소를 조립합니다.
-    const targetUrl = `http://apis.data.go.kr/B552735/kisedKstartupService01/getAnnouncementInformation01?serviceKey=${encodeURIComponent(serviceKey)}&page=1&perPage=150&returnType=json`;
+    // 1. 공공데이터포털 API를 직접 호출하는 대신,
+    //    이미 만들어둔 `/api/get-support-data` 함수를 호출합니다.
+    const perPage = '150'; // 한 번에 가져올 데이터 개수
+    const targetUrl = `https://kfund.ai/api/get-support-data?perPage=${perPage}`;
 
-    // 3. 정부 서버에 데이터를 요청합니다.
+    // 2. 우리 웹앱의 프록시 함수에 데이터를 요청합니다.
     const response = await fetch(targetUrl);
     if (!response.ok) {
-        throw new Error(`API request failed with status: ${response.status}`);
+        throw new Error(`Proxy API request failed with status: ${response.status}`);
     }
     const apiData = await response.json();
 
-    // 4. 가져온 데이터를 기반으로 URL 목록을 생성합니다.
+    // 3. 가져온 데이터를 기반으로 URL 목록을 생성합니다.
     const baseUrl = 'https://kfund.ai'; // 사용자 웹앱의 기본 도메인
     
     // API 응답 구조에 맞춰 데이터 배열을 가져옵니다.
@@ -53,10 +49,16 @@ exports.handler = async (event, context) => {
   </url>`;
     }).join('\n');
 
-    // 5. 완전한 사이트맵 XML 문자열을 만듭니다.
-    const sitemapContent = `${sitemapHeader}\n  <url>\n    <loc>${baseUrl}</loc>\n  </url>\n${urlEntries}\n${sitemapFooter}`;
+    // 4. 완전한 사이트맵 XML 문자열을 만듭니다.
+    const sitemapContent = `${sitemapHeader}
+<!-- Sitemap Version: ${version} -->
+  <url>
+    <loc>${baseUrl}</loc>
+  </url>
+${urlEntries}
+${sitemapFooter}`;
 
-    // 6. HTTP 응답을 반환합니다.
+    // 5. HTTP 응답을 반환합니다.
     return {
       statusCode: 200,
       headers: {
