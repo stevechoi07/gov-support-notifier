@@ -18,7 +18,7 @@ exports.handler = async (event, context) => {
   const sitemapHeader = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
   const sitemapFooter = `</urlset>`;
-  const version = "1.0.1"; // 이 부분을 원하는 버전으로 변경하세요.
+  const version = "1.0.2"; // 이 부분을 원하는 버전으로 변경하세요.
 
   try {
     // 1. 공공데이터포털 API를 직접 호출하는 대신,
@@ -42,7 +42,7 @@ exports.handler = async (event, context) => {
     
     const urlEntries = items.map(item => {
       // 무한스크롤 페이지 내 각 항목에 대한 고유 URL을 생성합니다.
-      // 예시 URL: https://kfund.ai/?id=12345
+      // 예시 URL: https://kfund.ai/?id=${item.id}
       const loc = `${baseUrl}/?id=${item.id}`;
       return `  <url>
     <loc>${loc}</loc>
