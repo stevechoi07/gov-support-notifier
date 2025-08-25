@@ -730,7 +730,8 @@
                   Object.assign(adData, { order: existingAd.order, clickCount: existingAd.clickCount || 0, isActive: existingAd.isActive !== false });
                   await updateDoc(doc(db, "ads", editingAdId), adData);
               } else {
-                  Object.assign(adData, { order: adList.length, clickCount: 0, isActive: true });
+			  // isActive 값을 false로 변경하여 기본적으로 비활성화 상태가 되도록 합니다.
+                  Object.assign(adData, { order: adList.length, clickCount: 0, isActive: false });
                   await addDoc(adsCollection, adData);
               }
               adModal.classList.remove('active');
@@ -766,7 +767,8 @@
                   Object.assign(adData, { order: existingAd.order, clickCount: 0, isActive: existingAd.isActive !== false });
                   await updateDoc(doc(db, "ads", editingAdId), adData);
               } else {
-                  Object.assign(adData, { order: adList.length, clickCount: 0, isActive: true });
+			  // isActive 값을 false로 변경하여 기본적으로 비활성화 상태가 되도록 합니다.
+                  Object.assign(adData, { order: adList.length, clickCount: 0, isActive: false });
                   await addDoc(adsCollection, adData);
               }
               iframeAdModal.classList.remove('active');
