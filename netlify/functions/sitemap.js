@@ -29,7 +29,7 @@ exports.handler = async (event, context) => {
     
     // 2. 실제 정부 지원사업 API 호출
     // API 주소와 파라미터는 실제 API 문서에 따라 수정해야 합니다.
-    const apiEndpoint = `https://apis.data.go.kr/1230000/api/govsupports?serviceKey=${encodeURIComponent(serviceKey)}&pageNo=1&numOfRows=1000&dataType=json`;
+    const apiEndpoint = `https://apis.data.go.kr/B552735/kisedKstartupService01?serviceKey=${encodeURIComponent(serviceKey)}`;
 
     // API 호출
     const response = await fetch(apiEndpoint);
