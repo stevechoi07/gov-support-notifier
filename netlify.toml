@@ -16,3 +16,9 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  
+  # 사이트맵 리디렉션 규칙을 추가합니다.
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
