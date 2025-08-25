@@ -18,7 +18,7 @@ exports.handler = async (event, context) => {
   const sitemapHeader = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
   const sitemapFooter = `</urlset>`;
-  const version = "1.0.0"; // 이 부분을 원하는 버전으로 변경하세요.
+  const version = "1.0.1"; // 이 부분을 원하는 버전으로 변경하세요.
 
   try {
     // 1. 공공데이터포털 API를 직접 호출하는 대신,
