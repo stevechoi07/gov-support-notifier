@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GridScan v1.7 (엔진 리콜 & 업그레이드)</title>
+    <title>GridScan v1.8 (버전 업데이트)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
@@ -228,14 +228,12 @@
             }
         }
         
-        // v1.7: '패자부활전' 폐지! 엄격 심사로 변경
         function getCoordsFromAddress(address) {
             return new Promise((resolve, reject) => {
                 geocoderInstance.addressSearch(address, (result, status) => {
                     if (status === kakao.maps.services.Status.OK) {
                         resolve({ lat: result[0].y, lon: result[0].x });
                     } else {
-                        // 1차 시도 실패 시 바로 실패 처리
                         reject(new Error('주소 변환 실패'));
                     }
                 });
@@ -292,7 +290,6 @@
             resultTableBody.appendChild(row);
         }
         
-        // v1.7: '다운로드 엔진' 최신형 Blob 방식으로 교체
         function downloadResultsAsCsv() {
             if (analysisResults.length === 0) {
                 alert('다운로드할 결과가 없습니다.');
