@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>우리집 고압선 안심진단</title>
+    
+    <!-- v5.6: 버전을 명시하여 전문성 강화 -->
+    <title>v5.6 | 우리집 고압선 안심진단</title>
     <meta name="description" content="우리집 주변 고압선, 송전탑의 법적 안전거리를 10초 만에 확인하세요! 주소 입력만으로 765kV, 345kV 등 전압별 이격거리 기준에 맞는 전력 시설 정보를 정밀 분석해 드립니다.">
     <meta name="keywords" content="고압선, 송전탑, 변전소, 안전거리, 이격거리, 전자파, 우리집, 주소, 확인, 조회, 진단, 한전, 지원사업">
     
@@ -16,12 +18,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     
-    <!-- v5.5: Firebase SDK 추가 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
       
-      // admin.html과 동일한 Firebase 설정
       const firebaseConfig = {
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
         authDomain: "gtree-f3d92.firebaseapp.com",
@@ -35,32 +35,26 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       
-      // 광고 로직을 window 객체에 할당하여 전역에서 사용
       window.fetchAndDisplayAd = async () => {
         const adsCollection = collection(db, "ads");
         const now = new Date().toISOString();
         
-        // 1. 활성화된 광고만 가져오기
         const q = query(adsCollection, where("isActive", "==", true));
         const querySnapshot = await getDocs(q);
         
         const allAds = [];
         querySnapshot.forEach(doc => allAds.push({ id: doc.id, ...doc.data() }));
 
-        // 2. 날짜 필터링
         const validAds = allAds.filter(ad => {
             const start = ad.startDate;
             const end = ad.endDate;
-            if (start && now < start) return false; // 시작 전
-            if (end && now > end) return false; // 종료 후
-            return true; // 상시 또는 기간 내
+            if (start && now < start) return false;
+            if (end && now > end) return false;
+            return true;
         });
 
         if (validAds.length > 0) {
-            // 3. 랜덤 광고 선택
             const randomAd = validAds[Math.floor(Math.random() * validAds.length)];
-            
-            // 4. 광고 카드 생성 및 삽입
             createAdCard(randomAd);
         }
       };
@@ -91,7 +85,6 @@
         .modal-table th, .modal-table td { border: 1px solid #dee2e6; padding: 0.5rem; text-align: center; }
         .modal-table th { background-color: #f8f9fa; }
         
-        /* v5.5: 광고 카드 스타일 */
         .ad-card {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             border: 1px solid #e2e8f0;
@@ -99,7 +92,7 @@
         .ad-card .ad-media-container {
             position: relative;
             width: 100%;
-            padding-top: 56.25%; /* 16:9 비율 */
+            padding-top: 56.25%;
             background-color: #e2e8f0;
             border-radius: 0.5rem;
         }
@@ -209,7 +202,7 @@
             addressInput.disabled = false;
             searchBtn.disabled = false;
             searchBtn.textContent = '탐지 시작';
-            initialMessageDiv.innerHTML = `<p>�🏻 상단에 주소를 입력하고 '탐지 시작' 버튼을 눌러주세요.</p>`;
+            initialMessageDiv.innerHTML = `<p>👆🏻 상단에 주소를 입력하고 '탐지 시작' 버튼을 눌러주세요.</p>`;
 
             searchBtn.addEventListener('click', startSearch);
             addressInput.addEventListener('keydown', (event) => {
@@ -353,7 +346,6 @@
             resultContentDiv.classList.add('fade-in');
         }
 
-        // v5.5: 광고 카드 생성 함수
         function createAdCard(ad) {
             const adCard = document.createElement('div');
             adCard.className = 'result-card ad-card p-4 rounded-lg fade-in';
@@ -385,7 +377,6 @@
                 </div>
             `;
             
-            // 결과 목록의 두 번째 위치에 광고 삽입 (결과가 2개 이상일 경우)
             if (facilityList.children.length > 1) {
                 facilityList.insertBefore(adCard, facilityList.children[1]);
             } else {
@@ -459,7 +450,6 @@
                 facilityList.innerHTML += cardHTML;
             });
             
-            // v5.5: 광고 로직 호출
             if (window.fetchAndDisplayAd) {
                 window.fetchAndDisplayAd();
             }
