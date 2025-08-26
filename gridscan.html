@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GridScan v1.3 (UI/UX 개선)</title>
+    <title>GridScan v1.5 (재탐색 기능 추가)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; color: #212529; }
         .main-container { background-color: #ffffff; border: 1px solid #dee2e6; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        /* v1.3: 산뜻한 민트색으로 포인트 컬러 변경 */
         .title-text { color: #14b8a6; }
         .search-button { background-color: #14b8a6; color: #ffffff; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .search-button:hover { background-color: #0d9488; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
@@ -19,11 +18,10 @@
         .progress-bar-fill { background-color: #14b8a6; transition: width 0.3s ease-in-out; }
         .result-table { width: 100%; border-collapse: collapse; }
         .result-table th, .result-table td { border: 1px solid #dee2e6; padding: 0.75rem; text-align: left; }
-        .result-table thead { background-color: #f1f5f9; } /* 헤더 배경색 추가 */
+        .result-table thead { background-color: #f1f5f9; }
         .result-table tbody tr:nth-child(even) { background-color: #f8fafc; }
         .status-pass { color: #16a34a; font-weight: bold; }
         .status-fail { color: #ef4444; font-weight: bold; }
-        /* v1.3: 주소 카운터 스타일 */
         .address-counter.over-limit { color: #ef4444; font-weight: bold; }
     </style>
 </head>
@@ -40,7 +38,6 @@
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <label for="address-list" class="block text-lg font-semibold text-gray-700">주소 목록 붙여넣기</label>
-                    <!-- v1.3: 실시간 주소 계기판 추가 -->
                     <span id="address-counter" class="text-sm font-medium text-gray-500">0 / 200 개</span>
                 </div>
                 <textarea id="address-list" rows="10" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="예:&#10;경기도 성남시 중원구 도촌남로 101&#10;경기도 고양시 덕양구 향동동 407&#10;(한 줄에 주소 하나씩 입력)"></textarea>
@@ -101,7 +98,7 @@
         const resultSection = document.getElementById('result-section');
         const resultTableBody = document.getElementById('result-table-body');
         const downloadCsvBtn = document.getElementById('download-csv-btn');
-        const addressCounter = document.getElementById('address-counter'); // v1.3 추가
+        const addressCounter = document.getElementById('address-counter');
 
         let geocoderInstance = null;
         let analysisResults = [];
@@ -115,11 +112,16 @@
         startAnalysisBtn.addEventListener('click', handleStartAnalysis);
         csvFileInput.addEventListener('change', handleFileUpload);
         downloadCsvBtn.addEventListener('click', downloadResultsAsCsv);
-        addressListInput.addEventListener('input', updateAddressCounter); // v1.3 추가
+        addressListInput.addEventListener('input', updateAddressCounter);
 
-        // v1.3: 실시간 주소 계기판 업데이트 함수
+        function getCleanedAddresses() {
+            return addressListInput.value.split('\n')
+                .map(line => line.trim().replace(/^["']+|["']+$|^\W+|\W+$/g, ''))
+                .filter(line => line);
+        }
+
         function updateAddressCounter() {
-            const addresses = addressListInput.value.split('\n').map(line => line.trim()).filter(line => line);
+            const addresses = getCleanedAddresses();
             const count = addresses.length;
             addressCounter.textContent = `${count} / ${ADDRESS_LIMIT} 개`;
             if (count > ADDRESS_LIMIT) {
@@ -139,13 +141,13 @@
                 const lines = text.split('\n').map(line => line.trim()).filter(line => line);
                 const addresses = lines.map(line => line.split(',')[0]); 
                 addressListInput.value = addresses.join('\n');
-                updateAddressCounter(); // v1.3: 파일 업로드 후 카운터 업데이트
+                updateAddressCounter();
             };
             reader.readAsText(file);
         }
 
         async function handleStartAnalysis() {
-            const addresses = addressListInput.value.split('\n').map(line => line.trim()).filter(line => line);
+            const addresses = getCleanedAddresses();
             if (addresses.length === 0) {
                 alert('분석할 주소를 입력하거나 CSV 파일을 업로드해주세요.');
                 return;
@@ -184,6 +186,7 @@
 
         async function analyzeSingleAddress(address) {
             try {
+                // v1.5: getCoordsFromAddress 함수가 이제 재시도 로직을 포함합니다.
                 const coords = await getCoordsFromAddress(address);
                 const facilities = await findFacilities(coords.lat, coords.lon);
                 const filtered = filterFacilities(facilities, coords.lat, coords.lon);
@@ -208,13 +211,30 @@
             }
         }
         
+        // v1.5: '패자부활전' 작전이 적용된 주소 변환 함수
         function getCoordsFromAddress(address) {
             return new Promise((resolve, reject) => {
+                // 1차 시도 (정밀 타격)
                 geocoderInstance.addressSearch(address, (result, status) => {
                     if (status === kakao.maps.services.Status.OK) {
                         resolve({ lat: result[0].y, lon: result[0].x });
                     } else {
-                        reject(new Error('주소 변환 실패'));
+                        // 1차 시도 실패! '주소 다이어트' 후 2차 시도
+                        const addressParts = address.split(' ');
+                        if (addressParts.length > 1) {
+                            const shorterAddress = addressParts.slice(0, -1).join(' ');
+                            geocoderInstance.addressSearch(shorterAddress, (result2, status2) => {
+                                if (status2 === kakao.maps.services.Status.OK) {
+                                    resolve({ lat: result2[0].y, lon: result2[0].x });
+                                } else {
+                                    // 2차 시도도 실패하면 최종 실패 처리
+                                    reject(new Error('주소 변환 실패'));
+                                }
+                            });
+                        } else {
+                            // 더 이상 줄일 주소가 없으면 최종 실패
+                            reject(new Error('주소 변환 실패'));
+                        }
                     }
                 });
             });
@@ -275,13 +295,13 @@
                 alert('다운로드할 결과가 없습니다.');
                 return;
             }
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
             csvContent += "No.,주소,진단 결과,최근접 시설,거리(m),최고 전압(kV)\n";
 
             analysisResults.forEach((result, index) => {
                 const row = [
                     index + 1,
-                    `"${result.address.replace(/"/g, '""')}"`, // Handle quotes in address
+                    `"${result.address.replace(/"/g, '""')}"`,
                     result.status,
                     `"${result.closestFacility.toString().replace(/"/g, '""')}"`,
                     result.distance,
