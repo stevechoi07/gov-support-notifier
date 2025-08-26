@@ -3,44 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v4.2 (최종판)</title>
+    <title>내 주변 전력시설 탐지기 v5.0 (UI/UX 대개편)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        /* --- v5.0: 스텔스 모드 UI/UX 스타일 --- */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #1a202c; /* 다크 모드 배경 */
+            color: #e2e8f0;
+        }
+
+        .main-container {
+            background-color: #2d3748;
+            border: 1px solid #4a5568;
+            box-shadow: 0 0 30px rgba(0, 191, 255, 0.2); /* 네온 섀도우 */
+            transition: all 0.3s ease-in-out;
+        }
+
+        .neon-text {
+            color: #00bfff; /* 딥 스카이 블루 */
+            text-shadow: 0 0 5px #00bfff, 0 0 10px #00bfff;
+        }
+
+        .input-field {
+            background-color: #1a202c;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        .input-field:focus {
+            border-color: #00bfff;
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
+        }
+
+        .search-button {
+            background-color: #00bfff;
+            color: #1a202c;
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+        .search-button:hover {
+            background-color: #009acd;
+            box-shadow: 0 0 25px rgba(0, 191, 255, 0.8);
+            transform: translateY(-2px);
+        }
+        .search-button:disabled {
+            background-color: #4a5568;
+            color: #718096;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .result-card {
+            background-color: #4a5568;
+            border-left: 4px solid #00bfff;
+            transition: all 0.3s ease;
+        }
+        .result-card:hover {
+            transform: translateX(5px);
+            border-left-color: #38bdf8;
+        }
+        
+        .summary-briefing {
+            background-color: rgba(0, 191, 255, 0.1);
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            color: #90cdf4;
+        }
+
+        .loader {
+            border: 4px solid #4a5568;
+            border-top: 4px solid #00bfff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 페이드인 애니메이션 */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans p-4">
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6">
+    <div class="main-container w-full max-w-2xl mx-auto rounded-2xl p-8 space-y-8">
         
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v4.2 ⚡️</h1>
-            <p class="text-gray-500 mt-2">전압별 이격거리 기준에 따라 주변 전력 시설을 정밀 탐지합니다.</p>
+        <div class="text-center space-y-2">
+            <h1 class="text-4xl font-bold neon-text">⚡️ Power Grid Detector v5.0 ⚡️</h1>
+            <p class="text-gray-400">전압별 이격거리 기준에 따라 주변 전력 시설을 정밀 탐지합니다.</p>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-4">
-            <input type="text" id="address" placeholder="예: 경기도 고양시 덕양구 향동동 407" class="flex-grow p-4 border-2 border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-300 outline-none" disabled>
-            <button id="searchBtn" class="bg-blue-500 text-white font-bold py-4 px-8 rounded-lg shadow-lg cursor-not-allowed" disabled>
+            <input type="text" id="address" placeholder="주소를 입력하여 탐색 시작..." class="input-field flex-grow p-4 border-2 rounded-lg transition-all duration-300 outline-none" disabled>
+            <button id="searchBtn" class="search-button font-bold py-4 px-8 rounded-lg" disabled>
                 초기화 중...
             </button>
         </div>
 
         <div id="result" class="pt-6">
-            <div id="initial-message" class="text-center text-gray-400">
-                <p>⚙️ 시스템 초기화 시작...</p>
+            <div id="initial-message" class="text-center text-gray-500">
+                <p>🛰️ 시스템 초기화 및 좌표 동기화 중...</p>
             </div>
             <div id="loading" class="hidden flex flex-col items-center justify-center space-y-4">
                 <div class="loader"></div>
-                <p class="text-blue-500 font-semibold">정밀 필터링 가동! 주변을 샅샅이 분석 중...</p>
+                <p class="text-blue-300 font-semibold">정밀 필터링 가동! 주변을 샅샅이 분석 중...</p>
             </div>
             <div id="result-content" class="hidden">
-                <h2 id="result-message" class="text-2xl font-bold text-center mb-4"></h2>
-                <div id="summary-briefing" class="mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg text-yellow-800"></div>
+                <h2 id="result-message" class="text-2xl font-bold text-center mb-6"></h2>
+                <div id="summary-briefing" class="summary-briefing mb-6 p-4 rounded-lg"></div>
                 <div id="facility-list" class="space-y-4"></div>
                 
-                <div id="cross-verify-link-container" class="mt-6 text-center"></div>
+                <div id="cross-verify-link-container" class="mt-8 text-center"></div>
             </div>
         </div>
         
@@ -74,8 +157,7 @@
         function initializeSearch() {
             addressInput.disabled = false;
             searchBtn.disabled = false;
-            searchBtn.classList.remove('cursor-not-allowed');
-            searchBtn.textContent = '탐지 시작!';
+            searchBtn.textContent = '탐지 시작';
             initialMessageDiv.innerHTML = `<p>👆🏻 상단에 주소를 입력하고 '탐지 시작' 버튼을 눌러주세요.</p>`;
 
             searchBtn.addEventListener('click', startSearch);
@@ -213,6 +295,7 @@
         function displayResult() {
             loadingDiv.classList.add('hidden');
             resultContentDiv.classList.remove('hidden');
+            resultContentDiv.classList.add('fade-in');
         }
 
         function displaySuccess(elements) {
@@ -225,21 +308,15 @@
             
             const powerTypes = { substation: '변전소', plant: '발전소', generator: '발전기', line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블' };
             
-            // v4.2: 태그 한글 번역 맵
             const tagTranslations = {
-                substation: '변전소 종류',
-                location: '위치',
-                frequency: '주파수',
-                operator: '운영사',
-                wires: '전선 수',
-                cables: '케이블 수',
-                layer: '레이어'
+                substation: '변전소 종류', location: '위치', frequency: '주파수',
+                operator: '운영사', wires: '전선 수', cables: '케이블 수', layer: '레이어'
             };
 
             const highestVoltageKv = parseVoltage(highestVoltageFacility.tags.voltage) / 1000;
-            let briefingHTML = `<h3 class="font-bold text-lg mb-2">📊 종합 결과 브리핑</h3><div class="space-y-1">`;
-            briefingHTML += `<div>- 가장 가까운 시설: <span class="font-semibold">${closestFacility.tags.name || (powerTypes[closestFacility.tags.power] || '시설')}</span> (약 ${Math.round(closestFacility.distance)}m)</div>`;
-            briefingHTML += `<div>- 최고 전압 시설: <span class="font-semibold">${highestVoltageFacility.tags.name || (powerTypes[highestVoltageFacility.tags.power] || '시설')}</span> (${highestVoltageKv}kV)</div>`;
+            let briefingHTML = `<h3 class="font-bold text-lg mb-2 text-blue-300">📊 종합 결과 브리핑</h3><div class="space-y-1 text-sm">`;
+            briefingHTML += `<div>- 가장 가까운 시설: <span class="font-semibold text-white">${closestFacility.tags.name || (powerTypes[closestFacility.tags.power] || '시설')}</span> (약 ${Math.round(closestFacility.distance)}m)</div>`;
+            briefingHTML += `<div>- 최고 전압 시설: <span class="font-semibold text-white">${highestVoltageFacility.tags.name || (powerTypes[highestVoltageFacility.tags.power] || '시설')}</span> (${highestVoltageKv}kV)</div>`;
             briefingHTML += `</div>`;
             summaryBriefing.innerHTML = briefingHTML;
             summaryBriefing.classList.remove('hidden');
@@ -252,51 +329,46 @@
                 const voltageKv = parseVoltage(tags.voltage) / 1000;
                 
                 let detailsHTML = '';
-                // v4.2: 번역 맵을 사용하여 모든 관련 태그를 동적으로 표시
                 Object.keys(tags).forEach(tagKey => {
                     if (tagTranslations[tagKey]) {
-                        detailsHTML += `<div><span class="font-semibold capitalize">${tagTranslations[tagKey]}:</span> ${tags[tagKey]}</div>`;
+                        detailsHTML += `<div><span class="font-semibold capitalize text-gray-400">${tagTranslations[tagKey]}:</span> ${tags[tagKey]}</div>`;
                     }
                 });
 
                 const osmLink = `https://openstreetmap.org/${el.type}/${el.id}`;
 
-                const cardHTML = `<div class="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                const cardHTML = `<div class="result-card p-4 rounded-lg">
                     <div class="flex justify-between items-center">
-                        <h4 class="font-bold text-lg text-blue-700">${name} <span class="text-sm font-medium text-gray-500">(${type})</span></h4>
-                        <span class="font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded-md text-sm">${Math.round(el.distance)}m</span>
+                        <h4 class="font-bold text-lg text-blue-300">${name} <span class="text-sm font-medium text-gray-400">(${type})</span></h4>
+                        <span class="font-semibold text-white bg-gray-600 px-3 py-1 rounded-full text-sm">${Math.round(el.distance)}m</span>
                     </div>
-                    <div class="mt-2 text-sm text-gray-600 space-y-1 pl-2 border-l-2 border-blue-200">
-                        <div><span class="font-semibold">전압:</span> ${voltageKv}kV</div>
+                    <div class="mt-3 text-sm text-gray-300 space-y-1 pl-3 border-l-2 border-gray-600">
+                        <div><span class="font-semibold text-gray-400">전압:</span> ${voltageKv}kV</div>
                         ${detailsHTML}
                     </div>
                     <div class="mt-3 text-right">
-                        <a href="${osmLink}" target="_blank" class="text-xs text-blue-500 hover:underline">OSM에서 원본 데이터 보기 &rarr;</a>
+                        <a href="${osmLink}" target="_blank" class="text-xs text-blue-400 hover:underline">OSM에서 원본 데이터 보기 &rarr;</a>
                     </div>
                 </div>`;
                 facilityList.innerHTML += cardHTML;
             });
             
             if (closestFacility.distance < 300 && parseVoltage(closestFacility.tags.voltage) >= 345000) {
-                 resultMessage.textContent = `🚨 경고! ${Math.round(closestFacility.distance)}m 거리에 고압 시설이 있습니다!`;
-                 resultMessage.className = 'text-2xl font-bold text-center mb-4 text-red-600 animate-pulse';
+                 resultMessage.innerHTML = `<span class="text-red-400 animate-pulse">🚨 경고! ${Math.round(closestFacility.distance)}m 거리에 고압 시설이 있습니다!</span>`;
             } else {
-                 resultMessage.textContent = `ℹ️ 탐지 완료! 이격거리 기준에 맞는 ${elements.length}개의 관련 시설을 발견했습니다.`;
-                 resultMessage.className = 'text-2xl font-bold text-center mb-4 text-orange-600';
+                 resultMessage.innerHTML = `<span class="text-green-400">✅ 탐지 완료! 이격거리 기준에 맞는 ${elements.length}개의 관련 시설을 발견했습니다.</span>`;
             }
         }
 
         function displayNotFound() {
             displayResult();
-            resultMessage.textContent = '✅ 클린 지역! 주변에 이격거리 기준을 초과하는 주요 전력시설이 없습니다.';
-            resultMessage.className = 'text-2xl font-bold text-center mb-4 text-green-600';
+            resultMessage.innerHTML = `<span class="text-green-400">✅ 클린 지역! 주변에 이격거리 기준을 초과하는 주요 전력시설이 없습니다.</span>`;
             summaryBriefing.classList.add('hidden');
         }
 
         function displayError(message) {
             displayResult();
-            resultMessage.textContent = message;
-            resultMessage.className = 'text-2xl font-bold text-center mb-4 text-yellow-600';
+            resultMessage.innerHTML = `<span class="text-yellow-400">⚠️ ${message}</span>`;
             summaryBriefing.classList.add('hidden');
         }
     </script>
