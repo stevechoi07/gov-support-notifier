@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v1.1</title>
+    <title>내 주변 전력시설 탐지기 v1.3</title>
     <!-- 
         스타일링의 마법사, Tailwind CSS를 불러옵니다.
         이거 하나면 디자인 걱정 끝! 
@@ -21,7 +21,7 @@
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
-            <!-- 100% { transform: rotate(360deg); } -->
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -32,7 +32,7 @@
         <!-- 헤더: 프로그램 제목 -->
         <div class="text-center">
             <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 ⚡️</h1>
-            <p class="text-gray-500 mt-2">주소 반경 1km 이내의 변전소, 발전소를 탐지합니다.</p>
+            <p class="text-gray-500 mt-2">주소 반경 1km 이내의 모든 전력 관련 시설을 탐지합니다.</p>
         </div>
 
         <!-- 입력 섹션: 주소 입력창과 검색 버튼 -->
@@ -52,16 +52,17 @@
             <!-- 로딩 스피너 (평소엔 숨겨져 있음) -->
             <div id="loading" class="hidden flex flex-col items-center justify-center space-y-4">
                 <div class="loader"></div>
-                <p class="text-blue-500 font-semibold">주변을 샅샅이 뒤지는 중... 잠시만 기다려주세요!</p>
+                <p class="text-blue-500 font-semibold">광역 탐지 그물망 투척! 주변을 샅샅이 뒤지는 중...</p>
             </div>
             <!-- 결과 메시지 및 목록이 표시될 곳 -->
             <div id="result-content" class="hidden">
                 <h2 id="result-message" class="text-2xl font-bold text-center mb-4"></h2>
-                <ul id="facility-list" class="list-disc list-inside bg-gray-50 p-6 rounded-lg space-y-2">
+                <!-- ⭐️ v1.3 업데이트: 결과 목록 UI 개선! -->
+                <div id="facility-list" class="space-y-4">
                     <!-- 탐지된 시설 목록이 여기에 추가됩니다. -->
-                </ul>
+                </div>
                 
-                <!-- ⭐️⭐️⭐️ v1.1 업데이트: 디버깅 모드 추가! ⭐️⭐️⭐️ -->
+                <!-- 디버깅 모드 -->
                 <div class="mt-6 text-center">
                     <button id="toggleDebugBtn" class="text-sm text-gray-500 hover:text-gray-700 underline">
                         [ 개발자용: API 응답 원본 보기 ]
@@ -77,7 +78,7 @@
     </div>
 
     <!-- 카카오 지도 API 스크립트 -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_APP_KEY&libraries=services"></script>
 
     <script>
         // --- 1. 필요한 HTML 요소들을 미리 찾아놓습니다. (선수 입장!) ---
@@ -88,7 +89,6 @@
         const resultContentDiv = document.getElementById('result-content');
         const resultMessage = document.getElementById('result-message');
         const facilityList = document.getElementById('facility-list');
-        // v1.1 추가: 디버깅용 요소
         const toggleDebugBtn = document.getElementById('toggleDebugBtn');
         const debugOutputDiv = document.getElementById('debug-output');
         const rawJsonOutput = document.getElementById('raw-json-output');
@@ -101,14 +101,12 @@
                 return;
             }
             
-            // 이전 결과 숨기고, 로딩 화면 보여주기
             initialMessageDiv.classList.add('hidden');
             resultContentDiv.classList.add('hidden');
-            debugOutputDiv.classList.add('hidden'); // v1.1 추가: 디버그 창도 숨기기
+            debugOutputDiv.classList.add('hidden');
             loadingDiv.classList.remove('hidden');
-            facilityList.innerHTML = ''; // 이전 목록 초기화
+            facilityList.innerHTML = '';
 
-            // --- 3. 작전 개시: 카카오 API로 주소를 좌표로 변환 ---
             const geocoder = new kakao.maps.services.Geocoder();
             geocoder.addressSearch(address, function(result, status) {
                 if (status === kakao.maps.services.Status.OK) {
@@ -125,7 +123,6 @@
             if (event.key === 'Enter') searchBtn.click();
         });
         
-        // v1.1 추가: 디버그 창 토글 버튼 이벤트
         toggleDebugBtn.addEventListener('click', () => {
             debugOutputDiv.classList.toggle('hidden');
         });
@@ -135,9 +132,9 @@
             const query = `
                 [out:json];
                 (
-                  node["power"~"substation|plant"](around:1000, ${lat}, ${lon});
-                  way["power"~"substation|plant"](around:1000, ${lat}, ${lon});
-                  relation["power"~"substation|plant"](around:1000, ${lat}, ${lon});
+                  node["power"](around:1000, ${lat}, ${lon});
+                  way["power"](around:1000, ${lat}, ${lon});
+                  relation["power"](around:1000, ${lat}, ${lon});
                 );
                 out center;
             `;
@@ -149,7 +146,6 @@
                 });
                 const data = await response.json();
 
-                // ⭐️ v1.1 업데이트: 받은 데이터 원본을 디버그 창에 기록!
                 rawJsonOutput.textContent = JSON.stringify(data, null, 2);
 
                 if (data.elements.length > 0) {
@@ -161,7 +157,7 @@
             } catch (error) {
                 displayError('😭 탐색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
                 console.error("Overpass API Error:", error);
-                rawJsonOutput.textContent = `Error: ${error.message}`; // 에러도 기록
+                rawJsonOutput.textContent = `Error: ${error.message}`;
             }
         }
 
@@ -176,13 +172,35 @@
             resultMessage.textContent = `🚨 탐지 완료! 주변 1km 내에서 ${elements.length}개의 관련 시설을 발견했습니다.`;
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-red-600';
 
+            const powerTypes = {
+                substation: '변전소', plant: '발전소', generator: '발전기',
+                line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블'
+            };
+
             elements.forEach(el => {
-                const li = document.createElement('li');
-                const name = el.tags?.name || '이름 없는 시설';
-                const type = el.tags?.power === 'substation' ? '변전소' : '발전소';
-                li.textContent = `${name} (${type})`;
-                li.className = 'text-gray-700';
-                facilityList.appendChild(li);
+                const tags = el.tags || {};
+                const name = tags.name || '이름 없는 시설';
+                const powerTag = tags.power || '종류 불명';
+                const type = powerTypes[powerTag] || powerTag;
+                
+                // ⭐️⭐️⭐️ v1.3 업데이트: 디테일 정보 추출! ⭐️⭐️⭐️
+                // 우리가 F12로 분석한 바로 그 정보들을 여기서 쏙쏙 뽑아냅니다.
+                const operator = tags.operator || '정보 없음';
+                const voltage = tags.voltage || '정보 없음';
+                const output = tags['output:electricity'] || '정보 없음';
+
+                // 카드를 만드는 HTML 코드
+                const cardHTML = `
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-lg text-blue-700">${name} <span class="text-sm font-medium text-gray-500">(${type})</span></h4>
+                        <div class="mt-2 text-sm text-gray-600 space-y-1 pl-2 border-l-2 border-blue-200">
+                            ${tags.operator ? `<div><span class="font-semibold">운영:</span> ${operator}</div>` : ''}
+                            ${tags.voltage ? `<div><span class="font-semibold">전압:</span> ${voltage}</div>` : ''}
+                            ${tags['output:electricity'] ? `<div><span class="font-semibold">출력:</span> ${output}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                facilityList.innerHTML += cardHTML;
             });
         }
 
