@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v2.0</title>
+    <title>내 주변 전력시설 탐지기 v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -87,12 +87,8 @@
             const script = document.createElement('script');
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
             script.onload = () => {
-                // ⭐️⭐️⭐️ v2.0 업데이트: '주방장 출근 확인' 로직! ⭐️⭐️⭐️
-                // 스크립트 파일 로딩이 완료되면, '주방장(services 라이브러리)'이
-                // 완전히 준비될 때까지 기다렸다가 레스토랑 문을 엽니다.
-                kakao.maps.load(() => {
-                    initializeSearch();
-                });
+                // 스크립트 파일 자체는 로딩이 완료되었으므로, UI를 활성화시킵니다.
+                initializeSearch();
             };
             document.head.appendChild(script);
         }
@@ -128,17 +124,20 @@
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
 
-            // 이제 이 시점에는 주방장이 100% 출근한 상태이므로,
-            // 안심하고 바로 주문을 넣습니다.
-            const geocoder = new kakao.maps.services.Geocoder();
-            geocoder.addressSearch(address, (result, status) => {
-                if (status === kakao.maps.services.Status.OK) {
-                    const lat = result[0].y;
-                    const lon = result[0].x;
-                    findFacilities(lat, lon);
-                } else {
-                    displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
-                }
+            // ⭐️⭐️⭐️ v2.1 업데이트: '주문 시 칼 확인' 로직! ⭐️⭐️⭐️
+            // Geocoder를 사용하기 직전에, kakao.maps.load()를 호출하여
+            // 'services' 라이브러리가 100% 준비되었는지 확인하고 일을 시킵니다.
+            kakao.maps.load(() => {
+                const geocoder = new kakao.maps.services.Geocoder();
+                geocoder.addressSearch(address, (result, status) => {
+                    if (status === kakao.maps.services.Status.OK) {
+                        const lat = result[0].y;
+                        const lon = result[0].x;
+                        findFacilities(lat, lon);
+                    } else {
+                        displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
+                    }
+                });
             });
         }
 
@@ -211,7 +210,7 @@
             }
             
             const totalFound = majorFacilities.length + Object.values(minorFacilityCounts).reduce((a, b) => a + b, 0);
-            resultMessage.textContent = `🚨 탐지 완료! 주변 1km 내에서 ${totalFound}개의 관련 시설을 발견했습니다.`;
+            resultMessage.textContent = `� 탐지 완료! 주변 1km 내에서 ${totalFound}개의 관련 시설을 발견했습니다.`;
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-red-600';
 
             if (majorFacilities.length === 0 && totalFound > 0) {
