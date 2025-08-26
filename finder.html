@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v3.5 (최종 수정)</title>
+    <title>내 주변 전력시설 탐지기 v3.6 (최종 수정)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -15,7 +15,7 @@
     <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6">
         
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v3.5 ⚡️</h1>
+            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v3.6 ⚡️</h1>
             <p class="text-gray-500 mt-2">주소 반경 1km 이내의 모든 전력 관련 시설을 탐지합니다.</p>
         </div>
 
@@ -55,10 +55,6 @@
 
     </div>
 
-    <!-- 
-      v3.5 업데이트: '성급한 한국인' 작전! 
-      window.onload를 제거하고 스크립트를 body 최하단으로 이동하여 로딩 타이밍 문제를 해결합니다.
-    -->
     <script>
         // --- 1. 필요한 HTML 요소들을 미리 찾아놓습니다. ---
         const addressInput = document.getElementById('address');
@@ -115,6 +111,11 @@
         function loadKakaoMapScript(apiKey) {
             logToCCTV("카카오 맵 스크립트 로딩 시작...");
             const script = document.createElement('script');
+            
+            // ⭐️⭐️⭐️ v3.6 업데이트: 'VIP 프리패스' 발급! ⭐️⭐️⭐️
+            // async=false를 추가하여 스크립트 실행 순서 관련 문제를 해결합니다.
+            script.async = false;
+            
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
             
             script.onload = () => {
