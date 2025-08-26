@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- v5.7: 버전 업데이트 -->
-    <title>v5.7 | 우리집 고압선 안심진단</title>
+    <!-- v5.8: 버전 업데이트 -->
+    <title>v5.8 | 우리집 고압선 안심진단</title>
     <meta name="description" content="우리집 주변 고압선, 송전탑의 법적 안전거리를 10초 만에 확인하세요! 주소 입력만으로 765kV, 345kV 등 전압별 이격거리 기준에 맞는 전력 시설 정보를 정밀 분석해 드립니다.">
     <meta name="keywords" content="고압선, 송전탑, 변전소, 안전거리, 이격거리, 전자파, 우리집, 주소, 확인, 조회, 진단, 한전, 지원사업">
     
@@ -55,7 +55,8 @@
 
         if (validAds.length > 0) {
             const randomAd = validAds[Math.floor(Math.random() * validAds.length)];
-            createAdCard(randomAd);
+            // v5.8: createAdCard 함수가 facilityList를 직접 참조하도록 변경
+            window.createAdCard(randomAd);
         }
       };
     </script>
@@ -188,6 +189,47 @@
         const closeModalBtn = document.getElementById('close-modal-btn');
 
         let geocoderInstance = null;
+
+        // v5.8: 광고 생성 함수를 전역 스코프로 이동
+        window.createAdCard = (ad) => {
+            const adCard = document.createElement('div');
+            adCard.className = 'result-card ad-card p-4 rounded-lg fade-in mt-4';
+
+            let mediaElement = '';
+            if (ad.adType === 'iframe') {
+                mediaElement = `<div class="ad-media-container">${ad.iframeCode}</div>`;
+            } else if (ad.mediaUrl) {
+                mediaElement = ad.mediaType === 'video' 
+                    ? `<div class="ad-media-container"><video autoplay loop muted playsinline src="${ad.mediaUrl}"></video></div>` 
+                    : `<div class="ad-media-container"><img src="${ad.mediaUrl}" alt="${ad.title}"></div>`;
+            }
+
+            const partnersText = ad.isPartners ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
+
+            adCard.innerHTML = `
+                ${mediaElement}
+                <div class="p-4">
+                    <div class="flex justify-between items-start">
+                         <span class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Sponsored</span>
+                         <span class="text-gray-500 text-xs font-bold rounded-full px-3 py-1 bg-gray-200">AD</span>
+                    </div>
+                    <a href="${ad.link || '#'}" target="_blank" class="block mt-2 text-lg leading-tight font-bold text-gray-800 hover:underline">${ad.title}</a>
+                    <p class="mt-2 text-gray-600 text-sm">${ad.description || ''}</p>
+                    ${partnersText}
+                    ${ad.link ? `<div class="mt-4 pt-4 border-t text-right">
+                         <a href="${ad.link}" target="_blank" class="text-sm font-semibold text-blue-600 hover:underline">자세히 보기 &rarr;</a>
+                    </div>` : ''}
+                </div>
+            `;
+            
+            if (facilityList.children.length === 0) {
+                facilityList.appendChild(adCard);
+            } else if (facilityList.children.length > 1) {
+                facilityList.insertBefore(adCard, facilityList.children[1]);
+            } else {
+                facilityList.appendChild(adCard);
+            }
+        }
 
         kakao.maps.load(() => {
             try {
@@ -346,49 +388,6 @@
             resultContentDiv.classList.add('fade-in');
         }
 
-        function createAdCard(ad) {
-            const adCard = document.createElement('div');
-            // v5.7: 클린 지역일 때 광고가 위화감 없도록 margin-top 추가
-            adCard.className = 'result-card ad-card p-4 rounded-lg fade-in mt-4';
-
-            let mediaElement = '';
-            if (ad.adType === 'iframe') {
-                mediaElement = `<div class="ad-media-container">${ad.iframeCode}</div>`;
-            } else if (ad.mediaUrl) {
-                mediaElement = ad.mediaType === 'video' 
-                    ? `<div class="ad-media-container"><video autoplay loop muted playsinline src="${ad.mediaUrl}"></video></div>` 
-                    : `<div class="ad-media-container"><img src="${ad.mediaUrl}" alt="${ad.title}"></div>`;
-            }
-
-            const partnersText = ad.isPartners ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
-
-            adCard.innerHTML = `
-                ${mediaElement}
-                <div class="p-4">
-                    <div class="flex justify-between items-start">
-                         <span class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Sponsored</span>
-                         <span class="text-gray-500 text-xs font-bold rounded-full px-3 py-1 bg-gray-200">AD</span>
-                    </div>
-                    <a href="${ad.link || '#'}" target="_blank" class="block mt-2 text-lg leading-tight font-bold text-gray-800 hover:underline">${ad.title}</a>
-                    <p class="mt-2 text-gray-600 text-sm">${ad.description || ''}</p>
-                    ${partnersText}
-                    ${ad.link ? `<div class="mt-4 pt-4 border-t text-right">
-                         <a href="${ad.link}" target="_blank" class="text-sm font-semibold text-blue-600 hover:underline">자세히 보기 &rarr;</a>
-                    </div>` : ''}
-                </div>
-            `;
-            
-            // v5.7: 광고 삽입 위치 로직 변경
-            // facilityList가 비어있으면(클린지역) 그냥 추가하고, 아니면 기존처럼 두 번째에 삽입
-            if (facilityList.children.length === 0) {
-                facilityList.appendChild(adCard);
-            } else if (facilityList.children.length > 1) {
-                facilityList.insertBefore(adCard, facilityList.children[1]);
-            } else {
-                facilityList.appendChild(adCard);
-            }
-        }
-
         function displaySuccess(elements) {
             displayResult();
             
@@ -460,7 +459,7 @@
             }
 
             if (closestFacility.distance < 300 && parseVoltage(closestFacility.tags.voltage) >= 345000) {
-                 resultMessage.innerHTML = `<span class="text-red-600 font-bold">� 경고! ${Math.round(closestFacility.distance)}m 거리에 고압 시설이 있습니다!</span>`;
+                 resultMessage.innerHTML = `<span class="text-red-600 font-bold">🚨 경고! ${Math.round(closestFacility.distance)}m 거리에 고압 시설이 있습니다!</span>`;
             } else {
                  resultMessage.innerHTML = `<span class="text-green-700 font-bold">✅ 탐지 완료! 이격거리 기준에 맞는 ${elements.length}개의 관련 시설을 발견했습니다.</span>`;
             }
@@ -471,7 +470,6 @@
             resultMessage.innerHTML = `<span class="text-green-700 font-bold">✅ 클린 지역! 주변에 이격거리 기준을 초과하는 주요 전력시설이 없습니다.</span>`;
             summaryBriefing.classList.add('hidden');
             
-            // v5.7: 클린 지역일 때도 광고 호출
             if (window.fetchAndDisplayAd) {
                 window.fetchAndDisplayAd();
             }
