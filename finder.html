@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v4.1 (상세정보 강화)</title>
+    <title>내 주변 전력시설 탐지기 v4.2 (최종판)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
@@ -16,7 +16,7 @@
     <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6">
         
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v4.1 ⚡️</h1>
+            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v4.2 ⚡️</h1>
             <p class="text-gray-500 mt-2">전압별 이격거리 기준에 따라 주변 전력 시설을 정밀 탐지합니다.</p>
         </div>
 
@@ -41,23 +41,9 @@
                 <div id="facility-list" class="space-y-4"></div>
                 
                 <div id="cross-verify-link-container" class="mt-6 text-center"></div>
-
-                <div class="mt-6 text-center">
-                    <button id="toggleDebugBtn" class="text-sm text-gray-500 hover:text-gray-700 underline">
-                        [ 개발자용: API 응답 원본 보기 ]
-                    </button>
-                </div>
-                <div id="debug-output" class="hidden mt-4">
-                    <h3 class="font-semibold text-gray-700">Overpass API Raw Response (필터링 전):</h3>
-                    <pre class="bg-gray-800 text-white text-xs p-4 rounded-lg overflow-x-auto"><code id="raw-json-output"></code></pre>
-                </div>
             </div>
         </div>
         
-        <div id="debug-cctv" class="mt-4 p-4 bg-black text-white rounded-lg font-mono text-xs h-32 overflow-y-auto">
-            <p class="font-bold text-yellow-400">[실시간 시스템 로그]</p>
-        </div>
-
     </div>
 
     <script>
@@ -71,40 +57,21 @@
         const summaryBriefing = document.getElementById('summary-briefing');
         const facilityList = document.getElementById('facility-list');
         const crossVerifyLinkContainer = document.getElementById('cross-verify-link-container');
-        const toggleDebugBtn = document.getElementById('toggleDebugBtn');
-        const debugOutputDiv = document.getElementById('debug-output');
-        const rawJsonOutput = document.getElementById('raw-json-output');
-        const cctv = document.getElementById('debug-cctv');
 
         let geocoderInstance = null;
-        let currentCenter = null;
-
-        // --- CCTV 로그 기록 함수 ---
-        function logToCCTV(message, isError = false) {
-            const p = document.createElement('p');
-            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            p.className = isError ? 'text-red-500' : 'text-green-400';
-            cctv.appendChild(p);
-            cctv.scrollTop = cctv.scrollHeight;
-        }
 
         // --- 2. 카카오맵 스크립트가 준비되면 작전을 시작합니다. ---
         kakao.maps.load(() => {
-            logToCCTV("카카오맵 서비스 준비 완료. 작전 개시.");
             try {
-                logToCCTV("'최애 칼' 준비 시도...");
                 geocoderInstance = new kakao.maps.services.Geocoder();
-                logToCCTV("'최애 칼' 준비 완료!");
                 initializeSearch();
             } catch (error) {
-                logToCCTV(`'최애 칼' 준비 실패! 오류: ${error.message}`, true);
                 displayError("카카오맵 서비스 초기화에 실패했습니다.");
             }
         });
 
         // --- 3. 검색 기능을 초기화합니다. ---
         function initializeSearch() {
-            logToCCTV("검색 기능 초기화 시작.");
             addressInput.disabled = false;
             searchBtn.disabled = false;
             searchBtn.classList.remove('cursor-not-allowed');
@@ -115,15 +82,10 @@
             addressInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') startSearch();
             });
-            toggleDebugBtn.addEventListener('click', () => {
-                debugOutputDiv.classList.toggle('hidden');
-            });
-            logToCCTV("검색 기능 초기화 완료. 사용자 입력 대기 중.");
         }
         
         // --- 4. 실제 검색 로직 ---
         function startSearch() {
-            logToCCTV("'탐지 시작' 버튼 클릭됨.");
             const address = addressInput.value;
             if (!address) {
                 addressInput.classList.add('border-red-500', 'animate-pulse');
@@ -133,21 +95,16 @@
             
             initialMessageDiv.classList.add('hidden');
             resultContentDiv.classList.add('hidden');
-            debugOutputDiv.classList.add('hidden');
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
             summaryBriefing.innerHTML = '';
             crossVerifyLinkContainer.innerHTML = '';
 
-            logToCCTV("준비된 '최애 칼(Geocoder)'로 주소 변환 요청.");
             geocoderInstance.addressSearch(address, (result, status) => {
                 if (status === kakao.maps.services.Status.OK) {
-                    logToCCTV("주소 변환 성공. 주변 시설 탐색 시작.");
                     const lat = result[0].y;
                     const lon = result[0].x;
-                    currentCenter = { lat, lon };
 
-                    logToCCTV(`변환된 좌표: 위도 ${lat}, 경도 ${lon}`);
                     const openInfraMapUrl = `https://openinframap.org/#15/${lat}/${lon}`;
                     crossVerifyLinkContainer.innerHTML = `
                         <a href="${openInfraMapUrl}" target="_blank" class="inline-block bg-green-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-green-600 transition-colors duration-300">
@@ -157,7 +114,6 @@
 
                     findFacilities(lat, lon);
                 } else {
-                    logToCCTV(`주소 변환 실패! 상태: ${status}`, true);
                     displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
                 }
             });
@@ -179,8 +135,6 @@
                 clearTimeout(timeoutId);
 
                 const data = await response.json();
-                rawJsonOutput.textContent = JSON.stringify(data, null, 2);
-                
                 filterAndDisplayResults(data.elements, lat, lon);
 
             } catch (error) {
@@ -189,8 +143,6 @@
                 } else {
                     displayError('😭 탐색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
                 }
-                console.error("Overpass API Error:", error);
-                rawJsonOutput.textContent = `Error: ${error.message}`;
             }
         }
 
@@ -222,8 +174,6 @@
         }
 
         function filterAndDisplayResults(elements, centerLat, centerLon) {
-            logToCCTV(`${elements.length}개의 시설에 대해 정밀 필터링 시작...`);
-
             const distanceRules = {
                 line: { '765000': 1000, '500000': 800, '345000': 700 },
                 substation: { '765000': 850, '500000': 800, '345000': 600 }
@@ -253,8 +203,6 @@
                 return el.distance <= maxDistance;
             });
 
-            logToCCTV(`필터링 완료. ${filteredElements.length}개의 시설이 기준을 통과했습니다.`);
-
             if (filteredElements.length > 0) {
                 displaySuccess(filteredElements);
             } else {
@@ -275,9 +223,19 @@
             const closestFacility = elements[0];
             const highestVoltageFacility = elements.reduce((max, el) => parseVoltage(el.tags.voltage) > parseVoltage(max.tags.voltage) ? el : max, elements[0]);
             
-            const powerTypes = { substation: '변전소', plant: '발전소', generator: '발기', line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블' };
+            const powerTypes = { substation: '변전소', plant: '발전소', generator: '발전기', line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블' };
+            
+            // v4.2: 태그 한글 번역 맵
+            const tagTranslations = {
+                substation: '변전소 종류',
+                location: '위치',
+                frequency: '주파수',
+                operator: '운영사',
+                wires: '전선 수',
+                cables: '케이블 수',
+                layer: '레이어'
+            };
 
-            // v4.1: kV 단위 변환 및 종합 브리핑 강화
             const highestVoltageKv = parseVoltage(highestVoltageFacility.tags.voltage) / 1000;
             let briefingHTML = `<h3 class="font-bold text-lg mb-2">📊 종합 결과 브리핑</h3><div class="space-y-1">`;
             briefingHTML += `<div>- 가장 가까운 시설: <span class="font-semibold">${closestFacility.tags.name || (powerTypes[closestFacility.tags.power] || '시설')}</span> (약 ${Math.round(closestFacility.distance)}m)</div>`;
@@ -293,17 +251,15 @@
                 const type = powerTypes[tags.power] || tags.power;
                 const voltageKv = parseVoltage(tags.voltage) / 1000;
                 
-                // v4.1: 상세 정보를 담을 HTML 생성
                 let detailsHTML = '';
-                const detailTags = ['substation', 'location', 'frequency']; // 보여주고 싶은 상세 태그 목록
-                detailTags.forEach(tagKey => {
-                    if (tags[tagKey]) {
-                        detailsHTML += `<div><span class="font-semibold capitalize">${tagKey}:</span> ${tags[tagKey]}</div>`;
+                // v4.2: 번역 맵을 사용하여 모든 관련 태그를 동적으로 표시
+                Object.keys(tags).forEach(tagKey => {
+                    if (tagTranslations[tagKey]) {
+                        detailsHTML += `<div><span class="font-semibold capitalize">${tagTranslations[tagKey]}:</span> ${tags[tagKey]}</div>`;
                     }
                 });
-                if (detailsHTML === '') {
-                    detailsHTML = '<div><span class="font-semibold">상세정보:</span> 없음</div>';
-                }
+
+                const osmLink = `https://openstreetmap.org/${el.type}/${el.id}`;
 
                 const cardHTML = `<div class="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center">
@@ -311,9 +267,11 @@
                         <span class="font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded-md text-sm">${Math.round(el.distance)}m</span>
                     </div>
                     <div class="mt-2 text-sm text-gray-600 space-y-1 pl-2 border-l-2 border-blue-200">
-                        ${tags.operator ? `<div><span class="font-semibold">운영:</span> ${tags.operator}</div>` : ''}
-                        ${tags.voltage ? `<div><span class="font-semibold">전압:</span> ${voltageKv}kV</div>` : ''}
+                        <div><span class="font-semibold">전압:</span> ${voltageKv}kV</div>
                         ${detailsHTML}
+                    </div>
+                    <div class="mt-3 text-right">
+                        <a href="${osmLink}" target="_blank" class="text-xs text-blue-500 hover:underline">OSM에서 원본 데이터 보기 &rarr;</a>
                     </div>
                 </div>`;
                 facilityList.innerHTML += cardHTML;
