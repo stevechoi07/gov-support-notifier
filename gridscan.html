@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GridScan v1.6 (자동 리셋 기능 추가)</title>
+    <title>GridScan v1.7 (엔진 리콜 & 업그레이드)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
@@ -48,7 +48,6 @@
                     <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"/>
                     <p class="text-xs text-gray-500 mt-2">첫 번째 열에 주소가 포함된 CSV 파일을 업로드하세요.</p>
                 </div>
-                <!-- v1.6: 버튼 그룹으로 묶고 '새로 시작' 버튼 추가 -->
                 <div class="grid grid-cols-2 gap-4 mt-4">
                     <button id="reset-btn" class="action-button w-full bg-gray-500 font-bold py-4 px-8 rounded-lg text-lg">새로 시작</button>
                     <button id="start-analysis-btn" class="action-button w-full bg-teal-500 font-bold py-4 px-8 rounded-lg text-lg">분석 시작</button>
@@ -95,7 +94,7 @@
         const addressListInput = document.getElementById('address-list');
         const csvFileInput = document.getElementById('csv-file-input');
         const startAnalysisBtn = document.getElementById('start-analysis-btn');
-        const resetBtn = document.getElementById('reset-btn'); // v1.6 추가
+        const resetBtn = document.getElementById('reset-btn');
         const progressSection = document.getElementById('progress-section');
         const progressLabel = document.getElementById('progress-label');
         const progressText = document.getElementById('progress-text');
@@ -115,15 +114,14 @@
         });
         
         startAnalysisBtn.addEventListener('click', handleStartAnalysis);
-        resetBtn.addEventListener('click', handleReset); // v1.6 추가
+        resetBtn.addEventListener('click', handleReset);
         csvFileInput.addEventListener('change', handleFileUpload);
         addressListInput.addEventListener('input', updateAddressCounter);
-        // v1.6: 파일 선택 시 이전 값 리셋
         csvFileInput.addEventListener('click', (event) => {
             event.target.value = null;
         });
+        downloadCsvBtn.addEventListener('click', downloadResultsAsCsv);
 
-        // v1.6: '새로 시작' 기능
         function handleReset() {
             addressListInput.value = '';
             csvFileInput.value = null;
@@ -230,25 +228,15 @@
             }
         }
         
+        // v1.7: '패자부활전' 폐지! 엄격 심사로 변경
         function getCoordsFromAddress(address) {
             return new Promise((resolve, reject) => {
                 geocoderInstance.addressSearch(address, (result, status) => {
                     if (status === kakao.maps.services.Status.OK) {
                         resolve({ lat: result[0].y, lon: result[0].x });
                     } else {
-                        const addressParts = address.split(' ');
-                        if (addressParts.length > 1) {
-                            const shorterAddress = addressParts.slice(0, -1).join(' ');
-                            geocoderInstance.addressSearch(shorterAddress, (result2, status2) => {
-                                if (status2 === kakao.maps.services.Status.OK) {
-                                    resolve({ lat: result2[0].y, lon: result2[0].x });
-                                } else {
-                                    reject(new Error('주소 변환 실패'));
-                                }
-                            });
-                        } else {
-                            reject(new Error('주소 변환 실패'));
-                        }
+                        // 1차 시도 실패 시 바로 실패 처리
+                        reject(new Error('주소 변환 실패'));
                     }
                 });
             });
@@ -304,13 +292,14 @@
             resultTableBody.appendChild(row);
         }
         
+        // v1.7: '다운로드 엔진' 최신형 Blob 방식으로 교체
         function downloadResultsAsCsv() {
             if (analysisResults.length === 0) {
                 alert('다운로드할 결과가 없습니다.');
                 return;
             }
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += "No.,주소,진단 결과,최근접 시설,거리(m),최고 전압(kV)\n";
+            
+            let csvContent = "No.,주소,진단 결과,최근접 시설,거리(m),최고 전압(kV)\n";
 
             analysisResults.forEach((result, index) => {
                 const row = [
@@ -324,9 +313,10 @@
                 csvContent += row + "\n";
             });
 
-            const encodedUri = encodeURI(csvContent);
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8-sig;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", url);
             link.setAttribute("download", `GridScan_results_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
