@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v3.2</title>
+    <title>내 주변 전력시설 탐지기 v3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -15,7 +15,7 @@
     <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6">
         
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 ⚡️</h1>
+            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v3.3 ⚡️</h1>
             <p class="text-gray-500 mt-2">주소 반경 1km 이내의 모든 전력 관련 시설을 탐지합니다.</p>
         </div>
 
@@ -102,24 +102,27 @@
             }
         };
 
-        // --- 3. 카카오 맵 스크립트를 불러옵니다. ---
+        // --- 3. 카카오 맵 스크립트를 불러옵니다. (v3.3 수정) ---
         function loadKakaoMapScript(apiKey) {
             logToCCTV("카카오 맵 스크립트 로딩 시작...");
             const script = document.createElement('script');
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
+            
+            // ⭐️⭐️⭐️ v3.3 업데이트: 'kakao.maps.load()' 부활! ⭐️⭐️⭐️
+            // 스크립트 파일이 도착한 후, 서비스가 완전히 준비될 때까지 기다립니다.
             script.onload = () => {
-                // ⭐️⭐️⭐️ v3.2 업데이트: '과잉 의전(kakao.maps.load)' 제거! ⭐️⭐️⭐️
-                // 스크립트 파일이 도착했다는 것은 주방장이 출근했다는 뜻!
-                // 바로 '최애 칼'을 준비시키고 레스토랑 문을 엽니다.
-                try {
-                    logToCCTV("스크립트 파일 로딩 완료. '최애 칼' 준비 시도...");
-                    geocoderInstance = new kakao.maps.services.Geocoder();
-                    logToCCTV("'최애 칼' 준비 완료!");
-                    initializeSearch();
-                } catch (error) {
-                    logToCCTV(`'최애 칼' 준비 실패! 오류: ${error.message}`, true);
-                    displayError("카카오맵 서비스 초기화에 실패했습니다.");
-                }
+                logToCCTV("스크립트 파일 도착. 카카오 서비스 준비 대기...");
+                kakao.maps.load(() => {
+                    try {
+                        logToCCTV("'최애 칼' 준비 시도...");
+                        geocoderInstance = new kakao.maps.services.Geocoder();
+                        logToCCTV("'최애 칼' 준비 완료!");
+                        initializeSearch();
+                    } catch (error) {
+                        logToCCTV(`'최애 칼' 준비 실패! 오류: ${error.message}`, true);
+                        displayError("카카오맵 서비스 초기화에 실패했습니다.");
+                    }
+                });
             };
             script.onerror = () => {
                 logToCCTV("카카오 맵 스크립트 파일 로딩 실패!", true);
@@ -164,7 +167,7 @@
             logToCCTV("준비된 '최애 칼(Geocoder)'로 주소 변환 요청.");
             geocoderInstance.addressSearch(address, (result, status) => {
                 if (status === kakao.maps.services.Status.OK) {
-                    logToCCTV("주소 변환 성공. 주변 시설 탐색 시작.");
+                    logToCTTV("주소 변환 성공. 주변 시설 탐색 시작.");
                     const lat = result[0].y;
                     const lon = result[0].x;
                     findFacilities(lat, lon);
