@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v5.1 (전문가 리포트)</title>
+    <title>우리집 고압선 안심진단</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
-        /* --- v5.1: 전문가 리포트 UI/UX 스타일 --- */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         
         body {
             font-family: 'Noto Sans KR', sans-serif;
-            background-color: #f8f9fa; /* 밝은 회색 배경 */
+            background-color: #f8f9fa;
             color: #212529;
         }
 
@@ -20,11 +19,10 @@
             background-color: #ffffff;
             border: 1px solid #dee2e6;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease-in-out;
         }
 
         .title-text {
-            color: #0d6efd; /* 전문적인 파란색 */
+            color: #0d6efd;
         }
 
         .input-field {
@@ -40,7 +38,7 @@
         .search-button {
             background-color: #0d6efd;
             color: #ffffff;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease-in-out;
         }
         .search-button:hover {
             background-color: #0b5ed7;
@@ -55,7 +53,7 @@
         .result-card {
             background-color: #ffffff;
             border: 1px solid #e9ecef;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease-in-out;
         }
         .result-card:hover {
             transform: translateY(-3px);
@@ -87,7 +85,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* v5.1: 모달 스타일 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
@@ -98,8 +95,10 @@
             opacity: 1; pointer-events: auto;
         }
         .modal-content {
-            background: #fff; padding: 2rem; border-radius: 0.5rem;
+            background: #fff; padding: 1.5rem; border-radius: 0.5rem;
             max-width: 600px; width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
             transform: scale(0.95); transition: transform 0.3s ease;
         }
         .modal-overlay.active .modal-content {
@@ -112,16 +111,16 @@
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
-    <div class="main-container w-full max-w-2xl mx-auto rounded-2xl p-8 space-y-8">
+    <div class="main-container w-full max-w-2xl mx-auto rounded-2xl p-6 sm:p-8 space-y-8">
         
         <div class="text-center space-y-2">
-            <h1 class="text-4xl font-bold title-text">⚡️ Power Grid Detector v5.1 ⚡️</h1>
-            <p class="text-gray-600">전압별 이격거리 기준에 따라 주변 전력 시설을 정밀 탐지합니다.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold title-text">⚡️ 우리집 고압선 안심진단 ⚡️</h1>
+            <p class="text-gray-600 text-sm sm:text-base">전압별 이격거리 기준에 따라 주변 전력 시설을 정밀 탐지합니다.</p>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-4">
-            <input type="text" id="address" placeholder="주소를 입력하여 탐색 시작..." class="input-field flex-grow p-4 border-2 rounded-lg transition-all duration-300 outline-none" disabled>
-            <button id="searchBtn" class="search-button font-bold py-4 px-8 rounded-lg" disabled>
+            <input type="text" id="address" placeholder="주소를 입력하여 탐색 시작..." class="input-field flex-grow p-4 border-2 rounded-lg transition-all duration-300 outline-none text-base" disabled>
+            <button id="searchBtn" class="search-button font-bold py-4 px-6 sm:px-8 rounded-lg text-base" disabled>
                 초기화 중...
             </button>
         </div>
@@ -135,7 +134,7 @@
                 <p class="text-blue-600 font-semibold">정밀 필터링 가동! 주변을 샅샅이 분석 중...</p>
             </div>
             <div id="result-content" class="hidden">
-                <h2 id="result-message" class="text-2xl font-bold text-center mb-6"></h2>
+                <h2 id="result-message" class="text-xl sm:text-2xl font-bold text-center mb-6"></h2>
                 <div id="summary-briefing" class="summary-briefing mb-6 p-4 rounded-lg"></div>
                 <div id="facility-list" class="space-y-4"></div>
                 
@@ -145,12 +144,11 @@
         
     </div>
 
-    <!-- v5.1: 한전 지원사업 안내 모달 -->
     <div id="support-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold title-text">송·변전설비 주변지역 지원사업 안내</h2>
-                <button id="close-modal-btn" class="text-2xl font-bold">&times;</button>
+                <h2 class="text-xl sm:text-2xl font-bold title-text">송·변전설비 주변지역 지원사업 안내</h2>
+                <button id="close-modal-btn" class="text-3xl font-bold leading-none">&times;</button>
             </div>
             <div class="text-sm text-gray-700 space-y-4">
                 <p><strong class="text-gray-900">▶ 보상범위:</strong> 기설 345kV 이상 가공송전선로 주변 마을</p>
@@ -177,7 +175,6 @@
     </div>
 
     <script>
-        // --- 1. 필요한 HTML 요소들을 미리 찾아놓습니다. ---
         const addressInput = document.getElementById('address');
         const searchBtn = document.getElementById('searchBtn');
         const initialMessageDiv = document.getElementById('initial-message');
@@ -192,7 +189,6 @@
 
         let geocoderInstance = null;
 
-        // --- 2. 카카오맵 스크립트가 준비되면 작전을 시작합니다. ---
         kakao.maps.load(() => {
             try {
                 geocoderInstance = new kakao.maps.services.Geocoder();
@@ -202,7 +198,6 @@
             }
         });
 
-        // --- 3. 검색 기능을 초기화합니다. ---
         function initializeSearch() {
             addressInput.disabled = false;
             searchBtn.disabled = false;
@@ -214,14 +209,12 @@
                 if (event.key === 'Enter') startSearch();
             });
             
-            // v5.1: 모달 닫기 이벤트
             closeModalBtn.addEventListener('click', () => supportModal.classList.remove('active'));
             supportModal.addEventListener('click', (e) => {
                 if (e.target === supportModal) supportModal.classList.remove('active');
             });
         }
         
-        // --- 4. 실제 검색 로직 ---
         function startSearch() {
             const address = addressInput.value;
             if (!address) {
@@ -284,7 +277,7 @@
         }
 
         function haversineDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // metres
+            const R = 6371e3;
             const φ1 = lat1 * Math.PI/180;
             const φ2 = lat2 * Math.PI/180;
             const Δφ = (lat2-lat1) * Math.PI/180;
@@ -372,7 +365,6 @@
             briefingHTML += `<div>- 가장 가까운 시설: <strong class="text-gray-800">${closestFacility.tags.name || (powerTypes[closestFacility.tags.power] || '시설')}</strong> (약 ${Math.round(closestFacility.distance)}m)</div>`;
             briefingHTML += `<div>- 최고 전압 시설: <strong class="text-gray-800">${highestVoltageFacility.tags.name || (powerTypes[highestVoltageFacility.tags.power] || '시설')}</strong> (${highestVoltageKv}kV)</div>`;
             
-            // v5.1: 지원사업 안내 버튼 추가 로직
             const isSupportTarget = elements.some(el => parseVoltage(el.tags.voltage) >= 345000);
             if (isSupportTarget) {
                 briefingHTML += `<div class="mt-2 pt-2 border-t border-blue-200">💡 주변에 345kV 이상 시설이 있어, 한전 지원사업 대상일 수 있습니다. <button id="open-modal-btn" class="text-blue-600 font-bold hover:underline">자세히 보기</button></div>`;
@@ -382,7 +374,6 @@
             summaryBriefing.innerHTML = briefingHTML;
             summaryBriefing.classList.remove('hidden');
 
-            // v5.1: 지원사업 안내 버튼 이벤트 리스너 추가
             if (isSupportTarget) {
                 document.getElementById('open-modal-btn').addEventListener('click', () => {
                     supportModal.classList.add('active');
