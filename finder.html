@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v3.4 (디버깅 에디션)</title>
+    <title>내 주변 전력시설 탐지기 v3.5 (최종 수정)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -15,7 +15,7 @@
     <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6">
         
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v3.4 ⚡️</h1>
+            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v3.5 ⚡️</h1>
             <p class="text-gray-500 mt-2">주소 반경 1km 이내의 모든 전력 관련 시설을 탐지합니다.</p>
         </div>
 
@@ -55,6 +55,10 @@
 
     </div>
 
+    <!-- 
+      v3.5 업데이트: '성급한 한국인' 작전! 
+      window.onload를 제거하고 스크립트를 body 최하단으로 이동하여 로딩 타이밍 문제를 해결합니다.
+    -->
     <script>
         // --- 1. 필요한 HTML 요소들을 미리 찾아놓습니다. ---
         const addressInput = document.getElementById('address');
@@ -80,8 +84,8 @@
             cctv.scrollTop = cctv.scrollHeight;
         }
 
-        // --- 2. 페이지가 로드되면 작전을 시작합니다. ---
-        window.onload = async () => {
+        // --- 2. 페이지 DOM이 준비되면 즉시 작전을 시작합니다. ---
+        (async () => {
             logToCCTV("페이지 로딩 완료. 작전 개시.");
             try {
                 logToCCTV("집사에게 API 키 요청 중...");
@@ -92,11 +96,7 @@
                 }
                 
                 const data = await response.json();
-                
-                // 🕵️‍♂️ [도청 장치 1] 서버에서 받은 응답 원본과 추출된 키를 콘솔에 기록합니다.
-                console.log('🕵️‍♂️ [도청 1] 서버 응답 원본:', data);
                 const apiKey = data.apiKey;
-                console.log('🕵️‍♂️ [도청 2] 추출된 API 키:', apiKey);
 
                 if (!apiKey) {
                     throw new Error("서버에서 API 키를 받았지만, 값이 비어있습니다.");
@@ -107,44 +107,32 @@
 
             } catch (error) {
                 logToCCTV(`API 키 로딩 실패: ${error.message}`, true);
-                console.error("🚨 API 키 로딩 실패 상세 정보:", error);
                 initialMessageDiv.innerHTML = `<p class="text-red-500">🚨 보안 키 로딩에 실패했습니다: ${error.message}</p>`;
             }
-        };
+        })();
 
         // --- 3. 카카오 맵 스크립트를 불러옵니다. ---
         function loadKakaoMapScript(apiKey) {
             logToCCTV("카카오 맵 스크립트 로딩 시작...");
-            
-            // 🕵️‍♂️ [도청 장치 2] 어떤 키로 스크립트를 로드하는지 콘솔에 기록합니다.
-            console.log('🕵️‍♂️ [도청 3] 이 키로 스크립트를 로드합니다:', apiKey);
-
             const script = document.createElement('script');
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
             
             script.onload = () => {
-                // 🕵️‍♂️ [도청 장치 3] 스크립트 로딩 성공 시 kakao 객체 상태를 확인합니다.
-                console.log('🕵️‍♂️ [도청 4] 스크립트 onload 이벤트 발생. window.kakao 객체 상태:', window.kakao);
                 logToCCTV("스크립트 파일 도착. 카카오 서비스 준비 대기...");
-                
                 kakao.maps.load(() => {
                     try {
-                        console.log('🕵️‍♂️ [도청 5] kakao.maps.load 콜백 실행됨.');
                         logToCCTV("'최애 칼' 준비 시도...");
                         geocoderInstance = new kakao.maps.services.Geocoder();
                         logToCCTV("'최애 칼' 준비 완료!");
                         initializeSearch();
                     } catch (error) {
                         logToCCTV(`'최애 칼' 준비 실패! 오류: ${error.message}`, true);
-                        console.error("🚨 '최애 칼' 준비 실패 상세 정보:", error);
                         displayError("카카오맵 서비스 초기화에 실패했습니다.");
                     }
                 });
             };
             script.onerror = (event) => {
-                // 🕵️‍♂️ [도청 장치 4] 스크립트 로딩 실패 시 에러를 콘솔에 기록합니다.
                 logToCCTV("카카오 맵 스크립트 파일 로딩 실패!", true);
-                console.error('🕵️‍♂️ [도청 6] 스크립트 onerror 이벤트 발생!', event);
             };
             document.head.appendChild(script);
         }
@@ -173,7 +161,6 @@
             logToCCTV("'탐지 시작' 버튼 클릭됨.");
             const address = addressInput.value;
             if (!address) {
-                // alert() 대신 간단한 UI 피드백으로 변경
                 addressInput.classList.add('border-red-500', 'animate-pulse');
                 setTimeout(() => addressInput.classList.remove('border-red-500', 'animate-pulse'), 1500);
                 return;
@@ -188,7 +175,7 @@
             logToCCTV("준비된 '최애 칼(Geocoder)'로 주소 변환 요청.");
             geocoderInstance.addressSearch(address, (result, status) => {
                 if (status === kakao.maps.services.Status.OK) {
-                    logToCCTV("주소 변환 성공. 주변 시설 탐색 시작."); // Typo corrected: logToCTTV -> logToCCTV
+                    logToCCTV("주소 변환 성공. 주변 시설 탐색 시작.");
                     const lat = result[0].y;
                     const lon = result[0].x;
                     findFacilities(lat, lon);
