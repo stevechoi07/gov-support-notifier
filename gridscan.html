@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GridScan v1.5 (재탐색 기능 추가)</title>
+    <title>GridScan v1.6 (자동 리셋 기능 추가)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
@@ -11,9 +11,9 @@
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; color: #212529; }
         .main-container { background-color: #ffffff; border: 1px solid #dee2e6; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
         .title-text { color: #14b8a6; }
-        .search-button { background-color: #14b8a6; color: #ffffff; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .search-button:hover { background-color: #0d9488; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .search-button:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+        .action-button { color: #ffffff; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .action-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .action-button:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
         .progress-bar { background-color: #e9ecef; border-radius: 9999px; overflow: hidden; }
         .progress-bar-fill { background-color: #14b8a6; transition: width 0.3s ease-in-out; }
         .result-table { width: 100%; border-collapse: collapse; }
@@ -48,7 +48,11 @@
                     <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"/>
                     <p class="text-xs text-gray-500 mt-2">첫 번째 열에 주소가 포함된 CSV 파일을 업로드하세요.</p>
                 </div>
-                <button id="start-analysis-btn" class="search-button w-full font-bold py-4 px-8 rounded-lg text-lg mt-4">분석 시작</button>
+                <!-- v1.6: 버튼 그룹으로 묶고 '새로 시작' 버튼 추가 -->
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <button id="reset-btn" class="action-button w-full bg-gray-500 font-bold py-4 px-8 rounded-lg text-lg">새로 시작</button>
+                    <button id="start-analysis-btn" class="action-button w-full bg-teal-500 font-bold py-4 px-8 rounded-lg text-lg">분석 시작</button>
+                </div>
             </div>
         </div>
 
@@ -91,6 +95,7 @@
         const addressListInput = document.getElementById('address-list');
         const csvFileInput = document.getElementById('csv-file-input');
         const startAnalysisBtn = document.getElementById('start-analysis-btn');
+        const resetBtn = document.getElementById('reset-btn'); // v1.6 추가
         const progressSection = document.getElementById('progress-section');
         const progressLabel = document.getElementById('progress-label');
         const progressText = document.getElementById('progress-text');
@@ -110,9 +115,24 @@
         });
         
         startAnalysisBtn.addEventListener('click', handleStartAnalysis);
+        resetBtn.addEventListener('click', handleReset); // v1.6 추가
         csvFileInput.addEventListener('change', handleFileUpload);
-        downloadCsvBtn.addEventListener('click', downloadResultsAsCsv);
         addressListInput.addEventListener('input', updateAddressCounter);
+        // v1.6: 파일 선택 시 이전 값 리셋
+        csvFileInput.addEventListener('click', (event) => {
+            event.target.value = null;
+        });
+
+        // v1.6: '새로 시작' 기능
+        function handleReset() {
+            addressListInput.value = '';
+            csvFileInput.value = null;
+            resultSection.classList.add('hidden');
+            progressSection.classList.add('hidden');
+            resultTableBody.innerHTML = '';
+            analysisResults = [];
+            updateAddressCounter();
+        }
 
         function getCleanedAddresses() {
             return addressListInput.value.split('\n')
@@ -186,7 +206,6 @@
 
         async function analyzeSingleAddress(address) {
             try {
-                // v1.5: getCoordsFromAddress 함수가 이제 재시도 로직을 포함합니다.
                 const coords = await getCoordsFromAddress(address);
                 const facilities = await findFacilities(coords.lat, coords.lon);
                 const filtered = filterFacilities(facilities, coords.lat, coords.lon);
@@ -211,15 +230,12 @@
             }
         }
         
-        // v1.5: '패자부활전' 작전이 적용된 주소 변환 함수
         function getCoordsFromAddress(address) {
             return new Promise((resolve, reject) => {
-                // 1차 시도 (정밀 타격)
                 geocoderInstance.addressSearch(address, (result, status) => {
                     if (status === kakao.maps.services.Status.OK) {
                         resolve({ lat: result[0].y, lon: result[0].x });
                     } else {
-                        // 1차 시도 실패! '주소 다이어트' 후 2차 시도
                         const addressParts = address.split(' ');
                         if (addressParts.length > 1) {
                             const shorterAddress = addressParts.slice(0, -1).join(' ');
@@ -227,12 +243,10 @@
                                 if (status2 === kakao.maps.services.Status.OK) {
                                     resolve({ lat: result2[0].y, lon: result2[0].x });
                                 } else {
-                                    // 2차 시도도 실패하면 최종 실패 처리
                                     reject(new Error('주소 변환 실패'));
                                 }
                             });
                         } else {
-                            // 더 이상 줄일 주소가 없으면 최종 실패
                             reject(new Error('주소 변환 실패'));
                         }
                     }
