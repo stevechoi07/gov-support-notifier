@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v1.0</title>
+    <title>내 주변 전력시설 탐지기 v1.1</title>
     <!-- 
         스타일링의 마법사, Tailwind CSS를 불러옵니다.
         이거 하나면 디자인 걱정 끝! 
@@ -21,11 +21,11 @@
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            <!-- 100% { transform: rotate(360deg); } -->
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans p-4">
 
     <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6 transform transition-all hover:scale-105 duration-500">
         
@@ -60,35 +60,42 @@
                 <ul id="facility-list" class="list-disc list-inside bg-gray-50 p-6 rounded-lg space-y-2">
                     <!-- 탐지된 시설 목록이 여기에 추가됩니다. -->
                 </ul>
+                
+                <!-- ⭐️⭐️⭐️ v1.1 업데이트: 디버깅 모드 추가! ⭐️⭐️⭐️ -->
+                <div class="mt-6 text-center">
+                    <button id="toggleDebugBtn" class="text-sm text-gray-500 hover:text-gray-700 underline">
+                        [ 개발자용: API 응답 원본 보기 ]
+                    </button>
+                </div>
+                <div id="debug-output" class="hidden mt-4">
+                    <h3 class="font-semibold text-gray-700">Overpass API Raw Response:</h3>
+                    <pre class="bg-gray-800 text-white text-xs p-4 rounded-lg overflow-x-auto"><code id="raw-json-output"></code></pre>
+                </div>
             </div>
         </div>
 
     </div>
 
-    <!-- 
-        ⭐️⭐️⭐️⭐️⭐️ 여기가 제일 중요합니다! ⭐️⭐️⭐️⭐️⭐️
-        카카오 지도 API를 불러오는 스크립트입니다.
-        아래 src의 'YOUR_APP_KEY' 부분에 발급받으신 'JavaScript 키'를 꼭! 붙여넣어 주세요.
-        이게 없으면 '주소 번역가'가 일을 못해서 프로그램이 동작하지 않아요!
-    -->
+    <!-- 카카오 지도 API 스크립트 -->
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
 
     <script>
         // --- 1. 필요한 HTML 요소들을 미리 찾아놓습니다. (선수 입장!) ---
         const addressInput = document.getElementById('address');
         const searchBtn = document.getElementById('searchBtn');
-        const resultDiv = document.getElementById('result');
         const initialMessageDiv = document.getElementById('initial-message');
         const loadingDiv = document.getElementById('loading');
         const resultContentDiv = document.getElementById('result-content');
         const resultMessage = document.getElementById('result-message');
         const facilityList = document.getElementById('facility-list');
+        // v1.1 추가: 디버깅용 요소
+        const toggleDebugBtn = document.getElementById('toggleDebugBtn');
+        const debugOutputDiv = document.getElementById('debug-output');
+        const rawJsonOutput = document.getElementById('raw-json-output');
 
         // --- 2. '탐지 시작' 버튼을 눌렀을 때의 동작을 정의합니다. ---
         searchBtn.addEventListener('click', function() {
             const address = addressInput.value;
-
-            // 주소를 입력했는지 확인
             if (!address) {
                 alert('주소를 입력해주세요!');
                 return;
@@ -97,38 +104,34 @@
             // 이전 결과 숨기고, 로딩 화면 보여주기
             initialMessageDiv.classList.add('hidden');
             resultContentDiv.classList.add('hidden');
+            debugOutputDiv.classList.add('hidden'); // v1.1 추가: 디버그 창도 숨기기
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = ''; // 이전 목록 초기화
 
-            // --- 3. 작전 개시: 카카오 API로 주소를 좌표로 변환 (1단계: 번역) ---
+            // --- 3. 작전 개시: 카카오 API로 주소를 좌표로 변환 ---
             const geocoder = new kakao.maps.services.Geocoder();
-
             geocoder.addressSearch(address, function(result, status) {
-                // 주소 변환에 성공했을 경우
                 if (status === kakao.maps.services.Status.OK) {
-                    const lat = result[0].y; // 위도
-                    const lon = result[0].x; // 경도
-                    
-                    // --- 4. Overpass API로 주변 시설물 탐색 (2단계: 탐험) ---
+                    const lat = result[0].y;
+                    const lon = result[0].x;
                     findFacilities(lat, lon);
                 } else {
-                    // 주소 변환에 실패했을 경우
                     displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
                 }
             });
         });
         
-        // 엔터 키로도 검색 가능하게 하는 편의 기능
         addressInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                searchBtn.click();
-            }
+            if (event.key === 'Enter') searchBtn.click();
+        });
+        
+        // v1.1 추가: 디버그 창 토글 버튼 이벤트
+        toggleDebugBtn.addEventListener('click', () => {
+            debugOutputDiv.classList.toggle('hidden');
         });
 
         // --- 5. Overpass API에 "이 좌표 주변 1km 탐색해줘!" 라고 요청하는 함수 ---
         async function findFacilities(lat, lon) {
-            // Overpass API에 보낼 마법의 주문(쿼리)
-            // "반경 1000m 안에 power=substation(변전소) 또는 power=plant(발전소) 태그가 붙은 모든 것을 찾아줘!"
             const query = `
                 [out:json];
                 (
@@ -146,7 +149,9 @@
                 });
                 const data = await response.json();
 
-                // --- 6. 탐색 결과를 화면에 예쁘게 표시해주는 부분 ---
+                // ⭐️ v1.1 업데이트: 받은 데이터 원본을 디버그 창에 기록!
+                rawJsonOutput.textContent = JSON.stringify(data, null, 2);
+
                 if (data.elements.length > 0) {
                     displaySuccess(data.elements);
                 } else {
@@ -156,16 +161,18 @@
             } catch (error) {
                 displayError('😭 탐색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
                 console.error("Overpass API Error:", error);
+                rawJsonOutput.textContent = `Error: ${error.message}`; // 에러도 기록
             }
         }
 
         // --- 7. 결과를 상황에 맞게 화면에 표시해주는 도우미 함수들 ---
-
-        // 성공 메시지 표시
-        function displaySuccess(elements) {
+        function displayResult() {
             loadingDiv.classList.add('hidden');
             resultContentDiv.classList.remove('hidden');
-            
+        }
+
+        function displaySuccess(elements) {
+            displayResult();
             resultMessage.textContent = `🚨 탐지 완료! 주변 1km 내에서 ${elements.length}개의 관련 시설을 발견했습니다.`;
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-red-600';
 
@@ -179,20 +186,14 @@
             });
         }
 
-        // 시설 없음 메시지 표시
         function displayNotFound() {
-            loadingDiv.classList.add('hidden');
-            resultContentDiv.classList.remove('hidden');
-            
+            displayResult();
             resultMessage.textContent = '✅ 클린 지역! 주변 1km 내에 주요 전력시설이 없습니다.';
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-green-600';
         }
 
-        // 에러 메시지 표시
         function displayError(message) {
-            loadingDiv.classList.add('hidden');
-            resultContentDiv.classList.remove('hidden');
-            
+            displayResult();
             resultMessage.textContent = message;
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-yellow-600';
         }
