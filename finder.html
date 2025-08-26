@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v4.0 (상세 브리핑 추가)</title>
+    <title>내 주변 전력시설 탐지기 v4.1 (상세정보 강화)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
@@ -16,7 +16,7 @@
     <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6">
         
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v4.0 ⚡️</h1>
+            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v4.1 ⚡️</h1>
             <p class="text-gray-500 mt-2">전압별 이격거리 기준에 따라 주변 전력 시설을 정밀 탐지합니다.</p>
         </div>
 
@@ -37,7 +37,6 @@
             </div>
             <div id="result-content" class="hidden">
                 <h2 id="result-message" class="text-2xl font-bold text-center mb-4"></h2>
-                <!-- v4.0: 종합 브리핑 영역 추가 -->
                 <div id="summary-briefing" class="mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg text-yellow-800"></div>
                 <div id="facility-list" class="space-y-4"></div>
                 
@@ -69,7 +68,7 @@
         const loadingDiv = document.getElementById('loading');
         const resultContentDiv = document.getElementById('result-content');
         const resultMessage = document.getElementById('result-message');
-        const summaryBriefing = document.getElementById('summary-briefing'); // v4.0 추가
+        const summaryBriefing = document.getElementById('summary-briefing');
         const facilityList = document.getElementById('facility-list');
         const crossVerifyLinkContainer = document.getElementById('cross-verify-link-container');
         const toggleDebugBtn = document.getElementById('toggleDebugBtn');
@@ -78,7 +77,7 @@
         const cctv = document.getElementById('debug-cctv');
 
         let geocoderInstance = null;
-        let currentCenter = null; // v4.0: 현재 검색 좌표 저장
+        let currentCenter = null;
 
         // --- CCTV 로그 기록 함수 ---
         function logToCCTV(message, isError = false) {
@@ -137,7 +136,7 @@
             debugOutputDiv.classList.add('hidden');
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
-            summaryBriefing.innerHTML = ''; // v4.0: 이전 브리핑 초기화
+            summaryBriefing.innerHTML = '';
             crossVerifyLinkContainer.innerHTML = '';
 
             logToCCTV("준비된 '최애 칼(Geocoder)'로 주소 변환 요청.");
@@ -146,7 +145,7 @@
                     logToCCTV("주소 변환 성공. 주변 시설 탐색 시작.");
                     const lat = result[0].y;
                     const lon = result[0].x;
-                    currentCenter = { lat, lon }; // v4.0: 좌표 저장
+                    currentCenter = { lat, lon };
 
                     logToCCTV(`변환된 좌표: 위도 ${lat}, 경도 ${lon}`);
                     const openInfraMapUrl = `https://openinframap.org/#15/${lat}/${lon}`;
@@ -210,7 +209,6 @@
             return R * c;
         }
 
-        // v4.0: 전압 파싱 로직을 별도 함수로 분리
         function parseVoltage(voltageTag) {
             if (!voltageTag) return 0;
             if (typeof voltageTag === 'string') {
@@ -272,28 +270,41 @@
         function displaySuccess(elements) {
             displayResult();
             
-            // v4.0: 거리순으로 정렬
             elements.sort((a, b) => a.distance - b.distance);
 
             const closestFacility = elements[0];
             const highestVoltageFacility = elements.reduce((max, el) => parseVoltage(el.tags.voltage) > parseVoltage(max.tags.voltage) ? el : max, elements[0]);
             
-            const powerTypes = { substation: '변전소', plant: '발전소', generator: '발전기', line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블' };
+            const powerTypes = { substation: '변전소', plant: '발전소', generator: '발기', line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블' };
 
-            // v4.0: 종합 브리핑 생성
+            // v4.1: kV 단위 변환 및 종합 브리핑 강화
+            const highestVoltageKv = parseVoltage(highestVoltageFacility.tags.voltage) / 1000;
             let briefingHTML = `<h3 class="font-bold text-lg mb-2">📊 종합 결과 브리핑</h3><div class="space-y-1">`;
             briefingHTML += `<div>- 가장 가까운 시설: <span class="font-semibold">${closestFacility.tags.name || (powerTypes[closestFacility.tags.power] || '시설')}</span> (약 ${Math.round(closestFacility.distance)}m)</div>`;
-            briefingHTML += `<div>- 최고 전압 시설: <span class="font-semibold">${highestVoltageFacility.tags.name || (powerTypes[highestVoltageFacility.tags.power] || '시설')}</span> (${highestVoltageFacility.tags.voltage}V)</div>`;
+            briefingHTML += `<div>- 최고 전압 시설: <span class="font-semibold">${highestVoltageFacility.tags.name || (powerTypes[highestVoltageFacility.tags.power] || '시설')}</span> (${highestVoltageKv}kV)</div>`;
             briefingHTML += `</div>`;
             summaryBriefing.innerHTML = briefingHTML;
             summaryBriefing.classList.remove('hidden');
 
-            facilityList.innerHTML = ''; // 리스트 초기화
+            facilityList.innerHTML = '';
             elements.forEach(el => {
                 const tags = el.tags || {};
                 const name = tags.name || '이름 없는 시설';
                 const type = powerTypes[tags.power] || tags.power;
-                // v4.0: 카드에 거리 정보 추가
+                const voltageKv = parseVoltage(tags.voltage) / 1000;
+                
+                // v4.1: 상세 정보를 담을 HTML 생성
+                let detailsHTML = '';
+                const detailTags = ['substation', 'location', 'frequency']; // 보여주고 싶은 상세 태그 목록
+                detailTags.forEach(tagKey => {
+                    if (tags[tagKey]) {
+                        detailsHTML += `<div><span class="font-semibold capitalize">${tagKey}:</span> ${tags[tagKey]}</div>`;
+                    }
+                });
+                if (detailsHTML === '') {
+                    detailsHTML = '<div><span class="font-semibold">상세정보:</span> 없음</div>';
+                }
+
                 const cardHTML = `<div class="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center">
                         <h4 class="font-bold text-lg text-blue-700">${name} <span class="text-sm font-medium text-gray-500">(${type})</span></h4>
@@ -301,13 +312,13 @@
                     </div>
                     <div class="mt-2 text-sm text-gray-600 space-y-1 pl-2 border-l-2 border-blue-200">
                         ${tags.operator ? `<div><span class="font-semibold">운영:</span> ${tags.operator}</div>` : ''}
-                        ${tags.voltage ? `<div><span class="font-semibold">전압:</span> ${tags.voltage}</div>` : ''}
+                        ${tags.voltage ? `<div><span class="font-semibold">전압:</span> ${voltageKv}kV</div>` : ''}
+                        ${detailsHTML}
                     </div>
                 </div>`;
                 facilityList.innerHTML += cardHTML;
             });
             
-            // v4.0: 상황별 메시지
             if (closestFacility.distance < 300 && parseVoltage(closestFacility.tags.voltage) >= 345000) {
                  resultMessage.textContent = `🚨 경고! ${Math.round(closestFacility.distance)}m 거리에 고압 시설이 있습니다!`;
                  resultMessage.className = 'text-2xl font-bold text-center mb-4 text-red-600 animate-pulse';
@@ -321,14 +332,14 @@
             displayResult();
             resultMessage.textContent = '✅ 클린 지역! 주변에 이격거리 기준을 초과하는 주요 전력시설이 없습니다.';
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-green-600';
-            summaryBriefing.classList.add('hidden'); // v4.0: 브리핑 숨기기
+            summaryBriefing.classList.add('hidden');
         }
 
         function displayError(message) {
             displayResult();
             resultMessage.textContent = message;
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-yellow-600';
-            summaryBriefing.classList.add('hidden'); // v4.0: 브리핑 숨기기
+            summaryBriefing.classList.add('hidden');
         }
     </script>
 </body>
