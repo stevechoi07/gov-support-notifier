@@ -3,25 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>고압선 안심진단 BIZ v1.1 (과적 방지턱 추가)</title>
+    <title>GridScan v1.3 (UI/UX 개선)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; color: #212529; }
         .main-container { background-color: #ffffff; border: 1px solid #dee2e6; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .title-text { color: #0d6efd; }
-        .search-button { background-color: #0d6efd; color: #ffffff; transition: all 0.2s ease-in-out; }
-        .search-button:hover { background-color: #0b5ed7; transform: translateY(-2px); }
-        .search-button:disabled { background-color: #6c757d; cursor: not-allowed; transform: none; }
+        /* v1.3: 산뜻한 민트색으로 포인트 컬러 변경 */
+        .title-text { color: #14b8a6; }
+        .search-button { background-color: #14b8a6; color: #ffffff; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .search-button:hover { background-color: #0d9488; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .search-button:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
         .progress-bar { background-color: #e9ecef; border-radius: 9999px; overflow: hidden; }
-        .progress-bar-fill { background-color: #0d6efd; transition: width 0.3s ease-in-out; }
+        .progress-bar-fill { background-color: #14b8a6; transition: width 0.3s ease-in-out; }
         .result-table { width: 100%; border-collapse: collapse; }
         .result-table th, .result-table td { border: 1px solid #dee2e6; padding: 0.75rem; text-align: left; }
-        .result-table thead { background-color: #f8f9fa; }
-        .result-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
-        .status-pass { color: #198754; font-weight: bold; }
-        .status-fail { color: #dc3545; font-weight: bold; }
+        .result-table thead { background-color: #f1f5f9; } /* 헤더 배경색 추가 */
+        .result-table tbody tr:nth-child(even) { background-color: #f8fafc; }
+        .status-pass { color: #16a34a; font-weight: bold; }
+        .status-fail { color: #ef4444; font-weight: bold; }
+        /* v1.3: 주소 카운터 스타일 */
+        .address-counter.over-limit { color: #ef4444; font-weight: bold; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -29,19 +32,23 @@
     <div class="main-container w-full max-w-4xl mx-auto rounded-2xl p-6 sm:p-8 space-y-8">
         
         <div class="text-center space-y-2">
-            <h1 class="text-3xl sm:text-4xl font-bold title-text">⚡️ 고압선 안심진단 BIZ ⚡️</h1>
+            <h1 class="text-3xl sm:text-4xl font-bold title-text">⚡️ GridScan ⚡️</h1>
             <p class="text-gray-600 text-sm sm:text-base">여러 주소를 한 번에 분석하고 결과를 받아보세요.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label for="address-list" class="block text-lg font-semibold text-gray-700 mb-2">주소 목록 붙여넣기</label>
-                <textarea id="address-list" rows="10" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예:&#10;경기도 성남시 중원구 도촌남로 101&#10;경기도 고양시 덕양구 향동동 407&#10;(한 줄에 주소 하나씩 입력)"></textarea>
+                <div class="flex justify-between items-center mb-2">
+                    <label for="address-list" class="block text-lg font-semibold text-gray-700">주소 목록 붙여넣기</label>
+                    <!-- v1.3: 실시간 주소 계기판 추가 -->
+                    <span id="address-counter" class="text-sm font-medium text-gray-500">0 / 200 개</span>
+                </div>
+                <textarea id="address-list" rows="10" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="예:&#10;경기도 성남시 중원구 도촌남로 101&#10;경기도 고양시 덕양구 향동동 407&#10;(한 줄에 주소 하나씩 입력)"></textarea>
             </div>
             <div class="flex flex-col justify-between">
                 <div>
                     <p class="text-lg font-semibold text-gray-700 mb-2">또는 CSV 파일 업로드</p>
-                    <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                    <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"/>
                     <p class="text-xs text-gray-500 mt-2">첫 번째 열에 주소가 포함된 CSV 파일을 업로드하세요.</p>
                 </div>
                 <button id="start-analysis-btn" class="search-button w-full font-bold py-4 px-8 rounded-lg text-lg mt-4">분석 시작</button>
@@ -50,7 +57,7 @@
 
         <div id="progress-section" class="hidden pt-6 space-y-2">
             <div class="flex justify-between items-center font-semibold">
-                <span id="progress-label" class="text-blue-600">분석 준비 중...</span>
+                <span id="progress-label" class="text-teal-600">분석 준비 중...</span>
                 <span id="progress-text" class="text-gray-700">0 / 0</span>
             </div>
             <div class="progress-bar h-4">
@@ -59,11 +66,11 @@
         </div>
 
         <div id="result-section" class="hidden pt-6">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
                 <h2 class="text-2xl font-bold text-gray-800">종합 분석 결과</h2>
-                <button id="download-csv-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-green-700 transition-colors">결과 다운로드 (CSV)</button>
+                <button id="download-csv-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-green-700 transition-colors w-full sm:w-auto">결과 다운로드 (CSV)</button>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto border rounded-lg">
                 <table class="result-table text-sm">
                     <thead>
                         <tr>
@@ -94,10 +101,11 @@
         const resultSection = document.getElementById('result-section');
         const resultTableBody = document.getElementById('result-table-body');
         const downloadCsvBtn = document.getElementById('download-csv-btn');
+        const addressCounter = document.getElementById('address-counter'); // v1.3 추가
 
         let geocoderInstance = null;
         let analysisResults = [];
-        const ADDRESS_LIMIT = 200; // v1.1: 최대 분석 개수 제한 설정
+        const ADDRESS_LIMIT = 200;
 
         kakao.maps.load(() => {
             geocoderInstance = new kakao.maps.services.Geocoder();
@@ -107,6 +115,19 @@
         startAnalysisBtn.addEventListener('click', handleStartAnalysis);
         csvFileInput.addEventListener('change', handleFileUpload);
         downloadCsvBtn.addEventListener('click', downloadResultsAsCsv);
+        addressListInput.addEventListener('input', updateAddressCounter); // v1.3 추가
+
+        // v1.3: 실시간 주소 계기판 업데이트 함수
+        function updateAddressCounter() {
+            const addresses = addressListInput.value.split('\n').map(line => line.trim()).filter(line => line);
+            const count = addresses.length;
+            addressCounter.textContent = `${count} / ${ADDRESS_LIMIT} 개`;
+            if (count > ADDRESS_LIMIT) {
+                addressCounter.classList.add('over-limit');
+            } else {
+                addressCounter.classList.remove('over-limit');
+            }
+        }
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -118,6 +139,7 @@
                 const lines = text.split('\n').map(line => line.trim()).filter(line => line);
                 const addresses = lines.map(line => line.split(',')[0]); 
                 addressListInput.value = addresses.join('\n');
+                updateAddressCounter(); // v1.3: 파일 업로드 후 카운터 업데이트
             };
             reader.readAsText(file);
         }
@@ -129,7 +151,6 @@
                 return;
             }
 
-            // v1.1: 과적 단속반 출동!
             if (addresses.length > ADDRESS_LIMIT) {
                 alert(`한 번에 최대 ${ADDRESS_LIMIT}개까지만 분석할 수 있습니다. (현재 ${addresses.length}개)`);
                 return;
@@ -239,12 +260,12 @@
             const row = document.createElement('tr');
             const statusClass = result.status === '해당' ? 'status-fail' : (result.status === '해당 없음' ? 'status-pass' : '');
             row.innerHTML = `
-                <td>${index}</td>
+                <td class="text-center">${index}</td>
                 <td>${result.address}</td>
                 <td class="${statusClass}">${result.status}</td>
                 <td>${result.closestFacility}</td>
-                <td>${result.distance}</td>
-                <td>${result.highestVoltage}</td>
+                <td class="text-right">${result.distance}</td>
+                <td class="text-right">${result.highestVoltage}</td>
             `;
             resultTableBody.appendChild(row);
         }
@@ -254,15 +275,15 @@
                 alert('다운로드할 결과가 없습니다.');
                 return;
             }
-            let csvContent = "data:text/csv;charset=utf-8,";
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
             csvContent += "No.,주소,진단 결과,최근접 시설,거리(m),최고 전압(kV)\n";
 
             analysisResults.forEach((result, index) => {
                 const row = [
                     index + 1,
-                    `"${result.address}"`,
+                    `"${result.address.replace(/"/g, '""')}"`, // Handle quotes in address
                     result.status,
-                    `"${result.closestFacility}"`,
+                    `"${result.closestFacility.toString().replace(/"/g, '""')}"`,
                     result.distance,
                     result.highestVoltage
                 ].join(',');
@@ -272,7 +293,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "analysis_results.csv");
+            link.setAttribute("download", `GridScan_results_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
