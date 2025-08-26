@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v3.1</title>
+    <title>내 주변 전력시설 탐지기 v3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -69,7 +69,6 @@
         const rawJsonOutput = document.getElementById('raw-json-output');
         const cctv = document.getElementById('debug-cctv');
 
-        // ⭐️⭐️⭐️ v3.1 업데이트: '최애 칼' 보관 장소! ⭐️⭐️⭐️
         let geocoderInstance = null; // Geocoder 인스턴스를 저장할 전역 변수
 
         // --- CCTV 로그 기록 함수 ---
@@ -109,13 +108,18 @@
             const script = document.createElement('script');
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
             script.onload = () => {
-                logToCCTV("스크립트 파일 로딩 완료. '주방장' 출근 및 '최애 칼' 준비 시작...");
-                kakao.maps.load(() => {
-                    // ⭐️⭐️⭐️ v3.1 업데이트: '최애 칼'을 단 한번만 준비합니다! ⭐️⭐️⭐️
+                // ⭐️⭐️⭐️ v3.2 업데이트: '과잉 의전(kakao.maps.load)' 제거! ⭐️⭐️⭐️
+                // 스크립트 파일이 도착했다는 것은 주방장이 출근했다는 뜻!
+                // 바로 '최애 칼'을 준비시키고 레스토랑 문을 엽니다.
+                try {
+                    logToCCTV("스크립트 파일 로딩 완료. '최애 칼' 준비 시도...");
                     geocoderInstance = new kakao.maps.services.Geocoder();
-                    logToCCTV("'주방장' 출근 및 '최애 칼' 준비 완료!");
+                    logToCCTV("'최애 칼' 준비 완료!");
                     initializeSearch();
-                });
+                } catch (error) {
+                    logToCCTV(`'최애 칼' 준비 실패! 오류: ${error.message}`, true);
+                    displayError("카카오맵 서비스 초기화에 실패했습니다.");
+                }
             };
             script.onerror = () => {
                 logToCCTV("카카오 맵 스크립트 파일 로딩 실패!", true);
@@ -157,7 +161,6 @@
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
 
-            // ⭐️⭐️⭐️ v3.1 업데이트: 이제 '최애 칼'을 바로 사용합니다! ⭐️⭐️⭐️
             logToCCTV("준비된 '최애 칼(Geocoder)'로 주소 변환 요청.");
             geocoderInstance.addressSearch(address, (result, status) => {
                 if (status === kakao.maps.services.Status.OK) {
@@ -166,7 +169,7 @@
                     const lon = result[0].x;
                     findFacilities(lat, lon);
                 } else {
-                    logToCCTV("주소 변환 실패!", true);
+                    logToCCTV(`주소 변환 실패! 상태: ${status}`, true);
                     displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
                 }
             });
