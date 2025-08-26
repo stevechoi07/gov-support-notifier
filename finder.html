@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- v5.6: 버전을 명시하여 전문성 강화 -->
-    <title>v5.6 | 우리집 고압선 안심진단</title>
+    <!-- v5.7: 버전 업데이트 -->
+    <title>v5.7 | 우리집 고압선 안심진단</title>
     <meta name="description" content="우리집 주변 고압선, 송전탑의 법적 안전거리를 10초 만에 확인하세요! 주소 입력만으로 765kV, 345kV 등 전압별 이격거리 기준에 맞는 전력 시설 정보를 정밀 분석해 드립니다.">
     <meta name="keywords" content="고압선, 송전탑, 변전소, 안전거리, 이격거리, 전자파, 우리집, 주소, 확인, 조회, 진단, 한전, 지원사업">
     
@@ -348,7 +348,8 @@
 
         function createAdCard(ad) {
             const adCard = document.createElement('div');
-            adCard.className = 'result-card ad-card p-4 rounded-lg fade-in';
+            // v5.7: 클린 지역일 때 광고가 위화감 없도록 margin-top 추가
+            adCard.className = 'result-card ad-card p-4 rounded-lg fade-in mt-4';
 
             let mediaElement = '';
             if (ad.adType === 'iframe') {
@@ -377,7 +378,11 @@
                 </div>
             `;
             
-            if (facilityList.children.length > 1) {
+            // v5.7: 광고 삽입 위치 로직 변경
+            // facilityList가 비어있으면(클린지역) 그냥 추가하고, 아니면 기존처럼 두 번째에 삽입
+            if (facilityList.children.length === 0) {
+                facilityList.appendChild(adCard);
+            } else if (facilityList.children.length > 1) {
                 facilityList.insertBefore(adCard, facilityList.children[1]);
             } else {
                 facilityList.appendChild(adCard);
@@ -455,7 +460,7 @@
             }
 
             if (closestFacility.distance < 300 && parseVoltage(closestFacility.tags.voltage) >= 345000) {
-                 resultMessage.innerHTML = `<span class="text-red-600 font-bold">🚨 경고! ${Math.round(closestFacility.distance)}m 거리에 고압 시설이 있습니다!</span>`;
+                 resultMessage.innerHTML = `<span class="text-red-600 font-bold">� 경고! ${Math.round(closestFacility.distance)}m 거리에 고압 시설이 있습니다!</span>`;
             } else {
                  resultMessage.innerHTML = `<span class="text-green-700 font-bold">✅ 탐지 완료! 이격거리 기준에 맞는 ${elements.length}개의 관련 시설을 발견했습니다.</span>`;
             }
@@ -465,6 +470,11 @@
             displayResult();
             resultMessage.innerHTML = `<span class="text-green-700 font-bold">✅ 클린 지역! 주변에 이격거리 기준을 초과하는 주요 전력시설이 없습니다.</span>`;
             summaryBriefing.classList.add('hidden');
+            
+            // v5.7: 클린 지역일 때도 광고 호출
+            if (window.fetchAndDisplayAd) {
+                window.fetchAndDisplayAd();
+            }
         }
 
         function displayError(message) {
