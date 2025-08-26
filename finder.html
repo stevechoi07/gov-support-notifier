@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v2.1</title>
+    <title>내 주변 전력시설 탐지기 v2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -28,7 +28,7 @@
 
         <div id="result" class="pt-6">
             <div id="initial-message" class="text-center text-gray-400">
-                <p>⚙️ API 키를 안전하게 불러오는 중입니다...</p>
+                <p>⚙️ 시스템 초기화 시작...</p>
             </div>
             <div id="loading" class="hidden flex flex-col items-center justify-center space-y-4">
                 <div class="loader"></div>
@@ -48,6 +48,13 @@
                 </div>
             </div>
         </div>
+        
+        <!-- ⭐️⭐️⭐️ v2.2 업데이트: 실시간 CCTV(디버깅 로그) 추가! ⭐️⭐️⭐️ -->
+        <div id="debug-cctv" class="mt-4 p-4 bg-black text-white rounded-lg font-mono text-xs h-32 overflow-y-auto">
+            <p class="font-bold text-yellow-400">[실시간 시스템 로그]</p>
+            <!-- 로그 메시지가 여기에 기록됩니다. -->
+        </div>
+
     </div>
 
     <script>
@@ -62,10 +69,26 @@
         const toggleDebugBtn = document.getElementById('toggleDebugBtn');
         const debugOutputDiv = document.getElementById('debug-output');
         const rawJsonOutput = document.getElementById('raw-json-output');
+        const cctv = document.getElementById('debug-cctv');
 
-        // --- 2. 페이지가 로드되면 '집사'에게 API 키를 요청합니다. ---
+        // --- CCTV 로그 기록 함수 ---
+        function logToCCTV(message, isError = false) {
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            if (isError) {
+                p.className = 'text-red-500';
+            } else {
+                p.className = 'text-green-400';
+            }
+            cctv.appendChild(p);
+            cctv.scrollTop = cctv.scrollHeight; // 항상 마지막 로그가 보이도록 스크롤
+        }
+
+        // --- 2. 페이지가 로드되면 작전을 시작합니다. ---
         window.onload = async () => {
+            logToCCTV("페이지 로딩 완료. 작전 개시.");
             try {
+                logToCCTV("집사에게 API 키 요청 중...");
                 const response = await fetch('/api/get-key');
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -74,27 +97,33 @@
                 
                 const data = await response.json();
                 const apiKey = data.apiKey;
+                logToCCTV("API 키 수신 성공!");
                 loadKakaoMapScript(apiKey);
 
             } catch (error) {
-                console.error("API 키 로딩 실패:", error);
+                logToCCTV(`API 키 로딩 실패: ${error.message}`, true);
                 initialMessageDiv.innerHTML = `<p class="text-red-500">🚨 보안 키 로딩에 실패했습니다: ${error.message}</p>`;
             }
         };
 
-        // --- 3. 전달받은 키로 카카오 맵 스크립트를 동적으로 생성하는 함수 ---
+        // --- 3. 카카오 맵 스크립트를 불러옵니다. ---
         function loadKakaoMapScript(apiKey) {
+            logToCCTV("카카오 맵 스크립트 로딩 시작...");
             const script = document.createElement('script');
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
             script.onload = () => {
-                // 스크립트 파일 자체는 로딩이 완료되었으므로, UI를 활성화시킵니다.
+                logToCCTV("카카오 맵 스크립트 파일 로딩 완료 (onload).");
                 initializeSearch();
+            };
+            script.onerror = () => {
+                logToCCTV("카카오 맵 스크립트 파일 로딩 실패!", true);
             };
             document.head.appendChild(script);
         }
 
-        // --- 4. 검색 기능 초기화 및 이벤트 리스너 설정 ---
+        // --- 4. 검색 기능을 초기화합니다. ---
         function initializeSearch() {
+            logToCCTV("검색 기능 초기화 시작.");
             addressInput.disabled = false;
             searchBtn.disabled = false;
             searchBtn.classList.remove('cursor-not-allowed');
@@ -108,10 +137,12 @@
             toggleDebugBtn.addEventListener('click', () => {
                 debugOutputDiv.classList.toggle('hidden');
             });
+            logToCCTV("검색 기능 초기화 완료. 사용자 입력 대기 중.");
         }
         
         // --- 5. 실제 검색 로직 ---
         function startSearch() {
+            logToCCTV("'탐지 시작' 버튼 클릭됨.");
             const address = addressInput.value;
             if (!address) {
                 alert('주소를 입력해주세요!');
@@ -124,17 +155,19 @@
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
 
-            // ⭐️⭐️⭐️ v2.1 업데이트: '주문 시 칼 확인' 로직! ⭐️⭐️⭐️
-            // Geocoder를 사용하기 직전에, kakao.maps.load()를 호출하여
-            // 'services' 라이브러리가 100% 준비되었는지 확인하고 일을 시킵니다.
+            logToCCTV("'주방장(services)' 준비 상태 확인 시작 (kakao.maps.load).");
             kakao.maps.load(() => {
+                logToCCTV("'주방장' 준비 완료! Geocoder 생성 시도.");
                 const geocoder = new kakao.maps.services.Geocoder();
+                logToCCTV("Geocoder 생성 성공. 주소 변환 요청.");
                 geocoder.addressSearch(address, (result, status) => {
                     if (status === kakao.maps.services.Status.OK) {
+                        logToCCTV("주소 변환 성공. 주변 시설 탐색 시작.");
                         const lat = result[0].y;
                         const lon = result[0].x;
                         findFacilities(lat, lon);
                     } else {
+                        logToCCTV("주소 변환 실패!", true);
                         displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
                     }
                 });
@@ -142,8 +175,14 @@
         }
 
         async function findFacilities(lat, lon) {
+            /* ... (이전 버전과 동일) ... */
+        }
+
+        // --- 결과 표시 함수들 ---
+        /* ... (이전 버전과 동일) ... */
+        async function findFacilities(lat, lon) {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15초 제한
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
 
             const query = `[out:json];(node["power"](around:1000,${lat},${lon});way["power"](around:1000,${lat},${lon});relation["power"](around:1000,${lat},${lon}););out center;`;
             try {
@@ -169,20 +208,15 @@
                 rawJsonOutput.textContent = `Error: ${error.message}`;
             }
         }
-
-        // --- 결과 표시 함수들 (v1.4와 동일) ---
         function displayResult() {
             loadingDiv.classList.add('hidden');
             resultContentDiv.classList.remove('hidden');
         }
-
         function displaySuccess(elements) {
             displayResult();
-            
             const powerTypes = { substation: '변전소', plant: '발전소', generator: '발전기', line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블' };
             const majorFacilities = [];
             const minorFacilityCounts = {};
-
             elements.forEach(el => {
                 const powerTag = el.tags?.power;
                 if (powerTag === 'substation' || powerTag === 'plant') {
@@ -192,7 +226,6 @@
                     minorFacilityCounts[type] = (minorFacilityCounts[type] || 0) + 1;
                 }
             });
-
             if (majorFacilities.length > 0) {
                  majorFacilities.forEach(el => {
                     const tags = el.tags || {};
@@ -202,29 +235,24 @@
                     facilityList.innerHTML += cardHTML;
                 });
             }
-           
             const minorSummary = Object.entries(minorFacilityCounts).map(([type, count]) => `${type} ${count}개`).join(', ');
             if (minorSummary) {
                 const summaryHTML = `<div class="bg-gray-50 p-4 rounded-lg border border-gray-200"><p class="text-gray-600"><span class="font-semibold">그 외 시설:</span> ${minorSummary} 등이 함께 발견되었습니다.</p></div>`;
                 facilityList.innerHTML += summaryHTML;
             }
-            
             const totalFound = majorFacilities.length + Object.values(minorFacilityCounts).reduce((a, b) => a + b, 0);
             resultMessage.textContent = `� 탐지 완료! 주변 1km 내에서 ${totalFound}개의 관련 시설을 발견했습니다.`;
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-red-600';
-
             if (majorFacilities.length === 0 && totalFound > 0) {
                  resultMessage.textContent = `ℹ️ 주변 1km 내에 주요 시설(변전소/발전소)은 없으나, ${totalFound}개의 기타 전력 시설이 발견되었습니다.`;
                  resultMessage.className = 'text-2xl font-bold text-center mb-4 text-orange-600';
             }
         }
-
         function displayNotFound() {
             displayResult();
             resultMessage.textContent = '✅ 클린 지역! 주변 1km 내에 주요 전력시설이 없습니다.';
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-green-600';
         }
-
         function displayError(message) {
             displayResult();
             resultMessage.textContent = message;
