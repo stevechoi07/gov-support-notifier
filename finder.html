@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v1.7</title>
+    <title>내 주변 전력시설 탐지기 v1.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -87,11 +87,7 @@
             const script = document.createElement('script');
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
             script.onload = () => {
-                // 스크립트 로딩이 완료되면, 카카오맵 API를 사용할 준비가 되었다고 알려줍니다.
-                // kakao.maps.load()를 사용하여 안정성을 확보합니다.
-                kakao.maps.load(() => {
-                    initializeSearch();
-                });
+                initializeSearch();
             };
             document.head.appendChild(script);
         }
@@ -127,31 +123,46 @@
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
 
-            // ⭐️⭐️⭐️ v1.7 업데이트: 안정성 강화! ⭐️⭐️⭐️
-            // 카카오 공식 권장 방식인 kakao.maps.load()를 다시 사용하여
-            // Geocoder가 확실히 준비된 후에 호출하도록 보장합니다.
-            const geocoder = new kakao.maps.services.Geocoder();
-            geocoder.addressSearch(address, (result, status) => {
-                if (status === kakao.maps.services.Status.OK) {
-                    const lat = result[0].y;
-                    const lon = result[0].x;
-                    findFacilities(lat, lon);
-                } else {
-                    displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
-                }
+            kakao.maps.load(() => {
+                const geocoder = new kakao.maps.services.Geocoder();
+                geocoder.addressSearch(address, (result, status) => {
+                    if (status === kakao.maps.services.Status.OK) {
+                        const lat = result[0].y;
+                        const lon = result[0].x;
+                        findFacilities(lat, lon);
+                    } else {
+                        displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
+                    }
+                });
             });
         }
 
         async function findFacilities(lat, lon) {
+            // ⭐️⭐️⭐️ v1.9 업데이트: '인내심 타이머' 장착! ⭐️⭐️⭐️
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15초 제한
+
             const query = `[out:json];(node["power"](around:1000,${lat},${lon});way["power"](around:1000,${lat},${lon});relation["power"](around:1000,${lat},${lon}););out center;`;
             try {
-                const response = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: query });
+                const response = await fetch('https://overpass-api.de/api/interpreter', { 
+                    method: 'POST', 
+                    body: query,
+                    signal: controller.signal // 타이머와 fetch를 연결
+                });
+
+                clearTimeout(timeoutId); // 성공 시 타이머 제거
+
                 const data = await response.json();
                 rawJsonOutput.textContent = JSON.stringify(data, null, 2);
                 if (data.elements.length > 0) displaySuccess(data.elements);
                 else displayNotFound();
+
             } catch (error) {
-                displayError('� 탐색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+                if (error.name === 'AbortError') {
+                    displayError('😫 탐험가(Overpass API)의 응답이 너무 늦어지고 있습니다. 잠시 후 다시 시도해주세요.');
+                } else {
+                    displayError('😭 탐색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+                }
                 console.error("Overpass API Error:", error);
                 rawJsonOutput.textContent = `Error: ${error.message}`;
             }
