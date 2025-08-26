@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v3.6 (최종 수정)</title>
+    <title>내 주변 전력시설 탐지기 v3.7 (최종 수정)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 
+      v3.7 업데이트: '백 투 더 클래식' 작전! 
+      API 키를 동적으로 불러오는 대신, 스크립트 태그를 HTML에 직접 추가하여 로딩 문제를 원천 차단합니다.
+    -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -15,7 +20,7 @@
     <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6">
         
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v3.6 ⚡️</h1>
+            <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 v3.7 ⚡️</h1>
             <p class="text-gray-500 mt-2">주소 반경 1km 이내의 모든 전력 관련 시설을 탐지합니다.</p>
         </div>
 
@@ -80,65 +85,22 @@
             cctv.scrollTop = cctv.scrollHeight;
         }
 
-        // --- 2. 페이지 DOM이 준비되면 즉시 작전을 시작합니다. ---
-        (async () => {
-            logToCCTV("페이지 로딩 완료. 작전 개시.");
+        // --- 2. 카카오맵 스크립트가 준비되면 작전을 시작합니다. ---
+        // head에 스크립트가 명시되어 있으므로, kakao.maps.load를 바로 호출할 수 있습니다.
+        kakao.maps.load(() => {
+            logToCCTV("카카오맵 서비스 준비 완료. 작전 개시.");
             try {
-                logToCCTV("집사에게 API 키 요청 중...");
-                const response = await fetch('/api/get-key');
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '서버에서 키를 가져오지 못했습니다.');
-                }
-                
-                const data = await response.json();
-                const apiKey = data.apiKey;
-
-                if (!apiKey) {
-                    throw new Error("서버에서 API 키를 받았지만, 값이 비어있습니다.");
-                }
-
-                logToCCTV("API 키 수신 성공!");
-                loadKakaoMapScript(apiKey);
-
+                logToCCTV("'최애 칼' 준비 시도...");
+                geocoderInstance = new kakao.maps.services.Geocoder();
+                logToCCTV("'최애 칼' 준비 완료!");
+                initializeSearch(); // 검색 기능 초기화
             } catch (error) {
-                logToCCTV(`API 키 로딩 실패: ${error.message}`, true);
-                initialMessageDiv.innerHTML = `<p class="text-red-500">🚨 보안 키 로딩에 실패했습니다: ${error.message}</p>`;
+                logToCCTV(`'최애 칼' 준비 실패! 오류: ${error.message}`, true);
+                displayError("카카오맵 서비스 초기화에 실패했습니다.");
             }
-        })();
+        });
 
-        // --- 3. 카카오 맵 스크립트를 불러옵니다. ---
-        function loadKakaoMapScript(apiKey) {
-            logToCCTV("카카오 맵 스크립트 로딩 시작...");
-            const script = document.createElement('script');
-            
-            // ⭐️⭐️⭐️ v3.6 업데이트: 'VIP 프리패스' 발급! ⭐️⭐️⭐️
-            // async=false를 추가하여 스크립트 실행 순서 관련 문제를 해결합니다.
-            script.async = false;
-            
-            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
-            
-            script.onload = () => {
-                logToCCTV("스크립트 파일 도착. 카카오 서비스 준비 대기...");
-                kakao.maps.load(() => {
-                    try {
-                        logToCCTV("'최애 칼' 준비 시도...");
-                        geocoderInstance = new kakao.maps.services.Geocoder();
-                        logToCCTV("'최애 칼' 준비 완료!");
-                        initializeSearch();
-                    } catch (error) {
-                        logToCCTV(`'최애 칼' 준비 실패! 오류: ${error.message}`, true);
-                        displayError("카카오맵 서비스 초기화에 실패했습니다.");
-                    }
-                });
-            };
-            script.onerror = (event) => {
-                logToCCTV("카카오 맵 스크립트 파일 로딩 실패!", true);
-            };
-            document.head.appendChild(script);
-        }
-
-        // --- 4. 검색 기능을 초기화합니다. ---
+        // --- 3. 검색 기능을 초기화합니다. ---
         function initializeSearch() {
             logToCCTV("검색 기능 초기화 시작.");
             addressInput.disabled = false;
@@ -157,7 +119,7 @@
             logToCCTV("검색 기능 초기화 완료. 사용자 입력 대기 중.");
         }
         
-        // --- 5. 실제 검색 로직 ---
+        // --- 4. 실제 검색 로직 ---
         function startSearch() {
             logToCCTV("'탐지 시작' 버튼 클릭됨.");
             const address = addressInput.value;
