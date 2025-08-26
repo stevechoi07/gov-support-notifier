@@ -3,66 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v1.3</title>
-    <!-- 
-        스타일링의 마법사, Tailwind CSS를 불러옵니다.
-        이거 하나면 디자인 걱정 끝! 
-    -->
+    <title>내 주변 전력시설 탐지기 v1.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 로딩 스피너를 위한 간단한 스타일 */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans p-4">
 
-    <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6 transform transition-all hover:scale-105 duration-500">
+    <div class="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8 space-y-6">
         
-        <!-- 헤더: 프로그램 제목 -->
         <div class="text-center">
             <h1 class="text-3xl font-bold text-gray-800">⚡️ 내 주변 전력시설 탐지기 ⚡️</h1>
             <p class="text-gray-500 mt-2">주소 반경 1km 이내의 모든 전력 관련 시설을 탐지합니다.</p>
         </div>
 
-        <!-- 입력 섹션: 주소 입력창과 검색 버튼 -->
         <div class="flex flex-col sm:flex-row gap-4">
-            <input type="text" id="address" placeholder="예: 경기도 고양시 덕양구 향동동 407" class="flex-grow p-4 border-2 border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-300 outline-none">
-            <button id="searchBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg shadow-lg transform hover:-translate-y-1 transition-all duration-300">
-                탐지 시작!
+            <input type="text" id="address" placeholder="예: 경기도 고양시 덕양구 향동동 407" class="flex-grow p-4 border-2 border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-300 outline-none" disabled>
+            <button id="searchBtn" class="bg-blue-500 text-white font-bold py-4 px-8 rounded-lg shadow-lg cursor-not-allowed" disabled>
+                초기화 중...
             </button>
         </div>
 
-        <!-- 결과 표시 섹션 -->
         <div id="result" class="pt-6">
-            <!-- 초기 안내 메시지 -->
             <div id="initial-message" class="text-center text-gray-400">
-                <p>👆🏻 상단에 주소를 입력하고 '탐지 시작' 버튼을 눌러주세요.</p>
+                <p>⚙️ API 키를 안전하게 불러오는 중입니다...</p>
             </div>
-            <!-- 로딩 스피너 (평소엔 숨겨져 있음) -->
             <div id="loading" class="hidden flex flex-col items-center justify-center space-y-4">
                 <div class="loader"></div>
-                <p class="text-blue-500 font-semibold">광역 탐지 그물망 투척! 주변을 샅샅이 뒤지는 중...</p>
+                <p class="text-blue-500 font-semibold">알짜배기 필터링 가동! 주변을 정밀 분석 중...</p>
             </div>
-            <!-- 결과 메시지 및 목록이 표시될 곳 -->
             <div id="result-content" class="hidden">
                 <h2 id="result-message" class="text-2xl font-bold text-center mb-4"></h2>
-                <!-- ⭐️ v1.3 업데이트: 결과 목록 UI 개선! -->
-                <div id="facility-list" class="space-y-4">
-                    <!-- 탐지된 시설 목록이 여기에 추가됩니다. -->
-                </div>
-                
-                <!-- 디버깅 모드 -->
+                <div id="facility-list" class="space-y-4"></div>
                 <div class="mt-6 text-center">
                     <button id="toggleDebugBtn" class="text-sm text-gray-500 hover:text-gray-700 underline">
                         [ 개발자용: API 응답 원본 보기 ]
@@ -74,14 +48,14 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- 카카오 지도 API 스크립트 -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
-
+    <!-- 
+        ⭐️⭐️⭐️ v1.5 업데이트: 보안 강화! ⭐️⭐️⭐️
+        이제 API 키를 직접 노출하지 않고, '집사'에게 요청해서 받아옵니다.
+    -->
     <script>
-        // --- 1. 필요한 HTML 요소들을 미리 찾아놓습니다. (선수 입장!) ---
+        // --- 1. 필요한 HTML 요소들을 미리 찾아놓습니다. ---
         const addressInput = document.getElementById('address');
         const searchBtn = document.getElementById('searchBtn');
         const initialMessageDiv = document.getElementById('initial-message');
@@ -93,8 +67,59 @@
         const debugOutputDiv = document.getElementById('debug-output');
         const rawJsonOutput = document.getElementById('raw-json-output');
 
-        // --- 2. '탐지 시작' 버튼을 눌렀을 때의 동작을 정의합니다. ---
-        searchBtn.addEventListener('click', function() {
+        // --- 2. 페이지가 로드되면 '집사'에게 API 키를 요청합니다. ---
+        window.onload = async () => {
+            try {
+                // 우리 '집사'의 방문 주소는 '/api/get-key' 입니다.
+                const response = await fetch('/api/get-key');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '서버에서 키를 가져오지 못했습니다.');
+                }
+                
+                const data = await response.json();
+                const apiKey = data.apiKey;
+
+                // 집사에게 키를 성공적으로 받으면, 그때 카카오 맵 스크립트를 불러옵니다.
+                loadKakaoMapScript(apiKey);
+
+            } catch (error) {
+                console.error("API 키 로딩 실패:", error);
+                initialMessageDiv.innerHTML = `<p class="text-red-500">🚨 보안 키 로딩에 실패했습니다: ${error.message}</p>`;
+            }
+        };
+
+        // --- 3. 전달받은 키로 카카오 맵 스크립트를 동적으로 생성하는 함수 ---
+        function loadKakaoMapScript(apiKey) {
+            const script = document.createElement('script');
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
+            script.onload = () => {
+                // 스크립트 로딩이 완료되면, 비로소 검색 기능을 활성화합니다.
+                initializeSearch();
+            };
+            document.head.appendChild(script);
+        }
+
+        // --- 4. 검색 기능 초기화 및 이벤트 리스너 설정 ---
+        function initializeSearch() {
+            // 입력창과 버튼 활성화
+            addressInput.disabled = false;
+            searchBtn.disabled = false;
+            searchBtn.classList.remove('cursor-not-allowed');
+            searchBtn.textContent = '탐지 시작!';
+            initialMessageDiv.innerHTML = `<p>👆🏻 상단에 주소를 입력하고 '탐지 시작' 버튼을 눌러주세요.</p>`;
+
+            searchBtn.addEventListener('click', startSearch);
+            addressInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') startSearch();
+            });
+            toggleDebugBtn.addEventListener('click', () => {
+                debugOutputDiv.classList.toggle('hidden');
+            });
+        }
+        
+        // --- 5. 실제 검색 로직 ---
+        function startSearch() {
             const address = addressInput.value;
             if (!address) {
                 alert('주소를 입력해주세요!');
@@ -107,53 +132,29 @@
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
 
-            const geocoder = new kakao.maps.services.Geocoder();
-            geocoder.addressSearch(address, function(result, status) {
-                if (status === kakao.maps.services.Status.OK) {
-                    const lat = result[0].y;
-                    const lon = result[0].x;
-                    findFacilities(lat, lon);
-                } else {
-                    displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
-                }
-            });
-        });
-        
-        addressInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') searchBtn.click();
-        });
-        
-        toggleDebugBtn.addEventListener('click', () => {
-            debugOutputDiv.classList.toggle('hidden');
-        });
-
-        // --- 5. Overpass API에 "이 좌표 주변 1km 탐색해줘!" 라고 요청하는 함수 ---
-        async function findFacilities(lat, lon) {
-            const query = `
-                [out:json];
-                (
-                  node["power"](around:1000, ${lat}, ${lon});
-                  way["power"](around:1000, ${lat}, ${lon});
-                  relation["power"](around:1000, ${lat}, ${lon});
-                );
-                out center;
-            `;
-
-            try {
-                const response = await fetch('https://overpass-api.de/api/interpreter', {
-                    method: 'POST',
-                    body: query
+            // kakao.maps.load()를 사용하여 라이브러리 로딩을 보장합니다.
+            kakao.maps.load(() => {
+                const geocoder = new kakao.maps.services.Geocoder();
+                geocoder.addressSearch(address, (result, status) => {
+                    if (status === kakao.maps.services.Status.OK) {
+                        const lat = result[0].y;
+                        const lon = result[0].x;
+                        findFacilities(lat, lon);
+                    } else {
+                        displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
+                    }
                 });
+            });
+        }
+
+        async function findFacilities(lat, lon) {
+            const query = `[out:json];(node["power"](around:1000,${lat},${lon});way["power"](around:1000,${lat},${lon});relation["power"](around:1000,${lat},${lon}););out center;`;
+            try {
+                const response = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: query });
                 const data = await response.json();
-
                 rawJsonOutput.textContent = JSON.stringify(data, null, 2);
-
-                if (data.elements.length > 0) {
-                    displaySuccess(data.elements);
-                } else {
-                    displayNotFound();
-                }
-
+                if (data.elements.length > 0) displaySuccess(data.elements);
+                else displayNotFound();
             } catch (error) {
                 displayError('😭 탐색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
                 console.error("Overpass API Error:", error);
@@ -161,7 +162,7 @@
             }
         }
 
-        // --- 7. 결과를 상황에 맞게 화면에 표시해주는 도우미 함수들 ---
+        // --- 결과 표시 함수들 (v1.4와 동일) ---
         function displayResult() {
             loadingDiv.classList.add('hidden');
             resultContentDiv.classList.remove('hidden');
@@ -169,39 +170,45 @@
 
         function displaySuccess(elements) {
             displayResult();
-            resultMessage.textContent = `🚨 탐지 완료! 주변 1km 내에서 ${elements.length}개의 관련 시설을 발견했습니다.`;
-            resultMessage.className = 'text-2xl font-bold text-center mb-4 text-red-600';
-
-            const powerTypes = {
-                substation: '변전소', plant: '발전소', generator: '발전기',
-                line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블'
-            };
+            
+            const powerTypes = { substation: '변전소', plant: '발전소', generator: '발전기', line: '송전선', tower: '송전탑', pole: '전신주', cable: '케이블' };
+            const majorFacilities = [];
+            const minorFacilityCounts = {};
 
             elements.forEach(el => {
-                const tags = el.tags || {};
-                const name = tags.name || '이름 없는 시설';
-                const powerTag = tags.power || '종류 불명';
-                const type = powerTypes[powerTag] || powerTag;
-                
-                // ⭐️⭐️⭐️ v1.3 업데이트: 디테일 정보 추출! ⭐️⭐️⭐️
-                // 우리가 F12로 분석한 바로 그 정보들을 여기서 쏙쏙 뽑아냅니다.
-                const operator = tags.operator || '정보 없음';
-                const voltage = tags.voltage || '정보 없음';
-                const output = tags['output:electricity'] || '정보 없음';
-
-                // 카드를 만드는 HTML 코드
-                const cardHTML = `
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 class="font-bold text-lg text-blue-700">${name} <span class="text-sm font-medium text-gray-500">(${type})</span></h4>
-                        <div class="mt-2 text-sm text-gray-600 space-y-1 pl-2 border-l-2 border-blue-200">
-                            ${tags.operator ? `<div><span class="font-semibold">운영:</span> ${operator}</div>` : ''}
-                            ${tags.voltage ? `<div><span class="font-semibold">전압:</span> ${voltage}</div>` : ''}
-                            ${tags['output:electricity'] ? `<div><span class="font-semibold">출력:</span> ${output}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-                facilityList.innerHTML += cardHTML;
+                const powerTag = el.tags?.power;
+                if (powerTag === 'substation' || powerTag === 'plant') {
+                    majorFacilities.push(el);
+                } else {
+                    const type = powerTypes[powerTag] || powerTag;
+                    minorFacilityCounts[type] = (minorFacilityCounts[type] || 0) + 1;
+                }
             });
+
+            if (majorFacilities.length > 0) {
+                 majorFacilities.forEach(el => {
+                    const tags = el.tags || {};
+                    const name = tags.name || '이름 없는 시설';
+                    const type = powerTypes[tags.power] || tags.power;
+                    const cardHTML = `<div class="bg-gray-50 p-4 rounded-lg border border-blue-300 shadow"><h4 class="font-bold text-lg text-blue-700">${name} <span class="text-sm font-medium text-gray-500">(${type})</span></h4><div class="mt-2 text-sm text-gray-600 space-y-1 pl-2 border-l-2 border-blue-200">${tags.operator ? `<div><span class="font-semibold">운영:</span> ${tags.operator}</div>` : ''}${tags.voltage ? `<div><span class="font-semibold">전압:</span> ${tags.voltage}</div>` : ''}${tags['output:electricity'] ? `<div><span class="font-semibold">출력:</span> ${tags['output:electricity']}</div>` : ''}</div></div>`;
+                    facilityList.innerHTML += cardHTML;
+                });
+            }
+           
+            const minorSummary = Object.entries(minorFacilityCounts).map(([type, count]) => `${type} ${count}개`).join(', ');
+            if (minorSummary) {
+                const summaryHTML = `<div class="bg-gray-50 p-4 rounded-lg border border-gray-200"><p class="text-gray-600"><span class="font-semibold">그 외 시설:</span> ${minorSummary} 등이 함께 발견되었습니다.</p></div>`;
+                facilityList.innerHTML += summaryHTML;
+            }
+            
+            const totalFound = majorFacilities.length + Object.values(minorFacilityCounts).reduce((a, b) => a + b, 0);
+            resultMessage.textContent = `🚨 탐지 완료! 주변 1km 내에서 ${totalFound}개의 관련 시설을 발견했습니다.`;
+            resultMessage.className = 'text-2xl font-bold text-center mb-4 text-red-600';
+
+            if (majorFacilities.length === 0 && totalFound > 0) {
+                 resultMessage.textContent = `ℹ️ 주변 1km 내에 주요 시설(변전소/발전소)은 없으나, ${totalFound}개의 기타 전력 시설이 발견되었습니다.`;
+                 resultMessage.className = 'text-2xl font-bold text-center mb-4 text-orange-600';
+            }
         }
 
         function displayNotFound() {
@@ -215,7 +222,6 @@
             resultMessage.textContent = message;
             resultMessage.className = 'text-2xl font-bold text-center mb-4 text-yellow-600';
         }
-
     </script>
 </body>
 </html>
