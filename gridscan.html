@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고압선 안심진단 BIZ v1.1 (과적 방지턱 추가)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; color: #212529; }
+        .main-container { background-color: #ffffff; border: 1px solid #dee2e6; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .title-text { color: #0d6efd; }
+        .search-button { background-color: #0d6efd; color: #ffffff; transition: all 0.2s ease-in-out; }
+        .search-button:hover { background-color: #0b5ed7; transform: translateY(-2px); }
+        .search-button:disabled { background-color: #6c757d; cursor: not-allowed; transform: none; }
+        .progress-bar { background-color: #e9ecef; border-radius: 9999px; overflow: hidden; }
+        .progress-bar-fill { background-color: #0d6efd; transition: width 0.3s ease-in-out; }
+        .result-table { width: 100%; border-collapse: collapse; }
+        .result-table th, .result-table td { border: 1px solid #dee2e6; padding: 0.75rem; text-align: left; }
+        .result-table thead { background-color: #f8f9fa; }
+        .result-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+        .status-pass { color: #198754; font-weight: bold; }
+        .status-fail { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="main-container w-full max-w-4xl mx-auto rounded-2xl p-6 sm:p-8 space-y-8">
+        
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl sm:text-4xl font-bold title-text">⚡️ 고압선 안심진단 BIZ ⚡️</h1>
+            <p class="text-gray-600 text-sm sm:text-base">여러 주소를 한 번에 분석하고 결과를 받아보세요.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="address-list" class="block text-lg font-semibold text-gray-700 mb-2">주소 목록 붙여넣기</label>
+                <textarea id="address-list" rows="10" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예:&#10;경기도 성남시 중원구 도촌남로 101&#10;경기도 고양시 덕양구 향동동 407&#10;(한 줄에 주소 하나씩 입력)"></textarea>
+            </div>
+            <div class="flex flex-col justify-between">
+                <div>
+                    <p class="text-lg font-semibold text-gray-700 mb-2">또는 CSV 파일 업로드</p>
+                    <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                    <p class="text-xs text-gray-500 mt-2">첫 번째 열에 주소가 포함된 CSV 파일을 업로드하세요.</p>
+                </div>
+                <button id="start-analysis-btn" class="search-button w-full font-bold py-4 px-8 rounded-lg text-lg mt-4">분석 시작</button>
+            </div>
+        </div>
+
+        <div id="progress-section" class="hidden pt-6 space-y-2">
+            <div class="flex justify-between items-center font-semibold">
+                <span id="progress-label" class="text-blue-600">분석 준비 중...</span>
+                <span id="progress-text" class="text-gray-700">0 / 0</span>
+            </div>
+            <div class="progress-bar h-4">
+                <div id="progress-bar-fill" class="progress-bar-fill h-4" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <div id="result-section" class="hidden pt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">종합 분석 결과</h2>
+                <button id="download-csv-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-green-700 transition-colors">결과 다운로드 (CSV)</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="result-table text-sm">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>주소</th>
+                            <th>진단 결과</th>
+                            <th>최근접 시설</th>
+                            <th>거리(m)</th>
+                            <th>최고 전압(kV)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+
+    <script type="module">
+        const addressListInput = document.getElementById('address-list');
+        const csvFileInput = document.getElementById('csv-file-input');
+        const startAnalysisBtn = document.getElementById('start-analysis-btn');
+        const progressSection = document.getElementById('progress-section');
+        const progressLabel = document.getElementById('progress-label');
+        const progressText = document.getElementById('progress-text');
+        const progressBarFill = document.getElementById('progress-bar-fill');
+        const resultSection = document.getElementById('result-section');
+        const resultTableBody = document.getElementById('result-table-body');
+        const downloadCsvBtn = document.getElementById('download-csv-btn');
+
+        let geocoderInstance = null;
+        let analysisResults = [];
+        const ADDRESS_LIMIT = 200; // v1.1: 최대 분석 개수 제한 설정
+
+        kakao.maps.load(() => {
+            geocoderInstance = new kakao.maps.services.Geocoder();
+            startAnalysisBtn.disabled = false;
+        });
+        
+        startAnalysisBtn.addEventListener('click', handleStartAnalysis);
+        csvFileInput.addEventListener('change', handleFileUpload);
+        downloadCsvBtn.addEventListener('click', downloadResultsAsCsv);
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+                const addresses = lines.map(line => line.split(',')[0]); 
+                addressListInput.value = addresses.join('\n');
+            };
+            reader.readAsText(file);
+        }
+
+        async function handleStartAnalysis() {
+            const addresses = addressListInput.value.split('\n').map(line => line.trim()).filter(line => line);
+            if (addresses.length === 0) {
+                alert('분석할 주소를 입력하거나 CSV 파일을 업로드해주세요.');
+                return;
+            }
+
+            // v1.1: 과적 단속반 출동!
+            if (addresses.length > ADDRESS_LIMIT) {
+                alert(`한 번에 최대 ${ADDRESS_LIMIT}개까지만 분석할 수 있습니다. (현재 ${addresses.length}개)`);
+                return;
+            }
+
+            startAnalysisBtn.disabled = true;
+            startAnalysisBtn.textContent = '분석 중...';
+            resultSection.classList.add('hidden');
+            progressSection.classList.remove('hidden');
+            resultTableBody.innerHTML = '';
+            analysisResults = [];
+
+            for (let i = 0; i < addresses.length; i++) {
+                const address = addresses[i];
+                progressLabel.textContent = `[${i + 1}/${addresses.length}] "${address}" 분석 중...`;
+                progressText.textContent = `${i + 1} / ${addresses.length}`;
+                progressBarFill.style.width = `${((i + 1) / addresses.length) * 100}%`;
+
+                const result = await analyzeSingleAddress(address);
+                analysisResults.push(result);
+                appendResultToTable(result, i + 1);
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            progressLabel.textContent = '분석 완료!';
+            startAnalysisBtn.disabled = false;
+            startAnalysisBtn.textContent = '분석 시작';
+            resultSection.classList.remove('hidden');
+        }
+
+        async function analyzeSingleAddress(address) {
+            try {
+                const coords = await getCoordsFromAddress(address);
+                const facilities = await findFacilities(coords.lat, coords.lon);
+                const filtered = filterFacilities(facilities, coords.lat, coords.lon);
+
+                if (filtered.length > 0) {
+                    const closest = filtered.sort((a, b) => a.distance - b.distance)[0];
+                    const highestVoltage = filtered.reduce((max, el) => parseVoltage(el.tags.voltage) > parseVoltage(max.tags.voltage) ? el : max, filtered[0]);
+                    const powerTypes = { substation: '변전소', line: '송전선', tower: '송전탑', cable: '케이블' };
+                    
+                    return {
+                        address,
+                        status: '해당',
+                        closestFacility: closest.tags.name || powerTypes[closest.tags.power] || '시설',
+                        distance: Math.round(closest.distance),
+                        highestVoltage: parseVoltage(highestVoltage.tags.voltage) / 1000
+                    };
+                } else {
+                    return { address, status: '해당 없음', closestFacility: '-', distance: '-', highestVoltage: '-' };
+                }
+            } catch (error) {
+                return { address, status: '분석 실패', closestFacility: error.message, distance: '-', highestVoltage: '-' };
+            }
+        }
+        
+        function getCoordsFromAddress(address) {
+            return new Promise((resolve, reject) => {
+                geocoderInstance.addressSearch(address, (result, status) => {
+                    if (status === kakao.maps.services.Status.OK) {
+                        resolve({ lat: result[0].y, lon: result[0].x });
+                    } else {
+                        reject(new Error('주소 변환 실패'));
+                    }
+                });
+            });
+        }
+
+        async function findFacilities(lat, lon) {
+            const searchRadius = 1000;
+            const query = `[out:json];(node["power"](around:${searchRadius},${lat},${lon});way["power"](around:${searchRadius},${lat},${lon});relation["power"](around:${searchRadius},${lat},${lon}););out center;`;
+            const response = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: query });
+            if (!response.ok) throw new Error('API 탐색 실패');
+            const data = await response.json();
+            return data.elements;
+        }
+
+        function filterFacilities(elements, centerLat, centerLon) {
+            const distanceRules = {
+                line: { '765000': 1000, '500000': 800, '345000': 700 },
+                substation: { '765000': 850, '500000': 800, '345000': 600 }
+            };
+
+            const elementsWithDistance = elements.map(el => {
+                const facilityCoords = el.center || el;
+                const distance = haversineDistance(centerLat, centerLon, facilityCoords.lat, facilityCoords.lon);
+                return { ...el, distance };
+            });
+
+            return elementsWithDistance.filter(el => {
+                const powerTag = el.tags?.power;
+                const voltage = parseVoltage(el.tags?.voltage);
+                if (voltage === 0 || !powerTag) return false;
+                let ruleType;
+                if (['line', 'tower', 'cable'].includes(powerTag)) ruleType = 'line';
+                else if (powerTag === 'substation') ruleType = 'substation';
+                else return false;
+                const ruleVoltage = String(voltage);
+                if (!distanceRules[ruleType][ruleVoltage]) return false;
+                const maxDistance = distanceRules[ruleType][ruleVoltage];
+                return el.distance <= maxDistance;
+            });
+        }
+
+        function appendResultToTable(result, index) {
+            const row = document.createElement('tr');
+            const statusClass = result.status === '해당' ? 'status-fail' : (result.status === '해당 없음' ? 'status-pass' : '');
+            row.innerHTML = `
+                <td>${index}</td>
+                <td>${result.address}</td>
+                <td class="${statusClass}">${result.status}</td>
+                <td>${result.closestFacility}</td>
+                <td>${result.distance}</td>
+                <td>${result.highestVoltage}</td>
+            `;
+            resultTableBody.appendChild(row);
+        }
+        
+        function downloadResultsAsCsv() {
+            if (analysisResults.length === 0) {
+                alert('다운로드할 결과가 없습니다.');
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "No.,주소,진단 결과,최근접 시설,거리(m),최고 전압(kV)\n";
+
+            analysisResults.forEach((result, index) => {
+                const row = [
+                    index + 1,
+                    `"${result.address}"`,
+                    result.status,
+                    `"${result.closestFacility}"`,
+                    result.distance,
+                    result.highestVoltage
+                ].join(',');
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "analysis_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function parseVoltage(voltageTag) {
+            if (!voltageTag) return 0;
+            if (typeof voltageTag === 'string') {
+                const voltages = voltageTag.split(';').map(v => parseInt(v.replace(/\D/g, ''))).filter(v => !isNaN(v));
+                return voltages.length > 0 ? Math.max(...voltages) : 0;
+            }
+            if (typeof voltageTag === 'number') return voltageTag;
+            return 0;
+        }
+    </script>
+</body>
+</html>
