@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 주변 전력시설 탐지기 v1.5</title>
+    <title>내 주변 전력시설 탐지기 v1.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -50,10 +50,6 @@
         </div>
     </div>
 
-    <!-- 
-        ⭐️⭐️⭐️ v1.5 업데이트: 보안 강화! ⭐️⭐️⭐️
-        이제 API 키를 직접 노출하지 않고, '집사'에게 요청해서 받아옵니다.
-    -->
     <script>
         // --- 1. 필요한 HTML 요소들을 미리 찾아놓습니다. ---
         const addressInput = document.getElementById('address');
@@ -70,7 +66,6 @@
         // --- 2. 페이지가 로드되면 '집사'에게 API 키를 요청합니다. ---
         window.onload = async () => {
             try {
-                // 우리 '집사'의 방문 주소는 '/api/get-key' 입니다.
                 const response = await fetch('/api/get-key');
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -79,8 +74,6 @@
                 
                 const data = await response.json();
                 const apiKey = data.apiKey;
-
-                // 집사에게 키를 성공적으로 받으면, 그때 카카오 맵 스크립트를 불러옵니다.
                 loadKakaoMapScript(apiKey);
 
             } catch (error) {
@@ -94,7 +87,7 @@
             const script = document.createElement('script');
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
             script.onload = () => {
-                // 스크립트 로딩이 완료되면, 비로소 검색 기능을 활성화합니다.
+                // 스크립트 로딩이 완료(경호원 근무 시작)되면, 비로소 검색 기능을 활성화합니다.
                 initializeSearch();
             };
             document.head.appendChild(script);
@@ -102,7 +95,6 @@
 
         // --- 4. 검색 기능 초기화 및 이벤트 리스너 설정 ---
         function initializeSearch() {
-            // 입력창과 버튼 활성화
             addressInput.disabled = false;
             searchBtn.disabled = false;
             searchBtn.classList.remove('cursor-not-allowed');
@@ -132,18 +124,19 @@
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
 
-            // kakao.maps.load()를 사용하여 라이브러리 로딩을 보장합니다.
-            kakao.maps.load(() => {
-                const geocoder = new kakao.maps.services.Geocoder();
-                geocoder.addressSearch(address, (result, status) => {
-                    if (status === kakao.maps.services.Status.OK) {
-                        const lat = result[0].y;
-                        const lon = result[0].x;
-                        findFacilities(lat, lon);
-                    } else {
-                        displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
-                    }
-                });
+            // ⭐️⭐️⭐️ v1.6 업데이트: '과잉 경호' 문제 해결! ⭐️⭐️⭐️
+            // 불필요한 kakao.maps.load()를 제거했습니다.
+            // initializeSearch()가 실행된 시점에는 이미 경호원(라이브러리)이 근무 중이므로,
+            // 바로 일을 시키면 됩니다.
+            const geocoder = new kakao.maps.services.Geocoder();
+            geocoder.addressSearch(address, (result, status) => {
+                if (status === kakao.maps.services.Status.OK) {
+                    const lat = result[0].y;
+                    const lon = result[0].x;
+                    findFacilities(lat, lon);
+                } else {
+                    displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
+                }
             });
         }
 
