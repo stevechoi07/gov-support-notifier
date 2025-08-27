@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>v6.0 | 우리집 고압선 안심진단</title>
+    <!-- v6.2: 교차 검증 버튼 제거 및 한전 문의 안내 문구 추가 -->
+    <title>v6.2 | 우리집 고압선 안심진단</title>
     <meta name="description" content="우리집 주변 고압선, 송전탑의 법적 안전거리를 10초 만에 확인하세요! 주소 입력만으로 765kV, 345kV 등 전압별 이격거리 기준에 맞는 전력 시설 정보를 정밀 분석해 드립니다.">
     <meta name="keywords" content="고압선, 송전탑, 변전소, 안전거리, 이격거리, 전자파, 우리집, 주소, 확인, 조회, 진단, 한전, 지원사업, 지도, 로드뷰">
     
     <meta property="og:title" content="우리집 고압선 안심진단 (지도/로드뷰 지원)">
     <meta property="og:description" content="주소 입력만으로 우리집 주변 고압선, 송전탑 위치를 지도에서 확인하고 로드뷰로 현장을 직접 보세요!">
-    <meta property="og:image" content="https://placehold.co/1200x630/0d6efd/ffffff?text=%EC%9A%B0%EB%A6%AC%EC%A7%91%20%EA%B3%A0%EC%95%95%EC%84%A0%0A%EC%95%88%EC%8B%AC%EC%A7%84%EB%8B%A8%20v6.0&font=noto-sans-kr">
+    <meta property="og:image" content="https://placehold.co/1200x630/0d6efd/ffffff?text=%EC%9A%B0%EB%A6%AC%EC%A7%91%20%EA%B3%A0%EC%95%95%EC%84%A0%0A%EC%95%88%EC%8B%AC%EC%A7%84%EB%8B%A8%20v6.2&font=noto-sans-kr">
     <meta property="og:url" content="https://kfund.ai/finder.html">
     <meta property="og:type" content="website">
 
@@ -140,13 +141,15 @@
                 <div id="summary-briefing" class="summary-briefing mb-6 p-4 rounded-lg"></div>
                 <div id="facility-list" class="space-y-4"></div>
                 
-                <div id="cross-verify-link-container" class="mt-8 text-center"></div>
+                <!-- v6.2: 안내 문구 컨테이너로 변경 -->
+                <div id="final-notice-container" class="mt-8 text-center"></div>
             </div>
         </div>
         
     </div>
 
     <div id="support-modal" class="modal-overlay">
+        <!-- Modal content is unchanged -->
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl sm:text-2xl font-bold title-text">송·변전설비 주변지역 지원사업 안내</h2>
@@ -185,19 +188,17 @@
         const resultMessage = document.getElementById('result-message');
         const summaryBriefing = document.getElementById('summary-briefing');
         const facilityList = document.getElementById('facility-list');
-        const crossVerifyLinkContainer = document.getElementById('cross-verify-link-container');
+        // v6.2: 컨테이너 ID 변경
+        const finalNoticeContainer = document.getElementById('final-notice-container');
         const supportModal = document.getElementById('support-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
-        // v6.0: 지도 DOM 요소 추가
         const mapContainer = document.getElementById('map');
 
         let geocoderInstance = null;
-        // v6.0: 지도 관련 변수 추가
         let map = null;
         let markers = [];
         let circle = null;
         
-        // v6.0: 로드뷰 열기 함수 (전역 스코프)
         window.openRoadview = (lat, lon) => {
             const roadviewUrl = `https://map.kakao.com/link/roadview/${lat},${lon}`;
             window.open(roadviewUrl, '_blank');
@@ -269,7 +270,6 @@
             });
         }
         
-        // v6.0: 지도 초기화 함수
         function clearMap() {
             for (let i = 0; i < markers.length; i++) {
                 markers[i].setMap(null);
@@ -295,19 +295,20 @@
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
             summaryBriefing.innerHTML = '';
-            crossVerifyLinkContainer.innerHTML = '';
-            clearMap(); // v6.0: 새 검색 전 지도 초기화
+            // v6.2: 최종 안내 문구 컨테이너 초기화 및 설정
+            finalNoticeContainer.innerHTML = ''; 
+            clearMap();
 
             geocoderInstance.addressSearch(address, (result, status) => {
                 if (status === kakao.maps.services.Status.OK) {
                     const lat = result[0].y;
                     const lon = result[0].x;
 
-                    const openInfraMapUrl = `https://openinframap.org/#15/${lat}/${lon}`;
-                    crossVerifyLinkContainer.innerHTML = `
-                        <a href="${openInfraMapUrl}" target="_blank" class="inline-block bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-green-700 transition-colors duration-300">
-                            🌍 OpenInfraMap에서 교차 검증하기
-                        </a>
+                    // v6.2: 버튼 대신 안내 문구 설정
+                    finalNoticeContainer.innerHTML = `
+                        <p class="text-xs text-gray-500 bg-gray-100 p-3 rounded-lg">
+                            ❗️ <strong>참고:</strong> 이 결과는 공공 데이터를 기반으로 한 예측 정보입니다. 정확한 내용은 <strong>한국전력공사(123)</strong>에 문의하세요.
+                        </p>
                     `;
 
                     findFacilities(lat, lon);
@@ -379,11 +380,10 @@
 
             const elementsWithDistance = elements.map(el => {
                 const facilityCoords = el.center || el;
-                // v6.0: facilityCoords가 없는 경우 방어 코드
                 if (!facilityCoords.lat || !facilityCoords.lon) return null;
                 const distance = haversineDistance(centerLat, centerLon, facilityCoords.lat, facilityCoords.lon);
                 return { ...el, distance };
-            }).filter(Boolean); // null 제거
+            }).filter(Boolean);
 
             const filteredElements = elementsWithDistance.filter(el => {
                 const powerTag = el.tags?.power;
@@ -446,8 +446,7 @@
                 });
             }
 
-            facilityList.innerHTML = ''; // 목록 초기화
-            // v6.0: 지도 표시 로직
+            facilityList.innerHTML = '';
             displayMap(elements, centerLat, centerLon);
 
             elements.forEach(el => {
@@ -484,18 +483,16 @@
             }
         }
         
-        // v6.0: 지도 표시 함수
         function displayMap(elements, centerLat, centerLon) {
             mapContainer.classList.remove('hidden');
             const centerPosition = new kakao.maps.LatLng(centerLat, centerLon);
             
             const mapOption = { 
                 center: centerPosition, 
-                level: 7 // 초기 확대 레벨
+                level: 7
             };
             map = new kakao.maps.Map(mapContainer, mapOption);
 
-            // 사용자 위치 마커
             const userMarker = new kakao.maps.Marker({
                 position: centerPosition,
                 image: new kakao.maps.MarkerImage('https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png', new kakao.maps.Size(64, 69), {offset: new kakao.maps.Point(27, 69)})
@@ -503,7 +500,6 @@
             userMarker.setMap(map);
             markers.push(userMarker);
 
-            // 1km 반경 원
             circle = new kakao.maps.Circle({
                 center : centerPosition,
                 radius: 1000,
@@ -519,12 +515,11 @@
             const bounds = new kakao.maps.LatLngBounds();
             bounds.extend(centerPosition);
 
-            // 시설 마커 아이콘 정의
             const iconBaseUrl = 'https://i.imgur.com/';
             const markerIcons = {
-                substation: new kakao.maps.MarkerImage(iconBaseUrl + 'kZ7dZ6b.png', new kakao.maps.Size(35, 35)), // 변전소 아이콘
-                tower: new kakao.maps.MarkerImage(iconBaseUrl + 'Y8s0a3J.png', new kakao.maps.Size(35, 35)), // 송전탑 아이콘
-                default: new kakao.maps.MarkerImage(iconBaseUrl + '9ZwzJ9M.png', new kakao.maps.Size(30, 30)) // 기본 아이콘
+                substation: new kakao.maps.MarkerImage(iconBaseUrl + 'kZ7dZ6b.png', new kakao.maps.Size(35, 35)),
+                tower: new kakao.maps.MarkerImage(iconBaseUrl + 'Y8s0a3J.png', new kakao.maps.Size(35, 35)),
+                default: new kakao.maps.MarkerImage(iconBaseUrl + '9ZwzJ9M.png', new kakao.maps.Size(30, 30))
             };
             
             elements.forEach(el => {
@@ -563,7 +558,6 @@
 
             map.setBounds(bounds);
         }
-
 
         function displayNotFound() {
             displayResult();
