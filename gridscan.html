@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GridScan v1.4 (안정성 및 UX 개선)</title>
+    <title>GridScan v1.5 (대용량 처리 엔진 탑재)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
@@ -14,7 +14,6 @@
         .search-button { background-color: #14b8a6; color: #ffffff; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .search-button:hover { background-color: #0d9488; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .search-button:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
-        /* v1.4: 중단 버튼 스타일 추가 */
         .cancel-button { background-color: #ef4444; color: #ffffff; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .cancel-button:hover { background-color: #dc2626; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .progress-bar { background-color: #e9ecef; border-radius: 9999px; overflow: hidden; }
@@ -26,45 +25,37 @@
         .status-pass { color: #16a34a; font-weight: bold; }
         .status-fail { color: #ef4444; font-weight: bold; }
         .address-counter.over-limit { color: #ef4444; font-weight: bold; }
-        
-        /* v1.4: 토스트 알림 스타일 추가 */
         .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #212529;
-            color: #ffffff;
-            padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            transform: translateX(120%);
-            transition: transform 0.3s ease-in-out;
-            z-index: 1000;
-            opacity: 0;
+            position: fixed; top: 20px; right: 20px; background-color: #212529; color: #ffffff; padding: 1rem 1.5rem;
+            border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transform: translateX(120%);
+            transition: transform 0.3s ease-in-out; z-index: 1000; opacity: 0;
         }
-        .toast-notification.show {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        .toast-notification.error {
-            background-color: #dc2626;
-        }
+        .toast-notification.show { transform: translateX(0); opacity: 1; }
+        .toast-notification.error { background-color: #dc2626; }
+        
+        /* v1.5: 개발자 로그 스타일 추가 */
+        .dev-log-container { background-color: #1e293b; color: #e2e8f0; font-family: 'Courier New', Courier, monospace; font-size: 0.875rem; max-height: 300px; overflow-y: auto; border-radius: 0.5rem; padding: 1rem; border: 1px solid #334155; }
+        .log-line { padding: 0.1rem 0; border-bottom: 1px solid #334155; }
+        .log-line.info { color: #93c5fd; }
+        .log-line.success { color: #86efac; }
+        .log-line.error { color: #fca5a5; }
+        .log-line.warn { color: #fde047; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
-    <div class="main-container w-full max-w-4xl mx-auto rounded-2xl p-6 sm:p-8 space-y-8">
+    <div class="main-container w-full max-w-5xl mx-auto rounded-2xl p-6 sm:p-8 space-y-8">
         
         <div class="text-center space-y-2">
-            <h1 class="text-3xl sm:text-4xl font-bold title-text">⚡️ GridScan v1.4 ⚡️</h1>
-            <p class="text-gray-600 text-sm sm:text-base">여러 주소를 한 번에 분석하고 결과를 받아보세요.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold title-text">⚡️ GridScan v1.5 ⚡️</h1>
+            <p class="text-gray-600 text-sm sm:text-base">대용량 주소 분석 엔진 탑재! 최대 2,500개까지 한 번에 분석하세요.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <label for="address-list" class="block text-lg font-semibold text-gray-700">주소 목록 붙여넣기</label>
-                    <span id="address-counter" class="text-sm font-medium text-gray-500">0 / 200 개</span>
+                    <span id="address-counter" class="text-sm font-medium text-gray-500">0 / 2500 개</span>
                 </div>
                 <textarea id="address-list" rows="10" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="예:&#10;경기도 성남시 중원구 도촌남로 101&#10;경기도 고양시 덕양구 향동동 407&#10;(한 줄에 주소 하나씩 입력)"></textarea>
             </div>
@@ -78,7 +69,7 @@
             </div>
         </div>
 
-        <div id="progress-section" class="hidden pt-6 space-y-2">
+        <div id="progress-section" class="hidden pt-6 space-y-4">
             <div class="flex justify-between items-center font-semibold">
                 <span id="progress-label" class="text-teal-600">분석 준비 중...</span>
                 <span id="progress-text" class="text-gray-700">0 / 0</span>
@@ -86,9 +77,14 @@
             <div class="progress-bar h-4">
                 <div id="progress-bar-fill" class="progress-bar-fill h-4" style="width: 0%;"></div>
             </div>
-            <!-- v1.4: 분석 중단 버튼 추가 -->
-            <div class="text-center mt-4">
+            <div class="text-center">
                 <button id="cancel-analysis-btn" class="cancel-button font-bold py-2 px-6 rounded-lg text-base">분석 중단</button>
+            </div>
+            
+            <!-- v1.5: 개발자용 실시간 로그 창 추가 -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">실시간 작전 상황실 (개발자 로그)</h3>
+                <div id="dev-log-container" class="dev-log-container"></div>
             </div>
         </div>
 
@@ -117,16 +113,16 @@
         
     </div>
     
-    <!-- v1.4: 토스트 알림을 위한 HTML 요소 추가 -->
     <div id="toast" class="toast-notification"></div>
 
     <script type="module">
-        // --- v1.4: 상수 관리 ---
-        // 설정값들을 맨 위에 모아서 관리하기 쉽게 만듭니다.
-        const ADDRESS_LIMIT = 200;
+        // --- v1.5: 상수 관리 ---
+        const ADDRESS_LIMIT = 2500; // 최대 분석 개수 2500개로 상향!
+        const BATCH_SIZE = 50; // 한 번에 처리할 그룹(Batch) 크기
+        const CONCURRENT_REQUESTS = 10; // 한 그룹 내에서 동시에 보낼 요청 수 (API 과부하 방지)
+        const INTER_BATCH_DELAY_MS = 1000; // 그룹(Batch) 처리 사이의 지연 시간 (API 서버 보호)
         const OVERPASS_API_ENDPOINT = 'https://overpass-api.de/api/interpreter';
         const SEARCH_RADIUS_METERS = 1000;
-        const API_REQUEST_DELAY_MS = 500; // API 과부하 방지를 위한 지연 시간
 
         // --- DOM 요소 가져오기 ---
         const addressListInput = document.getElementById('address-list');
@@ -140,38 +136,43 @@
         const resultTableBody = document.getElementById('result-table-body');
         const downloadCsvBtn = document.getElementById('download-csv-btn');
         const addressCounter = document.getElementById('address-counter');
-        const toast = document.getElementById('toast'); // v1.4 추가
-        const cancelAnalysisBtn = document.getElementById('cancel-analysis-btn'); // v1.4 추가
+        const toast = document.getElementById('toast');
+        const cancelAnalysisBtn = document.getElementById('cancel-analysis-btn');
+        const devLogContainer = document.getElementById('dev-log-container'); // v1.5 추가
 
         // --- 전역 변수 ---
         let geocoderInstance = null;
         let analysisResults = [];
-        let isAnalysisCancelled = false; // v1.4: 분석 중단 상태를 저장하는 플래그
+        let isAnalysisCancelled = false;
 
         // --- 초기화 ---
-        kakao.maps.load(() => {
-            geocoderInstance = new kakao.maps.services.Geocoder();
-        });
+        kakao.maps.load(() => { geocoderInstance = new kakao.maps.services.Geocoder(); });
         
         // --- 이벤트 리스너 등록 ---
         startAnalysisBtn.addEventListener('click', handleStartAnalysis);
         csvFileInput.addEventListener('change', handleFileUpload);
         downloadCsvBtn.addEventListener('click', downloadResultsAsCsv);
         addressListInput.addEventListener('input', updateAddressCounter);
-        cancelAnalysisBtn.addEventListener('click', handleCancelAnalysis); // v1.4 추가
+        cancelAnalysisBtn.addEventListener('click', handleCancelAnalysis);
 
-        // --- v1.4: 토스트 알림 함수 ---
+        // --- v1.5: 실시간 로그 함수 ---
+        function addLog(message, type = 'info') {
+            const now = new Date();
+            const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            const logLine = document.createElement('div');
+            logLine.className = `log-line ${type}`;
+            logLine.textContent = `[${timestamp}] ${message}`;
+            devLogContainer.appendChild(logLine);
+            // 항상 최신 로그가 보이도록 스크롤을 맨 아래로 이동
+            devLogContainer.scrollTop = devLogContainer.scrollHeight;
+        }
+
         function showToast(message, type = 'info') {
             toast.textContent = message;
-            toast.className = 'toast-notification'; // Reset classes
-            if (type === 'error') {
-                toast.classList.add('error');
-            }
+            toast.className = 'toast-notification';
+            if (type === 'error') toast.classList.add('error');
             toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000); // 3초 후에 사라짐
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
         function updateAddressCounter() {
@@ -184,32 +185,30 @@
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 const text = e.target.result;
                 const lines = text.split('\n').map(line => line.trim()).filter(line => line);
-                const addresses = lines.map(line => line.split(',')[0]); 
+                const addresses = lines.map(line => line.split(',')[0].trim()).filter(Boolean); 
                 addressListInput.value = addresses.join('\n');
                 updateAddressCounter();
             };
-            reader.readAsText(file);
+            reader.readAsText(file, 'euc-kr'); // 한글 CSV 파일을 위해 인코딩 지정
         }
 
-        // --- v1.4: 분석 중단 처리 함수 ---
         function handleCancelAnalysis() {
             isAnalysisCancelled = true;
-            console.log('🚨 분석 중단 버튼 클릭! 중단 플래그를 true로 변경합니다.');
+            addLog('🚨 분석 중단 명령 수신! 현재 진행 중인 작업 완료 후 중단됩니다.', 'warn');
             showToast('분석을 중단하고 있습니다...', 'info');
         }
 
+        // --- v1.5: 대용량 처리를 위한 새로운 분석 시작 함수 ---
         async function handleStartAnalysis() {
             const addresses = addressListInput.value.split('\n').map(line => line.trim()).filter(line => line);
             if (addresses.length === 0) {
                 showToast('분석할 주소를 입력하거나 CSV 파일을 업로드해주세요.', 'error');
                 return;
             }
-
             if (addresses.length > ADDRESS_LIMIT) {
                 showToast(`한 번에 최대 ${ADDRESS_LIMIT}개까지만 분석할 수 있습니다. (현재 ${addresses.length}개)`, 'error');
                 return;
@@ -221,70 +220,123 @@
             resultSection.classList.add('hidden');
             progressSection.classList.remove('hidden');
             resultTableBody.innerHTML = '';
+            devLogContainer.innerHTML = ''; // 로그 컨테이너 초기화
             analysisResults = [];
-            isAnalysisCancelled = false; // 분석 시작 시 중단 플래그 초기화
+            isAnalysisCancelled = false;
+            let processedCount = 0;
+            const totalCount = addresses.length;
 
-            for (let i = 0; i < addresses.length; i++) {
-                // v1.4: 루프 시작 전 중단 플래그 확인
+            addLog(`총 ${totalCount}개의 주소에 대한 분석을 시작합니다. (그룹 크기: ${BATCH_SIZE}개)`, 'info');
+
+            // 주소 목록을 BATCH_SIZE에 맞춰 여러 그룹(Batch)으로 나눕니다.
+            for (let i = 0; i < totalCount; i += BATCH_SIZE) {
                 if (isAnalysisCancelled) {
-                    console.log('✋ 분석 루프가 중단 플래그를 확인했습니다. 작업을 멈춥니다.');
-                    break; // 루프 탈출!
+                    addLog('✋ 분석 중단 플래그 확인. 모든 작업을 중단합니다.', 'warn');
+                    break;
                 }
 
-                const address = addresses[i];
-                progressLabel.textContent = `[${i + 1}/${addresses.length}] "${address}" 분석 중...`;
-                progressText.textContent = `${i + 1} / ${addresses.length}`;
-                progressBarFill.style.width = `${((i + 1) / addresses.length) * 100}%`;
+                const batch = addresses.slice(i, i + BATCH_SIZE);
+                const batchNumber = (i / BATCH_SIZE) + 1;
+                addLog(`--- [그룹 ${batchNumber}] ${batch.length}개 주소 처리 시작 ---`, 'info');
+                
+                // 한 그룹 내에서도 CONCURRENT_REQUESTS 만큼 나누어 병렬 처리합니다. (API 서버 보호 강화)
+                const chunkResults = [];
+                for (let j = 0; j < batch.length; j += CONCURRENT_REQUESTS) {
+                    if (isAnalysisCancelled) break;
 
-                const result = await analyzeSingleAddress(address);
-                analysisResults.push(result);
-                appendResultToTable(result, i + 1);
+                    const chunk = batch.slice(j, j + CONCURRENT_REQUESTS);
+                    
+                    // Promise.allSettled를 사용하여 일부 요청이 실패해도 전체가 중단되지 않도록 합니다.
+                    const promises = chunk.map((address, index) => 
+                        analyzeSingleAddress(address, i + j + index + 1)
+                    );
+                    const results = await Promise.allSettled(promises);
+                    
+                    results.forEach(result => {
+                        if (result.status === 'fulfilled') {
+                            chunkResults.push(result.value);
+                        } else {
+                            // 이 경우는 analyzeSingleAddress 내부의 try-catch에서 처리되므로 거의 발생하지 않음
+                            addLog(`치명적 오류 발생: ${result.reason}`, 'error');
+                        }
+                    });
+                }
+                
+                // 이번 그룹(Batch)에서 처리된 결과들을 종합 결과에 추가
+                analysisResults.push(...chunkResults);
+                processedCount += batch.length;
 
-                await new Promise(resolve => setTimeout(resolve, API_REQUEST_DELAY_MS));
+                // UI 업데이트
+                progressLabel.textContent = `[그룹 ${batchNumber} 처리 완료] 다음 그룹 준비 중...`;
+                progressText.textContent = `${processedCount} / ${totalCount}`;
+                progressBarFill.style.width = `${(processedCount / totalCount) * 100}%`;
+                
+                // 다음 그룹 처리를 시작하기 전 잠시 대기
+                if (i + BATCH_SIZE < totalCount && !isAnalysisCancelled) {
+                    await new Promise(resolve => setTimeout(resolve, INTER_BATCH_DELAY_MS));
+                }
             }
 
             // --- 분석 종료 UI 설정 ---
             if (isAnalysisCancelled) {
                 progressLabel.textContent = '분석이 사용자에 의해 중단되었습니다.';
+                addLog('분석 작업이 최종적으로 중단되었습니다.', 'warn');
             } else {
                 progressLabel.textContent = '분석 완료!';
+                addLog(`🎉 총 ${processedCount}개의 주소 분석 완료!`, 'success');
             }
             startAnalysisBtn.disabled = false;
             startAnalysisBtn.textContent = '분석 시작';
-            progressSection.classList.add('hidden');
+            
+            // 결과가 하나라도 있으면 결과 섹션을 보여줍니다.
             if (analysisResults.length > 0) {
                 resultSection.classList.remove('hidden');
             }
         }
 
-        async function analyzeSingleAddress(address) {
+        async function analyzeSingleAddress(address, totalIndex) {
             try {
+                // 1. 주소 -> 좌표 변환
                 const coords = await getCoordsFromAddress(address);
+                // 2. 좌표 주변 시설물 탐색
                 const facilities = await findFacilities(coords.lat, coords.lon);
+                // 3. 자체 규칙에 따라 필터링
                 const filtered = filterFacilities(facilities, coords.lat, coords.lon);
 
+                let result;
                 if (filtered.length > 0) {
                     const closest = filtered.sort((a, b) => a.distance - b.distance)[0];
                     const highestVoltage = filtered.reduce((max, el) => parseVoltage(el.tags.voltage) > parseVoltage(max.tags.voltage) ? el : max, filtered[0]);
                     const powerTypes = { substation: '변전소', line: '송전선', tower: '송전탑', cable: '케이블' };
                     
-                    return {
-                        address,
-                        status: '해당',
+                    result = {
+                        address, status: '해당',
                         closestFacility: closest.tags.name || powerTypes[closest.tags.power] || '시설',
                         distance: Math.round(closest.distance),
                         highestVoltage: parseVoltage(highestVoltage.tags.voltage) / 1000
                     };
+                    addLog(`[${totalIndex}] ${address} -> 해당 (최근접: ${result.closestFacility}, ${result.distance}m)`, 'success');
                 } else {
-                    return { address, status: '해당 없음', closestFacility: '-', distance: '-', highestVoltage: '-' };
+                    result = { address, status: '해당 없음', closestFacility: '-', distance: '-', highestVoltage: '-' };
+                    addLog(`[${totalIndex}] ${address} -> 해당 없음`, 'info');
                 }
+                appendResultToTable(result, totalIndex);
+                return result;
+
             } catch (error) {
-                return { address, status: '분석 실패', closestFacility: error.message, distance: '-', highestVoltage: '-' };
+                const result = { address, status: '분석 실패', closestFacility: error.message, distance: '-', highestVoltage: '-' };
+                addLog(`[${totalIndex}] ${address} -> 실패 (${error.message})`, 'error');
+                appendResultToTable(result, totalIndex);
+                return result;
             }
         }
         
         function getCoordsFromAddress(address) {
             return new Promise((resolve, reject) => {
+                if (!geocoderInstance) {
+                    reject(new Error('Geocoder 초기화 안됨'));
+                    return;
+                }
                 geocoderInstance.addressSearch(address, (result, status) => {
                     if (status === kakao.maps.services.Status.OK) {
                         resolve({ lat: result[0].y, lon: result[0].x });
@@ -298,7 +350,7 @@
         async function findFacilities(lat, lon) {
             const query = `[out:json];(node["power"](around:${SEARCH_RADIUS_METERS},${lat},${lon});way["power"](around:${SEARCH_RADIUS_METERS},${lat},${lon});relation["power"](around:${SEARCH_RADIUS_METERS},${lat},${lon}););out center;`;
             const response = await fetch(OVERPASS_API_ENDPOINT, { method: 'POST', body: query });
-            if (!response.ok) throw new Error('API 탐색 실패');
+            if (!response.ok) throw new Error(`API 탐색 실패 (${response.status})`);
             const data = await response.json();
             return data.elements;
         }
@@ -308,13 +360,11 @@
                 line: { '765000': 1000, '500000': 800, '345000': 700 },
                 substation: { '765000': 850, '500000': 800, '345000': 600 }
             };
-
             const elementsWithDistance = elements.map(el => {
                 const facilityCoords = el.center || el;
                 const distance = haversineDistance(centerLat, centerLon, facilityCoords.lat, facilityCoords.lon);
                 return { ...el, distance };
             });
-
             return elementsWithDistance.filter(el => {
                 const powerTag = el.tags?.power;
                 const voltage = parseVoltage(el.tags?.voltage);
@@ -351,8 +401,7 @@
             }
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
             csvContent += "No.,주소,진단 결과,최근접 시설,거리(m),최고 전압(kV)\n";
-
-            analysisResults.forEach((result, index) => {
+            analysisResults.sort((a, b) => a.index - b.index).forEach((result, index) => {
                 const row = [
                     index + 1,
                     `"${result.address.replace(/"/g, '""')}"`,
@@ -363,7 +412,6 @@
                 ].join(',');
                 csvContent += row + "\n";
             });
-
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -374,11 +422,8 @@
         }
 
         function haversineDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
+            const R = 6371e3; const φ1 = lat1 * Math.PI/180; const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180; const Δλ = (lon2-lon1) * Math.PI/180;
             const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             return R * c;
