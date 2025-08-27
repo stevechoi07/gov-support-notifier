@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GridScan v1.5 (대용량 처리 엔진 탑재)</title>
+    <title>GridScan v1.5.1 (CSV 다운로드 버그 수정)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
@@ -47,7 +47,7 @@
     <div class="main-container w-full max-w-5xl mx-auto rounded-2xl p-6 sm:p-8 space-y-8">
         
         <div class="text-center space-y-2">
-            <h1 class="text-3xl sm:text-4xl font-bold title-text">⚡️ GridScan v1.5 ⚡️</h1>
+            <h1 class="text-3xl sm:text-4xl font-bold title-text">⚡️ GridScan v1.5.1 ⚡️</h1>
             <p class="text-gray-600 text-sm sm:text-base">대용량 주소 분석 엔진 탑재! 최대 2,500개까지 한 번에 분석하세요.</p>
         </div>
 
@@ -283,7 +283,7 @@
                 addLog('분석 작업이 최종적으로 중단되었습니다.', 'warn');
             } else {
                 progressLabel.textContent = '분석 완료!';
-                addLog(`🎉 총 ${processedCount}개의 주소 분석 완료!`, 'success');
+                addLog(`� 총 ${processedCount}개의 주소 분석 완료!`, 'success');
             }
             startAnalysisBtn.disabled = false;
             startAnalysisBtn.textContent = '분석 시작';
@@ -310,6 +310,7 @@
                     const powerTypes = { substation: '변전소', line: '송전선', tower: '송전탑', cable: '케이블' };
                     
                     result = {
+                        index: totalIndex, // v1.5.1 수정: 결과 객체에 고유 번호(index) 추가
                         address, status: '해당',
                         closestFacility: closest.tags.name || powerTypes[closest.tags.power] || '시설',
                         distance: Math.round(closest.distance),
@@ -317,14 +318,20 @@
                     };
                     addLog(`[${totalIndex}] ${address} -> 해당 (최근접: ${result.closestFacility}, ${result.distance}m)`, 'success');
                 } else {
-                    result = { address, status: '해당 없음', closestFacility: '-', distance: '-', highestVoltage: '-' };
+                    result = { 
+                        index: totalIndex, // v1.5.1 수정: 결과 객체에 고유 번호(index) 추가
+                        address, status: '해당 없음', closestFacility: '-', distance: '-', highestVoltage: '-' 
+                    };
                     addLog(`[${totalIndex}] ${address} -> 해당 없음`, 'info');
                 }
                 appendResultToTable(result, totalIndex);
                 return result;
 
             } catch (error) {
-                const result = { address, status: '분석 실패', closestFacility: error.message, distance: '-', highestVoltage: '-' };
+                const result = { 
+                    index: totalIndex, // v1.5.1 수정: 결과 객체에 고유 번호(index) 추가
+                    address, status: '분석 실패', closestFacility: error.message, distance: '-', highestVoltage: '-' 
+                };
                 addLog(`[${totalIndex}] ${address} -> 실패 (${error.message})`, 'error');
                 appendResultToTable(result, totalIndex);
                 return result;
@@ -401,9 +408,11 @@
             }
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
             csvContent += "No.,주소,진단 결과,최근접 시설,거리(m),최고 전압(kV)\n";
+            
+            // v1.5.1 수정: 이제 각 result 객체에 index가 있으므로 정렬이 정상적으로 동작합니다.
             analysisResults.sort((a, b) => a.index - b.index).forEach((result, index) => {
                 const row = [
-                    index + 1,
+                    result.index, // No. 열에 원래 순번을 사용
                     `"${result.address.replace(/"/g, '""')}"`,
                     result.status,
                     `"${result.closestFacility.toString().replace(/"/g, '""')}"`,
@@ -412,6 +421,7 @@
                 ].join(',');
                 csvContent += row + "\n";
             });
+
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
