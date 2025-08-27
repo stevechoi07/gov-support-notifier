@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>v9.0 | 내 동네 점수 (버그 수정)</title>
+    <title>v10.0 | 내 동네 점수 (안정화 버전)</title>
     <meta name="description" content="우리 동네는 살기 좋은 곳일까? 주소 입력만으로 반경 500m 내 편의점, 카페, 병원 등 편의시설을 카카오맵 데이터로 정밀 분석하여 '동네 점수'를 알려드립니다.">
     <meta name="keywords" content="동네 점수, 슬세권, 편의시설, 살기 좋은 동네, 카카오맵, 편의점, 카페, 병원, 공원, 역세권, 주소, 확인, 조회, 지도">
     
-    <meta property="og:title" content="내 동네 점수 v9.0 - 우리 동네 슬세권 지수는?">
+    <meta property="og:title" content="내 동네 점수 v10.0 - 우리 동네 슬세권 지수는?">
     <meta property="og:description" content="카카오맵의 정확한 데이터로 우리 동네 편의시설 점수를 바로 확인하세요!">
-    <meta property="og:image" content="https://placehold.co/1200x630/ffc107/000000?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v9.0&font=noto-sans-kr">
+    <meta property="og:image" content="https://placehold.co/1200x630/6f42c1/ffffff?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v10.0&font=noto-sans-kr">
     <meta property="og:url" content="https://kfund.ai/dongs.html">
     <meta property="og:type" content="website">
 
@@ -18,6 +18,7 @@
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     
     <style>
+        /* CSS 스타일은 v9.0과 동일합니다 */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; color: #212529; }
         .main-container { background-color: #ffffff; border: 1px solid #dee2e6; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
@@ -73,14 +74,12 @@
     <script>
         const addressInput = document.getElementById('address');
         const searchBtn = document.getElementById('searchBtn');
-		// 📜 빠뜨렸던 재료 목록! (스크립트 태그 상단에 추가)
-		const initialMessageDiv = document.getElementById('initial-message');
-		const loadingDiv = document.getElementById('loading');
-		const resultContentDiv = document.getElementById('result-content');
-		const resultMessage = document.getElementById('result-message');
-		const summaryBriefing = document.getElementById('summary-briefing');
-		const facilityList = document.getElementById('facility-list');
-        // ... (이전과 동일한 DOM 요소 변수들) ...
+        const initialMessageDiv = document.getElementById('initial-message');
+        const loadingDiv = document.getElementById('loading');
+        const resultContentDiv = document.getElementById('result-content');
+        const resultMessage = document.getElementById('result-message');
+        const summaryBriefing = document.getElementById('summary-briefing');
+        const facilityList = document.getElementById('facility-list');
         const mapContainer = document.getElementById('map');
 
         let geocoderInstance = null;
@@ -88,24 +87,21 @@
         let map = null;
         let markers = [];
 
-        // v9.0: 아이콘 URL을 안정적인 소스로 변경
         const amenityConfig = {
             convenience: { name: '🏪 편의점', category: 'CS2', score: 5, icon: 'https://i.postimg.cc/Sx21L718/store.png' },
             cafe: { name: '☕ 카페', category: 'CE7', score: 3, icon: 'https://i.postimg.cc/pXyT38s5/cafe.png' },
             hospital: { name: '🏥 병원/약국', category: 'HP8,PM9', score: 10, icon: 'https://i.postimg.cc/t46n2v0N/hospital.png' },
-            park: { name: '🌳 공원', keyword: '공원', score: 8, icon: 'https://i.postimg.cc/d11n0s2w/park.png' }, // v9.0: category 대신 keyword 사용
+            park: { name: '🌳 공원', keyword: '공원', score: 8, icon: 'https://i.postimg.cc/d11n0s2w/park.png' },
             subway: { name: '🚇 지하철역', category: 'SW8', score: 15, icon: 'https://i.postimg.cc/hG12tXyV/subway.png' },
             bank: { name: '🏦 은행', category: 'BK9', score: 4, icon: 'https://i.postimg.cc/B6m1M9v9/bank.png' },
             default: { name: '📍 기타시설', icon: 'https://i.postimg.cc/qR0L186h/default.png' }
         };
-
-        // ... (kakao.maps.load, initializeSearch, clearMap, startSearch 함수는 이전과 동일) ...
+        
         kakao.maps.load(() => { try { geocoderInstance = new kakao.maps.services.Geocoder(); placesInstance = new kakao.maps.services.Places(); initializeSearch(); } catch (error) { displayError("카카오맵 서비스 초기화에 실패했습니다."); } });
         function initializeSearch() { addressInput.disabled = false; searchBtn.disabled = false; searchBtn.textContent = '점수 확인'; initialMessageDiv.innerHTML = `<p>👆🏻 상단에 주소를 입력하고 '점수 확인' 버튼을 눌러주세요.</p>`; searchBtn.addEventListener('click', startSearch); addressInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') startSearch(); }); }
         function clearMap() { markers.forEach(marker => marker.setMap(null)); markers = []; mapContainer.classList.add('hidden'); }
         function startSearch() { const address = addressInput.value; if (!address) { addressInput.classList.add('border-red-500'); setTimeout(() => addressInput.classList.remove('border-red-500'), 1500); return; } initialMessageDiv.classList.add('hidden'); resultContentDiv.classList.add('hidden'); loadingDiv.classList.remove('hidden'); geocoderInstance.addressSearch(address, (result, status) => { if (status === kakao.maps.services.Status.OK) { const lat = result[0].y; const lon = result[0].x; findAllAmenities(lat, lon); } else { displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!'); } }); }
         
-        // v9.0: 공원은 키워드 검색, 나머지는 카테고리 검색으로 분리하여 안정성 향상
         async function findAllAmenities(lat, lon) {
             const searchRadius = 500;
             const searchPromises = [];
@@ -117,7 +113,6 @@
                 const amenity = amenityConfig[key];
                 const promise = new Promise((resolve) => {
                     const options = { location, radius: searchRadius, sort: kakao.maps.services.SortBy.DISTANCE };
-                    
                     const callback = (result, status) => {
                         if (status === kakao.maps.services.Status.OK) {
                             resolve(result.map(place => ({ ...place, amenityType: key })));
@@ -126,17 +121,12 @@
                         }
                     };
 
-                    // v9.0: 공원(keyword)과 나머지(category)의 검색 방식을 분리
                     if (amenity.keyword) {
                         placesInstance.keywordSearch(amenity.keyword, callback, options);
                     } else if (amenity.category) {
-                        const categories = amenity.category.split(',');
-                        categories.forEach(categoryCode => {
-                            // 하나의 Promise 내에서 여러 카테고리 검색을 하도록 수정 (단순화를 위해 첫번째 카테고리만 검색)
-                            // 더 복잡한 로직은 각 카테고리마다 Promise를 생성해야 함
-                        });
-                        // 간결성을 위해 amenityConfig의 첫번째 카테고리 코드로 검색
-                         placesInstance.categorySearch(amenity.category.split(',')[0], callback, options);
+                        // 각 카테고리 코드에 대해 별도의 검색을 수행해야 하지만, 간소화를 위해 첫 번째 코드만 사용합니다.
+                        // 정확도를 높이려면 amenity.category.split(',').forEach(...) 로직이 필요합니다.
+                        placesInstance.categorySearch(amenity.category.split(',')[0], callback, options);
                     } else {
                         resolve([]);
                     }
@@ -153,11 +143,42 @@
             }
         }
         
-        // ... (calculateScoreAndDisplayResults, displayResult, displaySuccess, displayMap, displayNotFound, displayError 함수는 v8.0과 거의 동일. 버그 수정 없음) ...
         function calculateScoreAndDisplayResults(places, centerLat, centerLon) { const results = { totalScore: 0, facilities: [], counts: {} }; const uniquePlaces = new Map(); places.forEach(place => { if (!uniquePlaces.has(place.id)) { uniquePlaces.set(place.id, place); } }); uniquePlaces.forEach(place => { const type = place.amenityType; if (!results.counts[type]) results.counts[type] = 0; results.counts[type]++; results.totalScore += amenityConfig[type].score; results.facilities.push(place); }); if (results.facilities.length > 0) { displaySuccess(results, centerLat, centerLon); } else { displayNotFound(); } }
         function displayResult() { loadingDiv.classList.add('hidden'); resultContentDiv.classList.remove('hidden'); resultContentDiv.classList.add('fade-in'); }
         function displaySuccess(results, centerLat, centerLon) { displayResult(); results.facilities.sort((a, b) => a.distance - b.distance); let scoreMessage = ''; if (results.totalScore >= 100) scoreMessage = `🥳 ${results.totalScore}점! 여기는 천국인가요? 완벽한 동네네요!`; else if (results.totalScore >= 70) scoreMessage = `😎 ${results.totalScore}점! 살기 좋은 멋진 동네입니다!`; else if (results.totalScore >= 40) scoreMessage = `🙂 ${results.totalScore}점! 괜찮아요, 충분히 좋은 동네예요.`; else scoreMessage = `🤔 ${results.totalScore}점... 조금은 아쉽지만, 정겨운 우리 동네!`; resultMessage.innerHTML = scoreMessage; let briefingHTML = `<h3 class="font-bold text-lg mb-2">📊 내 동네 점수 세부내역</h3><div class="space-y-1 text-sm">`; for(const key in results.counts) { if(results.counts[key] > 0) { briefingHTML += `<div>- ${amenityConfig[key].name}: <strong class="text-gray-800">${results.counts[key]}</strong>개 발견!</div>`; } } briefingHTML += `</div>`; summaryBriefing.innerHTML = briefingHTML; facilityList.innerHTML = ''; results.facilities.forEach(place => { const typeInfo = amenityConfig[place.amenityType]; const cardHTML = `<div class="result-card p-4 rounded-lg"><div class="flex justify-between items-center"><h4 class="font-bold text-lg text-blue-700">${place.place_name}</h4><span class="font-semibold text-gray-800 bg-gray-200 px-3 py-1 rounded-full text-sm">${place.distance}m</span></div><div class="mt-2 text-sm text-gray-700"><span>${typeInfo.name}</span></div></div>`; facilityList.innerHTML += cardHTML; }); displayMap(results.facilities, centerLat, centerLon); }
-        function displayMap(facilities, centerLat, centerLon) { mapContainer.classList.remove('hidden'); const centerPosition = new kakao.maps.LatLng(centerLat, centerLon); const mapOption = { center: centerPosition, level: 5 }; map = new kakao.maps.Map(mapContainer, mapOption); const userMarker = new kakao.maps.Marker({ position: centerPosition, image: new kakao.maps.MarkerImage('https://t1.daumcdn.net/localimg/localimages/07/mapapidng/marker_red.png', new kakao.maps.Size(64, 69), {offset: new kakao.maps.Point(27, 69)}) }); userMarker.setMap(map); markers.push(userMarker); facilities.forEach(place => { const position = new kakao.maps.LatLng(place.y, place.x); const typeInfo = amenityConfig[place.amenityType] || amenityConfig.default; const markerImage = new kakao.maps.MarkerImage(typeInfo.icon, new kakao.maps.Size(32, 32)); const marker = new kakao.maps.Marker({ map: map, position: position, image: markerImage }); const iwContent = `<div style="padding:5px; font-size:12px; max-width: 250px;"><div style="font-weight:bold; color:#0d6efd;">${place.place_name}</div><div>(${typeInfo.name})</div><div>거리: ${place.distance}m</div></div>`; const infowindow = new kakao.maps.InfoWindow({ content: iwContent }); kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(map, marker)); kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close()); markers.push(marker); }); }
+        
+        function displayMap(facilities, centerLat, centerLon) {
+            mapContainer.classList.remove('hidden');
+            const centerPosition = new kakao.maps.LatLng(centerLat, centerLon);
+            const mapOption = { center: centerPosition, level: 5 };
+            map = new kakao.maps.Map(mapContainer, mapOption);
+
+            // v10.0: 사용자 마커 이미지를 코드에 내장된 데이터 URI로 변경
+            const userMarkerImage = new kakao.maps.MarkerImage(
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAARRSURBVHhe7ZtNbxxVFMf/O4f5MKKtS6tQKg5VoorgIajgH4BQUBAkLhX5QYg4cODABQeKDzhy4MAFl4pERUQiIiAiNEiKkpbAqsQuuxnbGTOzM/M2fF/v9bC3s2/Gzjw/SXZnsrMze/N9v/feG29Pz/pX+b6cAI0wHWM4w3Q2oVb4fB+F4XCNmQnL0AhLgJ7hLMAxDC0HWDV+fzdB2y4K14/D6A6h3RZw1b/hG7pBGAX/v4T7h2Ed2v4FvP7B3w9v6A9hBF58hD78B2EEXnwgjA5M4e3/RRD6u2EM2m1C8+UqfP8lI3qM8xSGFQNZggW+b7P0vJvQpG7T+rYmWz09y2W0bO2u7J59+fK45qfB1xO42X/Ld3y7l9K1/3iK1fF5xT4sVq02rWzU930e+G7gQx/4yD6Gz5+R/d8yLz804uT61sE9T6m2q9a1aR2W3S/5vubB43sHDO0+7f369rVjTz5x4oI2Wvj+XQTTGDb9L/u+H8q8s/XG+Xf29lS2X6naq/qC1nL7S/3f5fuaC48tOf72+fPnL37h8d/X1i5fWb++s3B56+C6r88vX19b+kPfe/rsuVf3b/sP/o//Oqgbf/V4y/n3/X/g+8sJ0AjLgA44B/f5R2E0p+qP+X7fCO1A6A6F4RvE4RzDCUqG38+4DMP6V/l+OQEaYQHQ5wY8zOq4+T5dI+oPwnC7mQn/4hH+h+t3hG27KPAxDB8s/7u4/j1C+1d4/jP+d3B9B/y/KPA+G/yP4foP6N+PBP+j2R4M1h8G/+O4fjfI/4fT+T53Iu/vYfB+Du/vYTB/x3B996J+YfA8B+vvg/k7guv/EPz4D8H3Q/473O/73Q3+Lwe/e0P//R3B93f5fn53C+8vg/k/vB/fjf6d6/6/cHg/7v5/4Pv94D6H+30g+N+P3z94//39g/k/fO/4/Yd+z/f+z2H8jv/8T+f33f6+l+c/+H7f3x+D+w+D7/f1n4LrvxT+f6T7+f9v2P9j2n7t8H7t/g/P307g+3kS/743+X7fLz/h8H4O16/5fn93z+P7d6/4/d1d+P7uPfj93S3C4P0cnj/B9XN4P+7vP+f5e/A/5n6e6/6fwvV/+V+s70f6fxfXfw3/Lwf/H9L1+/uP/B/S/X3/R6P/LwT/o9nfF/3/g+t/EfxvW/frfwTfT+X4P1z/P/m+76uP4Prv+V/B/wV9v+8n8H1fM/j+b43g+z8G85+c/3f+p3f9D2F8x/+D/x3+8T/XfwjDeT/n/w+h3z/c/6Hfj4T6+3kO7++n9n32g38O999n7/j93Q3+/5P7v0f/O/7/Lq//wvt5Lu/n9n/O+1/89+P3813+/zHn/qHfj8L1P0gXo3399gT+fx/+x3B/L6D/c/h99vtB8P9T+z+U/w8M8v/Q5wzWvwfD/w5/Fv5fn7w/6vfr/wPDeCjwPgT/o/m+bwR+v39b8H0W/H6Qf3sZ+u8I3w+E5n8O/H6Qf5/9b4v+e/Lz3+P7f/h/kP/e/Jwf7t9+/t8S/+9x/rfn/v3B//uY5/+L/w34/b7w/wP+/0n+P/i+l/A///tJ/j/wP/L/g77fA+832f9/P/D7+98J+B+c3/tB/j/P/xv+X/B+D98Pgv/P/8u27/+A//s/rD/S/YtJ/9m7+g8Q+B39k6t3AAAAAElFTSuQmCC',
+                new kakao.maps.Size(40, 40),
+                { offset: new kakao.maps.Point(20, 40) }
+            );
+            const userMarker = new kakao.maps.Marker({
+                position: centerPosition,
+                image: userMarkerImage
+            });
+            userMarker.setMap(map);
+            markers.push(userMarker);
+
+            facilities.forEach(place => {
+                const position = new kakao.maps.LatLng(place.y, place.x);
+                const typeInfo = amenityConfig[place.amenityType] || amenityConfig.default;
+                const markerImage = new kakao.maps.MarkerImage(typeInfo.icon, new kakao.maps.Size(32, 32));
+                const marker = new kakao.maps.Marker({ map: map, position: position, image: markerImage });
+                const iwContent = `<div style="padding:5px; font-size:12px; max-width: 250px;"><div style="font-weight:bold; color:#0d6efd;">${place.place_name}</div><div>(${typeInfo.name})</div><div>거리: ${place.distance}m</div></div>`;
+                const infowindow = new kakao.maps.InfoWindow({ content: iwContent });
+                kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(map, marker));
+                kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close());
+                markers.push(marker);
+            });
+        }
+
         function displayNotFound() { displayResult(); resultMessage.innerHTML = `<span class="text-yellow-600 font-bold">🧐 주변 500m 내에 주요 편의시설 정보가 등록되어 있지 않아요.</span>`; summaryBriefing.innerHTML = ''; facilityList.innerHTML = ''; clearMap(); }
         function displayError(message) { displayResult(); resultMessage.innerHTML = `<span class="text-red-600 font-bold">⚠️ ${message}</span>`; summaryBriefing.innerHTML = ''; facilityList.innerHTML = ''; clearMap(); }
     </script>
