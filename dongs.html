@@ -172,7 +172,7 @@
                 const marker = new kakao.maps.Marker({ map: map, position: position, image: markerImage });
                 const iwContent = `<div style="padding:5px; font-size:12px; max-width: 250px;"><div style="font-weight:bold; color:#0d6efd;">${place.place_name}</div><div>(${typeInfo.name})</div><div>거리: ${place.distance}m</div></div>`;
                 const infowindow = new kakao.maps.InfoWindow({ content: iwContent });
-                kakao.maps.event.addListener(marker, 'mouseover', () => infowow.open(map, marker));
+                kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(map, marker));
                 kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close());
                 markers.push(marker);
             });
