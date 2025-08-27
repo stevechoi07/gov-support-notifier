@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>v7.0 | 내 동네 점수 (슬세권 찾기)</title>
+    <meta name="description" content="우리 동네는 살기 좋은 곳일까? 주소 입력만으로 반경 500m 내 편의점, 카페, 병원 등 편의시설을 분석하여 '동네 점수'를 알려드립니다.">
+    <meta name="keywords" content="동네 점수, 슬세권, 편의시설, 살기 좋은 동네, 편의점, 카페, 병원, 공원, 역세권, 주소, 확인, 조회, 지도">
+    
+    <meta property="og:title" content="내 동네 점수 - 우리 동네 슬세권 지수는?">
+    <meta property="og:description" content="주소만 입력하면 우리 동네의 편의시설 점수를 바로 확인할 수 있어요!">
+    <meta property="og:image" content="https://placehold.co/1200x630/198754/ffffff?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v7.0&font=noto-sans-kr">
+    <meta property="og:url" content="https://kfund.ai/dongs.html"> <meta property="og:type" content="website">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; color: #212529; }
+        .main-container { background-color: #ffffff; border: 1px solid #dee2e6; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .title-text { color: #198754; } /* Green color for new theme */
+        .input-field { background-color: #f8f9fa; border-color: #ced4da; color: #212529; }
+        .input-field:focus { border-color: #82c6a2; box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25); }
+        .search-button { background-color: #198754; color: #ffffff; transition: all 0.2s ease-in-out; }
+        .search-button:hover { background-color: #157347; transform: translateY(-2px); }
+        .search-button:disabled { background-color: #6c757d; cursor: not-allowed; transform: none; }
+        .result-card { background-color: #ffffff; border: 1px solid #e9ecef; transition: all 0.2s ease-in-out; }
+        .result-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .summary-briefing { background-color: #e8f3ec; border: 1px solid #b7d8c6; color: #145a38; }
+        .loader { border: 4px solid #dee2e6; border-top: 4px solid #198754; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="main-container w-full max-w-2xl mx-auto rounded-2xl p-6 sm:p-8 space-y-8">
+        
+        <div class="text-center space-y-2">
+            <h1 class="text-2xl sm:text-4xl font-bold title-text whitespace-nowrap">💯 내 동네 점수 💯</h1>
+            <p class="text-gray-600 text-sm sm:text-base">슬리퍼 신고 갈 수 있는 우리 동네 편의시설, 몇 점일까?</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+            <input type="text" id="address" placeholder="동네 점수가 궁금한 주소를 입력하세요!" class="input-field flex-grow p-4 border-2 rounded-lg transition-all duration-300 outline-none text-base" disabled>
+            <button id="searchBtn" class="search-button font-bold py-4 px-6 sm:px-8 rounded-lg text-base" disabled>
+                초기화 중...
+            </button>
+        </div>
+
+        <div id="result" class="pt-6">
+            <div id="initial-message" class="text-center text-gray-500">
+                <p>🛰️ 시스템 초기화 및 좌표 동기화 중...</p>
+            </div>
+            <div id="loading" class="hidden flex flex-col items-center justify-center space-y-4">
+                <div class="loader"></div>
+                <p class="text-green-600 font-semibold">동네 편의시설 스캔 중! 점수를 집계하고 있습니다...</p>
+            </div>
+            <div id="result-content" class="hidden">
+                <h2 id="result-message" class="text-xl sm:text-2xl font-bold text-center mb-6"></h2>
+                
+                <div id="map" class="w-full h-80 rounded-lg border-2 border-gray-300 mb-6 hidden"></div>
+
+                <div id="summary-briefing" class="summary-briefing mb-6 p-4 rounded-lg"></div>
+                <div id="facility-list" class="space-y-4"></div>
+            </div>
+        </div>
+        
+    </div>
+
+    <script type="module">
+        const addressInput = document.getElementById('address');
+        const searchBtn = document.getElementById('searchBtn');
+        const initialMessageDiv = document.getElementById('initial-message');
+        const loadingDiv = document.getElementById('loading');
+        const resultContentDiv = document.getElementById('result-content');
+        const resultMessage = document.getElementById('result-message');
+        const summaryBriefing = document.getElementById('summary-briefing');
+        const facilityList = document.getElementById('facility-list');
+        const mapContainer = document.getElementById('map');
+
+        let geocoderInstance = null;
+        let map = null;
+        let markers = [];
+
+        // v7.0: 편의시설 종류, 점수, 아이콘 등 설정 객체
+        const amenityConfig = {
+            convenience: { name: '🏪 편의점', tags: ['shop=convenience'], score: 5, icon: 'https://i.imgur.com/gOkSj2O.png' },
+            cafe: { name: '☕ 카페', tags: ['amenity=cafe'], score: 3, icon: 'https://i.imgur.com/g234P1f.png' },
+            hospital: { name: '🏥 병원/약국', tags: ['amenity=hospital', 'amenity=pharmacy'], score: 10, icon: 'https://i.imgur.com/gK2z5Jc.png' },
+            park: { name: '🌳 공원', tags: ['leisure=park'], score: 8, icon: 'https://i.imgur.com/1s3Gep5.png' },
+            subway: { name: '🚇 지하철역', tags: ['railway=station', 'station=subway'], score: 15, icon: 'https://i.imgur.com/V9bB02J.png' },
+            bank: { name: '🏦 은행', tags: ['amenity=bank'], score: 4, icon: 'https://i.imgur.com/PzS8JtC.png' },
+            default: { name: '📍 기타시설', icon: 'https://i.imgur.com/9ZwzJ9M.png' }
+        };
+
+        kakao.maps.load(() => {
+            try {
+                geocoderInstance = new kakao.maps.services.Geocoder();
+                initializeSearch();
+            } catch (error) {
+                displayError("카카오맵 서비스 초기화에 실패했습니다.");
+            }
+        });
+
+        function initializeSearch() {
+            addressInput.disabled = false;
+            searchBtn.disabled = false;
+            searchBtn.textContent = '점수 확인';
+            initialMessageDiv.innerHTML = `<p>👆🏻 상단에 주소를 입력하고 '점수 확인' 버튼을 눌러주세요.</p>`;
+
+            searchBtn.addEventListener('click', startSearch);
+            addressInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') startSearch();
+            });
+        }
+        
+        function clearMap() {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+            mapContainer.classList.add('hidden');
+        }
+
+        function startSearch() {
+            const address = addressInput.value;
+            if (!address) {
+                addressInput.classList.add('border-red-500');
+                setTimeout(() => addressInput.classList.remove('border-red-500'), 1500);
+                return;
+            }
+            
+            initialMessageDiv.classList.add('hidden');
+            resultContentDiv.classList.add('hidden');
+            loadingDiv.classList.remove('hidden');
+            facilityList.innerHTML = '';
+            summaryBriefing.innerHTML = '';
+            clearMap();
+
+            geocoderInstance.addressSearch(address, (result, status) => {
+                if (status === kakao.maps.services.Status.OK) {
+                    const lat = result[0].y;
+                    const lon = result[0].x;
+                    findFacilities(lat, lon);
+                } else {
+                    displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!');
+                }
+            });
+        }
+
+        async function findFacilities(lat, lon) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+            // v7.0: 탐색 반경 500m로 변경 및 쿼리 동적 생성
+            const searchRadius = 500;
+            let queryParts = [];
+            for (const key in amenityConfig) {
+                if (key !== 'default') {
+                    amenityConfig[key].tags.forEach(tag => {
+                        const [k, v] = tag.split('=');
+                        queryParts.push(`node["${k}"="${v}"](around:${searchRadius},${lat},${lon});`);
+                        queryParts.push(`way["${k}"="${v}"](around:${searchRadius},${lat},${lon});`);
+                    });
+                }
+            }
+            const query = `[out:json];(${queryParts.join('')});out center;`;
+            
+            try {
+                const response = await fetch('https://overpass-api.de/api/interpreter', { 
+                    method: 'POST', 
+                    body: query,
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                const data = await response.json();
+                calculateScoreAndDisplayResults(data.elements, lat, lon);
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    displayError('😫 탐색 API의 응답이 너무 늦어지고 있습니다. 잠시 후 다시 시도해주세요.');
+                } else {
+                    displayError('😭 탐색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+                }
+            }
+        }
+
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c;
+        }
+
+        // v7.0: 핵심 로직. 필터링이 아닌 점수 계산 및 표시로 변경
+        function calculateScoreAndDisplayResults(elements, centerLat, centerLon) {
+            const results = { totalScore: 0, facilities: [], counts: {} };
+            for (const key in amenityConfig) {
+                if (key !== 'default') results.counts[key] = 0;
+            }
+
+            const elementsWithDistance = elements.map(el => {
+                const facilityCoords = el.center || el;
+                if (!facilityCoords.lat || !facilityCoords.lon) return null;
+                const distance = haversineDistance(centerLat, centerLon, facilityCoords.lat, facilityCoords.lon);
+                
+                let type = 'default';
+                for (const key in amenityConfig) {
+                    if (key !== 'default') {
+                        const match = amenityConfig[key].tags.some(tag => {
+                            const [k, v] = tag.split('=');
+                            return el.tags && el.tags[k] === v;
+                        });
+                        if (match) {
+                            type = key;
+                            break;
+                        }
+                    }
+                }
+                return { ...el, distance, type };
+            }).filter(Boolean);
+
+            elementsWithDistance.forEach(el => {
+                if (results.counts[el.type] !== undefined) {
+                    results.counts[el.type]++;
+                    results.totalScore += amenityConfig[el.type].score;
+                }
+                results.facilities.push(el);
+            });
+
+            if (results.facilities.length > 0) {
+                displaySuccess(results, centerLat, centerLon);
+            } else {
+                displayNotFound();
+            }
+        }
+
+        function displayResult() {
+            loadingDiv.classList.add('hidden');
+            resultContentDiv.classList.remove('hidden');
+            resultContentDiv.classList.add('fade-in');
+        }
+
+        function displaySuccess(results, centerLat, centerLon) {
+            displayResult();
+            
+            results.facilities.sort((a, b) => a.distance - b.distance);
+
+            // v7.0: 점수 기반 메시지 및 브리핑 생성
+            let scoreMessage = '';
+            if (results.totalScore >= 100) scoreMessage = `🥳 ${results.totalScore}점! 여기는 천국인가요? 완벽한 동네네요!`;
+            else if (results.totalScore >= 70) scoreMessage = `😎 ${results.totalScore}점! 살기 좋은 멋진 동네입니다!`;
+            else if (results.totalScore >= 40) scoreMessage = `🙂 ${results.totalScore}점! 괜찮아요, 충분히 좋은 동네예요.`;
+            else scoreMessage = `🤔 ${results.totalScore}점... 조금은 아쉽지만, 정겨운 우리 동네!`;
+            resultMessage.innerHTML = scoreMessage;
+
+            let briefingHTML = `<h3 class="font-bold text-lg mb-2">📊 내 동네 점수 세부내역</h3><div class="space-y-1 text-sm">`;
+            for(const key in results.counts) {
+                if(results.counts[key] > 0) {
+                    briefingHTML += `<div>- ${amenityConfig[key].name}: <strong class="text-gray-800">${results.counts[key]}</strong>개 발견!</div>`;
+                }
+            }
+            briefingHTML += `</div>`;
+            summaryBriefing.innerHTML = briefingHTML;
+            summaryBriefing.classList.remove('hidden');
+
+            facilityList.innerHTML = '';
+            displayMap(results.facilities, centerLat, centerLon);
+
+            results.facilities.forEach(el => {
+                const name = el.tags.name || '이름 없는 시설';
+                const typeInfo = amenityConfig[el.type] || amenityConfig.default;
+                
+                const cardHTML = `<div class="result-card p-4 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-lg text-green-700">${name}</h4>
+                        <span class="font-semibold text-gray-800 bg-gray-200 px-3 py-1 rounded-full text-sm">${Math.round(el.distance)}m</span>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-700">
+                        <span>${typeInfo.name}</span>
+                    </div>
+                </div>`;
+                facilityList.innerHTML += cardHTML;
+            });
+        }
+        
+        function displayMap(facilities, centerLat, centerLon) {
+            mapContainer.classList.remove('hidden');
+            const centerPosition = new kakao.maps.LatLng(centerLat, centerLon);
+            
+            const mapOption = { center: centerPosition, level: 5 };
+            map = new kakao.maps.Map(mapContainer, mapOption);
+
+            const userMarker = new kakao.maps.Marker({
+                position: centerPosition,
+                image: new kakao.maps.MarkerImage('https://t1.daumcdn.net/localimg/localimages/07/mapapidng/marker_red.png', new kakao.maps.Size(64, 69), {offset: new kakao.maps.Point(27, 69)})
+            });
+            userMarker.setMap(map);
+            markers.push(userMarker);
+
+            const bounds = new kakao.maps.LatLngBounds();
+            bounds.extend(centerPosition);
+
+            // v7.0: 시설별 맞춤 아이콘 사용
+            facilities.forEach(el => {
+                const position = new kakao.maps.LatLng(el.center.lat, el.center.lon);
+                const typeInfo = amenityConfig[el.type] || amenityConfig.default;
+                const markerImage = new kakao.maps.MarkerImage(typeInfo.icon, new kakao.maps.Size(35, 35));
+
+                const marker = new kakao.maps.Marker({ map: map, position: position, image: markerImage });
+
+                const name = el.tags.name || '이름 없는 시설';
+                const iwContent = `<div style="padding:5px; font-size:12px; max-width: 250px;"><div style="font-weight:bold; color:#198754;">${name}</div><div>(${typeInfo.name})</div><div>거리: 약 ${Math.round(el.distance)}m</div></div>`;
+                const infowindow = new kakao.maps.InfoWindow({ content: iwContent });
+
+                kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(map, marker));
+                kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close());
+                
+                markers.push(marker);
+                bounds.extend(position);
+            });
+
+            map.setBounds(bounds);
+        }
+
+        function displayNotFound() {
+            displayResult();
+            resultMessage.innerHTML = `<span class="text-yellow-600 font-bold">🧐 주변 500m 내에 주요 편의시설 정보가 등록되어 있지 않아요.</span>`;
+            summaryBriefing.classList.add('hidden');
+        }
+
+        function displayError(message) {
+            displayResult();
+            resultMessage.innerHTML = `<span class="text-red-600 font-bold">⚠️ ${message}</span>`;
+            summaryBriefing.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
