@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>v14.0 | 내 동네 점수 (마커 최종 수정)</title>
+    <title>v16.0 | 내 동네 점수 (최종 진화)</title>
     <meta name="description" content="우리 동네는 살기 좋은 곳일까? 주소 입력만으로 반경 500m 내 편의점, 카페, 병원 등 편의시설을 카카오맵 데이터로 정밀 분석하여 '동네 점수'를 알려드립니다.">
     <meta name="keywords" content="동네 점수, 슬세권, 편의시설, 살기 좋은 동네, 카카오맵, 편의점, 카페, 병원, 공원, 역세권, 주소, 확인, 조회, 지도">
     
-    <meta property="og:title" content="내 동네 점수 v14.0 - 우리 동네 슬세권 지수는?">
+    <meta property="og:title" content="내 동네 점수 v16.0 - 우리 동네 슬세권 지수는?">
     <meta property="og:description" content="카카오맵의 정확한 데이터로 우리 동네 편의시설 점수를 바로 확인하세요!">
-    <meta property="og:image" content="https://placehold.co/1200x630/fd7e14/ffffff?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v14.0&font=noto-sans-kr">
+    <meta property="og:image" content="https://placehold.co/1200x630/0dcaf0/ffffff?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v16.0&font=noto-sans-kr">
     <meta property="og:url" content="https://kfund.ai/dongs.html">
     <meta property="og:type" content="website">
 
@@ -85,21 +85,28 @@
         let geocoderInstance = null;
         let placesInstance = null;
         let map = null;
-        let markers = [];
+        let overlays = []; // v16.0: 마커 대신 오버레이(원)를 관리할 배열
 
+        // v16.0: 아이콘 대신 원의 색상을 지정
         const amenityConfig = {
-            convenience: { name: '🏪 편의점', category: 'CS2', score: 5, icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_blue.png' },
-            cafe: { name: '☕ 카페', category: 'CE7', score: 3, icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_blue.png' },
-            hospital: { name: '🏥 병원/약국', category: 'HP8,PM9', score: 10, icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png' },
-            park: { name: '🌳 공원', keyword: '공원', score: 8, icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_green.png' },
-            subway: { name: '🚇 지하철역', category: 'SW8', score: 15, icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_yellow.png' },
-            bank: { name: '🏦 은행', category: 'BK9', score: 4, icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_white.png' },
-            default: { name: '📍 기타시설', icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_gray.png' }
+            convenience: { name: '🏪 편의점', category: 'CS2', score: 5, color: '#2C78E5' },
+            cafe: { name: '☕ 카페', category: 'CE7', score: 3, color: '#D5A16A' },
+            hospital: { name: '🏥 병원/약국', category: 'HP8,PM9', score: 10, color: '#E54545' },
+            park: { name: '🌳 공원', keyword: '공원', score: 8, color: '#31A24C' },
+            subway: { name: '🚇 지하철역', category: 'SW8', score: 15, color: '#8A3E99' },
+            bank: { name: '🏦 은행', category: 'BK9', score: 4, color: '#F2994A' },
+            default: { name: '📍 기타시설', color: '#777777' }
         };
         
         kakao.maps.load(() => { try { geocoderInstance = new kakao.maps.services.Geocoder(); placesInstance = new kakao.maps.services.Places(); initializeSearch(); } catch (error) { displayError("카카오맵 서비스 초기화에 실패했습니다."); } });
         function initializeSearch() { addressInput.disabled = false; searchBtn.disabled = false; searchBtn.textContent = '점수 확인'; initialMessageDiv.innerHTML = `<p>👆🏻 상단에 주소를 입력하고 '점수 확인' 버튼을 눌러주세요.</p>`; searchBtn.addEventListener('click', startSearch); addressInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') startSearch(); }); }
-        function clearMap() { markers.forEach(marker => marker.setMap(null)); markers = []; mapContainer.classList.add('hidden'); }
+        
+        function clearMap() { // v16.0: 오버레이 제거 로직으로 변경
+            overlays.forEach(overlay => overlay.setMap(null));
+            overlays = [];
+            mapContainer.classList.add('hidden');
+        }
+
         function startSearch() { const address = addressInput.value; if (!address) { addressInput.classList.add('border-red-500'); setTimeout(() => addressInput.classList.remove('border-red-500'), 1500); return; } initialMessageDiv.classList.add('hidden'); resultContentDiv.classList.add('hidden'); loadingDiv.classList.remove('hidden'); geocoderInstance.addressSearch(address, (result, status) => { if (status === kakao.maps.services.Status.OK) { const lat = result[0].y; const lon = result[0].x; findAllAmenities(lat, lon); } else { displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!'); } }); }
         
         async function findAllAmenities(lat, lon) {
@@ -145,12 +152,14 @@
         function displayResult() { loadingDiv.classList.add('hidden'); resultContentDiv.classList.remove('hidden'); resultContentDiv.classList.add('fade-in'); }
         function displaySuccess(results, centerLat, centerLon) { displayResult(); results.facilities.sort((a, b) => a.distance - b.distance); let scoreMessage = ''; if (results.totalScore >= 100) scoreMessage = `🥳 ${results.totalScore}점! 여기는 천국인가요? 완벽한 동네네요!`; else if (results.totalScore >= 70) scoreMessage = `😎 ${results.totalScore}점! 살기 좋은 멋진 동네입니다!`; else if (results.totalScore >= 40) scoreMessage = `🙂 ${results.totalScore}점! 괜찮아요, 충분히 좋은 동네예요.`; else scoreMessage = `🤔 ${results.totalScore}점... 조금은 아쉽지만, 정겨운 우리 동네!`; resultMessage.innerHTML = scoreMessage; let briefingHTML = `<h3 class="font-bold text-lg mb-2">📊 내 동네 점수 세부내역</h3><div class="space-y-1 text-sm">`; for(const key in results.counts) { if(results.counts[key] > 0) { briefingHTML += `<div>- ${amenityConfig[key].name}: <strong class="text-gray-800">${results.counts[key]}</strong>개 발견!</div>`; } } briefingHTML += `</div>`; summaryBriefing.innerHTML = briefingHTML; facilityList.innerHTML = ''; results.facilities.forEach(place => { const typeInfo = amenityConfig[place.amenityType]; const cardHTML = `<div class="result-card p-4 rounded-lg"><div class="flex justify-between items-center"><h4 class="font-bold text-lg text-blue-700">${place.place_name}</h4><span class="font-semibold text-gray-800 bg-gray-200 px-3 py-1 rounded-full text-sm">${place.distance}m</span></div><div class="mt-2 text-sm text-gray-700"><span>${typeInfo.name}</span></div></div>`; facilityList.innerHTML += cardHTML; }); displayMap(results.facilities, centerLat, centerLon); }
         
+        // v16.0: 마커 대신 Circle(원) 오버레이를 표시하는 로직으로 전면 수정
         function displayMap(facilities, centerLat, centerLon) {
             mapContainer.classList.remove('hidden');
             const centerPosition = new kakao.maps.LatLng(centerLat, centerLon);
             const mapOption = { center: centerPosition, level: 5 };
             map = new kakao.maps.Map(mapContainer, mapOption);
 
+            // 사용자 위치는 기존의 별 마커를 그대로 사용
             const userMarkerImage = new kakao.maps.MarkerImage(
                 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
                 new kakao.maps.Size(24, 35),
@@ -161,27 +170,38 @@
                 image: userMarkerImage
             });
             userMarker.setMap(map);
-            markers.push(userMarker);
+            overlays.push(userMarker); // 오버레이 배열에 추가
+
+            const infowindow = new kakao.maps.InfoWindow({ removable: true });
 
             facilities.forEach(place => {
                 const position = new kakao.maps.LatLng(place.y, place.x);
                 const typeInfo = amenityConfig[place.amenityType] || amenityConfig.default;
 
-                // v14.0: 모든 편의시설 마커에 기준점(offset) 옵션을 추가하여 렌더링 오류 해결
-                const markerImage = new kakao.maps.MarkerImage(
-                    typeInfo.icon, 
-                    new kakao.maps.Size(24, 35),
-                    { offset: new kakao.maps.Point(12, 35) }
-                );
-                
-                const marker = new kakao.maps.Marker({ map: map, position: position, image: markerImage });
-                const iwContent = `<div style="padding:5px; font-size:12px; max-width: 250px;"><div style="font-weight:bold; color:#0d6efd;">${place.place_name}</div><div>(${typeInfo.name})</div><div>거리: ${place.distance}m</div></div>`;
-                const infowindow = new kakao.maps.InfoWindow({ content: iwContent });
+                // Circle 객체 생성
+                const circle = new kakao.maps.Circle({
+                    map: map,
+                    center: position,
+                    radius: 8, // 원의 반지름 (미터 단위)
+                    strokeWeight: 2,
+                    strokeColor: '#fff',
+                    strokeOpacity: 1,
+                    fillColor: typeInfo.color, // amenityConfig에 설정된 색상 사용
+                    fillOpacity: 0.9
+                });
+                overlays.push(circle); // 오버레이 배열에 추가
 
-                kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(map, marker));
-                kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close());
+                const iwContent = `<div style="padding:5px; font-size:12px; max-width: 250px;"><div style="font-weight:bold; color:#0d6efd;">${place.place_name}</div><div>(${typeInfo.name})</div><div>거리: ${place.distance}m</div></div>`;
                 
-                markers.push(marker);
+                kakao.maps.event.addListener(circle, 'mouseover', () => {
+                    infowindow.setContent(iwContent);
+                    infowindow.setPosition(position);
+                    infowindow.open(map);
+                });
+
+                kakao.maps.event.addListener(circle, 'mouseout', () => {
+                    infowindow.close();
+                });
             });
         }
 
