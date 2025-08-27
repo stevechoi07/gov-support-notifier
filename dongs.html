@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>v16.0 | 내 동네 점수 (최종 진화)</title>
+    <title>v17.0 | 내 동네 점수 (범례 추가)</title>
     <meta name="description" content="우리 동네는 살기 좋은 곳일까? 주소 입력만으로 반경 500m 내 편의점, 카페, 병원 등 편의시설을 카카오맵 데이터로 정밀 분석하여 '동네 점수'를 알려드립니다.">
     <meta name="keywords" content="동네 점수, 슬세권, 편의시설, 살기 좋은 동네, 카카오맵, 편의점, 카페, 병원, 공원, 역세권, 주소, 확인, 조회, 지도">
     
-    <meta property="og:title" content="내 동네 점수 v16.0 - 우리 동네 슬세권 지수는?">
+    <meta property="og:title" content="내 동네 점수 v17.0 - 우리 동네 슬세권 지수는?">
     <meta property="og:description" content="카카오맵의 정확한 데이터로 우리 동네 편의시설 점수를 바로 확인하세요!">
-    <meta property="og:image" content="https://placehold.co/1200x630/0dcaf0/ffffff?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v16.0&font=noto-sans-kr">
+    <meta property="og:image" content="https://placehold.co/1200x630/0d6efd/ffffff?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v17.0&font=noto-sans-kr">
     <meta property="og:url" content="https://kfund.ai/dongs.html">
     <meta property="og:type" content="website">
 
@@ -61,9 +61,14 @@
                 <div class="loader"></div>
                 <p class="text-blue-600 font-semibold">카카오맵에서 편의시설 정보 수신 중...</p>
             </div>
-            <div id="result-content" class="hidden">
+            <div id="result-content" class="hidden relative">
                 <h2 id="result-message" class="text-xl sm:text-2xl font-bold text-center mb-6"></h2>
-                <div id="map" class="w-full h-80 rounded-lg border-2 border-gray-300 mb-6 hidden"></div>
+                
+                <div id="map" class="w-full h-80 rounded-lg border-2 border-gray-300 mb-6"></div>
+                
+                <div id="map-legend" class="absolute bottom-10 left-2 bg-white bg-opacity-80 p-2 rounded-md shadow-md text-xs space-y-1 z-10 hidden">
+                    </div>
+
                 <div id="summary-briefing" class="summary-briefing mb-6 p-4 rounded-lg"></div>
                 <div id="facility-list" class="space-y-4"></div>
             </div>
@@ -81,13 +86,13 @@
         const summaryBriefing = document.getElementById('summary-briefing');
         const facilityList = document.getElementById('facility-list');
         const mapContainer = document.getElementById('map');
+        const mapLegend = document.getElementById('map-legend'); // v17.0: 범례 DOM 요소 추가
 
         let geocoderInstance = null;
         let placesInstance = null;
         let map = null;
-        let overlays = []; // v16.0: 마커 대신 오버레이(원)를 관리할 배열
+        let overlays = [];
 
-        // v16.0: 아이콘 대신 원의 색상을 지정
         const amenityConfig = {
             convenience: { name: '🏪 편의점', category: 'CS2', score: 5, color: '#2C78E5' },
             cafe: { name: '☕ 카페', category: 'CE7', score: 3, color: '#D5A16A' },
@@ -101,10 +106,11 @@
         kakao.maps.load(() => { try { geocoderInstance = new kakao.maps.services.Geocoder(); placesInstance = new kakao.maps.services.Places(); initializeSearch(); } catch (error) { displayError("카카오맵 서비스 초기화에 실패했습니다."); } });
         function initializeSearch() { addressInput.disabled = false; searchBtn.disabled = false; searchBtn.textContent = '점수 확인'; initialMessageDiv.innerHTML = `<p>👆🏻 상단에 주소를 입력하고 '점수 확인' 버튼을 눌러주세요.</p>`; searchBtn.addEventListener('click', startSearch); addressInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') startSearch(); }); }
         
-        function clearMap() { // v16.0: 오버레이 제거 로직으로 변경
+        function clearMap() {
             overlays.forEach(overlay => overlay.setMap(null));
             overlays = [];
             mapContainer.classList.add('hidden');
+            mapLegend.classList.add('hidden'); // v17.0: 지도 초기화 시 범례 숨기기
         }
 
         function startSearch() { const address = addressInput.value; if (!address) { addressInput.classList.add('border-red-500'); setTimeout(() => addressInput.classList.remove('border-red-500'), 1500); return; } initialMessageDiv.classList.add('hidden'); resultContentDiv.classList.add('hidden'); loadingDiv.classList.remove('hidden'); geocoderInstance.addressSearch(address, (result, status) => { if (status === kakao.maps.services.Status.OK) { const lat = result[0].y; const lon = result[0].x; findAllAmenities(lat, lon); } else { displayError('😭 주소를 좌표로 변환하는데 실패했어요. 정확한 주소인지 확인해주세요!'); } }); }
@@ -116,25 +122,17 @@
 
             for (const key in amenityConfig) {
                 if (key === 'default') continue;
-                
                 const amenity = amenityConfig[key];
                 const promise = new Promise((resolve) => {
                     const options = { location, radius: searchRadius, sort: kakao.maps.services.SortBy.DISTANCE };
                     const callback = (result, status) => {
                         if (status === kakao.maps.services.Status.OK) {
                             resolve(result.map(place => ({ ...place, amenityType: key })));
-                        } else {
-                            resolve([]);
-                        }
+                        } else { resolve([]); }
                     };
-
-                    if (amenity.keyword) {
-                        placesInstance.keywordSearch(amenity.keyword, callback, options);
-                    } else if (amenity.category) {
-                        placesInstance.categorySearch(amenity.category.split(',')[0], callback, options);
-                    } else {
-                        resolve([]);
-                    }
+                    if (amenity.keyword) { placesInstance.keywordSearch(amenity.keyword, callback, options); } 
+                    else if (amenity.category) { placesInstance.categorySearch(amenity.category.split(',')[0], callback, options); } 
+                    else { resolve([]); }
                 });
                 searchPromises.push(promise);
             }
@@ -152,44 +150,51 @@
         function displayResult() { loadingDiv.classList.add('hidden'); resultContentDiv.classList.remove('hidden'); resultContentDiv.classList.add('fade-in'); }
         function displaySuccess(results, centerLat, centerLon) { displayResult(); results.facilities.sort((a, b) => a.distance - b.distance); let scoreMessage = ''; if (results.totalScore >= 100) scoreMessage = `🥳 ${results.totalScore}점! 여기는 천국인가요? 완벽한 동네네요!`; else if (results.totalScore >= 70) scoreMessage = `😎 ${results.totalScore}점! 살기 좋은 멋진 동네입니다!`; else if (results.totalScore >= 40) scoreMessage = `🙂 ${results.totalScore}점! 괜찮아요, 충분히 좋은 동네예요.`; else scoreMessage = `🤔 ${results.totalScore}점... 조금은 아쉽지만, 정겨운 우리 동네!`; resultMessage.innerHTML = scoreMessage; let briefingHTML = `<h3 class="font-bold text-lg mb-2">📊 내 동네 점수 세부내역</h3><div class="space-y-1 text-sm">`; for(const key in results.counts) { if(results.counts[key] > 0) { briefingHTML += `<div>- ${amenityConfig[key].name}: <strong class="text-gray-800">${results.counts[key]}</strong>개 발견!</div>`; } } briefingHTML += `</div>`; summaryBriefing.innerHTML = briefingHTML; facilityList.innerHTML = ''; results.facilities.forEach(place => { const typeInfo = amenityConfig[place.amenityType]; const cardHTML = `<div class="result-card p-4 rounded-lg"><div class="flex justify-between items-center"><h4 class="font-bold text-lg text-blue-700">${place.place_name}</h4><span class="font-semibold text-gray-800 bg-gray-200 px-3 py-1 rounded-full text-sm">${place.distance}m</span></div><div class="mt-2 text-sm text-gray-700"><span>${typeInfo.name}</span></div></div>`; facilityList.innerHTML += cardHTML; }); displayMap(results.facilities, centerLat, centerLon); }
         
-        // v16.0: 마커 대신 Circle(원) 오버레이를 표시하는 로직으로 전면 수정
         function displayMap(facilities, centerLat, centerLon) {
             mapContainer.classList.remove('hidden');
             const centerPosition = new kakao.maps.LatLng(centerLat, centerLon);
             const mapOption = { center: centerPosition, level: 5 };
             map = new kakao.maps.Map(mapContainer, mapOption);
 
-            // 사용자 위치는 기존의 별 마커를 그대로 사용
             const userMarkerImage = new kakao.maps.MarkerImage(
                 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
                 new kakao.maps.Size(24, 35),
                 { offset: new kakao.maps.Point(12, 35) }
             );
-            const userMarker = new kakao.maps.Marker({
-                position: centerPosition,
-                image: userMarkerImage
-            });
+            const userMarker = new kakao.maps.Marker({ position: centerPosition, image: userMarkerImage });
             userMarker.setMap(map);
-            overlays.push(userMarker); // 오버레이 배열에 추가
+            overlays.push(userMarker);
 
             const infowindow = new kakao.maps.InfoWindow({ removable: true });
+            
+            // v17.0: 범례 내용 생성 및 표시 로직
+            let legendHTML = '';
+            const displayedTypes = new Set(facilities.map(p => p.amenityType)); // 결과에 있는 종류만 범례에 표시
+            for (const key in amenityConfig) {
+                if (key !== 'default' && displayedTypes.has(key)) {
+                    const amenity = amenityConfig[key];
+                    legendHTML += `<div class="flex items-center"><span class="inline-block w-3 h-3 rounded-full mr-2" style="background-color:${amenity.color};"></span>${amenity.name.split(' ')[1]}</div>`;
+                }
+            }
+            mapLegend.innerHTML = legendHTML;
+            mapLegend.classList.remove('hidden');
+            // --- 범례 로직 끝 ---
 
             facilities.forEach(place => {
                 const position = new kakao.maps.LatLng(place.y, place.x);
                 const typeInfo = amenityConfig[place.amenityType] || amenityConfig.default;
 
-                // Circle 객체 생성
                 const circle = new kakao.maps.Circle({
                     map: map,
                     center: position,
-                    radius: 8, // 원의 반지름 (미터 단위)
+                    radius: 8,
                     strokeWeight: 2,
                     strokeColor: '#fff',
                     strokeOpacity: 1,
-                    fillColor: typeInfo.color, // amenityConfig에 설정된 색상 사용
+                    fillColor: typeInfo.color,
                     fillOpacity: 0.9
                 });
-                overlays.push(circle); // 오버레이 배열에 추가
+                overlays.push(circle);
 
                 const iwContent = `<div style="padding:5px; font-size:12px; max-width: 250px;"><div style="font-weight:bold; color:#0d6efd;">${place.place_name}</div><div>(${typeInfo.name})</div><div>거리: ${place.distance}m</div></div>`;
                 
@@ -198,15 +203,24 @@
                     infowindow.setPosition(position);
                     infowindow.open(map);
                 });
-
-                kakao.maps.event.addListener(circle, 'mouseout', () => {
-                    infowindow.close();
-                });
+                kakao.maps.event.addListener(circle, 'mouseout', () => { infowindow.close(); });
             });
         }
 
-        function displayNotFound() { displayResult(); resultMessage.innerHTML = `<span class="text-yellow-600 font-bold">🧐 주변 500m 내에 주요 편의시설 정보가 등록되어 있지 않아요.</span>`; summaryBriefing.innerHTML = ''; facilityList.innerHTML = ''; clearMap(); }
-        function displayError(message) { displayResult(); resultMessage.innerHTML = `<span class="text-red-600 font-bold">⚠️ ${message}</span>`; summaryBriefing.innerHTML = ''; facilityList.innerHTML = ''; clearMap(); }
+        function displayNotFound() { 
+            displayResult();
+            resultMessage.innerHTML = `<span class="text-yellow-600 font-bold">🧐 주변 500m 내에 주요 편의시설 정보가 등록되어 있지 않아요.</span>`; 
+            summaryBriefing.innerHTML = ''; 
+            facilityList.innerHTML = ''; 
+            clearMap(); 
+        }
+        function displayError(message) { 
+            displayResult();
+            resultMessage.innerHTML = `<span class="text-red-600 font-bold">⚠️ ${message}</span>`;
+            summaryBriefing.innerHTML = '';
+            facilityList.innerHTML = '';
+            clearMap();
+        }
     </script>
 </body>
 </html>
