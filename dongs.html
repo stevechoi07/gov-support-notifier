@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>v13.0 | 내 동네 점수 (최종 안정화)</title>
+    <title>v14.0 | 내 동네 점수 (마커 최종 수정)</title>
     <meta name="description" content="우리 동네는 살기 좋은 곳일까? 주소 입력만으로 반경 500m 내 편의점, 카페, 병원 등 편의시설을 카카오맵 데이터로 정밀 분석하여 '동네 점수'를 알려드립니다.">
     <meta name="keywords" content="동네 점수, 슬세권, 편의시설, 살기 좋은 동네, 카카오맵, 편의점, 카페, 병원, 공원, 역세권, 주소, 확인, 조회, 지도">
     
-    <meta property="og:title" content="내 동네 점수 v13.0 - 우리 동네 슬세권 지수는?">
+    <meta property="og:title" content="내 동네 점수 v14.0 - 우리 동네 슬세권 지수는?">
     <meta property="og:description" content="카카오맵의 정확한 데이터로 우리 동네 편의시설 점수를 바로 확인하세요!">
-    <meta property="og:image" content="https://placehold.co/1200x630/20c997/ffffff?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v13.0&font=noto-sans-kr">
+    <meta property="og:image" content="https://placehold.co/1200x630/fd7e14/ffffff?text=%F0%9F%92%AF%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v14.0&font=noto-sans-kr">
     <meta property="og:url" content="https://kfund.ai/dongs.html">
     <meta property="og:type" content="website">
 
@@ -42,7 +42,7 @@
     <div class="main-container w-full max-w-2xl mx-auto rounded-2xl p-6 sm:p-8 space-y-8">
         
         <div class="text-center space-y-2">
-            <h1 class="text-2xl sm:text-4xl font-bold title-text whitespace-rap">💯 내 동네 점수 💯</h1>
+            <h1 class="text-2xl sm:text-4xl font-bold title-text whitespace-nowrap">💯 내 동네 점수 💯</h1>
             <p class="text-gray-600 text-sm sm:text-base">카카오맵 데이터로 정확하게 분석하는 우리 동네 슬세권 지수!</p>
         </div>
 
@@ -87,7 +87,6 @@
         let map = null;
         let markers = [];
 
-        // v13.0: 모든 아이콘 URL을 https로 변경하여 혼합 콘텐츠 오류 해결
         const amenityConfig = {
             convenience: { name: '🏪 편의점', category: 'CS2', score: 5, icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_blue.png' },
             cafe: { name: '☕ 카페', category: 'CE7', score: 3, icon: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_blue.png' },
@@ -167,7 +166,14 @@
             facilities.forEach(place => {
                 const position = new kakao.maps.LatLng(place.y, place.x);
                 const typeInfo = amenityConfig[place.amenityType] || amenityConfig.default;
-                const markerImage = new kakao.maps.MarkerImage(typeInfo.icon, new kakao.maps.Size(24, 35));
+
+                // v14.0: 모든 편의시설 마커에 기준점(offset) 옵션을 추가하여 렌더링 오류 해결
+                const markerImage = new kakao.maps.MarkerImage(
+                    typeInfo.icon, 
+                    new kakao.maps.Size(24, 35),
+                    { offset: new kakao.maps.Point(12, 35) }
+                );
+                
                 const marker = new kakao.maps.Marker({ map: map, position: position, image: markerImage });
                 const iwContent = `<div style="padding:5px; font-size:12px; max-width: 250px;"><div style="font-weight:bold; color:#0d6efd;">${place.place_name}</div><div>(${typeInfo.name})</div><div>거리: ${place.distance}m</div></div>`;
                 const infowindow = new kakao.maps.InfoWindow({ content: iwContent });
