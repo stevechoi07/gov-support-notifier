@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>v24.0 | 내 동네 점수 (서비스 공유)</title>
+    <title>v26.0 | 내 동네 점수 (최종)</title>
     <meta name="description" content="나만의 기준으로 동네 점수를 매겨보세요! 검색 기록이 점수별로 저장되는 '명예의 전당' 기능으로 최고의 동네를 찾아보세요.">
     <meta name="keywords" content="동네 점수, 랭킹, 명예의 전당, localStorage, 슬세권, 편의시설, 살기 좋은 동네, 카카오맵">
     
-    <meta property="og:title" content="v24.0 내 동네 점수 - 최종 버전">
-    <meta property="og:description" content="내가 검색한 동네들의 점수를 확인하고 최고의 동네를 찾아보세요!">
-    <meta property="og:image" content="https://placehold.co/1200x630/6f42c1/ffffff?text=%F0%9F%8F%86%20%EB%82%B4%20%EB%8F%99%EB%84%A4%20%EC%A0%90%EC%88%98%20v24.0&font=noto-sans-kr">
+    <meta property="og:title" content="💯 내 동네 점수 - 우리 동네는 몇 점일까?">
+    <meta property="og:description" content="나만의 기준으로 동네의 가치를 평가해보세요!">
+    <meta property="og:image" content="/img/og-image.png"> 
     <meta property="og:url" content="https://kfund.ai/dongs.html">
     <meta property="og:type" content="website">
 
@@ -101,7 +101,7 @@
         const facilityList = document.getElementById('facility-list');
         const mapContainer = document.getElementById('map');
         const mapLegend = document.getElementById('map-legend');
-        const serviceShareBtn = document.getElementById('service-share-btn'); // v24.0: 서비스 공유 버튼
+        const serviceShareBtn = document.getElementById('service-share-btn');
 
         // --- Global Variables & Config ---
         let geocoderInstance = null; let placesInstance = null; let map = null; let overlays = [];
@@ -126,21 +126,20 @@
             addressInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') startSearch(); }); 
         }
 
-        // v24.0: 서비스 공유 버튼 이벤트 리스너
         serviceShareBtn.addEventListener('click', async () => {
             const shareData = {
                 title: '💯 내 동네 점수',
-                text: '내가 만든 동네 점수 분석기! 너네 동네도 한번 확인해봐!',
+                text: '우리 동네 몇 점 나왔게? 네 동네도 지금 바로 확인해봐! 🤣',
                 url: window.location.href
             };
 
-            if (navigator.share) { // Web Share API 지원 확인 (주로 모바일)
+            if (navigator.share) {
                 try {
                     await navigator.share(shareData);
                 } catch (err) {
                     console.log("Share Canceled");
                 }
-            } else { // 폴백: 링크 복사 (주로 데스크탑)
+            } else {
                 try {
                     await navigator.clipboard.writeText(shareData.url);
                     alert('페이지 주소가 복사되었습니다. 원하는 곳에 붙여넣기 해주세요!');
