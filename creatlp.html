@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>creatlp v9.9 - 비디오 마스터 최종판</title>
+    <title>creatlp v9.15 - 디테일의 끝판왕 에디션</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
@@ -38,6 +38,7 @@
         .inline-group input[type="color"] { width: 42px; height: 32px; padding: 2px; flex-shrink: 0; border-radius: 4px; }
         .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
         .style-grid .control-group { margin-bottom: 0; }
+        .style-grid .full-width { grid-column: 1 / -1; }
         .style-grid input[type="color"] { height: 42px; padding: 0; }
         .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
         .viewport-btn { background-color: #e4e6eb; border: 1px solid #ccc; color: #4b4f56; padding: 8px 12px; font-size: 14px; border-radius: 6px; }
@@ -52,7 +53,7 @@
         .preview-wrapper { width: 100%; padding: 10px 0; border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
         .preview-wrapper.selected { background-color: rgba(231, 243, 255, 0.2); border-radius: 8px; }
         .preview-wrapper .component-content { text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
-        .preview-wrapper button.component-content { transition: transform 0.1s ease; }
+        .preview-wrapper button.component-content { transition: transform 0.1s ease, background-color 0.3s; }
         .preview-wrapper button.component-content:active { transform: scale(0.98); }
         #version-history-container { margin-top: 15px; }
         #version-history { max-height: 150px; overflow-y: auto; padding: 5px; border: 1px solid var(--border-color); border-radius: 6px; }
@@ -68,7 +69,7 @@
     <div class="main-container">
         <div id="controls-wrapper">
             <div class="control-panel">
-                <h2>🚀 빌더 v9.9</h2>
+                <h2>🚀 빌더 v9.15</h2>
                 <h3>- 프리뷰 화면 설정 -</h3>
                 <div id="viewport-controls-left"></div>
                 <hr>
@@ -88,7 +89,6 @@
                     <label for="page-background-image">배경 이미지 URL</label>
                     <input type="text" id="page-background-image" placeholder="https://example.com/image.jpg">
                 </div>
-                <!-- v9.9 핵심: 동영상 배경 URL 입력 필드 추가 -->
                 <div class="control-group">
                     <label for="page-background-video">📹 배경 동영상 URL</label>
                     <input type="text" id="page-background-video" placeholder="https://example.com/video.mp4">
@@ -110,7 +110,6 @@
                 <h2>👀 라이브 프리뷰</h2>
                 <div id="preview-wrapper">
                     <div id="preview">
-                        <!-- v9.9 핵심: video 태그 추가 -->
                         <video class="background-video" autoplay loop muted playsinline></video>
                         <div class="background-image-overlay"></div>
                         <div class="content-area"></div>
@@ -126,34 +125,24 @@
     let components = [], activeComponentId = null, pageSettings = { bgColor: '#FFFFFF', bgImage: '', bgVideo: '', viewport: '375px,667px' };
     const viewportOptions = [ { id: 'mobile', label: '🤳', value: '375px,667px', title: '모바일' }, { id: 'tablet', label: '📱', value: '768px,1024px', title: '태블릿' }, { id: 'desktop', label: '🖥️', value: '1280px,800px', title: '데스크탑' }, { id: 'full', label: '전체', value: '100%,calc(95vh - 100px)', title: '전체 화면' } ];
     let draggedId = null, currentVersionTimestamp = null;
-    const STORAGE_KEY = 'creatlp_projects_v9_9';
+    const STORAGE_KEY = 'creatlp_projects_v9_15'; // v9.15용 새 저장 키
+
+    function hexToRgba(hex, alpha = 1) {
+        if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
+        let c = hex.substring(1).split('');
+        if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; }
+        c = '0x' + c.join('');
+        return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`;
+    }
 
     // --- 2. 렌더링 함수들 ---
     function renderAll() { renderPreview(); renderControls(); renderViewportControls(); renderVersionHistory(); }
 
     function renderPreview() {
         contentArea.innerHTML = '';
-        
-        // v9.9 핵심: 배경 우선순위 적용 (비디오 > 이미지 > 색상)
-        if (pageSettings.bgVideo) {
-            backgroundVideo.src = pageSettings.bgVideo;
-            backgroundVideo.style.display = 'block';
-            backgroundImageOverlay.style.display = 'none';
-            preview.style.backgroundColor = 'transparent';
-            preview.classList.add('has-background');
-        } else if (pageSettings.bgImage) {
-            backgroundVideo.style.display = 'none';
-            backgroundImageOverlay.style.backgroundImage = `url('${pageSettings.bgImage}')`;
-            backgroundImageOverlay.style.display = 'block';
-            preview.style.backgroundColor = 'transparent';
-            preview.classList.add('has-background');
-        } else {
-            backgroundVideo.style.display = 'none';
-            backgroundImageOverlay.style.display = 'none';
-            preview.style.backgroundColor = pageSettings.bgColor;
-            preview.classList.remove('has-background');
-        }
-
+        if (pageSettings.bgVideo) { backgroundVideo.src = pageSettings.bgVideo; backgroundVideo.style.display = 'block'; backgroundImageOverlay.style.display = 'none'; preview.style.backgroundColor = 'transparent'; preview.classList.add('has-background'); } 
+        else if (pageSettings.bgImage) { backgroundVideo.style.display = 'none'; backgroundImageOverlay.style.backgroundImage = `url('${pageSettings.bgImage}')`; backgroundImageOverlay.style.display = 'block'; preview.style.backgroundColor = 'transparent'; preview.classList.add('has-background'); } 
+        else { backgroundVideo.style.display = 'none'; backgroundImageOverlay.style.display = 'none'; preview.style.backgroundColor = pageSettings.bgColor; preview.classList.remove('has-background'); }
         const [width, height] = pageSettings.viewport.split(',');
         preview.style.width = width;
         preview.style.height = height;
@@ -165,12 +154,8 @@
             wrapper.dataset.id = c.id;
             if (c.id === activeComponentId) wrapper.classList.add('selected');
             wrapper.onclick = () => selectComponent(c.id);
-            if (c.type === 'button' && c.styles?.verticalAlign === 'bottom') {
-                wrapper.style.marginTop = 'auto';
-                contentArea.style.justifyContent = 'flex-start';
-            } else {
-                wrapper.style.marginTop = '';
-            }
+            if (c.type === 'button' && c.styles?.verticalAlign === 'bottom') { wrapper.style.marginTop = 'auto'; contentArea.style.justifyContent = 'flex-start'; } 
+            else { wrapper.style.marginTop = ''; }
             wrapper.style.textAlign = c.styles?.textAlign || 'center';
             let element;
             switch(c.type) {
@@ -179,8 +164,13 @@
                 case 'button': element = document.createElement('button'); element.textContent = c.content; break;
             }
             element.className = 'component-content';
-            const { textAlign, verticalAlign, ...otherStyles } = c.styles || {};
+            
+            const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {};
             Object.assign(element.style, otherStyles);
+            if (c.type === 'button') {
+                element.style.backgroundColor = hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity);
+            }
+
             wrapper.appendChild(element);
             contentArea.appendChild(wrapper);
         });
@@ -189,7 +179,7 @@
     function renderControls() {
         pageBgColorInput.value = pageSettings.bgColor;
         pageBackgroundImageInput.value = pageSettings.bgImage;
-        pageBackgroundVideoInput.value = pageSettings.bgVideo; // 비디오 URL 필드 값 설정
+        pageBackgroundVideoInput.value = pageSettings.bgVideo;
         editorsContainer.innerHTML = '';
         components.forEach((c) => {
             const panel = document.createElement('div');
@@ -198,59 +188,54 @@
             panel.draggable = true; 
             if (c.id === activeComponentId) panel.classList.add('selected');
             let contentHTML = `<div class="control-group"><label>내용</label><textarea data-prop="content">${c.content}</textarea></div>`;
-            if (c.type === 'button') {
-                contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`;
-            }
+            if (c.type === 'button') { contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`; }
             let fontSelectorHTML = '';
-            if (['heading', 'paragraph', 'button'].includes(c.type)) {
-                fontSelectorHTML = `<div class="control-group"><label>글꼴</label><select data-style="fontFamily"><option value="'Noto Sans KR', sans-serif">깔끔 고딕체</option><option value="'Nanum Myeongjo', serif">부드러운 명조체</option><option value="'Gaegu', cursive">귀여운 손글씨체</option></select></div>`;
-            }
+            if (['heading', 'paragraph', 'button'].includes(c.type)) { fontSelectorHTML = `<div class="control-group"><label>글꼴</label><select data-style="fontFamily"><option value="'Noto Sans KR', sans-serif">깔끔 고딕체</option><option value="'Nanum Myeongjo', serif">부드러운 명조체</option><option value="'Gaegu', cursive">귀여운 손글씨체</option></select></div>`; }
+            
             let styleGridHTML = '<div class="style-grid">';
-            if (c.type === 'button') {
-                styleGridHTML += `<div class="control-group"><label>위치</label><select data-style="verticalAlign"><option value="center">가운데</option><option value="bottom">아래</option></select></div>`;
-            } else {
-                 styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`;
-            }
-            if (['heading', 'paragraph', 'button'].includes(c.type)) {
-                styleGridHTML += `<div class="control-group"><label>글자색</label><input type="color" data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`;
-                styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
-            }
+            if (c.type === 'button') { styleGridHTML += `<div class="control-group"><label>위치</label><select data-style="verticalAlign"><option value="center">가운데</option><option value="bottom">아래</option></select></div>`; } 
+            else { styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`; }
+            if (['heading', 'paragraph', 'button'].includes(c.type)) { styleGridHTML += `<div class="control-group"><label>글자색</label><input type="color" data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`; styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`; }
             if(c.type === 'button') {
                 styleGridHTML += `<div class="control-group"><label>버튼 배경색</label><input type="color" data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`;
             }
             styleGridHTML += '</div>';
-            panel.innerHTML = `<h4>${c.type} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${contentHTML}${fontSelectorHTML}${styleGridHTML}`;
+
+            let opacityControlsHTML = '';
+            if (c.type === 'button') {
+                const opacityValue = c.styles?.backgroundColorOpacity === undefined ? 1 : c.styles.backgroundColorOpacity;
+                opacityControlsHTML = `
+                <div class="control-group full-width">
+                    <label>배경 투명도</label>
+                    <div class="inline-group" style="gap: 10px; align-items: center;">
+                        <input type="range" data-control-type="opacity-slider" min="0" max="1" step="0.01" value="${opacityValue}" style="width: 70%; padding: 0;">
+                        <input type="number" data-control-type="opacity-number" min="0" max="100" value="${Math.round(opacityValue * 100)}" style="width: 70px; text-align: right;">
+                        <span style="font-size: 16px;">%</span>
+                    </div>
+                </div>`;
+            }
+
+            panel.innerHTML = `<h4>${c.type} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${contentHTML}${fontSelectorHTML}${styleGridHTML}${opacityControlsHTML}`;
             editorsContainer.appendChild(panel);
-            const textAlignSelect = panel.querySelector('[data-style="textAlign"]');
-            if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center';
-            const verticalAlignSelect = panel.querySelector('[data-style="verticalAlign"]');
-            if(verticalAlignSelect) verticalAlignSelect.value = c.styles?.verticalAlign || 'center';
-            const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]');
-            if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
+            
+            const textAlignSelect = panel.querySelector('[data-style="textAlign"]'); if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center';
+            const verticalAlignSelect = panel.querySelector('[data-style="verticalAlign"]'); if(verticalAlignSelect) verticalAlignSelect.value = c.styles?.verticalAlign || 'center';
+            const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
         });
         attachEventListenersToControls();
     }
     
     function renderViewportControls() {
         viewportControlsLeft.innerHTML = '';
-        const btnGroup = document.createElement('div');
-        btnGroup.className = 'viewport-controls';
-        viewportOptions.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'viewport-btn';
-            btn.dataset.value = opt.value;
-            btn.title = opt.title;
-            btn.innerHTML = opt.label;
-            if (pageSettings.viewport === opt.value) btn.classList.add('active');
-            btn.onclick = () => { pageSettings.viewport = opt.value; renderAll(); };
-            btnGroup.appendChild(btn);
-        });
+        const btnGroup = document.createElement('div'); btnGroup.className = 'viewport-controls';
+        viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { pageSettings.viewport = opt.value; renderAll(); }; btnGroup.appendChild(btn); });
         viewportControlsLeft.appendChild(btnGroup);
     }
 
     function attachEventListenersToControls() {
         editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
             const id = Number(panel.dataset.id);
+
             panel.querySelectorAll('[data-prop], [data-style]').forEach(input => {
                 input.oninput = () => {
                     const isStyle = input.dataset.style;
@@ -259,12 +244,32 @@
                     updateComponent(id, isStyle ? { style: { [key]: value } } : { [key]: value });
                 };
             });
+
+            const opacitySlider = panel.querySelector('[data-control-type="opacity-slider"]');
+            const opacityNumber = panel.querySelector('[data-control-type="opacity-number"]');
+
+            if (opacitySlider && opacityNumber) {
+                opacitySlider.oninput = () => {
+                    const value = parseFloat(opacitySlider.value);
+                    opacityNumber.value = Math.round(value * 100);
+                    updateComponent(id, { style: { backgroundColorOpacity: value } });
+                };
+
+                opacityNumber.oninput = () => {
+                    let value = parseInt(opacityNumber.value, 10);
+                    if (isNaN(value)) { value = 100; }
+                    if (value < 0) { value = 0; }
+                    if (value > 100) { value = 100; }
+                    
+                    opacityNumber.value = value;
+                    const sliderValue = value / 100;
+                    opacitySlider.value = sliderValue;
+                    updateComponent(id, { style: { backgroundColorOpacity: sliderValue } });
+                };
+            }
+
             panel.querySelector('.delete-btn').onclick = () => deleteComponent(id);
-            panel.addEventListener('dragstart', handleDragStart);
-            panel.addEventListener('dragover', handleDragOver);
-            panel.addEventListener('dragleave', handleDragLeave);
-            panel.addEventListener('drop', handleDrop);
-            panel.addEventListener('dragend', handleDragEnd);
+            panel.addEventListener('dragstart', handleDragStart); panel.addEventListener('dragover', handleDragOver); panel.addEventListener('dragleave', handleDragLeave); panel.addEventListener('drop', handleDrop); panel.addEventListener('dragend', handleDragEnd);
         });
     }
 
@@ -273,7 +278,21 @@
     function handleDragLeave(e) { this.classList.remove('drag-over'); }
     function handleDrop(e) { e.stopPropagation(); const fromIndex = components.findIndex(c => c.id === draggedId); const toIndex = components.findIndex(c => c.id === Number(this.dataset.id)); if (fromIndex !== -1 && toIndex !== -1) { const item = components.splice(fromIndex, 1)[0]; components.splice(toIndex, 0, item); renderAll(); } }
     function handleDragEnd(e) { draggedId = null; editorsContainer.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('dragging', 'drag-over')); }
-    function updateComponent(id, newData) { const component = components.find(c => c.id === id); if (!component) return; if (newData.style) { const key = Object.keys(newData.style)[0]; let value = Object.values(newData.style)[0]; if (key === 'fontSize' && !isNaN(value.trim()) && value.trim() !== '') { value = value.trim() + 'px'; } component.styles = { ...component.styles, [key]: value }; } else { Object.assign(component, newData); } renderPreview(); }
+    
+    function updateComponent(id, newData) { 
+        const component = components.find(c => c.id === id); 
+        if (!component) return; 
+        if (newData.style) { 
+            const key = Object.keys(newData.style)[0]; 
+            let value = Object.values(newData.style)[0]; 
+            if (key === 'fontSize' && !isNaN(value.trim()) && value.trim() !== '') { value = value.trim() + 'px'; } 
+            component.styles = { ...component.styles, [key]: value }; 
+        } else { 
+            Object.assign(component, newData); 
+        } 
+        renderPreview(); 
+    }
+
     function selectComponent(id) { activeComponentId = id; renderControls(); renderPreview(); const targetPanel = editorsContainer.querySelector(`.editor-panel[data-id="${id}"]`); if (targetPanel) targetPanel.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     
     function addComponent(type) { 
@@ -284,8 +303,7 @@
             case 'button': 
                 newComponent.content = 'Explore'; 
                 newComponent.link = ''; 
-                // v9.9 핵심: 버튼 기본 위치 '아래'로 변경
-                newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', verticalAlign: 'bottom'}; 
+                newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', verticalAlign: 'bottom', backgroundColorOpacity: 1 }; 
                 break; 
         } 
         components.push(newComponent); 
@@ -299,7 +317,20 @@
     function loadProject(timestamp) { const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const projectData = timestamp ? allProjects[timestamp] : Object.values(allProjects).pop(); if (projectData) { pageSettings = projectData.pageSettings; components = projectData.components; currentVersionTimestamp = timestamp || Object.keys(allProjects).pop(); } renderAll(); }
     function deleteVersion(timestamp) { if (!confirm(`${formatTimestamp(timestamp)} 버전을 정말 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return; const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); delete allProjects[timestamp]; localStorage.setItem(STORAGE_KEY, JSON.stringify(allProjects)); if (currentVersionTimestamp === timestamp) { currentVersionTimestamp = null; } initializeBuilder(); }
     function renderVersionHistory() { versionHistoryContainer.innerHTML = ''; const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const timestamps = Object.keys(allProjects).sort().reverse(); if (timestamps.length === 0) { versionHistoryContainer.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">저장된 버전이 없습니다.</p>'; return; } timestamps.forEach(ts => { const item = document.createElement('div'); item.className = 'version-item'; if (ts === currentVersionTimestamp) { item.classList.add('active'); } item.innerHTML = `<span>${formatTimestamp(ts)}</span><button class="version-delete-btn" title="이 버전 삭제">✖</button>`; item.onclick = (e) => { if (e.target.classList.contains('version-delete-btn')) { deleteVersion(ts); } else { loadProject(ts); } }; versionHistoryContainer.appendChild(item); }); }
-    function initializeBuilder() { const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const latestTimestamp = Object.keys(allProjects).sort().pop(); if (latestTimestamp) { loadProject(latestTimestamp); } else { renderAll(); if(components.length === 0) { addComponent('heading'); addComponent('paragraph'); addComponent('button'); } } }
+    
+    function initializeBuilder() {
+        const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const latestTimestamp = Object.keys(allProjects).sort().pop();
+        if (latestTimestamp) {
+            loadProject(latestTimestamp);
+        } else {
+            renderAll();
+            if(components.length === 0) {
+                // v9.14 변경점: 초기 블록을 버튼만 생성하도록 수정
+                addComponent('button');
+            }
+        }
+    }
     
     function exportHTML() {
         let usedFonts = new Set();
@@ -316,6 +347,12 @@
             }
             delete styles.textAlign;
             delete styles.verticalAlign;
+            if (c.type === 'button') {
+                const bgColor = styles.backgroundColor || '#1877f2';
+                const bgOpacity = styles.backgroundColorOpacity !== undefined ? styles.backgroundColorOpacity : 1;
+                styles.backgroundColor = hexToRgba(bgColor, bgOpacity);
+                delete styles.backgroundColorOpacity;
+            }
             const styleString = Object.entries(styles).map(([k, v]) => `${k.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v}`).join(';');
             const wrapperStyleString = Object.entries(wrapperStyles).map(([k, v]) => `${k.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v}`).join(';');
             let elementHTML = '';
@@ -330,16 +367,13 @@
             contentHTML += `<div class="animated-block" style="${wrapperStyleString}">${elementHTML}</div>\n`;
         });
         
-        // v9.9 핵심: 동영상 배경 export 로직
         let backgroundHTML = '';
-        if (pageSettings.bgVideo) {
-            backgroundHTML = `<video autoplay loop muted playsinline style="position: absolute; top: 50%; left: 50%; width: auto; height: auto; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); z-index: 0;"><source src="${pageSettings.bgVideo}" type="video/mp4"></video>`;
-        }
+        if (pageSettings.bgVideo) { backgroundHTML = `<video autoplay loop muted playsinline style="position: absolute; top: 50%; left: 50%; width: auto; height: auto; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); z-index: 0;"><source src="${pageSettings.bgVideo}" type="video/mp4"></video>`; }
         const bgStyle = pageSettings.bgImage && !pageSettings.bgVideo ? `background-image: url('${pageSettings.bgImage}');` : `background-color: ${pageSettings.bgColor};`;
         const overlayStyle = pageSettings.bgImage || pageSettings.bgVideo ? `background: rgba(0,0,0,0.4);` : '';
         const justifyStyle = components.some(c => c.type === 'button' && c.styles?.verticalAlign === 'bottom') ? 'flex-start' : 'center';
 
-        const finalHTML = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>My Page</title>${fontLink}<style>body,html{margin:0;padding:0;height:100%;font-family:sans-serif; overflow-x: hidden;} .container{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:${justifyStyle};position:relative;${bgStyle}background-size:cover;background-position:center;color:white;text-align:center;box-sizing:border-box;padding:40px; overflow-y: auto; overflow-x: hidden;} .container::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;${overlayStyle}; z-index: 1;} .content-wrapper{position:relative;z-index:2;width:100%;max-width:800px;display:flex;flex-direction:column;height:100%;} .content-wrapper div{width:100%;} .animated-block{transition: opacity 0.6s ease-out, transform 0.6s ease-out;opacity: 0;transform: translateY(20px);} .animated-block.is-visible{opacity: 1;transform: translateY(0);} button { cursor: pointer; transition: transform 0.1s ease; } button:active { transform: scale(0.98); }</style></head><body><div class="container">${backgroundHTML}<div class="content-wrapper">${contentHTML}</div></div><script>document.addEventListener('DOMContentLoaded', () => { const animatedBlocks = document.querySelectorAll('.animated-block'); const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }); }, { threshold: 0.1 }); animatedBlocks.forEach(block => { observer.observe(block); }); });<\/script></body></html>`;
+        const finalHTML = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>My Page</title>${fontLink}<style>body,html{margin:0;padding:0;height:100%;font-family:sans-serif; overflow-x: hidden;} .container{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:${justifyStyle};position:relative;${bgStyle}background-size:cover;background-position:center;color:white;text-align:center;box-sizing:border-box;padding:40px; overflow-y: auto; overflow-x: hidden;} .container::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;${overlayStyle}; z-index: 1;} .content-wrapper{position:relative;z-index:2;width:100%;max-width:800px;display:flex;flex-direction:column;height:100%;} .content-wrapper div{width:100%;} .animated-block{transition: opacity 0.6s ease-out, transform 0.6s ease-out;opacity: 0;transform: translateY(20px);} .animated-block.is-visible{opacity: 1;transform: translateY(0);} button { cursor: pointer; transition: transform 0.1s ease, background-color 0.3s; } button:active { transform: scale(0.98); }</style></head><body><div class="container">${backgroundHTML}<div class="content-wrapper">${contentHTML}</div></div><script>document.addEventListener('DOMContentLoaded', () => { const animatedBlocks = document.querySelectorAll('.animated-block'); const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }); }, { threshold: 0.1 }); animatedBlocks.forEach(block => { observer.observe(block); }); });<\/script></body></html>`;
         const blob = new Blob([finalHTML], { type: 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -354,7 +388,7 @@
     adders.forEach(button => button.addEventListener('click', () => addComponent(button.dataset.type)));
     pageBgColorInput.addEventListener('input', (e) => { pageSettings.bgColor = e.target.value; renderPreview(); });
     pageBackgroundImageInput.addEventListener('input', (e) => { pageSettings.bgImage = e.target.value; renderPreview(); });
-    pageBackgroundVideoInput.addEventListener('input', (e) => { pageSettings.bgVideo = e.target.value; renderPreview(); }); // 비디오 입력 이벤트
+    pageBackgroundVideoInput.addEventListener('input', (e) => { pageSettings.bgVideo = e.target.value; renderPreview(); });
     saveBtn.addEventListener('click', saveProject);
     exportBtn.addEventListener('click', exportHTML);
     initializeBuilder();
