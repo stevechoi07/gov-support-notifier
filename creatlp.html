@@ -3,227 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초간단 랜딩페이지 빌더 v2.0</title>
+    <title>creatlp v9.9 - 비디오 마스터 최종판</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Helvetica Neue', sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 20px;
-        }
-        .main-container {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-            max-width: 1200px;
-        }
-        #controls, #preview-container {
-            background-color: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        #controls {
-            flex-basis: 35%; /* 컨트롤 패널 너비 조정 */
-        }
-        #preview-container {
-            flex-basis: 65%;
-        }
-        h1, h2, h3 {
-            color: #1c1e21;
-        }
-        .input-group {
-            margin-bottom: 20px;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #606770;
-            font-weight: bold;
-        }
-        .input-group input, .input-group textarea {
-            width: 100%;
-            box-sizing: border-box; /* 패딩 포함해서 너비 100% */
-            padding: 10px;
-            border: 1px solid #dddfe2;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        input[type="color"] {
-            padding: 0; /* 컬러 피커는 패딩을 제거해야 예쁘게 보임 */
-            height: 40px;
-        }
-        #preview {
-            border: 2px dashed #ccd0d5;
-            padding: 40px 20px; /* 패딩 조정 */
-            border-radius: 6px;
-            text-align: center;
-            /* 배경 이미지 스타일 */
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            transition: all 0.3s ease; /* 부드러운 전환 효과 */
-        }
-        #preview-title, #preview-desc, #preview-btn {
-            transition: all 0.3s ease; /* 부드러운 전환 효과 */
-            text-shadow: 0px 1px 3px rgba(0,0,0,0.2); /* 텍스트 가독성을 위한 그림자 */
-        }
-        #preview-title {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        #preview-desc {
-            font-size: 1.2em;
-            margin-bottom: 25px;
-        }
-        #preview-btn {
-            border: none;
-            padding: 12px 24px;
-            font-size: 1em;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        #debug-tool {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 320px;
-            background-color: #333;
-            color: #0f0;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            font-size: 14px;
-        }
-        #debug-tool h3 {
-            color: #0f0; margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 5px;
-        }
+        :root { --primary-color: #1877f2; --background-color: #f0f2f5; --panel-bg: white; --text-color: #1c1e21; --border-color: #dddfe2; }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--background-color); margin: 0; padding: 20px; }
+        .main-container { display: flex; gap: 0; width: 100%; max-width: 1400px; margin: auto; align-items: flex-start; }
+        #controls-wrapper { flex: 0 0 400px; position: sticky; top: 20px; max-height: 95vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+        #controls-wrapper:hover { scrollbar-color: #ccc transparent; }
+        #controls-wrapper::-webkit-scrollbar { width: 8px; }
+        #controls-wrapper::-webkit-scrollbar-track { background: transparent; }
+        #controls-wrapper::-webkit-scrollbar-thumb { background-color: transparent; border-radius: 10px; }
+        #controls-wrapper:hover::-webkit-scrollbar-thumb { background-color: #ccc; }
+        .control-panel { background-color: var(--panel-bg); padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        #controls-wrapper .control-panel { border-radius: 8px 0 0 8px; }
+        #preview-container .control-panel { border-radius: 0 8px 8px 0; }
+        .control-panel h2, .control-panel h3 { color: var(--text-color); border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0; }
+        #preview-container { flex: 1; display: flex; flex-direction: column; }
+        .editor-panel { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: white; }
+        .editor-panel.selected { border-color: var(--primary-color); box-shadow: 0 0 10px rgba(24, 119, 242, 0.3); }
+        .editor-panel h4 { margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
+        .editor-panel.dragging { opacity: 0.5; }
+        .drag-over { border-top: 4px solid var(--primary-color) !important; transform: scale(1.02); }
+        .panel-controls .delete-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; color: #999; }
+        .panel-controls .delete-btn:hover { color: #d9534f; }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; margin-bottom: 5px; color: #606770; font-weight: 500; font-size: 14px; }
+        .control-group button, .control-group select, .viewport-btn { cursor: pointer; }
+        .control-group button, .control-group select, .control-group input, .control-group textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px; }
+        .inline-group { display: flex; justify-content: space-between; align-items: center; }
+        .inline-group label { margin-bottom: 0; }
+        .inline-group input[type="color"] { width: 42px; height: 32px; padding: 2px; flex-shrink: 0; border-radius: 4px; }
+        .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
+        .style-grid .control-group { margin-bottom: 0; }
+        .style-grid input[type="color"] { height: 42px; padding: 0; }
+        .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
+        .viewport-btn { background-color: #e4e6eb; border: 1px solid #ccc; color: #4b4f56; padding: 8px 12px; font-size: 14px; border-radius: 6px; }
+        .viewport-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        #preview-wrapper { width: 100%; flex-grow: 1; background-color: var(--background-color); display: flex; justify-content: flex-start; align-items: center; padding: 20px; box-sizing: border-box; }
+        #preview { background-color: var(--panel-bg); border-radius: 8px; position: relative; overflow: hidden; transition: all 0.4s ease-in-out; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        #preview.has-background { color: white; }
+        #preview .background-video { position: absolute; top: 50%; left: 50%; width: auto; height: auto; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); z-index: 0; }
+        #preview .background-image-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; z-index: 1; transition: background-image 0.3s; }
+        #preview .background-image-overlay::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 2; }
+        #preview .content-area { position: relative; z-index: 3; display: flex; flex-direction: column; height: 100%; padding: 40px; box-sizing: border-box; }
+        .preview-wrapper { width: 100%; padding: 10px 0; border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
+        .preview-wrapper.selected { background-color: rgba(231, 243, 255, 0.2); border-radius: 8px; }
+        .preview-wrapper .component-content { text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .preview-wrapper button.component-content { transition: transform 0.1s ease; }
+        .preview-wrapper button.component-content:active { transform: scale(0.98); }
+        #version-history-container { margin-top: 15px; }
+        #version-history { max-height: 150px; overflow-y: auto; padding: 5px; border: 1px solid var(--border-color); border-radius: 6px; }
+        .version-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; border-radius: 4px; }
+        .version-item:hover { background-color: #f0f2f5; }
+        .version-item.active { background-color: var(--primary-color); color: white; font-weight: bold; }
+        .version-item.active .version-delete-btn { color: white; }
+        .version-delete-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 0 5px; }
+        .version-delete-btn:hover { color: #d9534f; }
     </style>
 </head>
 <body>
     <div class="main-container">
-        <div id="controls">
-            <h2>🚀 컨트롤 패널 v2.0</h2>
-            <h3>- 내용 설정 -</h3>
-            <div class="input-group">
-                <label for="title-input">제목 (Headline)</label>
-                <input type="text" id="title-input" value="멋진 제품 소개!">
-            </div>
-            <div class="input-group">
-                <label for="desc-input">설명 (Description)</label>
-                <textarea id="desc-input" rows="4">우리 제품은 정말 최고입니다. 경험해보세요!</textarea>
-            </div>
-            <div class="input-group">
-                <label for="btn-input">버튼 텍스트 (Button Text)</label>
-                <input type="text" id="btn-input" value="지금 바로 구매하기">
-            </div>
-            <hr>
-            <h3>- 꾸미기 설정 -</h3>
-            <div class="input-group">
-                <label for="bgColor-input">배경색</label>
-                <input type="color" id="bgColor-input" value="#FFFFFF">
-            </div>
-            <div class="input-group">
-                <label for="textColor-input">글자색</label>
-                <input type="color" id="textColor-input" value="#333333">
-            </div>
-            <div class="input-group">
-                <label for="btnColor-input">버튼색</label>
-                <input type="color" id="btnColor-input" value="#1877f2">
-            </div>
-            <div class="input-group">
-                <label for="bgImage-input">배경 이미지 URL (선택)</label>
-                <input type="text" id="bgImage-input" placeholder="여기에 이미지 주소를 붙여넣으세요">
+        <div id="controls-wrapper">
+            <div class="control-panel">
+                <h2>🚀 빌더 v9.9</h2>
+                <h3>- 프리뷰 화면 설정 -</h3>
+                <div id="viewport-controls-left"></div>
+                <hr>
+                <h3>- 콘텐츠 블록 추가 -</h3>
+                <div class="control-group component-adders">
+                    <button data-type="heading">➕ 제목</button>
+                    <button data-type="paragraph">➕ 내용</button>
+                    <button data-type="button">➕ 버튼</button>
+                </div>
+                <hr>
+                <h3>- 페이지 배경 설정 -</h3>
+                <div class="control-group inline-group">
+                    <label for="page-bg-color">배경색</label>
+                    <input type="color" id="page-bg-color" value="#FFFFFF">
+                </div>
+                <div class="control-group">
+                    <label for="page-background-image">배경 이미지 URL</label>
+                    <input type="text" id="page-background-image" placeholder="https://example.com/image.jpg">
+                </div>
+                <!-- v9.9 핵심: 동영상 배경 URL 입력 필드 추가 -->
+                <div class="control-group">
+                    <label for="page-background-video">📹 배경 동영상 URL</label>
+                    <input type="text" id="page-background-video" placeholder="https://example.com/video.mp4">
+                </div>
+                <hr>
+                <div id="editors-container"></div>
+                <hr>
+                <h3>- 프로젝트 관리 -</h3>
+                <div class="control-group"><button id="save-btn">💾 현재 버전 저장</button></div>
+                <div id="version-history-container">
+                    <label>저장된 버전 목록</label>
+                    <div id="version-history"></div>
+                </div>
+                <div class="control-group" style="margin-top: 15px;"><button id="export-btn" style="background-color: #42b72a; color: white;">🚀 HTML 내보내기</button></div>
             </div>
         </div>
         <div id="preview-container">
-            <h2>👀 라이브 프리뷰</h2>
-            <div id="preview">
-                <h1 id="preview-title"></h1>
-                <p id="preview-desc"></p>
-                <button id="preview-btn"></button>
-            </div>
+             <div class="control-panel">
+                <h2>👀 라이브 프리뷰</h2>
+                <div id="preview-wrapper">
+                    <div id="preview">
+                        <!-- v9.9 핵심: video 태그 추가 -->
+                        <video class="background-video" autoplay loop muted playsinline></video>
+                        <div class="background-image-overlay"></div>
+                        <div class="content-area"></div>
+                    </div>
+                </div>
+             </div>
         </div>
     </div>
-    <div id="debug-tool">
-        <h3>🕵️ 개발자 디버깅 툴 v2.0</h3>
-        <p id="debug-title"></p>
-        <p id="debug-desc"></p>
-        <p id="debug-btn"></p>
-        <hr style="border-color: #555;">
-        <p id="debug-bgColor"></p>
-        <p id="debug-textColor"></p>
-        <p id="debug-btnColor"></p>
-        <p id="debug-bgImage"></p>
-    </div>
+
     <script>
-        // 1. 필요한 HTML 요소들을 자바스크립트 변수에 저장 (v2.0 요소 추가)
-        const titleInput = document.getElementById('title-input');
-        const descInput = document.getElementById('desc-input');
-        const btnInput = document.getElementById('btn-input');
-        const bgColorInput = document.getElementById('bgColor-input');
-        const textColorInput = document.getElementById('textColor-input');
-        const btnColorInput = document.getElementById('btnColor-input');
-        const bgImageInput = document.getElementById('bgImage-input');
+    // --- 1. 변수 설정 ---
+    const preview = document.getElementById('preview'), contentArea = preview.querySelector('.content-area'), backgroundImageOverlay = preview.querySelector('.background-image-overlay'), backgroundVideo = preview.querySelector('.background-video'), editorsContainer = document.getElementById('editors-container'), adders = document.querySelectorAll('.component-adders button'), pageBgColorInput = document.getElementById('page-bg-color'), pageBackgroundImageInput = document.getElementById('page-background-image'), pageBackgroundVideoInput = document.getElementById('page-background-video'), saveBtn = document.getElementById('save-btn'), exportBtn = document.getElementById('export-btn'), viewportControlsLeft = document.getElementById('viewport-controls-left'), versionHistoryContainer = document.getElementById('version-history');
+    let components = [], activeComponentId = null, pageSettings = { bgColor: '#FFFFFF', bgImage: '', bgVideo: '', viewport: '375px,667px' };
+    const viewportOptions = [ { id: 'mobile', label: '🤳', value: '375px,667px', title: '모바일' }, { id: 'tablet', label: '📱', value: '768px,1024px', title: '태블릿' }, { id: 'desktop', label: '🖥️', value: '1280px,800px', title: '데스크탑' }, { id: 'full', label: '전체', value: '100%,calc(95vh - 100px)', title: '전체 화면' } ];
+    let draggedId = null, currentVersionTimestamp = null;
+    const STORAGE_KEY = 'creatlp_projects_v9_9';
 
-        const preview = document.getElementById('preview');
-        const previewTitle = document.getElementById('preview-title');
-        const previewDesc = document.getElementById('preview-desc');
-        const previewBtn = document.getElementById('preview-btn');
+    // --- 2. 렌더링 함수들 ---
+    function renderAll() { renderPreview(); renderControls(); renderViewportControls(); renderVersionHistory(); }
+
+    function renderPreview() {
+        contentArea.innerHTML = '';
         
-        // 디버깅 툴 요소들도 변수에 저장
-        const debugTitle = document.getElementById('debug-title');
-        const debugDesc = document.getElementById('debug-desc');
-        const debugBtn = document.getElementById('debug-btn');
-        const debugBgColor = document.getElementById('debug-bgColor');
-        const debugTextColor = document.getElementById('debug-textColor');
-        const debugBtnColor = document.getElementById('debug-btnColor');
-        const debugBgImage = document.getElementById('debug-bgImage');
-
-        // 2. 미리보기를 업데이트하는 함수(마법 주문) 업그레이드!
-        function updatePreview() {
-            // v1.0 기능: 텍스트 업데이트
-            previewTitle.textContent = titleInput.value;
-            previewDesc.textContent = descInput.value;
-            previewBtn.textContent = btnInput.value;
-            
-            // v2.0 기능: 스타일(CSS) 업데이트
-            preview.style.backgroundColor = bgColorInput.value;
-            previewTitle.style.color = textColorInput.value;
-            previewDesc.style.color = textColorInput.value;
-            previewBtn.style.backgroundColor = btnColorInput.value;
-
-            // 배경 이미지 URL이 있으면 적용, 없으면 제거
-            if (bgImageInput.value) {
-                preview.style.backgroundImage = `url(${bgImageInput.value})`;
-            } else {
-                preview.style.backgroundImage = 'none';
-            }
-            
-            // 디버깅 툴에도 현재 값을 표시
-            debugTitle.textContent = `title: "${titleInput.value}"`;
-            debugDesc.textContent = `description: "${descInput.value}"`;
-            debugBtn.textContent = `button: "${btnInput.value}"`;
-            debugBgColor.textContent = `bgColor: "${bgColorInput.value}"`;
-            debugTextColor.textContent = `textColor: "${textColorInput.value}"`;
-            debugBtnColor.textContent = `btnColor: "${btnColorInput.value}"`;
-            debugBgImage.textContent = `bgImage: "${bgImageInput.value}"`;
+        // v9.9 핵심: 배경 우선순위 적용 (비디오 > 이미지 > 색상)
+        if (pageSettings.bgVideo) {
+            backgroundVideo.src = pageSettings.bgVideo;
+            backgroundVideo.style.display = 'block';
+            backgroundImageOverlay.style.display = 'none';
+            preview.style.backgroundColor = 'transparent';
+            preview.classList.add('has-background');
+        } else if (pageSettings.bgImage) {
+            backgroundVideo.style.display = 'none';
+            backgroundImageOverlay.style.backgroundImage = `url('${pageSettings.bgImage}')`;
+            backgroundImageOverlay.style.display = 'block';
+            preview.style.backgroundColor = 'transparent';
+            preview.classList.add('has-background');
+        } else {
+            backgroundVideo.style.display = 'none';
+            backgroundImageOverlay.style.display = 'none';
+            preview.style.backgroundColor = pageSettings.bgColor;
+            preview.classList.remove('has-background');
         }
 
-        // 3. 모든 입력창에 'updatePreview' 마법 주문 연결
-        const allInputs = [titleInput, descInput, btnInput, bgColorInput, textColorInput, btnColorInput, bgImageInput];
-        allInputs.forEach(input => {
-            input.addEventListener('input', updatePreview);
-        });
+        const [width, height] = pageSettings.viewport.split(',');
+        preview.style.width = width;
+        preview.style.height = height;
+        contentArea.style.justifyContent = 'center';
 
-        // 4. 페이지가 처음 로드될 때 한 번 실행해서 초기값 설정
-        updatePreview();
+        components.forEach(c => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'preview-wrapper';
+            wrapper.dataset.id = c.id;
+            if (c.id === activeComponentId) wrapper.classList.add('selected');
+            wrapper.onclick = () => selectComponent(c.id);
+            if (c.type === 'button' && c.styles?.verticalAlign === 'bottom') {
+                wrapper.style.marginTop = 'auto';
+                contentArea.style.justifyContent = 'flex-start';
+            } else {
+                wrapper.style.marginTop = '';
+            }
+            wrapper.style.textAlign = c.styles?.textAlign || 'center';
+            let element;
+            switch(c.type) {
+                case 'heading': element = document.createElement('h1'); element.textContent = c.content; break;
+                case 'paragraph': element = document.createElement('p'); element.textContent = c.content; break;
+                case 'button': element = document.createElement('button'); element.textContent = c.content; break;
+            }
+            element.className = 'component-content';
+            const { textAlign, verticalAlign, ...otherStyles } = c.styles || {};
+            Object.assign(element.style, otherStyles);
+            wrapper.appendChild(element);
+            contentArea.appendChild(wrapper);
+        });
+    }
+
+    function renderControls() {
+        pageBgColorInput.value = pageSettings.bgColor;
+        pageBackgroundImageInput.value = pageSettings.bgImage;
+        pageBackgroundVideoInput.value = pageSettings.bgVideo; // 비디오 URL 필드 값 설정
+        editorsContainer.innerHTML = '';
+        components.forEach((c) => {
+            const panel = document.createElement('div');
+            panel.className = 'editor-panel';
+            panel.dataset.id = c.id;
+            panel.draggable = true; 
+            if (c.id === activeComponentId) panel.classList.add('selected');
+            let contentHTML = `<div class="control-group"><label>내용</label><textarea data-prop="content">${c.content}</textarea></div>`;
+            if (c.type === 'button') {
+                contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`;
+            }
+            let fontSelectorHTML = '';
+            if (['heading', 'paragraph', 'button'].includes(c.type)) {
+                fontSelectorHTML = `<div class="control-group"><label>글꼴</label><select data-style="fontFamily"><option value="'Noto Sans KR', sans-serif">깔끔 고딕체</option><option value="'Nanum Myeongjo', serif">부드러운 명조체</option><option value="'Gaegu', cursive">귀여운 손글씨체</option></select></div>`;
+            }
+            let styleGridHTML = '<div class="style-grid">';
+            if (c.type === 'button') {
+                styleGridHTML += `<div class="control-group"><label>위치</label><select data-style="verticalAlign"><option value="center">가운데</option><option value="bottom">아래</option></select></div>`;
+            } else {
+                 styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`;
+            }
+            if (['heading', 'paragraph', 'button'].includes(c.type)) {
+                styleGridHTML += `<div class="control-group"><label>글자색</label><input type="color" data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`;
+                styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
+            }
+            if(c.type === 'button') {
+                styleGridHTML += `<div class="control-group"><label>버튼 배경색</label><input type="color" data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`;
+            }
+            styleGridHTML += '</div>';
+            panel.innerHTML = `<h4>${c.type} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${contentHTML}${fontSelectorHTML}${styleGridHTML}`;
+            editorsContainer.appendChild(panel);
+            const textAlignSelect = panel.querySelector('[data-style="textAlign"]');
+            if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center';
+            const verticalAlignSelect = panel.querySelector('[data-style="verticalAlign"]');
+            if(verticalAlignSelect) verticalAlignSelect.value = c.styles?.verticalAlign || 'center';
+            const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]');
+            if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
+        });
+        attachEventListenersToControls();
+    }
+    
+    function renderViewportControls() {
+        viewportControlsLeft.innerHTML = '';
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'viewport-controls';
+        viewportOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'viewport-btn';
+            btn.dataset.value = opt.value;
+            btn.title = opt.title;
+            btn.innerHTML = opt.label;
+            if (pageSettings.viewport === opt.value) btn.classList.add('active');
+            btn.onclick = () => { pageSettings.viewport = opt.value; renderAll(); };
+            btnGroup.appendChild(btn);
+        });
+        viewportControlsLeft.appendChild(btnGroup);
+    }
+
+    function attachEventListenersToControls() {
+        editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
+            const id = Number(panel.dataset.id);
+            panel.querySelectorAll('[data-prop], [data-style]').forEach(input => {
+                input.oninput = () => {
+                    const isStyle = input.dataset.style;
+                    const key = isStyle || input.dataset.prop;
+                    const value = input.value;
+                    updateComponent(id, isStyle ? { style: { [key]: value } } : { [key]: value });
+                };
+            });
+            panel.querySelector('.delete-btn').onclick = () => deleteComponent(id);
+            panel.addEventListener('dragstart', handleDragStart);
+            panel.addEventListener('dragover', handleDragOver);
+            panel.addEventListener('dragleave', handleDragLeave);
+            panel.addEventListener('drop', handleDrop);
+            panel.addEventListener('dragend', handleDragEnd);
+        });
+    }
+
+    function handleDragStart(e) { draggedId = Number(this.dataset.id); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+    function handleDragOver(e) { e.preventDefault(); const draggedElement = editorsContainer.querySelector('.dragging'); if (draggedElement && draggedElement !== this) { this.classList.add('drag-over'); } }
+    function handleDragLeave(e) { this.classList.remove('drag-over'); }
+    function handleDrop(e) { e.stopPropagation(); const fromIndex = components.findIndex(c => c.id === draggedId); const toIndex = components.findIndex(c => c.id === Number(this.dataset.id)); if (fromIndex !== -1 && toIndex !== -1) { const item = components.splice(fromIndex, 1)[0]; components.splice(toIndex, 0, item); renderAll(); } }
+    function handleDragEnd(e) { draggedId = null; editorsContainer.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('dragging', 'drag-over')); }
+    function updateComponent(id, newData) { const component = components.find(c => c.id === id); if (!component) return; if (newData.style) { const key = Object.keys(newData.style)[0]; let value = Object.values(newData.style)[0]; if (key === 'fontSize' && !isNaN(value.trim()) && value.trim() !== '') { value = value.trim() + 'px'; } component.styles = { ...component.styles, [key]: value }; } else { Object.assign(component, newData); } renderPreview(); }
+    function selectComponent(id) { activeComponentId = id; renderControls(); renderPreview(); const targetPanel = editorsContainer.querySelector(`.editor-panel[data-id="${id}"]`); if (targetPanel) targetPanel.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    
+    function addComponent(type) { 
+        const newComponent = { id: Date.now(), type, styles: { fontFamily: "'Noto Sans KR', sans-serif" } }; 
+        switch(type) { 
+            case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break; 
+            case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break; 
+            case 'button': 
+                newComponent.content = 'Explore'; 
+                newComponent.link = ''; 
+                // v9.9 핵심: 버튼 기본 위치 '아래'로 변경
+                newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', verticalAlign: 'bottom'}; 
+                break; 
+        } 
+        components.push(newComponent); 
+        selectComponent(newComponent.id); 
+    }
+
+    function deleteComponent(id) { if (!confirm('블록을 삭제하시겠습니까?')) return; components = components.filter(c => c.id !== id); if (activeComponentId === id) activeComponentId = null; renderAll(); }
+    function getTimestamp() { const d = new Date(); const pad = (n) => n.toString().padStart(2, '0'); return `${d.getFullYear().toString().slice(-2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
+    function formatTimestamp(ts) { return `20${ts.slice(0,2)}/${ts.slice(2,4)}/${ts.slice(4,6)} ${ts.slice(6,8)}:${ts.slice(8,10)}:${ts.slice(10,12)}`; }
+    function saveProject() { const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const timestamp = getTimestamp(); const currentProjectData = { pageSettings, components }; allProjects[timestamp] = currentProjectData; localStorage.setItem(STORAGE_KEY, JSON.stringify(allProjects)); currentVersionTimestamp = timestamp; const originalText = saveBtn.textContent; saveBtn.textContent = '✅ 저장 완료!'; setTimeout(() => saveBtn.textContent = originalText, 2000); renderVersionHistory(); }
+    function loadProject(timestamp) { const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const projectData = timestamp ? allProjects[timestamp] : Object.values(allProjects).pop(); if (projectData) { pageSettings = projectData.pageSettings; components = projectData.components; currentVersionTimestamp = timestamp || Object.keys(allProjects).pop(); } renderAll(); }
+    function deleteVersion(timestamp) { if (!confirm(`${formatTimestamp(timestamp)} 버전을 정말 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return; const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); delete allProjects[timestamp]; localStorage.setItem(STORAGE_KEY, JSON.stringify(allProjects)); if (currentVersionTimestamp === timestamp) { currentVersionTimestamp = null; } initializeBuilder(); }
+    function renderVersionHistory() { versionHistoryContainer.innerHTML = ''; const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const timestamps = Object.keys(allProjects).sort().reverse(); if (timestamps.length === 0) { versionHistoryContainer.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">저장된 버전이 없습니다.</p>'; return; } timestamps.forEach(ts => { const item = document.createElement('div'); item.className = 'version-item'; if (ts === currentVersionTimestamp) { item.classList.add('active'); } item.innerHTML = `<span>${formatTimestamp(ts)}</span><button class="version-delete-btn" title="이 버전 삭제">✖</button>`; item.onclick = (e) => { if (e.target.classList.contains('version-delete-btn')) { deleteVersion(ts); } else { loadProject(ts); } }; versionHistoryContainer.appendChild(item); }); }
+    function initializeBuilder() { const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const latestTimestamp = Object.keys(allProjects).sort().pop(); if (latestTimestamp) { loadProject(latestTimestamp); } else { renderAll(); if(components.length === 0) { addComponent('heading'); addComponent('paragraph'); addComponent('button'); } } }
+    
+    function exportHTML() {
+        let usedFonts = new Set();
+        components.forEach(c => {
+            if(c.styles?.fontFamily) usedFonts.add(c.styles.fontFamily.split(',')[0].replace(/'/g, "").replace(/ /g, "+"));
+        });
+        const fontLink = usedFonts.size > 0 ? `<link href="https://fonts.googleapis.com/css2?family=${[...usedFonts].join('&family=')}:wght@400;700&display=swap" rel="stylesheet">` : '';
+        let contentHTML = '';
+        components.forEach(c => {
+            const styles = { ...c.styles };
+            const wrapperStyles = { textAlign: styles.textAlign || 'center' };
+            if (c.type === 'button' && styles.verticalAlign === 'bottom') {
+                wrapperStyles.marginTop = 'auto';
+            }
+            delete styles.textAlign;
+            delete styles.verticalAlign;
+            const styleString = Object.entries(styles).map(([k, v]) => `${k.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v}`).join(';');
+            const wrapperStyleString = Object.entries(wrapperStyles).map(([k, v]) => `${k.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v}`).join(';');
+            let elementHTML = '';
+            switch(c.type) {
+                case 'heading': elementHTML = `<h1 style="${styleString}">${c.content}</h1>`; break;
+                case 'paragraph': elementHTML = `<p style="${styleString}">${c.content}</p>`; break;
+                case 'button': 
+                    const linkAction = c.link ? `onclick="window.open('${c.link.startsWith('http') ? c.link : 'http://' + c.link}', '_blank')"` : '';
+                    elementHTML = `<button style="${styleString}" ${linkAction}>${c.content}</button>`; 
+                    break;
+            }
+            contentHTML += `<div class="animated-block" style="${wrapperStyleString}">${elementHTML}</div>\n`;
+        });
+        
+        // v9.9 핵심: 동영상 배경 export 로직
+        let backgroundHTML = '';
+        if (pageSettings.bgVideo) {
+            backgroundHTML = `<video autoplay loop muted playsinline style="position: absolute; top: 50%; left: 50%; width: auto; height: auto; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); z-index: 0;"><source src="${pageSettings.bgVideo}" type="video/mp4"></video>`;
+        }
+        const bgStyle = pageSettings.bgImage && !pageSettings.bgVideo ? `background-image: url('${pageSettings.bgImage}');` : `background-color: ${pageSettings.bgColor};`;
+        const overlayStyle = pageSettings.bgImage || pageSettings.bgVideo ? `background: rgba(0,0,0,0.4);` : '';
+        const justifyStyle = components.some(c => c.type === 'button' && c.styles?.verticalAlign === 'bottom') ? 'flex-start' : 'center';
+
+        const finalHTML = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>My Page</title>${fontLink}<style>body,html{margin:0;padding:0;height:100%;font-family:sans-serif; overflow-x: hidden;} .container{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:${justifyStyle};position:relative;${bgStyle}background-size:cover;background-position:center;color:white;text-align:center;box-sizing:border-box;padding:40px; overflow-y: auto; overflow-x: hidden;} .container::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;${overlayStyle}; z-index: 1;} .content-wrapper{position:relative;z-index:2;width:100%;max-width:800px;display:flex;flex-direction:column;height:100%;} .content-wrapper div{width:100%;} .animated-block{transition: opacity 0.6s ease-out, transform 0.6s ease-out;opacity: 0;transform: translateY(20px);} .animated-block.is-visible{opacity: 1;transform: translateY(0);} button { cursor: pointer; transition: transform 0.1s ease; } button:active { transform: scale(0.98); }</style></head><body><div class="container">${backgroundHTML}<div class="content-wrapper">${contentHTML}</div></div><script>document.addEventListener('DOMContentLoaded', () => { const animatedBlocks = document.querySelectorAll('.animated-block'); const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }); }, { threshold: 0.1 }); animatedBlocks.forEach(block => { observer.observe(block); }); });<\/script></body></html>`;
+        const blob = new Blob([finalHTML], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'creatlp.html';
+        a.click();
+        const originalText = exportBtn.textContent;
+        exportBtn.textContent = '✅ 내보내기 완료!';
+        setTimeout(() => exportBtn.textContent = originalText, 2000);
+    }
+
+    // --- 4. 이벤트 연결 및 초기 실행 ---
+    adders.forEach(button => button.addEventListener('click', () => addComponent(button.dataset.type)));
+    pageBgColorInput.addEventListener('input', (e) => { pageSettings.bgColor = e.target.value; renderPreview(); });
+    pageBackgroundImageInput.addEventListener('input', (e) => { pageSettings.bgImage = e.target.value; renderPreview(); });
+    pageBackgroundVideoInput.addEventListener('input', (e) => { pageSettings.bgVideo = e.target.value; renderPreview(); }); // 비디오 입력 이벤트
+    saveBtn.addEventListener('click', saveProject);
+    exportBtn.addEventListener('click', exportHTML);
+    initializeBuilder();
     </script>
 </body>
 </html>
