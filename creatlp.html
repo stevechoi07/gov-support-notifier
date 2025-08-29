@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초간단 랜딩페이지 빌더 v2.0</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        #controls, #preview-container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        #controls {
+            flex-basis: 35%; /* 컨트롤 패널 너비 조정 */
+        }
+        #preview-container {
+            flex-basis: 65%;
+        }
+        h1, h2, h3 {
+            color: #1c1e21;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #606770;
+            font-weight: bold;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            box-sizing: border-box; /* 패딩 포함해서 너비 100% */
+            padding: 10px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        input[type="color"] {
+            padding: 0; /* 컬러 피커는 패딩을 제거해야 예쁘게 보임 */
+            height: 40px;
+        }
+        #preview {
+            border: 2px dashed #ccd0d5;
+            padding: 40px 20px; /* 패딩 조정 */
+            border-radius: 6px;
+            text-align: center;
+            /* 배경 이미지 스타일 */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: all 0.3s ease; /* 부드러운 전환 효과 */
+        }
+        #preview-title, #preview-desc, #preview-btn {
+            transition: all 0.3s ease; /* 부드러운 전환 효과 */
+            text-shadow: 0px 1px 3px rgba(0,0,0,0.2); /* 텍스트 가독성을 위한 그림자 */
+        }
+        #preview-title {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        #preview-desc {
+            font-size: 1.2em;
+            margin-bottom: 25px;
+        }
+        #preview-btn {
+            border: none;
+            padding: 12px 24px;
+            font-size: 1em;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #debug-tool {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 320px;
+            background-color: #333;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            font-size: 14px;
+        }
+        #debug-tool h3 {
+            color: #0f0; margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div id="controls">
+            <h2>🚀 컨트롤 패널 v2.0</h2>
+            <h3>- 내용 설정 -</h3>
+            <div class="input-group">
+                <label for="title-input">제목 (Headline)</label>
+                <input type="text" id="title-input" value="멋진 제품 소개!">
+            </div>
+            <div class="input-group">
+                <label for="desc-input">설명 (Description)</label>
+                <textarea id="desc-input" rows="4">우리 제품은 정말 최고입니다. 경험해보세요!</textarea>
+            </div>
+            <div class="input-group">
+                <label for="btn-input">버튼 텍스트 (Button Text)</label>
+                <input type="text" id="btn-input" value="지금 바로 구매하기">
+            </div>
+            <hr>
+            <h3>- 꾸미기 설정 -</h3>
+            <div class="input-group">
+                <label for="bgColor-input">배경색</label>
+                <input type="color" id="bgColor-input" value="#FFFFFF">
+            </div>
+            <div class="input-group">
+                <label for="textColor-input">글자색</label>
+                <input type="color" id="textColor-input" value="#333333">
+            </div>
+            <div class="input-group">
+                <label for="btnColor-input">버튼색</label>
+                <input type="color" id="btnColor-input" value="#1877f2">
+            </div>
+            <div class="input-group">
+                <label for="bgImage-input">배경 이미지 URL (선택)</label>
+                <input type="text" id="bgImage-input" placeholder="여기에 이미지 주소를 붙여넣으세요">
+            </div>
+        </div>
+        <div id="preview-container">
+            <h2>👀 라이브 프리뷰</h2>
+            <div id="preview">
+                <h1 id="preview-title"></h1>
+                <p id="preview-desc"></p>
+                <button id="preview-btn"></button>
+            </div>
+        </div>
+    </div>
+    <div id="debug-tool">
+        <h3>🕵️ 개발자 디버깅 툴 v2.0</h3>
+        <p id="debug-title"></p>
+        <p id="debug-desc"></p>
+        <p id="debug-btn"></p>
+        <hr style="border-color: #555;">
+        <p id="debug-bgColor"></p>
+        <p id="debug-textColor"></p>
+        <p id="debug-btnColor"></p>
+        <p id="debug-bgImage"></p>
+    </div>
+    <script>
+        // 1. 필요한 HTML 요소들을 자바스크립트 변수에 저장 (v2.0 요소 추가)
+        const titleInput = document.getElementById('title-input');
+        const descInput = document.getElementById('desc-input');
+        const btnInput = document.getElementById('btn-input');
+        const bgColorInput = document.getElementById('bgColor-input');
+        const textColorInput = document.getElementById('textColor-input');
+        const btnColorInput = document.getElementById('btnColor-input');
+        const bgImageInput = document.getElementById('bgImage-input');
+
+        const preview = document.getElementById('preview');
+        const previewTitle = document.getElementById('preview-title');
+        const previewDesc = document.getElementById('preview-desc');
+        const previewBtn = document.getElementById('preview-btn');
+        
+        // 디버깅 툴 요소들도 변수에 저장
+        const debugTitle = document.getElementById('debug-title');
+        const debugDesc = document.getElementById('debug-desc');
+        const debugBtn = document.getElementById('debug-btn');
+        const debugBgColor = document.getElementById('debug-bgColor');
+        const debugTextColor = document.getElementById('debug-textColor');
+        const debugBtnColor = document.getElementById('debug-btnColor');
+        const debugBgImage = document.getElementById('debug-bgImage');
+
+        // 2. 미리보기를 업데이트하는 함수(마법 주문) 업그레이드!
+        function updatePreview() {
+            // v1.0 기능: 텍스트 업데이트
+            previewTitle.textContent = titleInput.value;
+            previewDesc.textContent = descInput.value;
+            previewBtn.textContent = btnInput.value;
+            
+            // v2.0 기능: 스타일(CSS) 업데이트
+            preview.style.backgroundColor = bgColorInput.value;
+            previewTitle.style.color = textColorInput.value;
+            previewDesc.style.color = textColorInput.value;
+            previewBtn.style.backgroundColor = btnColorInput.value;
+
+            // 배경 이미지 URL이 있으면 적용, 없으면 제거
+            if (bgImageInput.value) {
+                preview.style.backgroundImage = `url(${bgImageInput.value})`;
+            } else {
+                preview.style.backgroundImage = 'none';
+            }
+            
+            // 디버깅 툴에도 현재 값을 표시
+            debugTitle.textContent = `title: "${titleInput.value}"`;
+            debugDesc.textContent = `description: "${descInput.value}"`;
+            debugBtn.textContent = `button: "${btnInput.value}"`;
+            debugBgColor.textContent = `bgColor: "${bgColorInput.value}"`;
+            debugTextColor.textContent = `textColor: "${textColorInput.value}"`;
+            debugBtnColor.textContent = `btnColor: "${btnColorInput.value}"`;
+            debugBgImage.textContent = `bgImage: "${bgImageInput.value}"`;
+        }
+
+        // 3. 모든 입력창에 'updatePreview' 마법 주문 연결
+        const allInputs = [titleInput, descInput, btnInput, bgColorInput, textColorInput, btnColorInput, bgImageInput];
+        allInputs.forEach(input => {
+            input.addEventListener('input', updatePreview);
+        });
+
+        // 4. 페이지가 처음 로드될 때 한 번 실행해서 초기값 설정
+        updatePreview();
+    </script>
+</body>
+</html>
