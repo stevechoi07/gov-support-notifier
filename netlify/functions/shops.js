@@ -1,82 +1,101 @@
-// 서버리스 환경에서는 axios와 같은 라이브러리만 필요합니다.
+// netlify/functions/shops.js
+
+// 이 파일은 GD Shop의 '주방(백엔드)' 역할을 하는 서버리스 함수입니다.
+// 손님(프론트엔드)의 요청에 맞춰 실시간으로 가게 데이터를 요리해서 제공합니다.
+
 const axios = require('axios');
 
-// ================================================================
-// 🚨 V4.0 보안 강화: API 키는 이제 Netlify 환경변수를 사용합니다!
-// Netlify 대시보드에서 직접 설정해야 합니다. 더 이상 코드에 키를 노출하지 마세요!
+// --- 셰프님의 비밀 레시피 노트 ---
+// Netlify 환경변수에서 API 키를 안전하게 불러옵니다.
 const publicDataServiceKey = process.env.PUBLIC_DATA_API_KEY;
 const kakaoRestApiKey = process.env.KAKAO_REST_API_KEY;
-// ================================================================
 
-// v3.0의 '특급 재료 냉장고'(캐시) 개념을 그대로 가져옵니다.
-let shopCache = [];
+// --- 주방의 특급 냉장고 (캐시) ---
+// 서버가 켜질 때 딱 한 번만 모든 재료를 손질해서 보관해 둡니다.
+let shopCache = null;
 
-// 재료 준비 함수 (v3.0과 동일)
-async function initializeCache() {
-    console.log("🌞 Cold Start! 서버리스 주방 오픈 준비 중: 재료를 공수합니다...");
+// --- 새벽 시장 장보기 (서버 시작 시 1회 실행) ---
+// 1. 공공데이터포털에서 가게 목록(주소만 있음)을 가져옵니다.
+// 2. 카카오 API로 각 가게의 주소를 좌표로 변환합니다.
+// 3. 모든 정보가 합쳐진 최종 데이터를 '특급 냉장고(shopCache)'에 저장합니다.
+async function prepareShopCache() {
+    if (shopCache) return; // 이미 재료가 준비되었다면 건너뜁니다.
+    console.log('🍳 주방 오픈 준비! 새벽 시장에서 재료를 손질하는 중...');
+
     try {
-        const publicApiUrl = `https://api.odcloud.kr/api/3045247/v1/uddi:6c32457a-bd61-4721-8dfd-c7b18991bf3e`;
-        const publicApiResponse = await axios.get(publicApiUrl, {
-            params: { page: 1, perPage: 300, serviceKey: publicDataServiceKey },
-        });
-        
-        let originalShops = publicApiResponse.data.data;
-        console.log(`🛒 1단계: 재료 ${originalShops.length}개 확보 완료!`);
+        const publicApiUrl = `https://api.odcloud.kr/api/3045247/v1/uddi:6c32457a-bd61-4721-8dfd-c7b18991bf3e?page=1&perPage=300&serviceKey=${publicDataServiceKey}`;
+        const response = await axios.get(publicApiUrl);
+        const originalShops = response.data.data;
 
-        console.log("🍳 2단계: 주소 좌표 변환 중 (최초 실행 시 시간이 걸립니다)...");
         const geocoder = axios.create({
             headers: { 'Authorization': `KakaoAK ${kakaoRestApiKey}` }
         });
-        const geocodingPromises = originalShops.map(shop => 
-            geocoder.get('https://dapi.kakao.com/v2/local/search/address.json', {
-                params: { query: shop['주소'] }
-            }).then(res => {
-                if (res.data.documents.length > 0) {
-                    shop.lat = parseFloat(res.data.documents[0].y);
-                    shop.lng = parseFloat(res.data.documents[0].x);
-                }
-                return shop;
-            }).catch(err => shop)
-        );
 
-        shopCache = (await Promise.all(geocodingPromises)).filter(shop => shop.lat && shop.lng);
-        console.log(`✅ 오픈 준비 완료! 냉장고에 ${shopCache.length}개의 재료 보관 완료!`);
+        const geocodingPromises = originalShops.map(shop => {
+            return geocoder.get('https://dapi.kakao.com/v2/local/search/address.json', { params: { query: shop['주소'] } })
+                .then(res => {
+                    if (res.data.documents.length > 0) {
+                        shop.lat = parseFloat(res.data.documents[0].y);
+                        shop.lng = parseFloat(res.data.documents[0].x);
+                    }
+                    return shop;
+                }).catch(() => {
+                    // 주소 변환에 실패해도 일단 가게 정보는 유지합니다.
+                    return shop;
+                });
+        });
+
+        const settledShops = await Promise.all(geocodingPromises);
+        shopCache = settledShops.filter(shop => shop.lat && shop.lng); // 좌표가 있는 가게만 최종 저장
+
+        console.log(`✅ 재료 준비 완료! ${shopCache.length}개의 가게를 특급 냉장고에 보관했습니다.`);
     } catch (error) {
-        console.error("🔥 오픈 준비 중 화재 발생!", error.response ? error.response.data : error.message);
+        console.error('🔥 새벽 시장에서 문제 발생!', error.response ? error.response.data : error.message);
+        shopCache = []; // 오류 발생 시 빈 냉장고로 설정
     }
 }
 
-// Netlify 서버리스 함수의 메인 핸들러
-exports.handler = async (event, context) => {
-    // ⭐️ 서버가 켜져있는게 아니라, 주문이 올 때마다 이 함수가 실행됩니다!
-    
-    // 만약 냉장고가 비어있다면(Cold Start), 딱 한번만 재료를 채웁니다.
-    if (shopCache.length === 0) {
-        await initializeCache();
-    } else {
-        console.log("👍 Warm Start! 이미 채워진 냉장고를 사용합니다.");
+// --- 손님 주문 처리 메인 로직 ---
+exports.handler = async (event) => {
+    // 서버가 처음 켜졌거나 재료가 없다면, 먼저 재료부터 준비합니다.
+    if (!shopCache) {
+        await prepareShopCache();
     }
 
-    // 홀에서 보낸 주문 정보(query parameters)를 확인합니다.
     const { lat, lng, category, page = 1 } = event.queryStringParameters;
-    
-    // v3.0의 주문 처리 로직은 여기서부터 동일합니다.
-    let filteredShops = shopCache;
-    if (category && category !== '전체') {
-        filteredShops = shopCache.filter(shop => shop['업종'].includes(category));
-    }
-    
-    filteredShops.forEach(shop => {
-        shop.distance = getDistance(lat, lng, shop.lat, shop.lng);
+    const perPage = 12;
+
+    // 1. (거리 계산) 손님 위치와 냉장고의 모든 재료 사이의 거리를 계산합니다.
+    const shopsWithDistance = shopCache.map(shop => {
+        const distance = getDistance(lat, lng, shop.lat, shop.lng);
+        return { ...shop, distance };
     });
 
-    filteredShops.sort((a, b) => a.distance - b.distance);
+    // 2. (필터링) v6.1 업데이트: '깐깐한' 필터링에서 '똑똑한' 필터링으로 변경!
+    let filteredShops = shopsWithDistance;
+    if (category && category !== '전체') {
+        if (category === '서비스') {
+            const serviceKeywords = ['세탁', '미용', '이용', '목욕', '숙박', '서비스'];
+            filteredShops = shopsWithDistance.filter(shop => {
+                const shopCategory = shop['업종'] || '';
+                return serviceKeywords.some(keyword => shopCategory.includes(keyword));
+            });
+        } else {
+            // '한식', '중식' 등도 이제 포함 여부로 확인하여 더 유연하게 대응합니다.
+            filteredShops = shopsWithDistance.filter(shop => {
+                 const shopCategory = shop['업종'] || '';
+                 return shopCategory.includes(category);
+            });
+        }
+    }
     
-    const perPage = 12;
-    const startIndex = (page - 1) * perPage;
-    const paginatedShops = filteredShops.slice(startIndex, startIndex + perPage);
+    // 3. (정렬) 필터링된 결과를 가까운 순으로 정렬합니다.
+    const sortedShops = filteredShops.sort((a, b) => a.distance - b.distance);
+    
+    // 4. (페이지네이션) 정렬된 결과에서 손님이 요청한 페이지의 12개만 잘라서 드립니다.
+    const paginatedShops = sortedShops.slice((page - 1) * perPage, page * perPage);
 
-    // 홀(프론트엔드)로 요리를 전달합니다. 이 형식을 반드시 지켜야 합니다.
+    // 5. (서빙) 완성된 요리를 홀로 내보냅니다.
     return {
         statusCode: 200,
         headers: { "Content-Type": "application/json" },
@@ -84,17 +103,14 @@ exports.handler = async (event, context) => {
     };
 };
 
-// 거리 계산 함수 (v3.0과 동일)
+// --- 유틸리티 함수: 두 지점 간의 거리 계산 (하버사인 공식) ---
 function getDistance(lat1, lon1, lat2, lon2) {
-    if ((lat1 == lat2) && (lon1 == lon2)) return 0;
-    const radlat1 = Math.PI * lat1/180;
-    const radlat2 = Math.PI * lat2/180;
-    const theta = lon1-lon2;
-    const radtheta = Math.PI * theta/180;
-    let dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-    if (dist > 1) dist = 1;
-    dist = Math.acos(dist);
-    dist = dist * 180/Math.PI;
-    dist = dist * 60 * 1.1515 * 1.609344;
-    return dist;
+    const R = 6371; // 지구 반지름 (km)
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
 }
