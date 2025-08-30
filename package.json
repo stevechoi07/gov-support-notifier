@@ -1,17 +1,17 @@
 {
   "name": "gov-support-app",
   "version": "1.0.0",
-  "description": "Government Support App with GD Shop Feature",
-  "main": "server_gd.js",
+  "description": "GD Shop Backend Server",
+  "main": "netlify/functions/shops.js",
   "scripts": {
     "start": "node server_gd.js"
   },
   "dependencies": {
-    "node-fetch": "^2.6.7",
-    "firebase-admin": "^11.11.1",
-    "axios": "^1.7.2",
+    "axios": "^0.21.4",
     "cors": "^2.8.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "firebase-admin": "^11.11.1",
+    "node-fetch": "^2.6.7"
   }
 }
 
