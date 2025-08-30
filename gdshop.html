@@ -4,114 +4,138 @@
     <title>GD Shop - 우리 동네 착한가격업소</title>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=bdae71c83941e7abbe59827c2625be7b"></script>
     <style>
-        /* 목록 스타일을 살짝 꾸며줍니다 */
+        body { font-family: sans-serif; }
         #shop-list {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            margin-top: 20px; padding: 10px; border: 1px solid #ddd;
+            border-radius: 5px; max-height: 200px; overflow-y: auto;
         }
-        #shop-list .shop-item {
-            padding: 8px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
+        .shop-item {
+            padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;
         }
-        #shop-list .shop-item:hover {
-            background-color: #f9f9f9;
+        .shop-item:hover { background-color: #f9f9f9; }
+        .shop-item:last-child { border-bottom: none; }
+        .distance {
+            font-weight: bold;
+            color: #3498db;
         }
-        #shop-list .shop-item:last-child {
-            border-bottom: none;
+        #loader {
+            display: none; margin-top: 20px; text-align: center;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%;
+            width: 30px; height: 30px; animation: spin 1s linear infinite; display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-
-    <h1>v1.6 GD Shop - 우리 동네 착한가격업소 🗺️</h1>
-    <p>아래 버튼을 눌러 내 주변의 착한 가게를 찾아보세요!</p>
+    <h1>v1.8 GD Shop - 우리 동네 착한가격업소 🗺️</h1>
+    <p>가장 가까운 착한 가게를 찾아보세요!</p>
     <button id="find-btn">내 위치 찾기!</button>
     
-    <div id="map" style="width:100%; height:400px; margin-top: 20px;"></div>
-
+    <div id="map" style="width:100%; height:500px; margin-top: 20px; border-radius: 5px;"></div>
+    <div id="loader"><div class="spinner"></div><p>가까운 가게를 찾고 있습니다...</p></div>
     <div id="shop-list"></div>
 
     <script>
         const findBtn = document.getElementById('find-btn');
+        const loader = document.getElementById('loader');
+        const shopList = document.getElementById('shop-list');
+
         findBtn.addEventListener('click', findMyLocation);
 
+        // V1.8 업데이트: 두 좌표 사이의 거리를 km 단위로 계산하는 함수
+        function getDistance(lat1, lon1, lat2, lon2) {
+            if ((lat1 == lat2) && (lon1 == lon2)) return 0;
+            const R = 6371; // 지구 반지름 (km)
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c; // 최종 거리 (km)
+        }
+
         function findMyLocation() {
-            document.getElementById('map').innerHTML = "위치를 찾는 중..."; 
+            document.getElementById('map').innerHTML = ""; 
+            shopList.innerHTML = ''; 
+            loader.style.display = 'block'; 
             navigator.geolocation.getCurrentPosition(success, error);
         }
 
         function success(position) {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
+            const myLat = position.coords.latitude;
+            const myLng = position.coords.longitude;
             const mapContainer = document.getElementById('map'); 
-            const mapOption = { 
-                center: new kakao.maps.LatLng(latitude, longitude),
+            const map = new kakao.maps.Map(mapContainer, { 
+                center: new kakao.maps.LatLng(myLat, myLng),
                 level: 7
-            };
-            const map = new kakao.maps.Map(mapContainer, mapOption); 
-
-            const myMarker = new kakao.maps.Marker({
-                position: new kakao.maps.LatLng(latitude, longitude)
-            });
-            myMarker.setMap(map);
+            }); 
+            new kakao.maps.Marker({ position: new kakao.maps.LatLng(myLat, myLng) }).setMap(map);
             
             fetch('data.json')
                 .then(response => response.json())
                 .then(data => {
-                    console.log('✅ data.json 파일 로딩 성공!', data);
+                    // --- 🐛 개발자 디버깅 툴 ---
+                    console.log('✅ 원본 데이터:', JSON.parse(JSON.stringify(data)));
+                    // --------------------------
 
-                    const shopList = document.getElementById('shop-list');
-                    shopList.innerHTML = ''; // 목록 초기화
+                    // V1.8 업데이트: 각 가게까지의 거리를 계산해서 데이터에 추가
+                    data.forEach(shop => {
+                        shop.distance = getDistance(myLat, myLng, shop.lat, shop.lng);
+                    });
 
-                    // V1.6 업데이트: 마커와 인포윈도우를 관리할 배열 생성
-                    const markers = [];
+                    // V1.8 업데이트: 'distance'를 기준으로 데이터를 오름차순 정렬
+                    data.sort((a, b) => a.distance - b.distance);
+
+                    // --- 🐛 개발자 디버깅 툴 ---
+                    console.log('✅ 거리순 정렬 완료!', data);
+                    // --------------------------
+
                     const infowindows = [];
-
-                    data.forEach((shop, index) => {
-                        // 마커 생성 및 배열에 추가
+                    data.forEach((shop) => {
                         const marker = new kakao.maps.Marker({
-                            position: new kakao.maps.LatLng(shop.lat, shop.lng)
+                             position: new kakao.maps.LatLng(shop.lat, shop.lng)
                         });
                         marker.setMap(map);
-                        markers.push(marker);
 
-                        // 인포윈도우 생성 및 배열에 추가
                         const infowindow = new kakao.maps.InfoWindow({
-                            content : `<div style="padding:5px; font-size:14px;">${shop.name}</div>`,
+                            content : `<div style="padding:5px; font-size:14px; width:150px;">${shop.name}</div>`,
                             removable : true
                         });
                         infowindows.push(infowindow);
 
-                        // 마커 클릭 이벤트
-                        kakao.maps.event.addListener(marker, 'click', function() {
-                            infowindows.forEach(iw => iw.close()); // 다른 인포윈도우 닫기
+                        kakao.maps.event.addListener(marker, 'click', () => {
+                            infowindows.forEach(iw => iw.close());
                             infowindow.open(map, marker);  
                         });
 
-                        // V1.6 업데이트: 가게 목록 아이템 생성
                         const listItem = document.createElement('div');
                         listItem.className = 'shop-item';
-                        listItem.innerHTML = `<b>${shop.name}</b><br><small>${shop.address}</small>`;
-                        
-                        // 목록 아이템 클릭 이벤트
-                        listItem.addEventListener('click', function() {
-                            infowindows.forEach(iw => iw.close()); // 다른 인포윈도우 닫기
+                        // V1.8 업데이트: 목록에 거리 표시
+                        listItem.innerHTML = `<b>${shop.name}</b> <span class="distance">(${shop.distance.toFixed(1)}km)</span><br><small>${shop.address}</small>`;
+                        listItem.addEventListener('click', () => {
+                            infowindows.forEach(iw => iw.close());
                             infowindow.open(map, marker);
-                            map.panTo(marker.getPosition()); // 지도를 마커 위치로 부드럽게 이동
+                            map.panTo(marker.getPosition());
                         });
-                        
                         shopList.appendChild(listItem);
                     });
+                    loader.style.display = 'none';
                 })
-                .catch(error => console.error('❌ data.json 파일 로딩 실패!', error));
+                .catch(error => {
+                    console.error('❌ data.json 파일 로딩 실패!', error)
+                    loader.innerHTML = "데이터 로딩에 실패했습니다.";
+                });
         }
 
         function error() {
             document.getElementById('map').innerHTML = "죄송합니다. 위치 정보를 가져올 수 없습니다.";
-            console.error('❌ 위치 정보 얻기 실패!');
+            loader.style.display = 'none';
         }
     </script>
 </body>
