@@ -3,30 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v8.0 GD Shop - 전국 착한가게 백과사전</title>
+    <title>v9.0 GD Shop - 프리미엄 라운지</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.1.3/24/solid/css/heroicons.min.css" rel="stylesheet">
     <style>
+        /* v9.0: 스크롤바 숨김 및 기본 스타일 */
+        html { scroll-behavior: smooth; }
+        body { background-color: #f1f5f9; /* slate-100 */ }
         ::-webkit-scrollbar { display: none; }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+
+        /* v9.0: 상단 고정 필터 스타일 */
+        #filters-wrapper {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            transition: all 0.3s ease-in-out;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        /* v9.0: 스크롤 시 필터에 적용될 스타일 (유리 효과) */
+        #filters-wrapper.scrolled {
+            background-color: rgba(241, 245, 249, 0.8); /* slate-100 with transparency */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
         }
-        #shop-modal { transition: opacity 0.3s ease-in-out; }
-        #modal-content { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
-        .filter-btn.active {
-            background-color: #3b82f6;
-            color: white;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
+        
+        /* v9.0: 커스텀 드롭다운 화살표 */
         .custom-select {
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -37,55 +43,62 @@
             background-size: 1.5em 1.5em;
             padding-right: 2.5rem;
         }
+        
+        /* v9.0: 카테고리 필터 버튼 활성 스타일 */
+        .filter-btn.active {
+            background-color: #1e293b; /* slate-800 */
+            color: white;
+        }
+
+        /* v9.0: 모달창 애니메이션 */
+        #shop-modal { transition: opacity 0.3s ease-in-out; }
+        #modal-content { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
     </style>
 </head>
-<body class="bg-slate-50 font-sans">
-
-    <div class="container mx-auto max-w-3xl p-4 md:p-6">
-        <header class="text-center mb-6">
-            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">v8.0 GD Shop 📖</h1>
-            <p class="text-slate-500 mt-1">전국 착한가게 백과사전</p>
+<body class="font-sans">
+    <div class="container mx-auto max-w-7xl px-4">
+        <header class="text-center py-10 md:py-16">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">GD Shop 💎</h1>
+            <p class="text-slate-500 mt-2">v9.0 프리미엄 라운지</p>
         </header>
 
-        <main id="main-content">
-            <!-- v8.0 업데이트: 지역 필터 시스템 -->
-            <div id="search-filters" class="grid grid-cols-2 gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm">
-                <div>
-                    <label for="sido-filter" class="block text-sm font-medium text-slate-700 mb-1">시/도</label>
-                    <select id="sido-filter" class="custom-select w-full p-2 border border-slate-300 rounded-md bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                        <option value="전체">전체</option>
+        <!-- v9.0: 상단 고정 필터 영역 -->
+        <div id="filters-wrapper">
+            <div class="container mx-auto max-w-3xl">
+                <div id="search-filters" class="grid grid-cols-2 gap-4 mb-4">
+                    <select id="sido-filter" class="custom-select w-full p-3 border border-slate-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        <option value="전체">시/도 전체</option>
+                    </select>
+                    <select id="sigungu-filter" class="custom-select w-full p-3 border border-slate-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" disabled>
+                        <option value="전체">시/군/구 전체</option>
                     </select>
                 </div>
-                <div>
-                    <label for="sigungu-filter" class="block text-sm font-medium text-slate-700 mb-1">시/군/구</label>
-                    <select id="sigungu-filter" class="custom-select w-full p-2 border border-slate-300 rounded-md bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" disabled>
-                        <option value="전체">전체</option>
-                    </select>
+                <div id="category-filters" class="flex flex-wrap justify-center gap-2">
+                    <button data-category="전체" class="filter-btn active text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white shadow-sm">#전체</button>
+                    <button data-category="한식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white shadow-sm">#한식</button>
+                    <button data-category="치킨/분식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white shadow-sm">#치킨/분식</button>
+                    <button data-category="중식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white shadow-sm">#중식</button>
+                    <button data-category="일식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white shadow-sm">#일식</button>
+                    <button data-category="양식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white shadow-sm">#양식</button>
+                    <button data-category="서비스" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white shadow-sm">#서비스</button>
                 </div>
             </div>
+        </div>
 
-            <!-- v8.0 업데이트: 카테고리 필터 스타일 변경 -->
-            <div id="category-filters" class="flex flex-wrap justify-center gap-2 mb-8">
-                <button data-category="전체" class="filter-btn active px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200"># 전체</button>
-                <button data-category="한식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 한식</button>
-                <button data-category="치킨/분식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 치킨/분식</button>
-                <button data-category="중식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 중식</button>
-                <button data-category="일식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 일식</button>
-                <button data-category="양식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 양식</button>
-                <button data-category="서비스" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 서비스</button>
-            </div>
-
-            <div id="shop-list" class="space-y-4"></div>
+        <main id="main-content" class="py-8">
+            <!-- v9.0: 바둑판식 카드 레이아웃 -->
+            <div id="shop-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            
             <div id="loader" class="flex justify-center items-center py-8"><div class="loader"></div></div>
             <div id="no-results" class="text-center text-slate-500 py-16 hidden">
-                <p class="text-lg">😅</p>
-                <p>아쉽게도 조건에 맞는 가게가 없네요.</p>
+                <p class="text-2xl mb-2">😅</p>
+                <p class="font-semibold">아쉽게도 조건에 맞는 가게가 없네요.</p>
                 <p class="text-sm">다른 지역이나 카테고리를 선택해보세요!</p>
             </div>
         </main>
     </div>
 
-    <!-- v8.0 업데이트: 상세 정보 모달 UI 개선 -->
+    <!-- v9.0: 상세 정보 모달 UI/UX 개선 -->
     <div id="shop-modal" class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-end sm:items-center p-4 opacity-0 pointer-events-none z-50">
         <div id="modal-content" class="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md transform translate-y-full sm:translate-y-4 opacity-0 overflow-hidden">
             <div class="p-5 border-b border-slate-200">
@@ -102,11 +115,11 @@
             <div class="p-6 max-h-[60vh] overflow-y-auto space-y-6">
                 <div class="space-y-3">
                     <p class="text-sm text-slate-600 flex items-center gap-3">
-                        <i class="fas fa-map-marker-alt text-slate-400 w-4 text-center"></i>
+                        <svg class="h-5 w-5 text-slate-400"  viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02z" clip-rule="evenodd" /></svg>
                         <span id="modal-shop-address"></span>
                     </p>
                     <p class="text-sm text-slate-600 flex items-center gap-3">
-                        <i class="fas fa-phone text-slate-400 w-4 text-center"></i>
+                        <svg class="h-5 w-5 text-slate-400"  viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>
                         <span id="modal-shop-phone"></span>
                     </p>
                 </div>
@@ -116,41 +129,48 @@
                 </div>
             </div>
             <div class="p-4 bg-slate-50 border-t border-slate-200">
-                <button id="kakao-map-btn" class="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02zM10 2a.75.75 0 01.75.75v10.19l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V2.75A.75.75 0 0110 2z" clip-rule="evenodd" /></svg>
+                <button id="kakao-map-btn" class="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                     <svg class="h-5 w-5"  viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75V15a.75.75 0 01-1.5 0V2.75A.75.75 0 0110 2z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 1.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z" clip-rule="evenodd" /></svg>
                     카카오맵으로 길찾기
                 </button>
             </div>
         </div>
     </div>
     
-    <!-- Font Awesome Kit for Icons -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // UI 요소 선택
             const shopListEl = document.getElementById('shop-list');
             const loaderEl = document.getElementById('loader');
             const noResultsEl = document.getElementById('no-results');
-            
+            const filtersWrapper = document.getElementById('filters-wrapper');
             const sidoFilter = document.getElementById('sido-filter');
             const sigunguFilter = document.getElementById('sigungu-filter');
             const categoryFilters = document.getElementById('category-filters');
-
             const shopModal = document.getElementById('shop-modal');
             const modalContent = document.getElementById('modal-content');
             const modalCloseBtn = document.getElementById('modal-close-btn');
 
+            // 상태 변수
             let allShops = [];
             let filteredShops = [];
             let currentSido = '전체';
             let currentSigungu = '전체';
             let currentCategory = '전체';
-            
             let currentPage = 1;
-            const perPage = 20;
+            const perPage = 18;
             let isLoading = false;
 
-            // v8.0: 전체 데이터를 한 번에 로드하고 시작
+            // v9.0: 상단 필터 고정 및 투명 효과
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 10) {
+                    filtersWrapper.classList.add('scrolled');
+                } else {
+                    filtersWrapper.classList.remove('scrolled');
+                }
+            });
+
+            // 앱 초기화 함수
             async function initializeApp() {
                 try {
                     const response = await fetch('/api/shops');
@@ -159,23 +179,19 @@
                     
                     setupFilters();
                     applyFiltersAndRender();
-
                 } catch (err) {
                     console.error("❌ 홀에서 문제 발생!", err);
-                    shopListEl.innerHTML = `<p class="text-center text-red-500 py-8">이런! 가게 목록을 불러오는 데 실패했어요!</p>`;
+                    shopListEl.innerHTML = `<p class="text-center text-red-500 py-8">가게 목록을 불러오는 데 실패했어요!</p>`;
                 } finally {
                     loaderEl.style.display = 'none';
                 }
             }
             
-            // v8.0: 필터 옵션 구성
+            // 필터 UI 구성 함수
             function setupFilters() {
                 const sidos = [...new Set(allShops.map(shop => shop['시도']))].sort();
                 sidos.forEach(sido => {
-                    const option = document.createElement('option');
-                    option.value = sido;
-                    option.textContent = sido;
-                    sidoFilter.appendChild(option);
+                    sidoFilter.appendChild(new Option(sido, sido));
                 });
                 
                 sidoFilter.addEventListener('change', (e) => {
@@ -183,12 +199,10 @@
                     populateSigunguFilter();
                     applyFiltersAndRender();
                 });
-
                 sigunguFilter.addEventListener('change', (e) => {
                     currentSigungu = e.target.value;
                     applyFiltersAndRender();
                 });
-
                 categoryFilters.addEventListener('click', (e) => {
                     if (e.target.tagName === 'BUTTON') {
                         categoryFilters.querySelector('.active').classList.remove('active');
@@ -199,53 +213,32 @@
                 });
             }
 
-            // v8.0: 시/도 선택에 따라 시/군/구 필터 채우기
+            // 시/군/구 필터 채우기 함수
             function populateSigunguFilter() {
-                sigunguFilter.innerHTML = '<option value="전체">전체</option>';
+                sigunguFilter.innerHTML = '<option value="전체">시/군/구 전체</option>';
                 currentSigungu = '전체';
-
                 if (currentSido === '전체') {
                     sigunguFilter.disabled = true;
                     return;
                 }
-
                 const sigungus = [...new Set(allShops.filter(shop => shop['시도'] === currentSido).map(shop => shop['시군']))].sort();
                 sigungus.forEach(sigungu => {
-                    const option = document.createElement('option');
-                    option.value = sigungu;
-                    option.textContent = sigungu;
-                    sigunguFilter.appendChild(option);
+                    sigunguFilter.appendChild(new Option(sigungu, sigungu));
                 });
                 sigunguFilter.disabled = false;
             }
 
-            // v8.0: 필터 적용 및 렌더링
+            // 필터 적용 및 렌더링 시작 함수
             function applyFiltersAndRender() {
                 let tempShops = allShops;
-
-                if (currentSido !== '전체') {
-                    tempShops = tempShops.filter(shop => shop['시도'] === currentSido);
-                }
-                if (currentSigungu !== '전체') {
-                    tempShops = tempShops.filter(shop => shop['시군'] === currentSigungu);
-                }
+                if (currentSido !== '전체') tempShops = tempShops.filter(shop => shop['시도'] === currentSido);
+                if (currentSigungu !== '전체') tempShops = tempShops.filter(shop => shop['시군'] === currentSigungu);
                 if (currentCategory !== '전체') {
-                     const categoryMap = {
-                        '한식': ['한식'],
-                        '중식': ['중식', '중국'],
-                        '일식': ['일식', '회', '초밥'],
-                        '양식': ['양식', '돈까스', '패스트푸드'],
-                        '치킨/분식': ['치킨', '분식', '기타'],
-                        '서비스': ['세탁', '미용', '이용', '목욕', '숙박', '사진', 'PC방', '서비스', '기타 외식']
-                    };
-                    const keywords = categoryMap[currentCategory] || [currentCategory];
-                    tempShops = tempShops.filter(shop => {
-                        const shopCategory = shop['업종'] || '';
-                        return keywords.some(keyword => shopCategory.includes(keyword));
-                    });
+                    const categoryMap = { '한식': ['한식'], '중식': ['중식', '중국'], '일식': ['일식', '회', '초밥'], '양식': ['양식', '돈까스', '패스트푸드'], '치킨/분식': ['치킨', '분식', '기타'], '서비스': ['세탁', '미용', '이용', '목욕', '숙박', '사진', 'PC방', '서비스'] };
+                    const keywords = categoryMap[currentCategory] || [];
+                    tempShops = tempShops.filter(shop => keywords.some(keyword => (shop['업종'] || '').includes(keyword)));
                 }
                 
-                // 가나다순 정렬
                 filteredShops = tempShops.sort((a, b) => a['업소명'].localeCompare(b['업소명']));
                 
                 shopListEl.innerHTML = '';
@@ -254,9 +247,11 @@
                 loadMoreShops();
             }
 
-            // v8.0: 무한 스크롤로 가게 목록 표시
+            // 무한 스크롤 가게 로딩 함수
             function loadMoreShops() {
+                if (isLoading) return;
                 isLoading = true;
+
                 const startIndex = (currentPage - 1) * perPage;
                 const endIndex = startIndex + perPage;
                 const shopsToRender = filteredShops.slice(startIndex, endIndex);
@@ -268,37 +263,27 @@
                 isLoading = false;
             }
             
-            // v8.0: 가게 카드 UI 업데이트
+            // v9.0: '갤러리형 카드' UI 생성 함수
             function displayShops(shops) {
-                const iconMap = { '한식': 'fas fa-utensils', '중식': 'fas fa-pepper-hot', '일식': 'fas fa-fish', '양식': 'fas fa-pizza-slice', '치킨': 'fas fa-drumstick-bite', '분식': 'fas fa-cookie-bite', '서비스': 'fas fa-cut', '미용': 'fas fa-cut', '이용': 'fas fa-cut', '세탁': 'fas fa-tshirt', '숙박': 'fas fa-bed', '목욕': 'fas fa-bath', '기타': 'fas fa-concierge-bell' };
-                const defaultIcon = 'fas fa-store';
-
                 shops.forEach(shop => {
                     const card = document.createElement('div');
-                    card.className = 'bg-white rounded-xl shadow-sm hover:shadow-lg p-4 flex items-center gap-4 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer';
+                    card.className = 'bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col overflow-hidden';
                     
-                    const 업종 = shop['업종'] || '';
-                    let iconClass = defaultIcon;
-                    for (const key in iconMap) {
-                        if (업종.includes(key)) {
-                            iconClass = iconMap[key];
-                            break;
-                        }
-                    }
-
-                    const price = shop['가격1'] ? `${Number(shop['가격1']).toLocaleString()}원` : '정보없음';
+                    const location = `${shop['시도']} ${shop['시군']}`;
+                    const menu = shop['메뉴1'] || '대표 메뉴 정보 없음';
                     
                     card.innerHTML = `
-                        <div class="flex-shrink-0 w-14 h-14 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-2xl">
-                            <i class="${iconClass}"></i>
+                        <div class="p-5 flex-grow">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${location}</span>
+                                <span class="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">${shop['업종']}</span>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-xl truncate mb-1">${shop['업소명']}</h3>
+                            <p class="text-sm text-slate-500 truncate h-5">${menu}</p>
                         </div>
-                        <div class="flex-grow min-w-0">
-                            <h3 class="font-bold text-slate-800 truncate text-lg">${shop['업소명']}</h3>
-                            <p class="text-sm text-slate-500 truncate">${shop['메뉴1'] || '대표 메뉴 정보 없음'}</p>
-                            <p class="text-xs text-slate-400 truncate">${shop['시도']} ${shop['시군']}</p>
-                        </div>
-                        <div class="flex-shrink-0 text-right">
-                            <p class="font-semibold text-blue-600">${price}</p>
+                        <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors flex justify-between items-center">
+                            <span>자세히 보기</span>
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </div>
                     `;
                     card.addEventListener('click', () => showShopModal(shop));
@@ -306,12 +291,12 @@
                 });
             }
 
-            // v8.0: 모달 UI 및 길찾기 기능 업데이트
+            // 모달 표시 함수
             function showShopModal(shop) {
                 document.getElementById('modal-shop-category').textContent = shop['업종'] || '정보 없음';
                 document.getElementById('modal-shop-name').textContent = shop['업소명'];
-                document.getElementById('modal-shop-address').textContent = shop['주소'] || '정보 없음';
-                document.getElementById('modal-shop-phone').textContent = shop['연락처'] || '정보 없음';
+                document.getElementById('modal-shop-address').textContent = shop['주소'] || '주소 정보 없음';
+                document.getElementById('modal-shop-phone').textContent = shop['연락처'] || '연락처 정보 없음';
                 
                 const menuList = document.getElementById('modal-menu-list');
                 menuList.innerHTML = '';
@@ -323,49 +308,37 @@
                         menuFound = true;
                         const li = document.createElement('li');
                         li.className = 'flex justify-between items-center pt-2';
-                        li.innerHTML = `
-                            <span class="text-slate-800">${menu}</span>
-                            <span class="font-semibold text-blue-600">${Number(price).toLocaleString()}원</span>
-                        `;
+                        li.innerHTML = `<span class="text-slate-800">${menu}</span><span class="font-semibold text-blue-600">${Number(price).toLocaleString()}원</span>`;
                         menuList.appendChild(li);
                     }
                 }
-                if (!menuFound) {
-                    menuList.innerHTML = '<li class="text-slate-500 pt-2">대표 메뉴 정보가 없습니다.</li>';
-                }
+                if (!menuFound) menuList.innerHTML = '<li class="text-slate-500 pt-2">대표 메뉴 정보가 없습니다.</li>';
 
                 const kakaoMapBtn = document.getElementById('kakao-map-btn');
                 if (shop.lat && shop.lng) {
-                    kakaoMapBtn.onclick = () => {
-                        window.open(`https://map.kakao.com/link/to/${shop['업소명']},${shop.lat},${shop.lng}`, '_blank');
-                    };
+                    kakaoMapBtn.onclick = () => window.open(`https://map.kakao.com/link/to/${shop['업소명']},${shop.lat},${shop.lng}`, '_blank');
                     kakaoMapBtn.disabled = false;
-                    kakaoMapBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 } else {
                     kakaoMapBtn.onclick = null;
                     kakaoMapBtn.disabled = true;
-                    kakaoMapBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 }
-
-                shopModal.classList.add('active', 'opacity-100');
+                
                 shopModal.classList.remove('opacity-0', 'pointer-events-none');
-                modalContent.classList.add('translate-y-0', 'opacity-100');
                 modalContent.classList.remove('translate-y-full', 'sm:translate-y-4', 'opacity-0');
             }
 
+            // 모달 닫기 함수
             function closeShopModal() {
-                shopModal.classList.remove('active', 'opacity-100');
                 shopModal.classList.add('opacity-0', 'pointer-events-none');
-                modalContent.classList.remove('translate-y-0', 'opacity-100');
                 modalContent.classList.add('translate-y-full', 'sm:translate-y-4', 'opacity-0');
             }
 
             modalCloseBtn.addEventListener('click', closeShopModal);
             shopModal.addEventListener('click', (e) => { if (e.target === shopModal) closeShopModal(); });
             
-            // 무한 스크롤 설정
+            // 무한 스크롤 이벤트 리스너
             window.addEventListener('scroll', () => {
-                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200 && !isLoading) {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300 && !isLoading) {
                     loadMoreShops();
                 }
             });
