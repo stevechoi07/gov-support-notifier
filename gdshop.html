@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v9.0 GD Shop - 프리미엄 라운지</title>
+    <title>v10.0 오늘 MUK? - 착한가게 찾기</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.1.3/24/solid/css/heroicons.min.css" rel="stylesheet">
     <style>
-        /* v9.0: 스크롤바 숨김 및 기본 스타일 */
         html { scroll-behavior: smooth; }
-        body { background-color: #f1f5f9; /* slate-100 */ }
+        body { background-color: #f1f5f9; }
         ::-webkit-scrollbar { display: none; }
 
-        /* v9.0: 상단 고정 필터 스타일 */
         #filters-wrapper {
             position: sticky;
             top: 0;
@@ -22,17 +19,15 @@
             transition: all 0.3s ease-in-out;
         }
 
-        /* v9.0: 스크롤 시 필터에 적용될 스타일 (유리 효과) */
         #filters-wrapper.scrolled {
-            background-color: rgba(241, 245, 249, 0.8); /* slate-100 with transparency */
+            background-color: rgba(241, 245, 249, 0.85);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
             padding-top: 0.75rem;
             padding-bottom: 0.75rem;
         }
         
-        /* v9.0: 커스텀 드롭다운 화살표 */
         .custom-select {
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -44,25 +39,38 @@
             padding-right: 2.5rem;
         }
         
-        /* v9.0: 카테고리 필터 버튼 활성 스타일 */
         .filter-btn.active {
-            background-color: #1e293b; /* slate-800 */
+            background-color: #1e293b;
             color: white;
         }
-
-        /* v9.0: 모달창 애니메이션 */
-        #shop-modal { transition: opacity 0.3s ease-in-out; }
-        #modal-content { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+        
+        /* v10.0: 아코디언 스타일 */
+        .shop-card-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+        }
+        .shop-card.expanded .shop-card-details {
+            max-height: 500px; /* 충분히 큰 값 */
+            padding-top: 1.25rem;
+            padding-bottom: 1.25rem;
+        }
+        .shop-card.expanded .details-arrow {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body class="font-sans">
     <div class="container mx-auto max-w-7xl px-4">
+        <!-- v10.0: 서비스 브랜딩 -->
         <header class="text-center py-10 md:py-16">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">GD Shop 💎</h1>
-            <p class="text-slate-500 mt-2">v9.0 프리미엄 라운지</p>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">오늘 MUK? 🧐</h1>
+            <p class="text-slate-500 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
+            <p class="text-xs text-slate-400 mt-1">v10.0 The Accordion</p>
         </header>
 
-        <!-- v9.0: 상단 고정 필터 영역 -->
         <div id="filters-wrapper">
             <div class="container mx-auto max-w-3xl">
                 <div id="search-filters" class="grid grid-cols-2 gap-4 mb-4">
@@ -86,9 +94,7 @@
         </div>
 
         <main id="main-content" class="py-8">
-            <!-- v9.0: 바둑판식 카드 레이아웃 -->
             <div id="shop-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            
             <div id="loader" class="flex justify-center items-center py-8"><div class="loader"></div></div>
             <div id="no-results" class="text-center text-slate-500 py-16 hidden">
                 <p class="text-2xl mb-2">😅</p>
@@ -97,49 +103,9 @@
             </div>
         </main>
     </div>
-
-    <!-- v9.0: 상세 정보 모달 UI/UX 개선 -->
-    <div id="shop-modal" class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-end sm:items-center p-4 opacity-0 pointer-events-none z-50">
-        <div id="modal-content" class="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md transform translate-y-full sm:translate-y-4 opacity-0 overflow-hidden">
-            <div class="p-5 border-b border-slate-200">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p id="modal-shop-category" class="text-sm font-semibold text-blue-600 mb-1"></p>
-                        <h2 id="modal-shop-name" class="text-2xl font-bold text-slate-800"></h2>
-                    </div>
-                    <button id="modal-close-btn" class="text-slate-400 hover:text-slate-800 transition-colors p-1 rounded-full -mt-2 -mr-2">
-                        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="p-6 max-h-[60vh] overflow-y-auto space-y-6">
-                <div class="space-y-3">
-                    <p class="text-sm text-slate-600 flex items-center gap-3">
-                        <svg class="h-5 w-5 text-slate-400"  viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02z" clip-rule="evenodd" /></svg>
-                        <span id="modal-shop-address"></span>
-                    </p>
-                    <p class="text-sm text-slate-600 flex items-center gap-3">
-                        <svg class="h-5 w-5 text-slate-400"  viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>
-                        <span id="modal-shop-phone"></span>
-                    </p>
-                </div>
-                <div>
-                    <h4 class="font-bold text-slate-700 mb-3">대표 메뉴</h4>
-                    <ul id="modal-menu-list" class="space-y-2 text-sm divide-y divide-slate-100"></ul>
-                </div>
-            </div>
-            <div class="p-4 bg-slate-50 border-t border-slate-200">
-                <button id="kakao-map-btn" class="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                     <svg class="h-5 w-5"  viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75V15a.75.75 0 01-1.5 0V2.75A.75.75 0 0110 2z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 1.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z" clip-rule="evenodd" /></svg>
-                    카카오맵으로 길찾기
-                </button>
-            </div>
-        </div>
-    </div>
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // UI 요소 선택
             const shopListEl = document.getElementById('shop-list');
             const loaderEl = document.getElementById('loader');
             const noResultsEl = document.getElementById('no-results');
@@ -147,11 +113,7 @@
             const sidoFilter = document.getElementById('sido-filter');
             const sigunguFilter = document.getElementById('sigungu-filter');
             const categoryFilters = document.getElementById('category-filters');
-            const shopModal = document.getElementById('shop-modal');
-            const modalContent = document.getElementById('modal-content');
-            const modalCloseBtn = document.getElementById('modal-close-btn');
 
-            // 상태 변수
             let allShops = [];
             let filteredShops = [];
             let currentSido = '전체';
@@ -161,38 +123,28 @@
             const perPage = 18;
             let isLoading = false;
 
-            // v9.0: 상단 필터 고정 및 투명 효과
             window.addEventListener('scroll', () => {
-                if (window.scrollY > 10) {
-                    filtersWrapper.classList.add('scrolled');
-                } else {
-                    filtersWrapper.classList.remove('scrolled');
-                }
+                filtersWrapper.classList.toggle('scrolled', window.scrollY > 10);
             });
 
-            // 앱 초기화 함수
             async function initializeApp() {
                 try {
                     const response = await fetch('/api/shops');
-                    if (!response.ok) throw new Error('주방(서버)에서 응답이 없습니다!');
+                    if (!response.ok) throw new Error('서버 응답 오류');
                     allShops = await response.json();
-                    
                     setupFilters();
                     applyFiltersAndRender();
                 } catch (err) {
-                    console.error("❌ 홀에서 문제 발생!", err);
+                    console.error("❌ 초기화 실패:", err);
                     shopListEl.innerHTML = `<p class="text-center text-red-500 py-8">가게 목록을 불러오는 데 실패했어요!</p>`;
                 } finally {
                     loaderEl.style.display = 'none';
                 }
             }
             
-            // 필터 UI 구성 함수
             function setupFilters() {
                 const sidos = [...new Set(allShops.map(shop => shop['시도']))].sort();
-                sidos.forEach(sido => {
-                    sidoFilter.appendChild(new Option(sido, sido));
-                });
+                sidos.forEach(sido => sidoFilter.appendChild(new Option(sido, sido)));
                 
                 sidoFilter.addEventListener('change', (e) => {
                     currentSido = e.target.value;
@@ -213,7 +165,6 @@
                 });
             }
 
-            // 시/군/구 필터 채우기 함수
             function populateSigunguFilter() {
                 sigunguFilter.innerHTML = '<option value="전체">시/군/구 전체</option>';
                 currentSigungu = '전체';
@@ -222,13 +173,10 @@
                     return;
                 }
                 const sigungus = [...new Set(allShops.filter(shop => shop['시도'] === currentSido).map(shop => shop['시군']))].sort();
-                sigungus.forEach(sigungu => {
-                    sigunguFilter.appendChild(new Option(sigungu, sigungu));
-                });
+                sigungus.forEach(sigungu => sigunguFilter.appendChild(new Option(sigungu, sigungu)));
                 sigunguFilter.disabled = false;
             }
 
-            // 필터 적용 및 렌더링 시작 함수
             function applyFiltersAndRender() {
                 let tempShops = allShops;
                 if (currentSido !== '전체') tempShops = tempShops.filter(shop => shop['시도'] === currentSido);
@@ -247,11 +195,9 @@
                 loadMoreShops();
             }
 
-            // 무한 스크롤 가게 로딩 함수
             function loadMoreShops() {
                 if (isLoading) return;
                 isLoading = true;
-
                 const startIndex = (currentPage - 1) * perPage;
                 const endIndex = startIndex + perPage;
                 const shopsToRender = filteredShops.slice(startIndex, endIndex);
@@ -263,82 +209,95 @@
                 isLoading = false;
             }
             
-            // v9.0: '갤러리형 카드' UI 생성 함수
+            // v10.0: 아코디언 카드 UI 생성
             function displayShops(shops) {
                 shops.forEach(shop => {
                     const card = document.createElement('div');
-                    card.className = 'bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col overflow-hidden';
+                    card.className = 'shop-card bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden';
                     
                     const location = `${shop['시도']} ${shop['시군']}`;
                     const menu = shop['메뉴1'] || '대표 메뉴 정보 없음';
-                    
+                    const price = shop['가격1'] ? `${Number(shop['가격1']).toLocaleString()}` : null;
+
+                    let menuListHTML = '';
+                    let menuFound = false;
+                    for (let i = 1; i <= 4; i++) {
+                        const menuName = shop[`메뉴${i}`];
+                        const menuPrice = shop[`가격${i}`];
+                        if (menuName && menuPrice) {
+                            menuFound = true;
+                            menuListHTML += `<li class="flex justify-between items-center pt-2"><span class="text-slate-700">${menuName}</span><span class="font-semibold text-blue-600">${Number(menuPrice).toLocaleString()}원</span></li>`;
+                        }
+                    }
+                    if (!menuFound) {
+                        menuListHTML = `<li class="text-slate-500 pt-2 text-center">사장님이 메뉴 정보를 준비중이에요 👨‍🍳</li>`;
+                    }
+
                     card.innerHTML = `
-                        <div class="p-5 flex-grow">
+                        <div class="card-summary p-5 cursor-pointer hover:bg-slate-50">
                             <div class="flex justify-between items-start mb-2">
                                 <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${location}</span>
                                 <span class="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">${shop['업종']}</span>
                             </div>
                             <h3 class="font-bold text-slate-800 text-xl truncate mb-1">${shop['업소명']}</h3>
-                            <p class="text-sm text-slate-500 truncate h-5">${menu}</p>
+                            <p class="text-sm text-slate-500 truncate h-5 flex items-center">
+                                ${menu}
+                                ${price ? `<span class="mx-1.5 text-slate-300">·</span><span class="font-semibold">₩ ${price}</span>` : ''}
+                            </p>
                         </div>
-                        <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors flex justify-between items-center">
+                        <div class="shop-card-details border-t border-slate-200">
+                            <div class="space-y-6">
+                                <div class="space-y-3">
+                                    <p class="text-sm text-slate-600 flex items-start gap-3"><svg class="h-5 w-5 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02z" clip-rule="evenodd" /></svg><span>${shop['주소'] || '주소 정보가 준비 중이에요.'}</span></p>
+                                    <p class="text-sm text-slate-600 flex items-center gap-3"><svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg><span>${shop['연락처'] || '연락처 정보가 준비 중이에요.'}</span></p>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-700 mb-2">대표 메뉴</h4>
+                                    <ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul>
+                                </div>
+                                <button class="kakao-map-btn w-full bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75V15a.75.75 0 01-1.5 0V2.75A.75.75 0 0110 2z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 1.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z" clip-rule="evenodd" /></svg>
+                                    카카오맵으로 길찾기
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex justify-between items-center cursor-pointer">
                             <span>자세히 보기</span>
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            <svg class="details-arrow h-4 w-4 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </div>
                     `;
-                    card.addEventListener('click', () => showShopModal(shop));
+                    
+                    const summary = card.querySelector('.card-summary');
+                    const detailsToggle = card.querySelector('.bg-slate-50');
+
+                    const toggleAccordion = () => {
+                        const isExpanded = card.classList.contains('expanded');
+                        document.querySelectorAll('.shop-card.expanded').forEach(c => c.classList.remove('expanded'));
+                        if (!isExpanded) {
+                            card.classList.add('expanded');
+                        }
+                    };
+
+                    summary.addEventListener('click', toggleAccordion);
+                    detailsToggle.addEventListener('click', toggleAccordion);
+
+                    const kakaoMapBtn = card.querySelector('.kakao-map-btn');
+                    if (shop.lat && shop.lng) {
+                        kakaoMapBtn.onclick = (e) => {
+                            e.stopPropagation(); // 카드가 닫히는 것을 방지
+                            window.open(`https://map.kakao.com/link/to/${encodeURIComponent(shop['업소명'])},${shop.lat},${shop.lng}`, '_blank');
+                        };
+                        kakaoMapBtn.disabled = false;
+                    } else {
+                        kakaoMapBtn.disabled = true;
+                    }
+
                     shopListEl.appendChild(card);
                 });
             }
 
-            // 모달 표시 함수
-            function showShopModal(shop) {
-                document.getElementById('modal-shop-category').textContent = shop['업종'] || '정보 없음';
-                document.getElementById('modal-shop-name').textContent = shop['업소명'];
-                document.getElementById('modal-shop-address').textContent = shop['주소'] || '주소 정보 없음';
-                document.getElementById('modal-shop-phone').textContent = shop['연락처'] || '연락처 정보 없음';
-                
-                const menuList = document.getElementById('modal-menu-list');
-                menuList.innerHTML = '';
-                let menuFound = false;
-                for (let i = 1; i <= 4; i++) {
-                    const menu = shop[`메뉴${i}`];
-                    const price = shop[`가격${i}`];
-                    if (menu && price) {
-                        menuFound = true;
-                        const li = document.createElement('li');
-                        li.className = 'flex justify-between items-center pt-2';
-                        li.innerHTML = `<span class="text-slate-800">${menu}</span><span class="font-semibold text-blue-600">${Number(price).toLocaleString()}원</span>`;
-                        menuList.appendChild(li);
-                    }
-                }
-                if (!menuFound) menuList.innerHTML = '<li class="text-slate-500 pt-2">대표 메뉴 정보가 없습니다.</li>';
-
-                const kakaoMapBtn = document.getElementById('kakao-map-btn');
-                if (shop.lat && shop.lng) {
-                    kakaoMapBtn.onclick = () => window.open(`https://map.kakao.com/link/to/${shop['업소명']},${shop.lat},${shop.lng}`, '_blank');
-                    kakaoMapBtn.disabled = false;
-                } else {
-                    kakaoMapBtn.onclick = null;
-                    kakaoMapBtn.disabled = true;
-                }
-                
-                shopModal.classList.remove('opacity-0', 'pointer-events-none');
-                modalContent.classList.remove('translate-y-full', 'sm:translate-y-4', 'opacity-0');
-            }
-
-            // 모달 닫기 함수
-            function closeShopModal() {
-                shopModal.classList.add('opacity-0', 'pointer-events-none');
-                modalContent.classList.add('translate-y-full', 'sm:translate-y-4', 'opacity-0');
-            }
-
-            modalCloseBtn.addEventListener('click', closeShopModal);
-            shopModal.addEventListener('click', (e) => { if (e.target === shopModal) closeShopModal(); });
-            
-            // 무한 스크롤 이벤트 리스너
             window.addEventListener('scroll', () => {
-                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300 && !isLoading) {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 400 && !isLoading) {
                     loadMoreShops();
                 }
             });
