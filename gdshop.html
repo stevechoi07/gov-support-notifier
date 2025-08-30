@@ -4,7 +4,6 @@
     <title>GD Shop - 우리 동네 착한가격업소</title>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     <style>
-        /* 스타일은 이전 버전과 동일합니다. */
         body { font-family: sans-serif; }
         #shop-list {
             margin-top: 20px; padding: 10px; border: 1px solid #ddd;
@@ -26,7 +25,7 @@
     </style>
 </head>
 <body>
-    <h1>v2.0 GD Shop - 우리 동네 착한가격업소 🗺️</h1>
+    <h1>v2.0.1 GD Shop - 우리 동네 착한가격업소 🗺️</h1>
     <p>실시간으로 가장 가까운 착한 가게를 찾아보세요!</p>
     <button id="find-btn">내 위치 찾기!</button>
     
@@ -61,13 +60,14 @@
             new kakao.maps.Marker({ position: new kakao.maps.LatLng(myLat, myLng) }).setMap(map);
             
             try {
-                // ================================================================
-                // V2.0 업데이트: 주방(백엔드)에 요리를 주문합니다!
-                // ================================================================
-                loaderText.innerText = '주방에 가까운 가게를 찾아달라고 요청하는 중...';
+                loaderText.innerText = '성남 분당 주방에 가까운 가게를 찾아달라고 요청하는 중...';
                 
-                // 우리 백엔드 서버에 fetch로 깔끔하게 요청!
-                const response = await fetch(`/api/shops?lat=${myLat}&lng=${myLng}`);
+                // ================================================================
+                // V2.0.1 업데이트: 주방의 '진짜 주소'를 입력합니다!
+                const backendUrl = `http://localhost:3000/api/shops?lat=${myLat}&lng=${myLng}`;
+                const response = await fetch(backendUrl);
+                // ================================================================
+                
                 const shops = await response.json();
                 
                 if (!response.ok) {
