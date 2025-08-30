@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GD Shop - 우리 동네 착한가격업소</title>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=bdae71c83941e7abbe59827c2625be7b"></script>
+</head>
+<body>
+
+    <h1>GD Shop - 우리 동네 착한가격업소 🗺️</h1>
+    <p>아래 버튼을 눌러 내 주변의 착한 가게를 찾아보세요!</p>
+    <button id="find-btn">내 위치 찾기!</button>
+    
+    <div id="map" style="width:100%; height:400px; margin-top: 20px;"></div>
+
+    <script>
+        const findBtn = document.getElementById('find-btn');
+        findBtn.addEventListener('click', findMyLocation);
+
+        function findMyLocation() {
+            const mapContainer = document.getElementById('map');
+            mapContainer.innerHTML = "위치를 찾는 중..."; 
+
+            navigator.geolocation.getCurrentPosition(success, error);
+        }
+
+        function success(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            
+            // --- 🐛 개발자 디버깅 툴 ---
+            console.log('✅ 위치 정보 얻기 성공!');
+            console.log('위도:', latitude);
+            console.log('경도:', longitude);
+            // --------------------------
+
+            const mapContainer = document.getElementById('map'); 
+            const mapOption = { 
+                center: new kakao.maps.LatLng(latitude, longitude),
+                level: 3 
+            };
+
+            const map = new kakao.maps.Map(mapContainer, mapOption); 
+
+            const markerPosition  = new kakao.maps.LatLng(latitude, longitude); 
+
+            const marker = new kakao.maps.Marker({
+                position: markerPosition
+            });
+
+            marker.setMap(map);
+        }
+
+        function error() {
+            const mapContainer = document.getElementById('map');
+            mapContainer.innerHTML = "죄송합니다. 위치 정보를 가져올 수 없습니다.";
+
+            // --- 🐛 개발자 디버깅 툴 ---
+            console.error('❌ 위치 정보 얻기 실패!');
+            // --------------------------
+        }
+    </script>
+
+</body>
+</html>
