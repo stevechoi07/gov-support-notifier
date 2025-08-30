@@ -3,79 +3,116 @@
 <head>
     <title>GD Shop - 우리 동네 착한가격업소</title>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=bdae71c83941e7abbe59827c2625be7b"></script>
+    <style>
+        /* 목록 스타일을 살짝 꾸며줍니다 */
+        #shop-list {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #shop-list .shop-item {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        #shop-list .shop-item:hover {
+            background-color: #f9f9f9;
+        }
+        #shop-list .shop-item:last-child {
+            border-bottom: none;
+        }
+    </style>
 </head>
 <body>
 
-    <h1>v1.4 GD Shop - 우리 동네 착한가격업소 🗺️</h1>
+    <h1>v1.6 GD Shop - 우리 동네 착한가격업소 🗺️</h1>
     <p>아래 버튼을 눌러 내 주변의 착한 가게를 찾아보세요!</p>
     <button id="find-btn">내 위치 찾기!</button>
     
     <div id="map" style="width:100%; height:400px; margin-top: 20px;"></div>
+
+    <div id="shop-list"></div>
 
     <script>
         const findBtn = document.getElementById('find-btn');
         findBtn.addEventListener('click', findMyLocation);
 
         function findMyLocation() {
-            const mapContainer = document.getElementById('map');
-            mapContainer.innerHTML = "위치를 찾는 중..."; 
-
+            document.getElementById('map').innerHTML = "위치를 찾는 중..."; 
             navigator.geolocation.getCurrentPosition(success, error);
         }
 
         function success(position) {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
-            
-            console.log('✅ 위치 정보 얻기 성공!', { latitude, longitude });
-
             const mapContainer = document.getElementById('map'); 
             const mapOption = { 
                 center: new kakao.maps.LatLng(latitude, longitude),
-                level: 7 // 더 많은 가게가 보이도록 레벨 조정
+                level: 7
             };
-
             const map = new kakao.maps.Map(mapContainer, mapOption); 
 
-            // 내 위치에 마커 표시하기
-            const myMarkerPosition  = new kakao.maps.LatLng(latitude, longitude); 
             const myMarker = new kakao.maps.Marker({
-                position: myMarkerPosition
+                position: new kakao.maps.LatLng(latitude, longitude)
             });
             myMarker.setMap(map);
             
-            // ================================================================
-            // V1.4 업데이트: fetch를 사용해 data.json 파일을 불러옵니다.
             fetch('data.json')
-                .then(response => response.json()) // 받아온 응답을 JSON 형태로 변환
-                .then(data => { // 변환된 데이터를 'data' 라는 이름으로 사용
-                    // --- 🐛 개발자 디버깅 툴 ---
+                .then(response => response.json())
+                .then(data => {
                     console.log('✅ data.json 파일 로딩 성공!', data);
-                    // --------------------------
 
-                    // 데이터에 담긴 가게들을 순회하며 마커를 표시합니다.
-                    data.forEach((shop) => {
-                        const shopPosition = new kakao.maps.LatLng(shop.lat, shop.lng);
-                        const shopMarker = new kakao.maps.Marker({
-                            position: shopPosition
+                    const shopList = document.getElementById('shop-list');
+                    shopList.innerHTML = ''; // 목록 초기화
+
+                    // V1.6 업데이트: 마커와 인포윈도우를 관리할 배열 생성
+                    const markers = [];
+                    const infowindows = [];
+
+                    data.forEach((shop, index) => {
+                        // 마커 생성 및 배열에 추가
+                        const marker = new kakao.maps.Marker({
+                            position: new kakao.maps.LatLng(shop.lat, shop.lng)
                         });
-                        shopMarker.setMap(map);
+                        marker.setMap(map);
+                        markers.push(marker);
+
+                        // 인포윈도우 생성 및 배열에 추가
+                        const infowindow = new kakao.maps.InfoWindow({
+                            content : `<div style="padding:5px; font-size:14px;">${shop.name}</div>`,
+                            removable : true
+                        });
+                        infowindows.push(infowindow);
+
+                        // 마커 클릭 이벤트
+                        kakao.maps.event.addListener(marker, 'click', function() {
+                            infowindows.forEach(iw => iw.close()); // 다른 인포윈도우 닫기
+                            infowindow.open(map, marker);  
+                        });
+
+                        // V1.6 업데이트: 가게 목록 아이템 생성
+                        const listItem = document.createElement('div');
+                        listItem.className = 'shop-item';
+                        listItem.innerHTML = `<b>${shop.name}</b><br><small>${shop.address}</small>`;
+                        
+                        // 목록 아이템 클릭 이벤트
+                        listItem.addEventListener('click', function() {
+                            infowindows.forEach(iw => iw.close()); // 다른 인포윈도우 닫기
+                            infowindow.open(map, marker);
+                            map.panTo(marker.getPosition()); // 지도를 마커 위치로 부드럽게 이동
+                        });
+                        
+                        shopList.appendChild(listItem);
                     });
                 })
-                .catch(error => {
-                    // --- 🐛 개발자 디버깅 툴 ---
-                    console.error('❌ data.json 파일 로딩 실패!', error);
-                    // --------------------------
-                });
-            // ================================================================
+                .catch(error => console.error('❌ data.json 파일 로딩 실패!', error));
         }
 
         function error() {
-            const mapContainer = document.getElementById('map');
-            mapContainer.innerHTML = "죄송합니다. 위치 정보를 가져올 수 없습니다.";
+            document.getElementById('map').innerHTML = "죄송합니다. 위치 정보를 가져올 수 없습니다.";
             console.error('❌ 위치 정보 얻기 실패!');
         }
     </script>
-
 </body>
 </html>
