@@ -1,6 +1,6 @@
 // netlify/functions/shops.js
 
-// v7.1: 셰프님의 과욕을 막기 위해 API 호출 시 perPage를 300으로 조정하여 안정적인 재료 수급을 보장합니다.
+// v7.2: 재료 수급(API 호출) 단계의 문제를 파악하기 위해 상세한 에러 로그(CCTV)를 설치합니다.
 
 const axios = require('axios');
 
@@ -50,8 +50,21 @@ async function prepareShopCache() {
 
         console.log(`✅ 재료 준비 완료! ${shopCache.length}개의 가게를 특급 냉장고에 보관했습니다.`);
     } catch (error) {
-        console.error('🔥 새벽 시장에서 문제 발생!', error.response ? error.response.data : error.message);
-        shopCache = [];
+        // v7.2 업데이트: 상세 에러 로깅 (CCTV)
+        console.error('🔥 새벽 시장에서 문제 발생! 배달 트럭이 전복된 듯!');
+        if (error.response) {
+            // API 서버가 응답했지만, 상태 코드가 2xx가 아닐 경우
+            console.error('응답 데이터:', error.response.data);
+            console.error('응답 상태 코드:', error.response.status);
+            console.error('응답 헤더:', error.response.headers);
+        } else if (error.request) {
+            // 요청은 했지만, 응답을 받지 못했을 경우
+            console.error('요청 정보:', error.request);
+        } else {
+            // 요청을 설정하는 중에 에러가 발생했을 경우
+            console.error('에러 메시지:', error.message);
+        }
+        shopCache = []; // 에러 발생 시 캐시를 빈 배열로 초기화
     }
 }
 
@@ -60,13 +73,6 @@ exports.handler = async (event) => {
         await prepareShopCache();
     }
 
-   // --- 🕵️‍♂️ 디버깅 코드 START ---
-    // 딱 5개 가게의 '업종' 데이터만 한번 엿들어보자!
-    console.log("🕵️‍♂️ 들어온 재료(가게) 상위 5개 업종 데이터:", 
-        shopCache.slice(0, 5).map(shop => shop['업종'])
-    );
-    // --- 🕵️‍♂️ 디버깅 코드 END ---
-	
     const { lat, lng, category, page = 1 } = event.queryStringParameters;
     const perPage = 12;
 
@@ -105,4 +111,3 @@ function getDistance(lat1, lon1, lat2, lon2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
-
