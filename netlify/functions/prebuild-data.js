@@ -17,7 +17,7 @@ const OUTPUT_FILE = './shops-data-with-coords.json';
 
 // ✨✨✨ 중요! ✨✨✨
 // 아래에 당신의 카카오 REST API 키를 붙여넣으세요!
-const KAKAO_REST_API_KEY = '280878869f0c50569a511548fa880b89';
+const KAKAO_REST_API_KEY = '';
 // ✨✨✨✨✨✨✨✨✨
 
 // API 호출 속도를 제어하기 위한 설정 (너무 빠르면 API가 차단할 수 있음)
