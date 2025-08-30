@@ -1,6 +1,6 @@
 // netlify/functions/shops.js
 
-// v7.0: 전국 단위의 최종 CSV 데이터를 분석하여 카테고리 맵을 완성하고, 필터링 시스템을 최종 진화시킵니다.
+// v7.1: 셰프님의 과욕을 막기 위해 API 호출 시 perPage를 300으로 조정하여 안정적인 재료 수급을 보장합니다.
 
 const axios = require('axios');
 
@@ -9,14 +9,13 @@ const kakaoRestApiKey = process.env.KAKAO_REST_API_KEY;
 
 let shopCache = null;
 
-// v7.0 업데이트: 전국 단위 데이터를 분석하여 만든 최종 '스마트 레시피 북'
 const categoryMap = {
     '한식': ['한식'],
     '중식': ['중식', '중국'],
     '일식': ['일식', '회', '초밥'],
     '양식': ['양식', '돈까스', '패스트푸드'],
-    '치킨/분식': ['치킨', '분식', '기타'], // 사용자들이 자주 찾는 치킨과 분식을 묶음
-    '서비스': ['세탁', '미용', '이용', '목욕', '숙박', '사진', 'PC방', '서비스', '기타 외식'] // 기타 외식도 서비스로 분류
+    '치킨/분식': ['치킨', '분식', '기타'],
+    '서비스': ['세탁', '미용', '이용', '목욕', '숙박', '사진', 'PC방', '서비스', '기타 외식']
 };
 
 async function prepareShopCache() {
@@ -24,8 +23,8 @@ async function prepareShopCache() {
     console.log('🍳 주방 오픈 준비! 전국 시장에서 재료를 손질하는 중...');
 
     try {
-        // 더 많은 데이터를 가져오기 위해 perPage를 500으로 상향
-        const publicApiUrl = `https://api.odcloud.kr/api/3045247/v1/uddi:6c32457a-bd61-4721-8dfd-c7b18991bf3e?page=1&perPage=500&serviceKey=${publicDataServiceKey}`;
+        // v7.1 업데이트: 과도한 요청을 막기 위해 perPage를 500에서 300으로 다시 조정합니다.
+        const publicApiUrl = `https://api.odcloud.kr/api/3045247/v1/uddi:6c32457a-bd61-4721-8dfd-c7b18991bf3e?page=1&perPage=300&serviceKey=${publicDataServiceKey}`;
         const response = await axios.get(publicApiUrl);
         const originalShops = response.data.data;
 
