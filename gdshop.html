@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v6.1 GD Shop - 내 주변 착한가게 (Grand Design)</title>
+    <title>v7.0 GD Shop - 내 주변 착한가게 (The Final)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=bdae71c83941e7abbe59827c2625be7b"></script>
     <style>
@@ -37,16 +37,19 @@
 
     <div class="container mx-auto max-w-2xl p-4 md:p-6">
         <header class="text-center mb-6">
-            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">v6.1 GD Shop ✨</h1>
-            <p class="text-slate-500 mt-1">내 주변 착한가게 (Smart Filter)</p>
+            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">v7.0 GD Shop 🏆</h1>
+            <p class="text-slate-500 mt-1">내 주변 착한가게 (The Final)</p>
         </header>
 
         <main id="main-content" class="hidden">
+            <!-- v7.0 업데이트: '치킨/분식' 버튼 추가 및 순서 조정 -->
             <div id="category-filters" class="flex flex-wrap justify-center gap-2 mb-6">
                 <button data-category="전체" class="filter-btn active px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200"># 전체보기</button>
                 <button data-category="한식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 한식</button>
+                <button data-category="치킨/분식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 치킨/분식</button>
                 <button data-category="중식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 중식</button>
                 <button data-category="일식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 일식</button>
+                <button data-category="양식" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 양식</button>
                 <button data-category="서비스" class="filter-btn bg-white text-slate-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"># 이미용/서비스</button>
             </div>
 
