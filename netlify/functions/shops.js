@@ -1,104 +1,75 @@
 // netlify/functions/shops.js
 
-// v7.3: 외부 API 대신 로컬 JSON 파일(shops-data.json)을 사용해 안정성을 확보하는 비상 운영 모드로 전환합니다.
+// v8.0: 백엔드 로직을 대폭 단순화합니다.
+// 이제 백엔드의 역할은 로컬 JSON 데이터를 한 번에 처리해서 프론트엔드로 모두 넘겨주는 것입니다.
+// 필터링, 페이지네이션 등 복잡한 로직은 모두 프론트엔드에서 처리합니다.
 
 const axios = require('axios');
-// v7.3 변경점: 우리 창고에 있는 비상식량(JSON 파일)을 불러옵니다.
 const localShopData = require('./shops-data.json'); 
 
 const kakaoRestApiKey = process.env.KAKAO_REST_API_KEY;
 
+// shopCache: 한 번 처리된 가게 데이터를 저장하여, 다음 요청 시에는 재처리 없이 즉시 응답하기 위한 변수입니다.
 let shopCache = null;
 
-const categoryMap = {
-    '한식': ['한식'],
-    '중식': ['중식', '중국'],
-    '일식': ['일식', '회', '초밥'],
-    '양식': ['양식', '돈까스', '패스트푸드'],
-    '치킨/분식': ['치킨', '분식', '기타'],
-    '서비스': ['세탁', '미용', '이용', '목욕', '숙박', '사진', 'PC방', '서비스', '기타 외식']
-};
-
+// prepareShopCache: 서버가 처음 켜졌을 때 딱 한 번만 실행되는 함수입니다.
+// 로컬 JSON 데이터의 모든 가게 주소를 카카오맵 API를 이용해 위도/경도 좌표로 변환합니다.
 async function prepareShopCache() {
     if (shopCache) return;
-    console.log('🍳 주방 오픈 준비! 창고에서 냉동 재료를 손질하는 중...');
+    console.log('🍳 주방 최초 오픈! 창고의 모든 재료를 손질하여 좌표를 붙이는 중...');
 
     try {
-        // v7.3 변경점: 외부 API를 호출하는 대신, 불러온 로컬 JSON 데이터에서 가게 목록을 바로 가져옵니다.
         const originalShops = localShopData.data;
 
         const geocoder = axios.create({
             headers: { 'Authorization': `KakaoAK ${kakaoRestApiKey}` }
         });
 
-        // 주소 -> 좌표 변환은 카카오맵 API를 그대로 사용합니다.
         const geocodingPromises = originalShops.map(shop => {
-            // v7.3 개선: 주소가 없는 가게는 좌표 변환을 시도하지 않도록 예외 처리
-            if (!shop['주소']) return Promise.resolve(shop); 
+            if (!shop['주소']) {
+                console.warn(`[주소 누락] ${shop['업소명']} 가게의 주소 정보가 없습니다.`);
+                return Promise.resolve(shop); 
+            }
             
             return geocoder.get('https://dapi.kakao.com/v2/local/search/address.json', { params: { query: shop['주소'] } })
                 .then(res => {
                     if (res.data.documents.length > 0) {
                         shop.lat = parseFloat(res.data.documents[0].y);
                         shop.lng = parseFloat(res.data.documents[0].x);
+                    } else {
+                         console.warn(`[좌표 변환 실패] '${shop['주소']}' 주소를 찾을 수 없습니다.`);
                     }
                     return shop;
-                }).catch(() => {
-                    return shop; // 에러가 나도 원본 데이터는 유지
+                }).catch(err => {
+                    console.error(`[카카오 API 에러] '${shop['주소']}' 변환 중 에러:`, err.message);
+                    return shop;
                 });
         });
 
+        // 모든 가게의 좌표 변환이 끝날 때까지 기다립니다.
         const settledShops = await Promise.all(geocodingPromises);
+        
+        // 좌표가 성공적으로 변환된 가게들만 shopCache에 저장합니다.
         shopCache = settledShops.filter(shop => shop.lat && shop.lng);
 
-        console.log(`✅ 재료 준비 완료! ${shopCache.length}개의 가게를 특급 냉장고에 보관했습니다.`);
+        console.log(`✅ 재료 손질 완료! 총 ${originalShops.length}개 중 ${shopCache.length}개의 가게 좌표 변환 성공.`);
     } catch (error) {
-        console.error('🔥 창고 정리 중 문제 발생!', error.message);
-        shopCache = [];
+        console.error('🔥 주방 오픈 중 심각한 문제 발생!', error.message);
+        shopCache = []; // 에러 시 빈 배열로 초기화
     }
 }
 
-// exports.handler 이하 코드는 이전과 동일합니다.
+// exports.handler: 프론트엔드의 요청을 처리하는 유일한 창구입니다.
 exports.handler = async (event) => {
+    // 서버가 처음 켜졌거나, shopCache가 비어있으면 데이터 손질(좌표 변환)을 시작합니다.
     if (shopCache === null) {
         await prepareShopCache();
     }
 
-    const { lat, lng, category, page = 1 } = event.queryStringParameters;
-    const perPage = 12;
-
-    const shopsWithDistance = shopCache.map(shop => {
-        const distance = getDistance(lat, lng, shop.lat, shop.lng);
-        return { ...shop, distance };
-    });
-
-    let filteredShops = shopsWithDistance;
-    if (category && category !== '전체') {
-        const keywords = categoryMap[category] || [category];
-        filteredShops = shopsWithDistance.filter(shop => {
-            const shopCategory = shop['업종'] || '';
-            return keywords.some(keyword => shopCategory.includes(keyword));
-        });
-    }
-    
-    const sortedShops = filteredShops.sort((a, b) => a.distance - b.distance);
-    
-    const paginatedShops = sortedShops.slice((page - 1) * perPage, page * perPage);
-
+    // 손질이 완료된 전체 가게 목록을 프론트엔드로 전달합니다.
     return {
         statusCode: 200,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(paginatedShops)
+        body: JSON.stringify(shopCache)
     };
 };
-
-function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radius of the earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-}
