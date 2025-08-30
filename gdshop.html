@@ -3,67 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v12.0 오늘 MUK? - 시그니처 에디션</title>
+    <title>v13.0 오늘 MUK? - 소셜 에디션</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <style>
         html { scroll-behavior: smooth; }
-        body { 
-            background-color: #f8fafc; /* slate-50 */
-            font-family: 'Pretendard', sans-serif; 
-        }
+        body { background-color: #f8fafc; font-family: 'Pretendard', sans-serif; }
         ::-webkit-scrollbar { display: none; }
-
-        #filters-wrapper {
-            position: sticky;
-            top: 0;
-            z-index: 40;
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-            transition: all 0.3s ease-in-out;
-        }
-
-        #filters-wrapper.scrolled {
-            background-color: rgba(248, 250, 252, 0.85);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-        }
-        
-        .custom-select {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            padding-right: 2.5rem;
-        }
-        
-        .filter-btn.active {
-            background-color: #0f172a; /* slate-900 */
-            color: white;
-            border-color: #0f172a;
-        }
-        
-        .shop-card-details {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            padding-left: 1.25rem;
-            padding-right: 1.25rem;
-        }
-        .shop-card.expanded .shop-card-details {
-            max-height: 500px;
-            padding-top: 1.25rem;
-            padding-bottom: 1.25rem;
-        }
-        .shop-card.expanded .details-arrow {
-            transform: rotate(180deg);
-        }
+        #filters-wrapper { position: sticky; top: 0; z-index: 40; padding-top: 1rem; padding-bottom: 1rem; transition: all 0.3s ease-in-out; }
+        #filters-wrapper.scrolled { background-color: rgba(248, 250, 252, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .custom-select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
+        .filter-btn.active { background-color: #0f172a; color: white; border-color: #0f172a; }
+        .shop-card-details { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .shop-card.expanded .shop-card-details { max-height: 500px; padding-top: 1.25rem; padding-bottom: 1.25rem; }
+        .shop-card.expanded .details-arrow { transform: rotate(180deg); }
+        .favorite-btn.favorited svg { fill: #facc15; color: #facc15; } /* Yellow-400 */
     </style>
 </head>
 <body>
@@ -71,7 +25,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v12.0 The Signature</p>
+            <p class="text-xs text-slate-400 mt-1">v13.0 The Social</p>
         </header>
 
         <div id="filters-wrapper">
@@ -84,13 +38,15 @@
                         <option value="전체">시/군/구 전체</option>
                     </select>
                 </div>
-                <div id="category-filters" class="flex flex-wrap justify-center gap-2">
+                 <!-- v13.0: 즐겨찾기 버튼 추가 -->
+                <div id="category-filters" class="flex flex-wrap justify-center items-center gap-2">
                     <button data-category="전체" class="filter-btn active text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200">#전체</button>
+                    <button data-category="즐겨찾기" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200 flex items-center gap-1">⭐ #즐겨찾기</button>
                     <button data-category="한식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200">#한식</button>
-                    <button data-category="치킨/분식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200">#치킨/분식</button>
                     <button data-category="중식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200">#중식</button>
                     <button data-category="일식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200">#일식</button>
                     <button data-category="양식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200">#양식</button>
+                    <button data-category="치킨/분식" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200">#치킨/분식</button>
                     <button data-category="서비스" class="filter-btn text-xs sm:text-sm px-3 py-1.5 rounded-full font-semibold transition-colors duration-200 bg-white border border-slate-200">#서비스</button>
                 </div>
             </div>
@@ -99,11 +55,7 @@
         <main id="main-content" class="py-8">
             <div id="shop-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
             <div id="loader" class="flex justify-center items-center py-8"><div class="loader" style="border-top-color: #0ea5e9;"></div></div>
-            <div id="no-results" class="text-center text-slate-500 py-16 hidden">
-                <p class="text-2xl mb-2">😅</p>
-                <p class="font-semibold">아쉽게도 조건에 맞는 가게가 없네요.</p>
-                <p class="text-sm">다른 지역이나 카테고리를 선택해보세요!</p>
-            </div>
+            <div id="no-results" class="text-center text-slate-500 py-16 hidden"></div>
         </main>
     </div>
     
@@ -125,22 +77,22 @@
             let currentPage = 1;
             const perPage = 18;
             let isLoading = false;
+            // v13.0: 즐겨찾기 목록을 localStorage에서 불러오기
+            let favorites = JSON.parse(localStorage.getItem('muk_favorites')) || [];
 
-            window.addEventListener('scroll', () => {
-                filtersWrapper.classList.toggle('scrolled', window.scrollY > 10);
-            });
+            window.addEventListener('scroll', () => filtersWrapper.classList.toggle('scrolled', window.scrollY > 10));
 
             async function initializeApp() {
-                loaderEl.style.display = 'flex';
                 try {
                     const response = await fetch('/api/shops');
-                    if (!response.ok) throw new Error('Server response was not ok');
+                    if (!response.ok) throw new Error('서버에서 밀키트를 받아오지 못했어요!');
                     allShops = await response.json();
                     setupFilters();
                     applyFiltersAndRender();
                 } catch (err) {
-                    console.error("❌ Failed to initialize:", err);
-                    shopListEl.innerHTML = `<p class="text-center text-red-500 py-8">가게 목록을 불러오는 데 실패했어요!</p>`;
+                    console.error("❌ 초기화 실패:", err);
+                    noResultsEl.innerHTML = `<p class="font-semibold">이런! 가게 목록을 불러오지 못했어요.</p><p class="text-sm">새로고침을 시도해주세요.</p>`;
+                    noResultsEl.style.display = 'block';
                 } finally {
                     loaderEl.style.display = 'none';
                 }
@@ -153,10 +105,11 @@
                 sidoFilter.addEventListener('change', (e) => { currentSido = e.target.value; populateSigunguFilter(); applyFiltersAndRender(); });
                 sigunguFilter.addEventListener('change', (e) => { currentSigungu = e.target.value; applyFiltersAndRender(); });
                 categoryFilters.addEventListener('click', (e) => {
-                    if (e.target.tagName === 'BUTTON') {
+                    const button = e.target.closest('button');
+                    if (button) {
                         categoryFilters.querySelector('.active').classList.remove('active');
-                        e.target.classList.add('active');
-                        currentCategory = e.target.dataset.category;
+                        button.classList.add('active');
+                        currentCategory = button.dataset.category;
                         applyFiltersAndRender();
                     }
                 });
@@ -173,19 +126,40 @@
 
             function applyFiltersAndRender() {
                 let tempShops = allShops;
-                if (currentSido !== '전체') tempShops = tempShops.filter(shop => shop['시도'] === currentSido);
-                if (currentSigungu !== '전체') tempShops = tempShops.filter(shop => shop['시군'] === currentSigungu);
-                if (currentCategory !== '전체') {
-                    const categoryMap = { '한식': ['한식'], '중식': ['중식', '중국'], '일식': ['일식', '회', '초밥'], '양식': ['양식', '돈까스', '패스트푸드'], '치킨/분식': ['치킨', '분식', '기타'], '서비스': ['세탁', '미용', '이용', '목욕', '숙박', '사진', 'PC방', '서비스'] };
-                    const keywords = categoryMap[currentCategory] || [];
-                    tempShops = tempShops.filter(shop => keywords.some(keyword => (shop['업종'] || '').includes(keyword)));
+                
+                if (currentCategory === '즐겨찾기') {
+                    tempShops = allShops.filter(shop => favorites.includes(getShopId(shop)));
+                    sidoFilter.value = '전체';
+                    sigunguFilter.value = '전체';
+                    sigunguFilter.disabled = true;
+                } else {
+                    if (currentSido !== '전체') tempShops = tempShops.filter(shop => shop['시도'] === currentSido);
+                    if (currentSigungu !== '전체') tempShops = tempShops.filter(shop => shop['시군'] === currentSigungu);
+                    if (currentCategory !== '전체') {
+                        const categoryMap = { '한식': ['한식'], '중식': ['중식', '중국'], '일식': ['일식', '회', '초밥'], '양식': ['양식', '돈까스', '패스트푸드'], '치킨/분식': ['치킨', '분식', '기타'], '서비스': ['세탁', '미용', '이용', '목욕', '숙박', '사진', 'PC방', '서비스'] };
+                        const keywords = categoryMap[currentCategory] || [];
+                        tempShops = tempShops.filter(shop => keywords.some(keyword => (shop['업종'] || '').includes(keyword)));
+                    }
                 }
                 
                 filteredShops = tempShops.sort((a, b) => a['업소명'].localeCompare(b['업소명']));
                 shopListEl.innerHTML = '';
                 currentPage = 1;
-                noResultsEl.style.display = filteredShops.length === 0 ? 'block' : 'none';
+                updateNoResultsMessage();
                 loadMoreShops();
+            }
+            
+            function updateNoResultsMessage() {
+                if (filteredShops.length > 0) {
+                    noResultsEl.style.display = 'none';
+                    return;
+                }
+                if (currentCategory === '즐겨찾기') {
+                    noResultsEl.innerHTML = `<p class="text-2xl mb-2">⭐</p><p class="font-semibold">아직 즐겨찾는 가게가 없네요!</p><p class="text-sm">마음에 드는 가게의 별을 눌러 나만의 맛집 리스트를 만들어보세요.</p>`;
+                } else {
+                    noResultsEl.innerHTML = `<p class="text-2xl mb-2">😅</p><p class="font-semibold">아쉽게도 조건에 맞는 가게가 없네요.</p><p class="text-sm">다른 지역이나 카테고리를 선택해보세요!</p>`;
+                }
+                noResultsEl.style.display = 'block';
             }
 
             function loadMoreShops() {
@@ -194,114 +168,124 @@
                 const startIndex = (currentPage - 1) * perPage;
                 const endIndex = startIndex + perPage;
                 const shopsToRender = filteredShops.slice(startIndex, endIndex);
-                if(shopsToRender.length > 0){ displayShops(shopsToRender); currentPage++; }
+                if(shopsToRender.length > 0) { displayShops(shopsToRender); currentPage++; }
                 isLoading = false;
             }
             
+            // v13.0: 즐겨찾기용 고유 ID 생성 함수
+            function getShopId(shop) {
+                return `${shop['업소명']}_${shop['주소']}`;
+            }
+            
             function displayShops(shops) {
-                const colorMap = {
-                    '한식': 'bg-emerald-50 text-emerald-700', '중식': 'bg-red-50 text-red-700',
-                    '일식': 'bg-sky-50 text-sky-700', '양식': 'bg-amber-50 text-amber-700',
-                    '치킨': 'bg-orange-50 text-orange-700', '분식': 'bg-orange-50 text-orange-700',
-                    '서비스': 'bg-indigo-50 text-indigo-700', '미용': 'bg-fuchsia-50 text-fuchsia-700', 
-                    '이용': 'bg-fuchsia-50 text-fuchsia-700', '세탁': 'bg-blue-50 text-blue-700',
-                    '숙박': 'bg-violet-50 text-violet-700', '기타': 'bg-slate-50 text-slate-700'
-                };
+                const colorMap = {'한식': 'bg-emerald-50 text-emerald-700', '중식': 'bg-red-50 text-red-700', '일식': 'bg-sky-50 text-sky-700', '양식': 'bg-amber-50 text-amber-700', '치킨': 'bg-orange-50 text-orange-700', '분식': 'bg-orange-50 text-orange-700', '서비스': 'bg-indigo-50 text-indigo-700', '미용': 'bg-fuchsia-50 text-fuchsia-700', '이용': 'bg-fuchsia-50 text-fuchsia-700', '세탁': 'bg-blue-50 text-blue-700', '숙박': 'bg-violet-50 text-violet-700', '기타': 'bg-slate-50 text-slate-700'};
                 const defaultColor = 'bg-slate-50 text-slate-700';
 
                 shops.forEach(shop => {
                     const card = document.createElement('div');
                     card.className = 'shop-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col overflow-hidden';
-                    
-                    const location = `${shop['시도']} ${shop['시군']}`;
-                    
+                    const shopId = getShopId(shop);
+                    const isFavorited = favorites.includes(shopId);
+
                     let menuListHTML = '';
                     let menuFound = false;
                     for (let i = 1; i <= 4; i++) {
                         const menuName = shop[`메뉴${i}`]; const menuPrice = shop[`가격${i}`];
                         if (menuName && menuPrice) {
                             menuFound = true;
-                            // v12.0: '착한 메뉴' 뱃지 아이콘 추가
-                            menuListHTML += `
-                                <li class="flex justify-between items-center py-2">
-                                    <span class="flex items-center gap-2 text-slate-700">
-                                        <svg class="h-4 w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.868 2.884c.321-.772 1.305-.772 1.626 0l1.838 4.432a.75.75 0 00.564.41h4.653c.82 0 1.164.932.587 1.414l-3.762 2.734a.75.75 0 00-.216.664l1.423 4.881c.28.96-.713 1.728-1.54 1.22l-3.923-2.547a.75.75 0 00-.69 0l-3.923 2.547c-.828.508-1.82-.26-1.54-1.22l1.423-4.881a.75.75 0 00-.216-.664l-3.762-2.734c-.577-.482-.233-1.414.587-1.414h4.653a.75.75 0 00.564-.41l1.838-4.432z" clip-rule="evenodd" /></svg>
-                                        ${menuName}
-                                    </span>
-                                    <span class="font-semibold text-sky-700">${Number(menuPrice).toLocaleString()}원</span>
-                                </li>`;
+                            menuListHTML += `<li class="flex justify-between items-center py-2"><span class="flex items-center gap-2 text-slate-700"><svg class="h-4 w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.868 2.884c.321-.772 1.305-.772 1.626 0l1.838 4.432a.75.75 0 00.564.41h4.653c.82 0 1.164.932.587 1.414l-3.762 2.734a.75.75 0 00-.216.664l1.423 4.881c.28.96-.713 1.728-1.54 1.22l-3.923-2.547a.75.75 0 00-.69 0l-3.923 2.547c-.828.508-1.82-.26-1.54-1.22l1.423-4.881a.75.75 0 00-.216-.664l-3.762-2.734c-.577-.482-.233-1.414.587-1.414h4.653a.75.75 0 00.564-.41l1.838-4.432z" clip-rule="evenodd" /></svg>${menuName}</span><span class="font-semibold text-sky-700">${Number(menuPrice).toLocaleString()}원</span></li>`;
                         }
                     }
                     if (!menuFound) menuListHTML = `<li class="text-slate-500 pt-2 text-center">사장님이 메뉴 정보를 준비중이에요 👨‍🍳</li>`;
 
                     const contact = shop['연락처'];
-                    // v12.0: 전화번호를 클릭 가능한 링크로 변경
-                    const contactHTML = contact 
-                        ? `<a href="tel:${contact}" class="hover:underline hover:text-sky-600 transition-colors">${contact}</a>` 
-                        : `<span>연락처 정보가 준비 중이에요.</span>`;
+                    const contactHTML = contact ? `<a href="tel:${contact}" class="hover:underline hover:text-sky-600 transition-colors">${contact}</a>` : `<span>연락처 정보가 준비 중이에요.</span>`;
                     
                     const 업종 = shop['업종'] || '기타';
                     let categoryColor = defaultColor;
-                    for (const key in colorMap) {
-                        if (업종.includes(key)) { categoryColor = colorMap[key]; break; }
-                    }
+                    for (const key in colorMap) { if (업종.includes(key)) { categoryColor = colorMap[key]; break; } }
 
                     card.innerHTML = `
-                        <div class="card-summary p-5 cursor-pointer">
+                        <div class="p-5">
                             <div class="flex justify-between items-start mb-3">
                                 <span class="text-xs font-bold ${categoryColor} px-2 py-0.5 rounded-full">${업종}</span>
+                                <button class="favorite-btn ${isFavorited ? 'favorited' : ''} text-slate-300 hover:text-amber-400 transition-colors">
+                                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-1.383-.597 15.185 15.185 0 01-3.044-2.03.5.5 0 01-.054-.495A3.5 3.5 0 016.5 13H10V3.5a1.5 1.5 0 013 0V13h3.5a3.5 3.5 0 012.832 5.234.5.5 0 01-.054.495 15.185 15.185 0 01-3.044 2.03 15.247 15.247 0 01-1.383.597l-.022.012-.007.003h-.001a.752.752 0 01-.704 0h-.001z"/></svg>
+                                </button>
                             </div>
                             <h3 class="font-bold text-slate-900 text-lg truncate mb-1">${shop['업소명']}</h3>
-                            <p class="text-sm text-slate-500 truncate h-5">${location}</p>
+                            <p class="text-sm text-slate-500 truncate h-5">${shop['시도']} ${shop['시군']}</p>
                         </div>
-                        <div class="shop-card-details border-t border-slate-100">
+                        <div class="shop-card-details p-5 border-t border-slate-100">
                             <div class="space-y-6">
                                 <div class="space-y-3">
                                     <p class="text-sm text-slate-700 flex items-start gap-3"><svg class="h-5 w-5 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02z" clip-rule="evenodd" /></svg><span>${shop['주소'] || '주소 정보가 준비 중이에요.'}</span></p>
                                     <p class="text-sm text-slate-700 flex items-center gap-3"><svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>${contactHTML}</p>
                                 </div>
-                                <div>
-                                    <!-- v12.0: 섹션 타이틀 변경 -->
-                                    <h4 class="font-bold text-slate-800 mb-2">✨ 주요 착한 메뉴</h4>
-                                    <ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul>
+                                <div><h4 class="font-bold text-slate-800 mb-2">✨ 주요 착한 메뉴</h4><ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul></div>
+                                <div class="flex gap-2">
+                                    <button class="share-btn flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.665l3-3z" /><path d="M8.603 16.103a4 4 0 005.656-5.656l-3-3a4 4 0 00-5.865-.225.75.75 0 00.977 1.138 2.5 2.5 0 013.665.142l3 3a2.5 2.5 0 01-3.536 3.536l-1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 000 5.656z" /></svg>공유</button>
+                                    <button class="kakao-map-btn flex-1 bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75V15a.75.75 0 01-1.5 0V2.75A.75.75 0 0110 2z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 1.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z" clip-rule="evenodd" /></svg>길찾기</button>
                                 </div>
-                                <button class="kakao-map-btn w-full bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75V15a.75.75 0 01-1.5 0V2.75A.75.75 0 0110 2z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 1.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z" clip-rule="evenodd" /></svg>
-                                    카카오맵으로 길찾기
-                                </button>
                             </div>
                         </div>
-                        <div class="bg-slate-100 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex justify-between items-center cursor-pointer">
-                            <span>자세히 보기</span>
-                            <svg class="details-arrow h-5 w-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        <div class="toggle-details-btn bg-slate-100 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex justify-between items-center cursor-pointer">
+                            <span>자세히 보기</span><svg class="details-arrow h-5 w-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </div>
                     `;
                     
-                    const toggleArea = card.querySelector('.bg-slate-100');
-                    toggleArea.addEventListener('click', () => {
+                    card.querySelector('.toggle-details-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
                         const isExpanded = card.classList.contains('expanded');
                         document.querySelectorAll('.shop-card.expanded').forEach(c => {
                             if (c !== card) c.classList.remove('expanded');
                         });
                         card.classList.toggle('expanded');
                     });
+                    
+                    const favBtn = card.querySelector('.favorite-btn');
+                    favBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = getShopId(shop);
+                        const index = favorites.indexOf(id);
+                        if (index > -1) {
+                            favorites.splice(index, 1);
+                            favBtn.classList.remove('favorited');
+                        } else {
+                            favorites.push(id);
+                            favBtn.classList.add('favorited');
+                        }
+                        localStorage.setItem('muk_favorites', JSON.stringify(favorites));
+                        if(currentCategory === '즐겨찾기') applyFiltersAndRender();
+                    });
+
+                    card.querySelector('.share-btn').addEventListener('click', (e) => {
+                         e.stopPropagation();
+                         const shareData = {
+                            title: `[오늘MUK?] 착한가격업소 추천!`,
+                            text: `"${shop['업소명']}" 어때?\n주소: ${shop['주소']}`,
+                            url: window.location.href
+                         };
+                         if (navigator.share) {
+                            navigator.share(shareData).catch(err => console.log("공유 실패:", err));
+                         } else {
+                            alert('이 브라우저에서는 공유하기가 지원되지 않습니다.');
+                         }
+                    });
 
                     const kakaoMapBtn = card.querySelector('.kakao-map-btn');
-                    if (shop.lat && shop.lng) {
-                        kakaoMapBtn.onclick = (e) => {
-                            e.stopPropagation();
-                            window.open(`https://map.kakao.com/link/to/${encodeURIComponent(shop['업소명'])},${shop.lat},${shop.lng}`, '_blank');
-                        };
-                    } else {
-                        kakaoMapBtn.disabled = true;
-                    }
+                    kakaoMapBtn.disabled = !(shop.lat && shop.lng);
+                    kakaoMapBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        window.open(`https://map.kakao.com/link/to/${encodeURIComponent(shop['업소명'])},${shop.lat},${shop.lng}`, '_blank');
+                    });
 
                     shopListEl.appendChild(card);
                 });
             }
 
             window.addEventListener('scroll', () => {
-                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 400 && !isLoading) {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading) {
                     loadMoreShops();
                 }
             });
