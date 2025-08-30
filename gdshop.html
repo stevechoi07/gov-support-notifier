@@ -6,35 +6,13 @@
 </head>
 <body>
 
-    <h1>GD Shop - 우리 동네 착한가격업소 🗺️</h1>
+    <h1>v1.4 GD Shop - 우리 동네 착한가격업소 🗺️</h1>
     <p>아래 버튼을 눌러 내 주변의 착한 가게를 찾아보세요!</p>
     <button id="find-btn">내 위치 찾기!</button>
     
     <div id="map" style="width:100%; height:400px; margin-top: 20px;"></div>
 
     <script>
-        // ==========================================================
-        // V1.3 업데이트: 샘플 가게 데이터를 추가합니다.
-        // 나중에는 이 부분을 실제 데이터 파일에서 읽어오도록 바꿀 거예요!
-        const gdShopData = [
-            {
-                name: '착한 중국집',
-                lat: 37.4210, 
-                lng: 127.1290 
-            },
-            {
-                name: '정직한 미용실',
-                lat: 37.4225,
-                lng: 127.1275
-            },
-            {
-                name: '성실한 밥집',
-                lat: 37.4195,
-                lng: 127.1288
-            }
-        ];
-        // ==========================================================
-
         const findBtn = document.getElementById('find-btn');
         findBtn.addEventListener('click', findMyLocation);
 
@@ -54,36 +32,41 @@
             const mapContainer = document.getElementById('map'); 
             const mapOption = { 
                 center: new kakao.maps.LatLng(latitude, longitude),
-                level: 5 // 가게들이 잘 보이도록 지도를 조금 더 축소!
+                level: 7 // 더 많은 가게가 보이도록 레벨 조정
             };
 
             const map = new kakao.maps.Map(mapContainer, mapOption); 
 
-            // 1. 내 위치에 마커 표시하기
+            // 내 위치에 마커 표시하기
             const myMarkerPosition  = new kakao.maps.LatLng(latitude, longitude); 
             const myMarker = new kakao.maps.Marker({
                 position: myMarkerPosition
             });
             myMarker.setMap(map);
-
+            
             // ================================================================
-            // V1.3 업데이트: 샘플 가게 데이터를 순회하며 마커를 표시합니다.
-            gdShopData.forEach((shop) => {
-                // 가게의 위치 좌표를 생성합니다.
-                const shopPosition = new kakao.maps.LatLng(shop.lat, shop.lng);
+            // V1.4 업데이트: fetch를 사용해 data.json 파일을 불러옵니다.
+            fetch('data.json')
+                .then(response => response.json()) // 받아온 응답을 JSON 형태로 변환
+                .then(data => { // 변환된 데이터를 'data' 라는 이름으로 사용
+                    // --- 🐛 개발자 디버깅 툴 ---
+                    console.log('✅ data.json 파일 로딩 성공!', data);
+                    // --------------------------
 
-                // 가게 마커를 생성합니다.
-                const shopMarker = new kakao.maps.Marker({
-                    position: shopPosition
+                    // 데이터에 담긴 가게들을 순회하며 마커를 표시합니다.
+                    data.forEach((shop) => {
+                        const shopPosition = new kakao.maps.LatLng(shop.lat, shop.lng);
+                        const shopMarker = new kakao.maps.Marker({
+                            position: shopPosition
+                        });
+                        shopMarker.setMap(map);
+                    });
+                })
+                .catch(error => {
+                    // --- 🐛 개발자 디버깅 툴 ---
+                    console.error('❌ data.json 파일 로딩 실패!', error);
+                    // --------------------------
                 });
-
-                // 지도에 가게 마커를 표시합니다.
-                shopMarker.setMap(map);
-
-                // --- 🐛 개발자 디버깅 툴 ---
-                console.log(`📍 ${shop.name} 마커 표시 완료!`);
-                // --------------------------
-            });
             // ================================================================
         }
 
