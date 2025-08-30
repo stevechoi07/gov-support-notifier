@@ -60,6 +60,13 @@ exports.handler = async (event) => {
         await prepareShopCache();
     }
 
+   // --- 🕵️‍♂️ 디버깅 코드 START ---
+    // 딱 5개 가게의 '업종' 데이터만 한번 엿들어보자!
+    console.log("🕵️‍♂️ 들어온 재료(가게) 상위 5개 업종 데이터:", 
+        shopCache.slice(0, 5).map(shop => shop['업종'])
+    );
+    // --- 🕵️‍♂️ 디버깅 코드 END ---
+	
     const { lat, lng, category, page = 1 } = event.queryStringParameters;
     const perPage = 12;
 
