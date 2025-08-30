@@ -1,10 +1,11 @@
 // netlify/functions/shops.js
 
-// v7.2: 재료 수급(API 호출) 단계의 문제를 파악하기 위해 상세한 에러 로그(CCTV)를 설치합니다.
+// v7.3: 외부 API 대신 로컬 JSON 파일(shops-data.json)을 사용해 안정성을 확보하는 비상 운영 모드로 전환합니다.
 
 const axios = require('axios');
+// v7.3 변경점: 우리 창고에 있는 비상식량(JSON 파일)을 불러옵니다.
+const localShopData = require('./shops-data.json'); 
 
-const publicDataServiceKey = process.env.PUBLIC_DATA_API_KEY;
 const kakaoRestApiKey = process.env.KAKAO_REST_API_KEY;
 
 let shopCache = null;
@@ -20,19 +21,21 @@ const categoryMap = {
 
 async function prepareShopCache() {
     if (shopCache) return;
-    console.log('🍳 주방 오픈 준비! 전국 시장에서 재료를 손질하는 중...');
+    console.log('🍳 주방 오픈 준비! 창고에서 냉동 재료를 손질하는 중...');
 
     try {
-        // v7.1 업데이트: 과도한 요청을 막기 위해 perPage를 500에서 300으로 다시 조정합니다.
-        const publicApiUrl = `https://api.odcloud.kr/api/3045247/v1/uddi:6c32457a-bd61-4721-8dfd-c7b18991bf3e?page=1&perPage=300&serviceKey=${publicDataServiceKey}`;
-        const response = await axios.get(publicApiUrl);
-        const originalShops = response.data.data;
+        // v7.3 변경점: 외부 API를 호출하는 대신, 불러온 로컬 JSON 데이터에서 가게 목록을 바로 가져옵니다.
+        const originalShops = localShopData.data;
 
         const geocoder = axios.create({
             headers: { 'Authorization': `KakaoAK ${kakaoRestApiKey}` }
         });
 
+        // 주소 -> 좌표 변환은 카카오맵 API를 그대로 사용합니다.
         const geocodingPromises = originalShops.map(shop => {
+            // v7.3 개선: 주소가 없는 가게는 좌표 변환을 시도하지 않도록 예외 처리
+            if (!shop['주소']) return Promise.resolve(shop); 
+            
             return geocoder.get('https://dapi.kakao.com/v2/local/search/address.json', { params: { query: shop['주소'] } })
                 .then(res => {
                     if (res.data.documents.length > 0) {
@@ -41,7 +44,7 @@ async function prepareShopCache() {
                     }
                     return shop;
                 }).catch(() => {
-                    return shop;
+                    return shop; // 에러가 나도 원본 데이터는 유지
                 });
         });
 
@@ -50,24 +53,12 @@ async function prepareShopCache() {
 
         console.log(`✅ 재료 준비 완료! ${shopCache.length}개의 가게를 특급 냉장고에 보관했습니다.`);
     } catch (error) {
-        // v7.2 업데이트: 상세 에러 로깅 (CCTV)
-        console.error('🔥 새벽 시장에서 문제 발생! 배달 트럭이 전복된 듯!');
-        if (error.response) {
-            // API 서버가 응답했지만, 상태 코드가 2xx가 아닐 경우
-            console.error('응답 데이터:', error.response.data);
-            console.error('응답 상태 코드:', error.response.status);
-            console.error('응답 헤더:', error.response.headers);
-        } else if (error.request) {
-            // 요청은 했지만, 응답을 받지 못했을 경우
-            console.error('요청 정보:', error.request);
-        } else {
-            // 요청을 설정하는 중에 에러가 발생했을 경우
-            console.error('에러 메시지:', error.message);
-        }
-        shopCache = []; // 에러 발생 시 캐시를 빈 배열로 초기화
+        console.error('🔥 창고 정리 중 문제 발생!', error.message);
+        shopCache = [];
     }
 }
 
+// exports.handler 이하 코드는 이전과 동일합니다.
 exports.handler = async (event) => {
     if (shopCache === null) {
         await prepareShopCache();
