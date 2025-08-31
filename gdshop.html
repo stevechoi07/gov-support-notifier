@@ -15,9 +15,8 @@
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧐</text></svg>">
     
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn/tailwindcss.com"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
     <style>
         html { scroll-behavior: smooth; }
         body { background-color: #f8fafc; font-family: 'Pretendard', sans-serif; }
@@ -47,7 +46,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v22.0 The Real Final Fix</p>
+            <p class="text-xs text-slate-400 mt-1">v23.0 Stable Rollback</p>
         </header>
 
         <div id="filters-wrapper">
@@ -94,7 +93,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 변수 선언 등 상단 스크립트 (변경 없음)
+            // 변수 선언 등 (변경 없음)
             const shopListEl = document.getElementById('shop-list');
             const loaderEl = document.getElementById('loader');
             const noResultsEl = document.getElementById('no-results');
@@ -107,11 +106,7 @@
             const debuggerEl = document.getElementById('debugger');
             const debuggerLogEl = document.getElementById('debugger-log');
 
-            // v22.0: 좌표 변환 마법 주문 교육!
-            // 1. 표준 위경도 (WGS84)
-            proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
-            // 2. 네이버 지도가 사용하는 웹 메르카토르 좌표계
-            proj4.defs("EPSG:3857", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
+            // v23.0: proj4js 관련 정의 제거
 
             let allShops = [];
             let filteredShops = [];
@@ -131,7 +126,7 @@
                 debuggerEl.classList.add('show');
                 debuggerTimeout = setTimeout(() => {
                     debuggerEl.classList.remove('show');
-                }, 7000); // 디버거 표시 시간 7초로 늘림
+                }, 5000);
             }
 
             // 이하 initializeApp, setupFilters 등 주요 로직 함수들은 변경 없음...
@@ -346,7 +341,7 @@
                                         <span>공유</span>
                                     </button>
                                     <button class="naver-map-btn flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <svg xmlns="http://www.w.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="m12 0l8.73 4.4L12 24L3.27 4.4z"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="m12 0l8.73 4.4L12 24L3.27 4.4z"/></svg>
                                         <span>네이버 길찾기</span>
                                     </button>
                                 </div>
@@ -402,30 +397,25 @@
                             e.stopPropagation();
                             
                             const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
-                            const shopName = encodeURIComponent(shop['업소명'] || '목적지');
+                            const shopName = encodeURIComponent(shop['업소명']);
                             let naverMapUrl = '';
 
                             if (isMobile) {
                                 // 모바일: 핀을 직접 찍어주는 URL (안정적으로 작동)
                                 naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`;
-                                window.open(naverMapUrl, '_blank');
                             } else {
-                                // v22.0: PC에서는 좌표 변환 후, 친구가 찾아낸 그 URL을 사용!
-                                const wgs84Coords = [shop.lng, shop.lat];
-                                const mercatorCoords = proj4('EPSG:4326', 'EPSG:3857', wgs84Coords);
-                                
-                                naverMapUrl = `https://map.naver.com/p/entry/address/${mercatorCoords[0]},${mercatorCoords[1]},${shopName},new?c=15.00,0,0,0,dh`;
-                                
-                                showDebugger([
-                                    "PC 지도 생성!",
-                                    `가게: ${shop['업소명']}`,
-                                    `원본(WGS84): ${shop.lat.toFixed(6)}, ${shop.lng.toFixed(6)}`,
-                                    `변환(Mercator): ${mercatorCoords[1].toFixed(4)}, ${mercatorCoords[0].toFixed(4)}`,
-                                    `최종 URL: ${naverMapUrl}`
-                                ]);
-
-                                window.open(naverMapUrl, '_blank');
+                                // v23.0: PC에서는 가장 안정적인 '스마트 검색' URL로 롤백!
+                                naverMapUrl = `https://map.naver.com/v5/search/${shopName}?lat=${shop.lat}&lng=${shop.lng}&zIndex=12&searchCoord=${shop.lng};${shop.lat}`;
                             }
+                            
+                            showDebugger([
+                                "네이버 길찾기 버튼 클릭됨!",
+                                `모드: ${isMobile ? '📱 모바일-핀' : '💻 PC-스마트 검색'}`,
+                                `가게: ${shop['업소명']}`,
+                                `URL: ${naverMapUrl}`
+                            ]);
+                            
+                            window.open(naverMapUrl, '_blank');
                         });
                     }
 
