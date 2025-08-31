@@ -40,7 +40,6 @@
         #debugger .log { word-break: break-all; }
         #debugger .log-item { margin-top: 4px; border-left: 2px solid #64748b; padding-left: 8px; }
         
-        /* v25.0: 광고 카드용 CSS 스타일 추가 */
         .ad-media-container {
             position: relative; width: 100%;
             padding-top: 56.25%; /* 16:9 비율 */
@@ -68,7 +67,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v25.0 Ad System Integrated</p>
+            <p class="text-xs text-slate-400 mt-1">v25.1 Infinite Scroll Fixed</p>
         </header>
 
         <div id="filters-wrapper">
@@ -117,7 +116,6 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-      // index.html과 동일한 Firebase 프로젝트를 사용합니다.
       const firebaseConfig = {
         apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
         authDomain: "gtree-f3d92.firebaseapp.com",
@@ -131,12 +129,10 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       
-      // 전역 스코프에 db 인스턴스를 노출시켜 기존 스크립트에서 접근 가능하게 합니다.
       window.db = db;
       window.firebase = {
           collection, getDocs, query, orderBy, doc, updateDoc, increment
       };
-
     </script>
     
     <script>
@@ -154,7 +150,7 @@
             const debuggerLogEl = document.getElementById('debugger-log');
 
             let allShops = [];
-            let filteredShops = [];
+            let currentItems = []; // v25.1: 필터링+광고가 적용된 전체 목록을 저장하는 변수
             let currentSido = '전체';
             let currentSigungu = '전체';
             let currentCategory = '전체';
@@ -164,8 +160,6 @@
             let isLoading = false;
             let favorites = JSON.parse(localStorage.getItem('muk_favorites')) || [];
             let debuggerTimeout;
-            
-            // v25.0: 광고 데이터 저장을 위한 변수 추가
             let adDataList = [];
 
             function showDebugger(logs) {
@@ -177,14 +171,15 @@
                 }, 5000);
             }
 
-            window.addEventListener('scroll', () => filtersWrapper.classList.toggle('scrolled', window.scrollY > 10));
+            // v25.1: 스크롤 이벤트 리스너를 새 로직으로 교체
+            window.addEventListener('scroll', () => {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading) {
+                    loadMoreItems();
+                }
+            });
             
-            // v25.0: 광고 데이터 로드 함수 추가
             async function loadAdData() {
-              if (!window.db || !window.firebase) {
-                  console.error("Firebase is not initialized yet.");
-                  return;
-              }
+              if (!window.db || !window.firebase) { return; }
               const { db, firebase } = window;
               try {
                   const q = firebase.query(firebase.collection(db, "ads"), firebase.orderBy("order", "asc"));
@@ -210,7 +205,6 @@
               }
             }
 
-            // v25.0: 광고 클릭 핸들러 함수 추가
             async function handleAdClick(adId) {
                 if (!window.db || !window.firebase) return;
                 const { db, firebase } = window;
@@ -224,20 +218,15 @@
                 }
             }
             
-            // v25.0: initializeApp 함수에 광고 로드 로직 추가
             async function initializeApp() {
                 try {
-                    // Firebase 초기화를 기다립니다.
                     await new Promise(resolve => {
                         const interval = setInterval(() => {
-                            if (window.db) {
-                                clearInterval(interval);
-                                resolve();
-                            }
+                            if (window.db) { clearInterval(interval); resolve(); }
                         }, 100);
                     });
                     
-                    await loadAdData(); // 광고 데이터 먼저 로드
+                    await loadAdData();
                     
                     const response = await fetch('/api/shops');
                     if (!response.ok) throw new Error('서버에서 가게 데이터를 받아오지 못했어요!');
@@ -246,10 +235,9 @@
                     applyFiltersAndRender();
                 } catch (err) {
                     console.error("❌ 초기화 실패:", err);
+                    loaderEl.style.display = 'none';
                     noResultsEl.innerHTML = `<p class="font-semibold">이런! 가게 목록을 불러오지 못했어요.</p><p class="text-sm">새로고침을 시도해주세요.</p>`;
                     noResultsEl.style.display = 'block';
-                } finally {
-                    loaderEl.style.display = 'none';
                 }
             }
             
@@ -275,7 +263,6 @@
                     }
                 });
                 
-                // v25.0: 광고 클릭 이벤트 처리를 위한 리스너 추가
                 shopListEl.addEventListener('click', e => {
                     const adLink = e.target.closest('.ad-link');
                     if (adLink) {
@@ -297,53 +284,53 @@
                 sigunguFilter.disabled = false;
             }
             
-            // v25.0: 필터링 결과에 광고를 삽입하는 로직 추가
             function applyFiltersAndRender() {
-                let tempShops = allShops;
+                let filteredShops = allShops;
                 
                 if (currentCategory === '즐겨찾기') {
-                    tempShops = allShops.filter(shop => favorites.includes(getShopId(shop)));
+                    filteredShops = allShops.filter(shop => favorites.includes(getShopId(shop)));
                 } else {
-                    if (currentSido !== '전체') tempShops = tempShops.filter(shop => shop['시도'] === currentSido);
-                    if (currentSigungu !== '전체') tempShops = tempShops.filter(shop => shop['시군'] === currentSigungu);
+                    if (currentSido !== '전체') filteredShops = filteredShops.filter(shop => shop['시도'] === currentSido);
+                    if (currentSigungu !== '전체') filteredShops = filteredShops.filter(shop => shop['시군'] === currentSigungu);
                     if (currentCategory !== '전체') {
                         const categoryMap = { '한식': ['한식'], '중식': ['중식', '중국'], '일식': ['일식', '회', '초밥'], '양식': ['양식', '돈까스', '패스트푸드'], '치킨/분식': ['치킨', '분식', '기타'], '서비스': ['세탁', '미용', '이용', '목욕', '숙박', '사진', 'PC방', '서비스'] };
                         const keywords = categoryMap[currentCategory] || [];
-                        tempShops = tempShops.filter(shop => keywords.some(keyword => (shop['업종'] || '').includes(keyword)));
+                        filteredShops = filteredShops.filter(shop => keywords.some(keyword => (shop['업종'] || '').includes(keyword)));
                     }
                 }
 
                 if (searchTerm.trim() !== '') {
                     const lowerCaseSearch = searchTerm.toLowerCase();
-                    tempShops = tempShops.filter(shop => 
+                    filteredShops = filteredShops.filter(shop => 
                         (shop['업소명'] && shop['업소명'].toLowerCase().includes(lowerCaseSearch)) ||
                         (shop['주소'] && shop['주소'].toLowerCase().includes(lowerCaseSearch)) ||
                         (shop['메뉴1'] && shop['메뉴1'].toLowerCase().includes(lowerCaseSearch))
                     );
                 }
                 
-                filteredShops = tempShops.sort((a, b) => a['업소명'].localeCompare(b['업소명']));
+                const sortedShops = filteredShops.sort((a, b) => a['업소명'].localeCompare(b['업소명']));
                 
-                // 광고 삽입 로직
                 const itemsWithAds = [];
                 let adIndex = 0;
                 if (adDataList.length > 0) {
-                    for (let i = 0; i < filteredShops.length; i++) {
-                        itemsWithAds.push(filteredShops[i]);
-                        if ((i + 1) % 7 === 0) { // 7개 아이템마다 광고 삽입
+                    for (let i = 0; i < sortedShops.length; i++) {
+                        itemsWithAds.push(sortedShops[i]);
+                        if ((i + 1) % 7 === 0) {
                             const currentAd = adDataList[adIndex % adDataList.length];
                             itemsWithAds.push(currentAd);
                             adIndex++;
                         }
                     }
                 } else {
-                    filteredShops.forEach(item => itemsWithAds.push(item));
+                    sortedShops.forEach(item => itemsWithAds.push(item));
                 }
-                
+
+                currentItems = itemsWithAds; // v25.1: 전역 변수에 최종 목록 저장
                 shopListEl.innerHTML = '';
                 currentPage = 1;
-                updateNoResultsMessage(itemsWithAds); // 광고 포함된 리스트로 전달
-                loadMoreItems(itemsWithAds); // 광고 포함된 리스트로 전달
+                updateNoResultsMessage(currentItems);
+                loaderEl.style.display = 'none';
+                loadMoreItems(); // 첫 페이지 로드
             }
             
             function updateNoResultsMessage(items) {
@@ -361,12 +348,14 @@
                 }
             }
 
-            function loadMoreItems(fullList) {
+            // v25.1: 무한 스크롤 로직 재설계
+            function loadMoreItems() {
                 if (isLoading) return;
                 isLoading = true;
                 const startIndex = (currentPage - 1) * perPage;
                 const endIndex = startIndex + perPage;
-                const itemsToRender = fullList.slice(startIndex, endIndex);
+                const itemsToRender = currentItems.slice(startIndex, endIndex);
+
                 if (itemsToRender.length > 0) {
                     displayShops(itemsToRender);
                     currentPage++;
@@ -379,10 +368,12 @@
             }
             
             function pickRandomShop() {
-                if(filteredShops.length === 0) return; // 광고가 아닌 순수 가게 목록에서 랜덤 선택
+                // 광고가 아닌 순수 가게 목록에서 랜덤 선택
+                const shopsOnly = currentItems.filter(item => !item.isAd);
+                if(shopsOnly.length === 0) return; 
 
-                const randomIndex = Math.floor(Math.random() * filteredShops.length);
-                const randomShop = filteredShops[randomIndex];
+                const randomIndex = Math.floor(Math.random() * shopsOnly.length);
+                const randomShop = shopsOnly[randomIndex];
                 
                 shopListEl.innerHTML = ''; 
                 displayShops([randomShop], true);
@@ -392,22 +383,21 @@
                     cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
-
-            // v25.0: 광고 카드와 가게 카드를 모두 렌더링하도록 수정
+            
             function displayShops(items, isSpotlight = false) {
                 const colorMap = {'한식': 'bg-emerald-50 text-emerald-700', '중식': 'bg-red-50 text-red-700', '일식': 'bg-sky-50 text-sky-700', '양식': 'bg-amber-50 text-amber-700', '치킨': 'bg-orange-50 text-orange-700', '분식': 'bg-orange-50 text-orange-700', '서비스': 'bg-indigo-50 text-indigo-700', '미용': 'bg-fuchsia-50 text-fuchsia-700', '이용': 'bg-fuchsia-50 text-fuchsia-700', '세탁': 'bg-blue-50 text-blue-700', '숙박': 'bg-violet-50 text-violet-700', '기타': 'bg-slate-50 text-slate-700'};
                 const defaultColor = 'bg-slate-50 text-slate-700';
 
                 items.forEach(item => {
-                    // 광고 아이템인 경우
+                    const cardWrapper = document.createElement('div');
+                    
                     if (item.isAd) {
-                        const adCard = document.createElement('div');
                         const partnersText = item.isPartners 
                             ? `<p class="text-xs text-slate-500 text-left">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
                             : '';
 
                         if (item.adType === 'iframe') {
-                            adCard.innerHTML = `<div class="iframe-ad-wrapper">
+                            cardWrapper.innerHTML = `<div class="iframe-ad-wrapper">
                                                     <div class="iframe-ad-container">${item.iframeCode || ''}</div>
                                                     ${partnersText}
                                                 </div>`;
@@ -426,8 +416,8 @@
                                  mediaElement = `<img src="https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here" alt="${item.title}">`;
                              }
                              
-                             adCard.className = `bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative flex flex-col`;
-                             adCard.innerHTML = `
+                             cardWrapper.className = `bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative flex flex-col`;
+                             cardWrapper.innerHTML = `
                                  <div class="ad-media-container">${mediaElement}</div>
                                  <div class="p-4 flex-grow flex flex-col">
                                      <div class="flex justify-between items-start">
@@ -442,19 +432,17 @@
                                      </div>
                                  </div>`;
                         }
-                        shopListEl.appendChild(adCard);
-                        return; // 광고 카드 렌더링 후 다음 아이템으로
+                        shopListEl.appendChild(cardWrapper);
+                        return;
                     }
                     
-                    // 기존 가게 카드 렌더링 로직 (item을 shop으로 사용)
                     const shop = item;
-                    const card = document.createElement('div');
-                    card.className = `shop-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col overflow-hidden`;
+                    cardWrapper.className = `shop-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col overflow-hidden`;
                     const shopId = getShopId(shop);
                     const isFavorited = favorites.includes(shopId);
                     
                     if (isSpotlight) {
-                        setTimeout(() => card.classList.add('expanded'), 100);
+                        setTimeout(() => cardWrapper.classList.add('expanded'), 100);
                     }
 
                     let cheapestMenu = { name: null, price: Infinity };
@@ -491,7 +479,7 @@
                     let categoryColor = defaultColor;
                     for (const key in colorMap) { if (업종.includes(key)) { categoryColor = colorMap[key]; break; } }
 
-                    card.innerHTML = `
+                    cardWrapper.innerHTML = `
                         <div class="p-5">
                             <div class="flex justify-between items-start">
                                 <span class="text-xs font-bold ${categoryColor} px-2 py-0.5 rounded-full">${업종}</span>
@@ -527,9 +515,9 @@
                         </div>
                     `;
                     
-                    card.querySelector('.toggle-details-btn').addEventListener('click', (e) => { e.stopPropagation(); card.classList.toggle('expanded'); });
+                    cardWrapper.querySelector('.toggle-details-btn').addEventListener('click', (e) => { e.stopPropagation(); cardWrapper.classList.toggle('expanded'); });
                     
-                    const favBtn = card.querySelector('.favorite-btn');
+                    const favBtn = cardWrapper.querySelector('.favorite-btn');
                     favBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const id = getShopId(shop);
@@ -540,13 +528,13 @@
                         if(currentCategory === '즐겨찾기') applyFiltersAndRender();
                     });
 
-                    card.querySelector('.share-btn').addEventListener('click', (e) => {
+                    cardWrapper.querySelector('.share-btn').addEventListener('click', (e) => {
                          e.stopPropagation();
                          const shareData = { title: `[오늘MUK?]`, text: `"${shop['업소명']}" 어때?`, url: window.location.href };
                          if (navigator.share) { navigator.share(shareData); }
                     });
 
-                    const naverMapBtn = card.querySelector('.naver-map-btn');
+                    const naverMapBtn = cardWrapper.querySelector('.naver-map-btn');
                     const hasCoords = shop.lat && shop.lng;
                     naverMapBtn.disabled = !hasCoords;
 
@@ -564,12 +552,9 @@
                             window.open(naverMapUrl, '_blank');
                         });
                     }
-                    shopListEl.appendChild(card);
+                    shopListEl.appendChild(cardWrapper);
                 });
             }
-
-            // 무한 스크롤 로직은 applyFiltersAndRender 내부의 loadMoreItems 호출로 대체됨
-            // window.addEventListener('scroll', ...) 로직은 일단 유지하되, 추후 리팩토링 가능
 
             initializeApp();
         });
