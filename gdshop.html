@@ -34,7 +34,6 @@
         input[type="search"]::-webkit-search-results-button,
         input[type="search"]::-webkit-search-results-decoration { -webkit-appearance: none; }
         
-        /* v17.0: 디버거 스타일 추가 */
         #debugger { position: fixed; bottom: 10px; right: 10px; width: 320px; background-color: rgba(15, 23, 42, 0.9); color: #e2e8f0; border-radius: 8px; padding: 12px; font-size: 13px; font-family: monospace; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid #334155; opacity: 0; transform: translateY(20px); transition: opacity 0.3s, transform 0.3s; pointer-events: none; }
         #debugger.show { opacity: 1; transform: translateY(0); }
         #debugger .title { font-weight: bold; color: #5eead4; margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
@@ -47,7 +46,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v17.0 Naver Map Ready</p>
+            <p class="text-xs text-slate-400 mt-1">v18.0 Smart Navi</p>
         </header>
 
         <div id="filters-wrapper">
@@ -55,7 +54,7 @@
                 <div class="relative mb-4">
                     <input type="search" id="search-input" placeholder="가게 이름, 메뉴, 주소 등으로 검색" class="w-full p-3 pl-10 border border-slate-200 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition font-medium text-slate-700">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg class="w-5 h-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
+                        <svg class="w-5 h-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 M10 18a8 8 0 100-16 8 8 0 000 16zm0 1.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z" clip-rule="evenodd" /></svg>
                     </div>
                 </div>
                 <div id="search-filters" class="grid grid-cols-2 gap-3 mb-4">
@@ -94,6 +93,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 변수 선언 (대부분 변경 없음)
             const shopListEl = document.getElementById('shop-list');
             const loaderEl = document.getElementById('loader');
             const noResultsEl = document.getElementById('no-results');
@@ -103,8 +103,6 @@
             const sigunguFilter = document.getElementById('sigungu-filter');
             const categoryFilters = document.getElementById('category-filters');
             const randomBtn = document.getElementById('random-btn');
-            
-            // v17.0: 디버거 요소 가져오기
             const debuggerEl = document.getElementById('debugger');
             const debuggerLogEl = document.getElementById('debugger-log');
 
@@ -120,16 +118,16 @@
             let favorites = JSON.parse(localStorage.getItem('muk_favorites')) || [];
             let debuggerTimeout;
 
-            // v17.0: 디버거 함수 추가
             function showDebugger(logs) {
                 clearTimeout(debuggerTimeout);
                 debuggerLogEl.innerHTML = logs.map(log => `<div class="log-item">${log}</div>`).join('');
                 debuggerEl.classList.add('show');
                 debuggerTimeout = setTimeout(() => {
                     debuggerEl.classList.remove('show');
-                }, 5000); // 5초 후에 사라짐
+                }, 5000);
             }
 
+            // 이하 initializeApp, setupFilters, populateSigunguFilter, applyFiltersAndRender 등 주요 로직 함수들은 변경 없음...
             window.addEventListener('scroll', () => filtersWrapper.classList.toggle('scrolled', window.scrollY > 10));
 
             async function initializeApp() {
@@ -264,6 +262,7 @@
                 }
             }
 
+
             function displayShops(shops, isSpotlight = false) {
                 const colorMap = {'한식': 'bg-emerald-50 text-emerald-700', '중식': 'bg-red-50 text-red-700', '일식': 'bg-sky-50 text-sky-700', '양식': 'bg-amber-50 text-amber-700', '치킨': 'bg-orange-50 text-orange-700', '분식': 'bg-orange-50 text-orange-700', '서비스': 'bg-indigo-50 text-indigo-700', '미용': 'bg-fuchsia-50 text-fuchsia-700', '이용': 'bg-fuchsia-50 text-fuchsia-700', '세탁': 'bg-blue-50 text-blue-700', '숙박': 'bg-violet-50 text-violet-700', '기타': 'bg-slate-50 text-slate-700'};
                 const defaultColor = 'bg-slate-50 text-slate-700';
@@ -278,6 +277,7 @@
                         setTimeout(() => card.classList.add('expanded'), 100);
                     }
 
+                    // 이하 메뉴 가격 계산 로직 (변경 없음)
                     let cheapestMenu = { name: null, price: Infinity };
                     for (let i = 1; i <= 4; i++) {
                         const menuName = shop[`메뉴${i}`];
@@ -331,18 +331,14 @@
                                     <p class="text-sm text-slate-700 flex items-center gap-3"><svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>${contactHTML}</p>
                                 </div>
                                 <div><h4 class="font-bold text-slate-800 mb-2">✨ 주요 착한 메뉴</h4><ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul></div>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <button class="share-btn bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                                <div class="flex gap-2">
+                                    <button class="share-btn flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
                                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.665l3-3z" /><path d="M8.603 16.103a4 4 0 005.656-5.656l-3-3a4 4 0 00-5.865-.225.75.75 0 00.977 1.138 2.5 2.5 0 013.665.142l3 3a2.5 2.5 0 01-3.536 3.536l-1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 000 5.656z" /></svg>
                                         <span>공유</span>
                                     </button>
-                                    <button class="kakao-map-btn bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c-4.97 0-9 3.358-9 7.5c0 2.032.934 3.91 2.452 5.253L12 22l6.548-7.247C20.066 13.41 21 11.532 21 9.5C21 5.358 16.97 2 12 2m0 2c1.395 0 2.68.53 3.688 1.406c1.008.877 1.594 2.055 1.594 3.25c0 1.94-1.203 3.65-3.094 4.813L12 16.89l-2.188-2.422C8.016 13.257 6.719 11.453 6.719 9.656c0-1.195.586-2.373 1.594-3.25C9.32 4.53 10.605 4 12 4m0 2.5a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3Z"/></svg>
-                                        <span>카카오</span>
-                                    </button>
-                                    <button class="naver-map-btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <button class="naver-map-btn flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="m12 0l8.73 4.4L12 24L3.27 4.4z"/></svg>
-                                        <span>네이버</span>
+                                        <span>네이버 길찾기</span>
                                     </button>
                                 </div>
                             </div>
@@ -352,6 +348,7 @@
                         </div>
                     `;
                     
+                    // --- 이벤트 리스너 영역 ---
                     card.querySelector('.toggle-details-btn').addEventListener('click', (e) => {
                         e.stopPropagation();
                         card.classList.toggle('expanded');
@@ -387,31 +384,36 @@
                          }
                     });
 
-                    const kakaoMapBtn = card.querySelector('.kakao-map-btn');
-                    const hasCoords = shop.lat && shop.lng;
-                    kakaoMapBtn.disabled = !hasCoords;
-                    if(hasCoords) {
-                        kakaoMapBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            window.open(`https://map.kakao.com/link/to/${encodeURIComponent(shop['업소명'])},${shop.lat},${shop.lng}`, '_blank');
-                        });
-                    }
+                    // v18.0: 카카오 지도 관련 코드 전체 삭제
 
-                    // v17.0: 네이버 지도 길찾기 버튼 이벤트 리스너 추가
+                    // v18.0: 네이버 지도 버튼 리스너 업그레이드
                     const naverMapBtn = card.querySelector('.naver-map-btn');
+                    const hasCoords = shop.lat && shop.lng;
                     naverMapBtn.disabled = !hasCoords;
+
                     if(hasCoords) {
                         naverMapBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            const shopName = encodeURIComponent(shop['업소명']);
-                            // 네이버 지도는 모바일 웹 URL을 사용하는 것이 호환성이 좋아!
-                            const naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`;
                             
-                            // 디버거에 정보 표시
+                            // 1. 접속 기기 탐정 출동!
+                            const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+                            const shopName = encodeURIComponent(shop['업소명']);
+                            let naverMapUrl = '';
+
+                            // 2. 상황별 맞춤 URL 생성
+                            if (isMobile) {
+                                // 모바일용 URL
+                                naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`;
+                            } else {
+                                // PC(데스크탑)용 URL
+                                naverMapUrl = `https://map.naver.com/v5/search/${shopName}?lat=${shop.lat}&lng=${shop.lng}&zIndex=12&searchCoord=${shop.lng};${shop.lat}`;
+                            }
+                            
+                            // 3. 디버거에 탐정 보고서 표시
                             showDebugger([
                                 "네이버 길찾기 버튼 클릭됨!",
+                                `기기: ${isMobile ? '📱 모바일' : '💻 데스크탑'} 감지!`,
                                 `가게: ${shop['업소명']}`,
-                                `좌표: ${shop.lat}, ${shop.lng}`,
                                 `URL: ${naverMapUrl}`
                             ]);
                             
