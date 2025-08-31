@@ -22,6 +22,7 @@
         body { background-color: #f8fafc; font-family: 'Pretendard', sans-serif; }
         ::-webkit-scrollbar { display: none; }
         #filters-wrapper { position: sticky; top: 0; z-index: 40; padding-top: 1rem; padding-bottom: 1rem; transition: all 0.3s ease-in-out; }
+        /* v25.2: 이 scrolled 클래스가 다시 작동하도록 JS를 수정했습니다. */
         #filters-wrapper.scrolled { background-color: rgba(248, 250, 252, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); padding-top: 0.75rem; padding-bottom: 0.75rem; }
         .custom-select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
         .filter-btn.active { background-color: #0f172a; color: white; border-color: #0f172a; }
@@ -40,26 +41,10 @@
         #debugger .log { word-break: break-all; }
         #debugger .log-item { margin-top: 4px; border-left: 2px solid #64748b; padding-left: 8px; }
         
-        .ad-media-container {
-            position: relative; width: 100%;
-            padding-top: 56.25%; /* 16:9 비율 */
-            background-color: #e2e8f0;
-        }
-        .ad-media-container img,
-        .ad-media-container video {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
-        }
-        .iframe-ad-wrapper {
-            width: 100%; display: flex;
-            flex-direction: column; align-items: center;
-            gap: 0.5rem;
-        }
-        .iframe-ad-container {
-            display: flex; justify-content: center;
-            align-items: center; width: 100%;
-        }
+        .ad-media-container { position: relative; width: 100%; padding-top: 56.25%; background-color: #e2e8f0; }
+        .ad-media-container img, .ad-media-container video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .iframe-ad-wrapper { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+        .iframe-ad-container { display: flex; justify-content: center; align-items: center; width: 100%; }
     </style>
 </head>
 <body>
@@ -67,7 +52,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v25.1 Infinite Scroll Fixed</p>
+            <p class="text-xs text-slate-400 mt-1">v25.2 Glass UI Fixed</p>
         </header>
 
         <div id="filters-wrapper">
@@ -150,7 +135,7 @@
             const debuggerLogEl = document.getElementById('debugger-log');
 
             let allShops = [];
-            let currentItems = []; // v25.1: 필터링+광고가 적용된 전체 목록을 저장하는 변수
+            let currentItems = [];
             let currentSido = '전체';
             let currentSigungu = '전체';
             let currentCategory = '전체';
@@ -171,13 +156,30 @@
                 }, 5000);
             }
 
-            // v25.1: 스크롤 이벤트 리스너를 새 로직으로 교체
+            // v25.2: 스크롤 이벤트 리스너 통합
             window.addEventListener('scroll', () => {
+                // 1. 필터 바 배경 효과 처리
+                filtersWrapper.classList.toggle('scrolled', window.scrollY > 10);
+                
+                // 2. 무한 스크롤 처리
                 if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading) {
                     loadMoreItems();
                 }
             });
             
+            async function loadAdData() { /* ... v25.1과 동일 ... */ }
+            async function handleAdClick(adId) { /* ... v25.1과 동일 ... */ }
+            async function initializeApp() { /* ... v25.1과 동일 ... */ }
+            function setupFilters() { /* ... v25.1과 동일 ... */ }
+            function populateSigunguFilter() { /* ... v25.1과 동일 ... */ }
+            function applyFiltersAndRender() { /* ... v25.1과 동일 ... */ }
+            function updateNoResultsMessage(items) { /* ... v25.1과 동일 ... */ }
+            function loadMoreItems() { /* ... v25.1과 동일 ... */ }
+            function getShopId(shop) { /* ... v25.1과 동일 ... */ }
+            function pickRandomShop() { /* ... v25.1과 동일 ... */ }
+            function displayShops(items, isSpotlight = false) { /* ... v25.1과 동일 ... */ }
+
+            // --- 세부 함수 구현 (v25.1과 거의 동일, 일부만 복사) ---
             async function loadAdData() {
               if (!window.db || !window.firebase) { return; }
               const { db, firebase } = window;
@@ -185,10 +187,7 @@
                   const q = firebase.query(firebase.collection(db, "ads"), firebase.orderBy("order", "asc"));
                   const querySnapshot = await firebase.getDocs(q);
                   const rawAdData = [];
-                  querySnapshot.forEach((doc) => {
-                      rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
-                  });
-
+                  querySnapshot.forEach((doc) => { rawAdData.push({ id: doc.id, ...doc.data(), isAd: true }); });
                   const now = new Date();
                   adDataList = rawAdData.filter(ad => {
                       if (ad.isActive === false) return false;
@@ -199,35 +198,22 @@
                       if (end && now > end) return false;
                       return true;
                   });
-              } catch (error) {
-                  console.error("Error loading ads from Firestore:", error);
-                  adDataList = [];
-              }
+              } catch (error) { console.error("Error loading ads:", error); adDataList = []; }
             }
-
             async function handleAdClick(adId) {
                 if (!window.db || !window.firebase) return;
                 const { db, firebase } = window;
                 try {
                     const adRef = firebase.doc(db, "ads", adId);
-                    await firebase.updateDoc(adRef, {
-                        clickCount: firebase.increment(1)
-                    });
-                } catch (error) {
-                    console.error("클릭 카운트 업데이트 실패:", error);
-                }
+                    await firebase.updateDoc(adRef, { clickCount: firebase.increment(1) });
+                } catch (error) { console.error("클릭 카운트 업데이트 실패:", error); }
             }
-            
             async function initializeApp() {
                 try {
                     await new Promise(resolve => {
-                        const interval = setInterval(() => {
-                            if (window.db) { clearInterval(interval); resolve(); }
-                        }, 100);
+                        const interval = setInterval(() => { if (window.db) { clearInterval(interval); resolve(); } }, 100);
                     });
-                    
                     await loadAdData();
-                    
                     const response = await fetch('/api/shops');
                     if (!response.ok) throw new Error('서버에서 가게 데이터를 받아오지 못했어요!');
                     allShops = await response.json();
@@ -240,29 +226,22 @@
                     noResultsEl.style.display = 'block';
                 }
             }
-            
             function setupFilters() {
                 const sidos = [...new Set(allShops.map(shop => shop['시도']))].sort();
                 sidos.forEach(sido => sidoFilter.appendChild(new Option(sido, sido)));
-                
                 searchInput.addEventListener('input', (e) => { searchTerm = e.target.value; applyFiltersAndRender(); });
                 sidoFilter.addEventListener('change', (e) => { currentSido = e.target.value; populateSigunguFilter(); applyFiltersAndRender(); });
                 sigunguFilter.addEventListener('change', (e) => { currentSigungu = e.target.value; applyFiltersAndRender(); });
-                
                 categoryFilters.addEventListener('click', (e) => {
                     const button = e.target.closest('button');
                     if (button) {
-                        if(button.id === 'random-btn') {
-                            pickRandomShop();
-                            return;
-                        }
+                        if(button.id === 'random-btn') { pickRandomShop(); return; }
                         categoryFilters.querySelector('.active').classList.remove('active');
                         button.classList.add('active');
                         currentCategory = button.dataset.category;
                         applyFiltersAndRender();
                     }
                 });
-                
                 shopListEl.addEventListener('click', e => {
                     const adLink = e.target.closest('.ad-link');
                     if (adLink) {
@@ -274,7 +253,6 @@
                     }
                 });
             }
-
             function populateSigunguFilter() {
                 sigunguFilter.innerHTML = '<option value="전체">시/군/구 전체</option>';
                 currentSigungu = '전체';
@@ -283,10 +261,8 @@
                 sigungus.forEach(sigungu => sigunguFilter.appendChild(new Option(sigungu, sigungu)));
                 sigunguFilter.disabled = false;
             }
-            
             function applyFiltersAndRender() {
                 let filteredShops = allShops;
-                
                 if (currentCategory === '즐겨찾기') {
                     filteredShops = allShops.filter(shop => favorites.includes(getShopId(shop)));
                 } else {
@@ -298,18 +274,11 @@
                         filteredShops = filteredShops.filter(shop => keywords.some(keyword => (shop['업종'] || '').includes(keyword)));
                     }
                 }
-
                 if (searchTerm.trim() !== '') {
                     const lowerCaseSearch = searchTerm.toLowerCase();
-                    filteredShops = filteredShops.filter(shop => 
-                        (shop['업소명'] && shop['업소명'].toLowerCase().includes(lowerCaseSearch)) ||
-                        (shop['주소'] && shop['주소'].toLowerCase().includes(lowerCaseSearch)) ||
-                        (shop['메뉴1'] && shop['메뉴1'].toLowerCase().includes(lowerCaseSearch))
-                    );
+                    filteredShops = filteredShops.filter(shop => (shop['업소명'] && shop['업소명'].toLowerCase().includes(lowerCaseSearch)) || (shop['주소'] && shop['주소'].toLowerCase().includes(lowerCaseSearch)) || (shop['메뉴1'] && shop['메뉴1'].toLowerCase().includes(lowerCaseSearch)));
                 }
-                
                 const sortedShops = filteredShops.sort((a, b) => a['업소명'].localeCompare(b['업소명']));
-                
                 const itemsWithAds = [];
                 let adIndex = 0;
                 if (adDataList.length > 0) {
@@ -321,234 +290,109 @@
                             adIndex++;
                         }
                     }
-                } else {
-                    sortedShops.forEach(item => itemsWithAds.push(item));
-                }
-
-                currentItems = itemsWithAds; // v25.1: 전역 변수에 최종 목록 저장
+                } else { sortedShops.forEach(item => itemsWithAds.push(item)); }
+                currentItems = itemsWithAds;
                 shopListEl.innerHTML = '';
                 currentPage = 1;
                 updateNoResultsMessage(currentItems);
                 loaderEl.style.display = 'none';
-                loadMoreItems(); // 첫 페이지 로드
+                loadMoreItems();
             }
-            
             function updateNoResultsMessage(items) {
-                if (items.length > 0) {
-                    noResultsEl.style.display = 'none';
-                    randomBtn.disabled = false;
-                } else {
+                if (items.length > 0) { noResultsEl.style.display = 'none'; randomBtn.disabled = false; }
+                else {
                     randomBtn.disabled = true;
-                    if (currentCategory === '즐겨찾기') {
-                         noResultsEl.innerHTML = `<p class="font-semibold">아직 즐겨찾는 가게가 없네요!</p>`;
-                    } else {
-                         noResultsEl.innerHTML = `<p class="font-semibold">아쉽게도 조건에 맞는 가게가 없네요.</p>`;
-                    }
+                    noResultsEl.innerHTML = `<p class="font-semibold">${currentCategory === '즐겨찾기' ? '아직 즐겨찾는 가게가 없네요!' : '아쉽게도 조건에 맞는 가게가 없네요.'}</p>`;
                     noResultsEl.style.display = 'block';
                 }
             }
-
-            // v25.1: 무한 스크롤 로직 재설계
             function loadMoreItems() {
                 if (isLoading) return;
                 isLoading = true;
                 const startIndex = (currentPage - 1) * perPage;
                 const endIndex = startIndex + perPage;
                 const itemsToRender = currentItems.slice(startIndex, endIndex);
-
-                if (itemsToRender.length > 0) {
-                    displayShops(itemsToRender);
-                    currentPage++;
-                }
+                if (itemsToRender.length > 0) { displayShops(itemsToRender); currentPage++; }
                 isLoading = false;
             }
-            
-            function getShopId(shop) {
-                return `${shop['업소명']}_${shop['주소']}`;
-            }
-            
+            function getShopId(shop) { return `${shop['업소명']}_${shop['주소']}`; }
             function pickRandomShop() {
-                // 광고가 아닌 순수 가게 목록에서 랜덤 선택
                 const shopsOnly = currentItems.filter(item => !item.isAd);
                 if(shopsOnly.length === 0) return; 
-
                 const randomIndex = Math.floor(Math.random() * shopsOnly.length);
                 const randomShop = shopsOnly[randomIndex];
-                
                 shopListEl.innerHTML = ''; 
                 displayShops([randomShop], true);
-
                 const cardElement = shopListEl.querySelector('.shop-card');
-                if(cardElement) {
-                    cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                if(cardElement) { cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
             }
-            
             function displayShops(items, isSpotlight = false) {
                 const colorMap = {'한식': 'bg-emerald-50 text-emerald-700', '중식': 'bg-red-50 text-red-700', '일식': 'bg-sky-50 text-sky-700', '양식': 'bg-amber-50 text-amber-700', '치킨': 'bg-orange-50 text-orange-700', '분식': 'bg-orange-50 text-orange-700', '서비스': 'bg-indigo-50 text-indigo-700', '미용': 'bg-fuchsia-50 text-fuchsia-700', '이용': 'bg-fuchsia-50 text-fuchsia-700', '세탁': 'bg-blue-50 text-blue-700', '숙박': 'bg-violet-50 text-violet-700', '기타': 'bg-slate-50 text-slate-700'};
                 const defaultColor = 'bg-slate-50 text-slate-700';
-
                 items.forEach(item => {
                     const cardWrapper = document.createElement('div');
-                    
                     if (item.isAd) {
-                        const partnersText = item.isPartners 
-                            ? `<p class="text-xs text-slate-500 text-left">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` 
-                            : '';
-
+                        const partnersText = item.isPartners ? `<p class="text-xs text-slate-500 text-left">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
                         if (item.adType === 'iframe') {
-                            cardWrapper.innerHTML = `<div class="iframe-ad-wrapper">
-                                                    <div class="iframe-ad-container">${item.iframeCode || ''}</div>
-                                                    ${partnersText}
-                                                </div>`;
+                            cardWrapper.innerHTML = `<div class="iframe-ad-wrapper"><div class="iframe-ad-container">${item.iframeCode || ''}</div>${partnersText}</div>`;
                         } else {
                              let mediaElement = '';
                              const mediaUrl = item.mediaUrl || '';
                              const mediaType = item.mediaType || 'image';
-
                              if (mediaUrl) {
-                                 if (mediaType === 'video') {
-                                     mediaElement = `<video autoplay loop muted playsinline src="${mediaUrl}"></video>`;
-                                 } else {
-                                     mediaElement = `<img src="${mediaUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Error';">`;
-                                 }
-                             } else {
-                                 mediaElement = `<img src="https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here" alt="${item.title}">`;
-                             }
-                             
+                                 if (mediaType === 'video') { mediaElement = `<video autoplay loop muted playsinline src="${mediaUrl}"></video>`; }
+                                 else { mediaElement = `<img src="${mediaUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Error';">`; }
+                             } else { mediaElement = `<img src="https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here" alt="${item.title}">`; }
                              cardWrapper.className = `bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative flex flex-col`;
-                             cardWrapper.innerHTML = `
-                                 <div class="ad-media-container">${mediaElement}</div>
-                                 <div class="p-4 flex-grow flex flex-col">
-                                     <div class="flex justify-between items-start">
-                                          <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
-                                          <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span>
-                                     </div>
-                                     <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
-                                     <p class="mt-2 text-slate-600 text-sm flex-grow">${item.description || ''}</p>
-                                     <div class="mt-auto">${partnersText}</div>
-                                     <div class="mt-4 pt-4 border-t text-right">
-                                          <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
-                                     </div>
-                                 </div>`;
+                             cardWrapper.innerHTML = `<div class="ad-media-container">${mediaElement}</div><div class="p-4 flex-grow flex flex-col"><div class="flex justify-between items-start"><span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span><span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-white/50">AD</span></div><a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a><p class="mt-2 text-slate-600 text-sm flex-grow">${item.description || ''}</p><div class="mt-auto">${partnersText}</div><div class="mt-4 pt-4 border-t text-right"><a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a></div></div>`;
                         }
                         shopListEl.appendChild(cardWrapper);
                         return;
                     }
-                    
                     const shop = item;
                     cardWrapper.className = `shop-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col overflow-hidden`;
                     const shopId = getShopId(shop);
                     const isFavorited = favorites.includes(shopId);
-                    
-                    if (isSpotlight) {
-                        setTimeout(() => cardWrapper.classList.add('expanded'), 100);
-                    }
-
+                    if (isSpotlight) { setTimeout(() => cardWrapper.classList.add('expanded'), 100); }
                     let cheapestMenu = { name: null, price: Infinity };
                     for (let i = 1; i <= 4; i++) {
-                        const menuName = shop[`메뉴${i}`];
-                        const menuPriceStr = shop[`가격${i}`];
+                        const menuName = shop[`메뉴${i}`], menuPriceStr = shop[`가격${i}`];
                         if (menuName && menuPriceStr) {
                             const menuPrice = parseInt(String(menuPriceStr).replace(/[^0-9]/g, ''), 10);
-                            if (!isNaN(menuPrice) && menuPrice < cheapestMenu.price) {
-                                cheapestMenu = { name: menuName, price: menuPrice };
-                            }
+                            if (!isNaN(menuPrice) && menuPrice < cheapestMenu.price) { cheapestMenu = { name: menuName, price: menuPrice }; }
                         }
                     }
-
-                    const cheapestMenuHTML = cheapestMenu.price !== Infinity
-                        ? `<div class="mt-3 pt-3 border-t border-slate-100"><p class="text-sm font-semibold text-slate-700 flex justify-between items-center"><span class="text-sky-600 flex items-center gap-1.5"><svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.893 2.132a.75.75 0 00-1.786 0l-1.652 4.095a.75.75 0 01-.393.393L3.02 8.27a.75.75 0 000 1.46l4.042 1.65a.75.75 0 01.393.394l1.652 4.095a.75.75 0 001.46 0l1.652-4.095a.75.75 0 01.393-.393l4.042-1.65a.75.75 0 000-1.46l-4.042-1.65a.75.75 0 01-.393-.394L10.893 2.132z" /></svg>시그니처 최저가</span><span class="text-slate-500 font-medium truncate">${cheapestMenu.name}</span><span class="font-bold text-lg text-red-600">${cheapestMenu.price.toLocaleString()}원</span></p></div>`
-                        : `<div class="mt-3 pt-3 border-t border-slate-100 h-[41px] flex items-center justify-center"><p class="text-sm text-slate-400">가격 정보 준비 중</p></div>`;
-
-                    let menuListHTML = '';
-                    let menuFound = false;
+                    const cheapestMenuHTML = cheapestMenu.price !== Infinity ? `<div class="mt-3 pt-3 border-t border-slate-100"><p class="text-sm font-semibold text-slate-700 flex justify-between items-center"><span class="text-sky-600 flex items-center gap-1.5"><svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.893 2.132a.75.75 0 00-1.786 0l-1.652 4.095a.75.75 0 01-.393.393L3.02 8.27a.75.75 0 000 1.46l4.042 1.65a.75.75 0 01.393.394l1.652 4.095a.75.75 0 001.46 0l1.652-4.095a.75.75 0 01.393-.393l4.042-1.65a.75.75 0 000-1.46l-4.042-1.65a.75.75 0 01-.393-.394L10.893 2.132z" /></svg>시그니처 최저가</span><span class="text-slate-500 font-medium truncate">${cheapestMenu.name}</span><span class="font-bold text-lg text-red-600">${cheapestMenu.price.toLocaleString()}원</span></p></div>` : `<div class="mt-3 pt-3 border-t border-slate-100 h-[41px] flex items-center justify-center"><p class="text-sm text-slate-400">가격 정보 준비 중</p></div>`;
+                    let menuListHTML = ''; let menuFound = false;
                     for (let i = 1; i <= 4; i++) {
-                        const menuName = shop[`메뉴${i}`]; const menuPrice = shop[`가격${i}`];
-                        if (menuName && menuPrice) {
-                            menuFound = true;
-                            menuListHTML += `<li class="flex justify-between items-center py-2"><span class="flex items-center gap-2 text-slate-700"><svg class="h-4 w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.868 2.884c.321-.772 1.305-.772 1.626 0l1.838 4.432a.75.75 0 00.564.41h4.653c.82 0 1.164.932.587 1.414l-3.762 2.734a.75.75 0 00-.216.664l1.423 4.881c.28.96-.713 1.728-1.54 1.22l-3.923-2.547a.75.75 0 00-.69 0l-3.923 2.547c-.828.508-1.82-.26-1.54-1.22l1.423-4.881a.75.75 0 00-.216-.664l-3.762-2.734c-.577-.482-.233-1.414.587-1.414h4.653a.75.75 0 00.564-.41l1.838-4.432z" clip-rule="evenodd" /></svg>${menuName}</span><span class="font-semibold text-sky-700">${Number(menuPrice).toLocaleString()}원</span></li>`;
-                        }
+                        const menuName = shop[`메뉴${i}`], menuPrice = shop[`가격${i}`];
+                        if (menuName && menuPrice) { menuFound = true; menuListHTML += `<li class="flex justify-between items-center py-2"><span class="flex items-center gap-2 text-slate-700"><svg class="h-4 w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.868 2.884c.321-.772 1.305-.772 1.626 0l1.838 4.432a.75.75 0 00.564.41h4.653c.82 0 1.164.932.587 1.414l-3.762 2.734a.75.75 0 00-.216.664l1.423 4.881c.28.96-.713 1.728-1.54 1.22l-3.923-2.547a.75.75 0 00-.69 0l-3.923 2.547c-.828.508-1.82-.26-1.54-1.22l1.423-4.881a.75.75 0 00-.216-.664l-3.762-2.734c-.577-.482-.233-1.414.587-1.414h4.653a.75.75 0 00.564-.41l1.838-4.432z" clip-rule="evenodd" /></svg>${menuName}</span><span class="font-semibold text-sky-700">${Number(menuPrice).toLocaleString()}원</span></li>`; }
                     }
                     if (!menuFound) menuListHTML = `<li class="text-slate-500 pt-2 text-center">사장님이 메뉴 정보를 준비중이에요 👨‍🍳</li>`;
-
-                    const contact = shop['연락처'];
-                    const contactHTML = contact ? `<a href="tel:${contact}" class="hover:underline hover:text-sky-600 transition-colors">${contact}</a>` : `<span>연락처 정보가 준비 중이에요.</span>`;
-                    
+                    const contact = shop['연락처']; const contactHTML = contact ? `<a href="tel:${contact}" class="hover:underline hover:text-sky-600 transition-colors">${contact}</a>` : `<span>연락처 정보가 준비 중이에요.</span>`;
                     const 업종 = shop['업종'] || '기타';
                     let categoryColor = defaultColor;
                     for (const key in colorMap) { if (업종.includes(key)) { categoryColor = colorMap[key]; break; } }
-
-                    cardWrapper.innerHTML = `
-                        <div class="p-5">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-bold ${categoryColor} px-2 py-0.5 rounded-full">${업종}</span>
-                                <button class="favorite-btn ${isFavorited ? 'favorited' : ''} text-slate-300 hover:text-amber-400 p-1 -m-1 transition-colors">
-                                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007z" clip-rule="evenodd" /></svg>
-                                </button>
-                            </div>
-                            <h3 class="font-bold text-slate-900 text-lg truncate mt-3 mb-1">${shop['업소명']}</h3>
-                            <p class="text-sm text-slate-500 truncate h-5">${shop['시도']} ${shop['시군']}</p>
-                            ${cheapestMenuHTML}
-                        </div>
-                        <div class="shop-card-details p-5 border-t border-slate-100">
-                           <div class="space-y-6">
-                                <div class="space-y-3">
-                                    <p class="text-sm text-slate-700 flex items-start gap-3"><svg class="h-5 w-5 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02z" clip-rule="evenodd" /></svg><span>${shop['주소'] || '주소 정보가 준비 중이에요.'}</span></p>
-                                    <p class="text-sm text-slate-700 flex items-center gap-3"><svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>${contactHTML}</p>
-                                </div>
-                                <div><h4 class="font-bold text-slate-800 mb-2">✨ 주요 착한 메뉴</h4><ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul></div>
-                                <div class="flex gap-2">
-                                    <button class="share-btn flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
-                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.665l3-3z" /><path d="M8.603 16.103a4 4 0 005.656-5.656l-3-3a4 4 0 00-5.865-.225.75.75 0 00.977 1.138 2.5 2.5 0 013.665.142l3 3a2.5 2.5 0 01-3.536 3.536l-1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 000 5.656z" /></svg>
-                                        <span>공유</span>
-                                    </button>
-                                    <button class="naver-map-btn flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="m12 0l8.73 4.4L12 24L3.27 4.4z"/></svg>
-                                        <span>네이버 길찾기</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="toggle-details-btn bg-slate-100 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex justify-between items-center cursor-pointer">
-                            <span>자세히 보기</span><svg class="details-arrow h-5 w-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                    `;
-                    
+                    cardWrapper.innerHTML = `<div class="p-5"><div class="flex justify-between items-start"><span class="text-xs font-bold ${categoryColor} px-2 py-0.5 rounded-full">${업종}</span><button class="favorite-btn ${isFavorited ? 'favorited' : ''} text-slate-300 hover:text-amber-400 p-1 -m-1 transition-colors"><svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007z" clip-rule="evenodd" /></svg></button></div><h3 class="font-bold text-slate-900 text-lg truncate mt-3 mb-1">${shop['업소명']}</h3><p class="text-sm text-slate-500 truncate h-5">${shop['시도']} ${shop['시군']}</p>${cheapestMenuHTML}</div><div class="shop-card-details p-5 border-t border-slate-100"><div class="space-y-6"><div class="space-y-3"><p class="text-sm text-slate-700 flex items-start gap-3"><svg class="h-5 w-5 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02z" clip-rule="evenodd" /></svg><span>${shop['주소'] || '주소 정보가 준비 중이에요.'}</span></p><p class="text-sm text-slate-700 flex items-center gap-3"><svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>${contactHTML}</p></div><div><h4 class="font-bold text-slate-800 mb-2">✨ 주요 착한 메뉴</h4><ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul></div><div class="flex gap-2"><button class="share-btn flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.665l3-3z" /><path d="M8.603 16.103a4 4 0 005.656-5.656l-3-3a4 4 0 00-5.865-.225.75.75 0 00.977 1.138 2.5 2.5 0 013.665.142l3 3a2.5 2.5 0 01-3.536 3.536l-1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 000 5.656z" /></svg><span>공유</span></button><button class="naver-map-btn flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="m12 0l8.73 4.4L12 24L3.27 4.4z"/></svg><span>네이버 길찾기</span></button></div></div></div><div class="toggle-details-btn bg-slate-100 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex justify-between items-center cursor-pointer"><span>자세히 보기</span><svg class="details-arrow h-5 w-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div>`;
                     cardWrapper.querySelector('.toggle-details-btn').addEventListener('click', (e) => { e.stopPropagation(); cardWrapper.classList.toggle('expanded'); });
-                    
                     const favBtn = cardWrapper.querySelector('.favorite-btn');
                     favBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const id = getShopId(shop);
-                        const index = favorites.indexOf(id);
-                        if (index > -1) { favorites.splice(index, 1); favBtn.classList.remove('favorited');
-                        } else { favorites.push(id); favBtn.classList.add('favorited'); }
+                        e.stopPropagation(); const id = getShopId(shop); const index = favorites.indexOf(id);
+                        if (index > -1) { favorites.splice(index, 1); favBtn.classList.remove('favorited'); }
+                        else { favorites.push(id); favBtn.classList.add('favorited'); }
                         localStorage.setItem('muk_favorites', JSON.stringify(favorites));
                         if(currentCategory === '즐겨찾기') applyFiltersAndRender();
                     });
-
-                    cardWrapper.querySelector('.share-btn').addEventListener('click', (e) => {
-                         e.stopPropagation();
-                         const shareData = { title: `[오늘MUK?]`, text: `"${shop['업소명']}" 어때?`, url: window.location.href };
-                         if (navigator.share) { navigator.share(shareData); }
-                    });
-
+                    cardWrapper.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); const shareData = { title: `[오늘MUK?]`, text: `"${shop['업소명']}" 어때?`, url: window.location.href }; if (navigator.share) { navigator.share(shareData); } });
                     const naverMapBtn = cardWrapper.querySelector('.naver-map-btn');
                     const hasCoords = shop.lat && shop.lng;
                     naverMapBtn.disabled = !hasCoords;
-
                     if(hasCoords) {
                         naverMapBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
-                            const shopName = encodeURIComponent(shop['업소명']);
-                            let naverMapUrl = '';
-                            if (isMobile) {
-                                naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`;
-                            } else {
-                                naverMapUrl = `https://map.naver.com/v5/search/${shopName}?lat=${shop.lat}&lng=${shop.lng}&zIndex=12&searchCoord=${shop.lng};${shop.lat}`;
-                            }
+                            e.stopPropagation(); const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+                            const shopName = encodeURIComponent(shop['업소명']); let naverMapUrl = '';
+                            if (isMobile) { naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`; }
+                            else { naverMapUrl = `https://map.naver.com/v5/search/${shopName}?lat=${shop.lat}&lng=${shop.lng}&zIndex=12&searchCoord=${shop.lng};${shop.lat}`; }
                             window.open(naverMapUrl, '_blank');
                         });
                     }
