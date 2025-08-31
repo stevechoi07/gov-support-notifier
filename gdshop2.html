@@ -10,7 +10,7 @@
     <meta property="og:title" content="오늘 MUK? | 착한가격업소 찾기">
     <meta property="og:description" content="정부가 인증한 전국의 착한 식당, 미용실, 세탁소 등을 간편하게 찾아보세요!">
     <meta property="og:image" content="https://kfund.ai/img/muk.png">
-    <meta property="og:url" content="https://kfund.ai/gdshop.html"> 
+    <meta property="og:url" content="https://your-live-url.netlify.app">
     <meta property="og:type" content="website">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧐</text></svg>">
@@ -237,6 +237,7 @@
             
             function handleCardClick(e) {
                 const target = e.target;
+                
                 const adLink = target.closest('.ad-link');
                 if (adLink) {
                     e.preventDefault();
@@ -244,6 +245,7 @@
                     window.open(adLink.href, '_blank');
                     return;
                 }
+                
                 const toggleBtn = target.closest('.toggle-details-btn');
                 if (toggleBtn) {
                     e.stopPropagation();
@@ -251,13 +253,16 @@
                     if (card) card.classList.toggle('expanded');
                     return;
                 }
+                
                 const button = target.closest('button');
                 if (button) {
                     e.stopPropagation();
                     const card = button.closest('.shop-card');
                     if (!card) return;
+
                     const shop = allShops.find(s => getShopId(s) === card.dataset.shopId);
                     if (!shop) return;
+                    
                     if (button.classList.contains('favorite-btn')) toggleFavorite(shop, button);
                     else if (button.classList.contains('share-btn')) shareShop(shop);
                     else if (button.classList.contains('naver-map-btn')) openNaverMap(shop);
@@ -280,7 +285,11 @@
             }
 
             function shareShop(shop) {
-                const shareData = { title: `[오늘MUK?]`, text: `"${shop['업소명']}" 어때?`, url: window.location.href };
+                const shareData = {
+                    title: `[오늘MUK?]`,
+                    text: `"${shop['업소명']}" 어때?`,
+                    url: window.location.href
+                };
                 if (navigator.share) navigator.share(shareData);
             }
 
@@ -339,23 +348,19 @@
                     const lowerCaseSearch = searchTerm.toLowerCase();
                     filteredShops = filteredShops.filter(shop => (shop['업소명'] && shop['업소명'].toLowerCase().includes(lowerCaseSearch)) || (shop['주소'] && shop['주소'].toLowerCase().includes(lowerCaseSearch)) || (shop['메뉴1'] && shop['메뉴1'].toLowerCase().includes(lowerCaseSearch)));
                 }
-                
-                // v26.0: 가나다순 정렬 대신, 목록을 랜덤으로 섞어줍니다.
-                const shuffledShops = filteredShops.sort(() => 0.5 - Math.random());
-
+                const sortedShops = filteredShops.sort((a, b) => a['업소명'].localeCompare(b['업소명']));
                 const itemsWithAds = [];
                 let adIndex = 0;
                 if (adDataList.length > 0) {
-                    for (let i = 0; i < shuffledShops.length; i++) {
-                        itemsWithAds.push(shuffledShops[i]);
+                    for (let i = 0; i < sortedShops.length; i++) {
+                        itemsWithAds.push(sortedShops[i]);
                         if ((i + 1) % 7 === 0) {
                             const currentAd = adDataList[adIndex % adDataList.length];
                             itemsWithAds.push(currentAd);
                             adIndex++;
                         }
                     }
-                } else { shuffledShops.forEach(item => itemsWithAds.push(item)); }
-                
+                } else { sortedShops.forEach(item => itemsWithAds.push(item)); }
                 currentItems = itemsWithAds;
                 shopListEl.innerHTML = '';
                 currentPage = 1;
