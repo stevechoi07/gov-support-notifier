@@ -46,11 +46,11 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v20.0 Pinpoint Center</p>
+            <p class="text-xs text-slate-400 mt-1">v21.0 The Final Fix</p>
         </header>
 
         <div id="filters-wrapper">
-            <div class="container mx-auto max-w-3xl">
+             <div class="container mx-auto max-w-3xl">
                 <div class="relative mb-4">
                     <input type="search" id="search-input" placeholder="가게 이름, 메뉴, 주소 등으로 검색" class="w-full p-3 pl-10 border border-slate-200 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition font-medium text-slate-700">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -128,7 +128,7 @@
             }
 
             // 이하 initializeApp, setupFilters 등 주요 로직 함수들은 변경 없음...
-            window.addEventListener('scroll', () => filtersWrapper.classList.toggle('scrolled', window.scrollY > 10));
+             window.addEventListener('scroll', () => filtersWrapper.classList.toggle('scrolled', window.scrollY > 10));
 
             async function initializeApp() {
                 try {
@@ -264,6 +264,7 @@
 
 
             function displayShops(shops, isSpotlight = false) {
+                 // 이 함수 상단은 변경 없음
                 const colorMap = {'한식': 'bg-emerald-50 text-emerald-700', '중식': 'bg-red-50 text-red-700', '일식': 'bg-sky-50 text-sky-700', '양식': 'bg-amber-50 text-amber-700', '치킨': 'bg-orange-50 text-orange-700', '분식': 'bg-orange-50 text-orange-700', '서비스': 'bg-indigo-50 text-indigo-700', '미용': 'bg-fuchsia-50 text-fuchsia-700', '이용': 'bg-fuchsia-50 text-fuchsia-700', '세탁': 'bg-blue-50 text-blue-700', '숙박': 'bg-violet-50 text-violet-700', '기타': 'bg-slate-50 text-slate-700'};
                 const defaultColor = 'bg-slate-50 text-slate-700';
 
@@ -398,18 +399,16 @@
                             let naverMapUrl = '';
 
                             if (isMobile) {
-                                // 모바일: 핀을 직접 찍어주는 URL (기존과 동일)
+                                // 모바일: 핀을 직접 찍어주는 URL (안정적으로 작동)
                                 naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`;
                             } else {
-                                // v20.0: PC에서는 좌표를 '중심점'으로 지정하는 URL로 변경!
-                                // c=경도,위도,줌레벨
-                                const zoomLevel = 16;
-                                naverMapUrl = `https://map.naver.com/v5/entry/place/home?c=${shop.lng},${shop.lat},${zoomLevel},0,0,0,dh&placePath=/home`;
+                                // v21.0: PC에서는 표준 좌표를 사용하는 공식 '길찾기' URL로 최종 수정!
+                                naverMapUrl = `https://map.naver.com/v5/directions/-/${shopName},${shop.lat},${shop.lng}`;
                             }
                             
                             showDebugger([
                                 "네이버 길찾기 버튼 클릭됨!",
-                                `모드: ${isMobile ? '📱 모바일-핀' : '💻 PC-중심점'}`,
+                                `모드: ${isMobile ? '📱 모바일-핀' : '💻 PC-공식 길찾기'}`,
                                 `가게: ${shop['업소명']}`,
                                 `URL: ${naverMapUrl}`
                             ]);
