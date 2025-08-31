@@ -45,25 +45,15 @@
         .iframe-ad-wrapper { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
         .iframe-ad-container { display: flex; justify-content: center; align-items: center; width: 100%; }
 
-        /* v25.3: 토스트 알림 스타일 추가 */
         #toast-notification {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            background-color: rgba(15, 23, 42, 0.85); /* slate-900 with opacity */
-            color: white;
-            padding: 12px 24px;
-            border-radius: 9999px;
-            z-index: 1000;
-            opacity: 0;
+            position: fixed; bottom: 20px; left: 50%;
+            background-color: rgba(15, 23, 42, 0.85);
+            color: white; padding: 12px 24px; border-radius: 9999px;
+            z-index: 1000; opacity: 0;
             transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-            transform: translate(-50%, 20px);
-            pointer-events: none;
+            transform: translate(-50%, 20px); pointer-events: none;
         }
-        #toast-notification.show {
-            opacity: 1;
-            transform: translate(-50%, 0);
-        }
+        #toast-notification.show { opacity: 1; transform: translate(-50%, 0); }
     </style>
 </head>
 <body>
@@ -71,7 +61,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v25.3 Copy Address Feature</p>
+            <p class="text-xs text-slate-400 mt-1">v25.4 Details View Fixed</p>
         </header>
 
         <div id="filters-wrapper">
@@ -146,8 +136,6 @@
             const sigunguFilter = document.getElementById('sigungu-filter');
             const categoryFilters = document.getElementById('category-filters');
             const randomBtn = document.getElementById('random-btn');
-            const debuggerEl = document.getElementById('debugger');
-            const debuggerLogEl = document.getElementById('debugger-log');
             const toastEl = document.getElementById('toast-notification');
 
             let allShops = [];
@@ -160,12 +148,9 @@
             const perPage = 18;
             let isLoading = false;
             let favorites = JSON.parse(localStorage.getItem('muk_favorites')) || [];
-            let debuggerTimeout;
             let toastTimeout;
             let adDataList = [];
 
-            // --- 함수 선언부 ---
-            
             function showToast(message) {
                 clearTimeout(toastTimeout);
                 toastEl.textContent = message;
@@ -252,6 +237,7 @@
             
             function handleCardClick(e) {
                 const target = e.target;
+                
                 const adLink = target.closest('.ad-link');
                 if (adLink) {
                     e.preventDefault();
@@ -260,23 +246,28 @@
                     return;
                 }
                 
-                const button = target.closest('button');
-                if (!button) return;
-
-                const card = button.closest('.shop-card');
-                if (!card) return;
-
-                e.stopPropagation();
-
-                const shopId = card.dataset.shopId;
-                const shop = allShops.find(s => getShopId(s) === shopId);
-                if (!shop) return;
+                const toggleBtn = target.closest('.toggle-details-btn');
+                if (toggleBtn) {
+                    e.stopPropagation();
+                    const card = toggleBtn.closest('.shop-card');
+                    if (card) card.classList.toggle('expanded');
+                    return;
+                }
                 
-                if (button.classList.contains('favorite-btn')) toggleFavorite(shop, button);
-                else if (button.classList.contains('share-btn')) shareShop(shop);
-                else if (button.classList.contains('naver-map-btn')) openNaverMap(shop);
-                else if (button.classList.contains('copy-address-btn')) copyAddress(shop);
-                else if (button.classList.contains('toggle-details-btn')) card.classList.toggle('expanded');
+                const button = target.closest('button');
+                if (button) {
+                    e.stopPropagation();
+                    const card = button.closest('.shop-card');
+                    if (!card) return;
+
+                    const shop = allShops.find(s => getShopId(s) === card.dataset.shopId);
+                    if (!shop) return;
+                    
+                    if (button.classList.contains('favorite-btn')) toggleFavorite(shop, button);
+                    else if (button.classList.contains('share-btn')) shareShop(shop);
+                    else if (button.classList.contains('naver-map-btn')) openNaverMap(shop);
+                    else if (button.classList.contains('copy-address-btn')) copyAddress(shop);
+                }
             }
 
             function toggleFavorite(shop, button) {
@@ -443,41 +434,14 @@
                     const isFavorited = favorites.includes(shopId);
                     if (isSpotlight) { setTimeout(() => cardWrapper.classList.add('expanded'), 100); }
                     
-                    let cheapestMenu={name:null,price:Infinity};for(let i=1;i<=4;i++){const menuName=shop[`메뉴${i}`],menuPriceStr=shop[`가격${i}`];if(menuName&&menuPriceStr){const menuPrice=parseInt(String(menuPriceStr).replace(/[^0-9]/g,''),10);if(!isNaN(menuPrice)&&menuPrice<cheapestMenu.price){cheapestMenu={name:menuName,price:menuPrice};}}}
-                    const cheapestMenuHTML=cheapestMenu.price!==Infinity?`<div class="mt-3 pt-3 border-t border-slate-100"><p class="text-sm font-semibold text-slate-700 flex justify-between items-center"><span class="text-sky-600 flex items-center gap-1.5"><svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.893 2.132a.75.75 0 00-1.786 0l-1.652 4.095a.75.75 0 01-.393.393L3.02 8.27a.75.75 0 000 1.46l4.042 1.65a.75.75 0 01.393.394l1.652 4.095a.75.75 0 001.46 0l1.652-4.095a.75.75 0 01.393-.393l4.042-1.65a.75.75 0 000-1.46l-4.042-1.65a.75.75 0 01-.393-.394L10.893 2.132z" /></svg>시그니처 최저가</span><span class="text-slate-500 font-medium truncate">${cheapestMenu.name}</span><span class="font-bold text-lg text-red-600">${cheapestMenu.price.toLocaleString()}원</span></p></div>`:`<div class="mt-3 pt-3 border-t border-slate-100 h-[41px] flex items-center justify-center"><p class="text-sm text-slate-400">가격 정보 준비 중</p></div>`;
-                    let menuListHTML='';let menuFound=false;for(let i=1;i<=4;i++){const menuName=shop[`메뉴${i}`],menuPrice=shop[`가격${i}`];if(menuName&&menuPrice){menuFound=true;menuListHTML+=`<li class="flex justify-between items-center py-2"><span class="flex items-center gap-2 text-slate-700"><svg class="h-4 w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.868 2.884c.321-.772 1.305-.772 1.626 0l1.838 4.432a.75.75 0 00.564.41h4.653c.82 0 1.164.932.587 1.414l-3.762 2.734a.75.75 0 00-.216.664l1.423 4.881c.28.96-.713 1.728-1.54 1.22l-3.923-2.547a.75.75 0 00-.69 0l-3.923 2.547c-.828.508-1.82-.26-1.54-1.22l1.423-4.881a.75.75 0 00-.216-.664l-3.762-2.734c-.577-.482-.233-1.414.587-1.414h4.653a.75.75 0 00.564-.41l1.838-4.432z" clip-rule="evenodd" /></svg>${menuName}</span><span class="font-semibold text-sky-700">${Number(menuPrice).toLocaleString()}원</span></li>`;}}
+                    let cheapestMenu={name:null,price:Infinity};for(let i=1;i<=4;i++){const mn=shop[`메뉴${i}`],mps=shop[`가격${i}`];if(mn&&mps){const mp=parseInt(String(mps).replace(/[^0-9]/g,''),10);if(!isNaN(mp)&&mp<cheapestMenu.price){cheapestMenu={name:mn,price:mp};}}}
+                    const cheapestMenuHTML=cheapestMenu.price!==Infinity?`<div class="mt-3 pt-3 border-t border-slate-100"><p class="text-sm font-semibold text-slate-700 flex justify-between items-center"><span class="text-sky-600 flex items-center gap-1.5"><svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.893 2.132a.75.75 0 00-1.786 0l-1.652 4.095a.75.75 0 01-.393.393L3.02 8.27a.75.75 0 000 1.46l4.042 1.65a.75.75 0 01.393.394l1.652 4.095a.75.75 0 001.46 0l1.652-4.095a.75.75 0 01.393-.393l4.042-1.65a.75.75 0 000-1.46l-4.042-1.65a.75.75 0 01-.393-.394L10.893 2.132z" /></svg>시그니처 최저가</span><span class="text-slate-500 font-medium truncate">${cheapestMenu.name}</span><span class="font-bold text-lg text-red-600">${cheapestMenu.price.toLocaleString()}원</span></p></div>`:`<div class="mt-3 pt-3 border-t border-slate-100 h-[41px] flex items-center justify-center"><p class="text-sm text-slate-400">가격 정보 준비 중</p></div>`;
+                    let menuListHTML='',menuFound=false;for(let i=1;i<=4;i++){const mn=shop[`메뉴${i}`],mp=shop[`가격${i}`];if(mn&&mp){menuFound=true;menuListHTML+=`<li class="flex justify-between items-center py-2"><span class="flex items-center gap-2 text-slate-700"><svg class="h-4 w-4 text-amber-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.868 2.884c.321-.772 1.305-.772 1.626 0l1.838 4.432a.75.75 0 00.564.41h4.653c.82 0 1.164.932.587 1.414l-3.762 2.734a.75.75 0 00-.216.664l1.423 4.881c.28.96-.713 1.728-1.54 1.22l-3.923-2.547a.75.75 0 00-.69 0l-3.923 2.547c-.828.508-1.82-.26-1.54-1.22l1.423-4.881a.75.75 0 00-.216-.664l-3.762-2.734c-.577-.482-.233-1.414.587-1.414h4.653a.75.75 0 00.564-.41l1.838-4.432z" clip-rule="evenodd" /></svg>${mn}</span><span class="font-semibold text-sky-700">${Number(mp).toLocaleString()}원</span></li>`;}}
                     if(!menuFound)menuListHTML=`<li class="text-slate-500 pt-2 text-center">사장님이 메뉴 정보를 준비중이에요 👨‍🍳</li>`;
                     const contact=shop['연락처'];const contactHTML=contact?`<a href="tel:${contact}" class="hover:underline hover:text-sky-600 transition-colors">${contact}</a>`:`<span>연락처 정보가 준비 중이에요.</span>`;
                     const 업종=shop['업종']||'기타';let categoryColor=defaultColor;for(const key in colorMap){if(업종.includes(key)){categoryColor=colorMap[key];break;}}
                     
-                    cardWrapper.innerHTML = `
-                        <div class="p-5">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-bold ${categoryColor} px-2 py-0.5 rounded-full">${업종}</span>
-                                <button class="favorite-btn ${isFavorited ? 'favorited' : ''} text-slate-300 hover:text-amber-400 p-1 -m-1 transition-colors"><svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007z" clip-rule="evenodd" /></svg></button>
-                            </div>
-                            <h3 class="font-bold text-slate-900 text-lg truncate mt-3 mb-1">${shop['업소명']}</h3>
-                            <p class="text-sm text-slate-500 truncate h-5">${shop['시도']} ${shop['시군']}</p>
-                            ${cheapestMenuHTML}
-                        </div>
-                        <div class="shop-card-details p-5 border-t border-slate-100">
-                            <div class="space-y-6">
-                                <div class="space-y-3">
-                                    <p class="text-sm text-slate-700 flex items-start gap-3">
-                                        <svg class="h-5 w-5 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02z" clip-rule="evenodd" /></svg>
-                                        <span class="flex-grow">${shop['주소'] || '주소 정보가 준비 중이에요.'}</span>
-                                        <button class="copy-address-btn p-1 -m-1 text-slate-400 hover:text-sky-600 transition-colors" title="주소 복사">
-                                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.121A1.5 1.5 0 0117 6.621V16.5a1.5 1.5 0 01-1.5 1.5h-8A1.5 1.5 0 016 16.5v-13z" /><path d="M5 6.5A1.5 1.5 0 016.5 5h3a.5.5 0 000-1h-3A2.5 2.5 0 004 6.5v10A2.5 2.5 0 006.5 19h7A2.5 2.5 0 0016 16.5v-3a.5.5 0 00-1 0v3A1.5 1.5 0 0113.5 18h-7A1.5 1.5 0 015 16.5v-10z" /></svg>
-                                        </button>
-                                    </p>
-                                    <p class="text-sm text-slate-700 flex items-center gap-3"><svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>${contactHTML}</p>
-                                </div>
-                                <div><h4 class="font-bold text-slate-800 mb-2">✨ 주요 착한 메뉴</h4><ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul></div>
-                                <div class="flex gap-2"><button class="share-btn flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.665l3-3z" /><path d="M8.603 16.103a4 4 0 005.656-5.656l-3-3a4 4 0 00-5.865-.225.75.75 0 00.977 1.138 2.5 2.5 0 013.665.142l3 3a2.5 2.5 0 01-3.536 3.536l-1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 000 5.656z" /></svg><span>공유</span></button><button class="naver-map-btn flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="m12 0l8.73 4.4L12 24L3.27 4.4z"/></svg><span>네이버 길찾기</span></button></div>
-                            </div>
-                        </div>
-                        <div class="toggle-details-btn bg-slate-100 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex justify-between items-center cursor-pointer"><span>자세히 보기</span><svg class="details-arrow h-5 w-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div>
-                    `;
+                    cardWrapper.innerHTML = `<div class="p-5"><div class="flex justify-between items-start"><span class="text-xs font-bold ${categoryColor} px-2 py-0.5 rounded-full">${업종}</span><button class="favorite-btn ${isFavorited?'favorited':''} text-slate-300 hover:text-amber-400 p-1 -m-1 transition-colors"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007z" clip-rule="evenodd" /></svg></button></div><h3 class="font-bold text-slate-900 text-lg truncate mt-3 mb-1">${shop['업소명']}</h3><p class="text-sm text-slate-500 truncate h-5">${shop['시도']} ${shop['시군']}</p>${cheapestMenuHTML}</div><div class="shop-card-details p-5 border-t border-slate-100"><div class="space-y-6"><div class="space-y-3"><p class="text-sm text-slate-700 flex items-start gap-3"><svg class="h-5 w-5 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.69 18.23a2.25 2.25 0 003.06 0l6.25-6.25a2.25 2.25 0 00-3.18-3.18L10 14.06l-5.82-5.82A2.25 2.25 0 00.99 12l6.25 6.25a2.25 2.25 0 002.45-.02z" clip-rule="evenodd" /></svg><span class="flex-grow">${shop['주소']||'주소 정보가 준비 중이에요.'}</span><button class="copy-address-btn p-1 -m-1 text-slate-400 hover:text-sky-600 transition-colors" title="주소 복사"><svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.121A1.5 1.5 0 0117 6.621V16.5a1.5 1.5 0 01-1.5 1.5h-8A1.5 1.5 0 016 16.5v-13z" /><path d="M5 6.5A1.5 1.5 0 016.5 5h3a.5.5 0 000-1h-3A2.5 2.5 0 004 6.5v10A2.5 2.5 0 006.5 19h7A2.5 2.5 0 0016 16.5v-3a.5.5 0 00-1 0v3A1.5 1.5 0 0113.5 18h-7A1.5 1.5 0 015 16.5v-10z" /></svg></button></p><p class="text-sm text-slate-700 flex items-center gap-3"><svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>${contactHTML}</p></div><div><h4 class="font-bold text-slate-800 mb-2">✨ 주요 착한 메뉴</h4><ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul></div><div class="flex gap-2"><button class="share-btn flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.665l3-3z" /><path d="M8.603 16.103a4 4 0 005.656-5.656l-3-3a4 4 0 00-5.865-.225.75.75 0 00.977 1.138 2.5 2.5 0 013.665.142l3 3a2.5 2.5 0 01-3.536 3.536l-1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 000 5.656z" /></svg><span>공유</span></button><button class="naver-map-btn flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="m12 0l8.73 4.4L12 24L3.27 4.4z"/></svg><span>네이버 길찾기</span></button></div></div></div><div class="toggle-details-btn bg-slate-100 px-5 py-3 border-t border-slate-200 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex justify-between items-center cursor-pointer"><span>자세히 보기</span><svg class="details-arrow h-5 w-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div>`;
                     shopListEl.appendChild(cardWrapper);
                 });
             }
