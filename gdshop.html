@@ -46,7 +46,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v19.0 Direct Navi</p>
+            <p class="text-xs text-slate-400 mt-1">v20.0 Pinpoint Center</p>
         </header>
 
         <div id="filters-wrapper">
@@ -93,7 +93,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 변수 선언 (변경 없음)
+            // 변수 선언 등 상단 스크립트 (변경 없음)
             const shopListEl = document.getElementById('shop-list');
             const loaderEl = document.getElementById('loader');
             const noResultsEl = document.getElementById('no-results');
@@ -264,7 +264,6 @@
 
 
             function displayShops(shops, isSpotlight = false) {
-                // 이 함수 상단은 변경 없음
                 const colorMap = {'한식': 'bg-emerald-50 text-emerald-700', '중식': 'bg-red-50 text-red-700', '일식': 'bg-sky-50 text-sky-700', '양식': 'bg-amber-50 text-amber-700', '치킨': 'bg-orange-50 text-orange-700', '분식': 'bg-orange-50 text-orange-700', '서비스': 'bg-indigo-50 text-indigo-700', '미용': 'bg-fuchsia-50 text-fuchsia-700', '이용': 'bg-fuchsia-50 text-fuchsia-700', '세탁': 'bg-blue-50 text-blue-700', '숙박': 'bg-violet-50 text-violet-700', '기타': 'bg-slate-50 text-slate-700'};
                 const defaultColor = 'bg-slate-50 text-slate-700';
 
@@ -399,16 +398,18 @@
                             let naverMapUrl = '';
 
                             if (isMobile) {
-                                // 모바일: 이전과 동일하게 핀포인트 URL 사용
+                                // 모바일: 핀을 직접 찍어주는 URL (기존과 동일)
                                 naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`;
                             } else {
-                                // v19.0: PC(데스크탑)용 길찾기 전용 URL로 변경
-                                naverMapUrl = `https://map.naver.com/v5/directions/-/${shopName},${shop.lat},${shop.lng}`;
+                                // v20.0: PC에서는 좌표를 '중심점'으로 지정하는 URL로 변경!
+                                // c=경도,위도,줌레벨
+                                const zoomLevel = 16;
+                                naverMapUrl = `https://map.naver.com/v5/entry/place/home?c=${shop.lng},${shop.lat},${zoomLevel},0,0,0,dh&placePath=/home`;
                             }
                             
                             showDebugger([
                                 "네이버 길찾기 버튼 클릭됨!",
-                                `모드: ${isMobile ? '📱 모바일' : '💻 PC-길찾기'}`,
+                                `모드: ${isMobile ? '📱 모바일-핀' : '💻 PC-중심점'}`,
                                 `가게: ${shop['업소명']}`,
                                 `URL: ${naverMapUrl}`
                             ]);
