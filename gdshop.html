@@ -46,7 +46,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v18.0 Smart Navi</p>
+            <p class="text-xs text-slate-400 mt-1">v19.0 Direct Navi</p>
         </header>
 
         <div id="filters-wrapper">
@@ -93,7 +93,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 변수 선언 (대부분 변경 없음)
+            // 변수 선언 (변경 없음)
             const shopListEl = document.getElementById('shop-list');
             const loaderEl = document.getElementById('loader');
             const noResultsEl = document.getElementById('no-results');
@@ -127,7 +127,7 @@
                 }, 5000);
             }
 
-            // 이하 initializeApp, setupFilters, populateSigunguFilter, applyFiltersAndRender 등 주요 로직 함수들은 변경 없음...
+            // 이하 initializeApp, setupFilters 등 주요 로직 함수들은 변경 없음...
             window.addEventListener('scroll', () => filtersWrapper.classList.toggle('scrolled', window.scrollY > 10));
 
             async function initializeApp() {
@@ -264,6 +264,7 @@
 
 
             function displayShops(shops, isSpotlight = false) {
+                // 이 함수 상단은 변경 없음
                 const colorMap = {'한식': 'bg-emerald-50 text-emerald-700', '중식': 'bg-red-50 text-red-700', '일식': 'bg-sky-50 text-sky-700', '양식': 'bg-amber-50 text-amber-700', '치킨': 'bg-orange-50 text-orange-700', '분식': 'bg-orange-50 text-orange-700', '서비스': 'bg-indigo-50 text-indigo-700', '미용': 'bg-fuchsia-50 text-fuchsia-700', '이용': 'bg-fuchsia-50 text-fuchsia-700', '세탁': 'bg-blue-50 text-blue-700', '숙박': 'bg-violet-50 text-violet-700', '기타': 'bg-slate-50 text-slate-700'};
                 const defaultColor = 'bg-slate-50 text-slate-700';
 
@@ -277,7 +278,7 @@
                         setTimeout(() => card.classList.add('expanded'), 100);
                     }
 
-                    // 이하 메뉴 가격 계산 로직 (변경 없음)
+                    // 메뉴 가격 계산 로직 (변경 없음)
                     let cheapestMenu = { name: null, price: Infinity };
                     for (let i = 1; i <= 4; i++) {
                         const menuName = shop[`메뉴${i}`];
@@ -311,6 +312,7 @@
                     const 업종 = shop['업종'] || '기타';
                     let categoryColor = defaultColor;
                     for (const key in colorMap) { if (업종.includes(key)) { categoryColor = colorMap[key]; break; } }
+
 
                     card.innerHTML = `
                         <div class="p-5">
@@ -384,9 +386,6 @@
                          }
                     });
 
-                    // v18.0: 카카오 지도 관련 코드 전체 삭제
-
-                    // v18.0: 네이버 지도 버튼 리스너 업그레이드
                     const naverMapBtn = card.querySelector('.naver-map-btn');
                     const hasCoords = shop.lat && shop.lng;
                     naverMapBtn.disabled = !hasCoords;
@@ -395,24 +394,21 @@
                         naverMapBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
                             
-                            // 1. 접속 기기 탐정 출동!
                             const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
                             const shopName = encodeURIComponent(shop['업소명']);
                             let naverMapUrl = '';
 
-                            // 2. 상황별 맞춤 URL 생성
                             if (isMobile) {
-                                // 모바일용 URL
+                                // 모바일: 이전과 동일하게 핀포인트 URL 사용
                                 naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`;
                             } else {
-                                // PC(데스크탑)용 URL
-                                naverMapUrl = `https://map.naver.com/v5/search/${shopName}?lat=${shop.lat}&lng=${shop.lng}&zIndex=12&searchCoord=${shop.lng};${shop.lat}`;
+                                // v19.0: PC(데스크탑)용 길찾기 전용 URL로 변경
+                                naverMapUrl = `https://map.naver.com/v5/directions/-/${shopName},${shop.lat},${shop.lng}`;
                             }
                             
-                            // 3. 디버거에 탐정 보고서 표시
                             showDebugger([
                                 "네이버 길찾기 버튼 클릭됨!",
-                                `기기: ${isMobile ? '📱 모바일' : '💻 데스크탑'} 감지!`,
+                                `모드: ${isMobile ? '📱 모바일' : '💻 PC-길찾기'}`,
                                 `가게: ${shop['업소명']}`,
                                 `URL: ${naverMapUrl}`
                             ]);
