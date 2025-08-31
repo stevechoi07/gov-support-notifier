@@ -1,22 +1,18 @@
 <!DOCTYPE html>
-<!-- v16.0: lang="ko" 추가로 한국어 웹사이트임을 명시 -->
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- v16.0: SEO 및 소셜 공유를 위한 메타 태그 추가 -->
     <title>오늘 MUK? | 전국 정부인증 착한가격업소 찾기</title>
     <meta name="description" content="오늘 뭐 먹지? 고민 끝! 정부가 인증한 전국 착한가격업소를 스마트 검색, 지역별 필터, 즐겨찾기 기능으로 빠르고 쉽게 찾아보세요. 당신의 맛집 가이드, 오늘 MUK?">
     
-    <!-- Open Graph (카카오톡, 페이스북 등 소셜 공유용) -->
     <meta property="og:title" content="오늘 MUK? | 착한가격업소 찾기">
     <meta property="og:description" content="정부가 인증한 전국의 착한 식당, 미용실, 세탁소 등을 간편하게 찾아보세요!">
     <meta property="og:image" content="https://placehold.co/1200x630/0284c7/ffffff?text=오늘+MUK?">
-    <meta property="og:url" content="https://your-live-url.netlify.app"> <!-- 중요: 배포 후 실제 URL로 변경해주세요! -->
+    <meta property="og:url" content="https://your-live-url.netlify.app">
     <meta property="og:type" content="website">
 
-    <!-- Favicon (브라우저 탭 아이콘) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧐</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,11 +28,18 @@
         .shop-card-details { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .shop-card.expanded .shop-card-details { max-height: 500px; padding-top: 1.25rem; padding-bottom: 1.25rem; }
         .shop-card.expanded .details-arrow { transform: rotate(180deg); }
-        .favorite-btn.favorited svg { fill: #facc15; color: #facc15; } /* Yellow-400 */
+        .favorite-btn.favorited svg { fill: #facc15; color: #facc15; }
         input[type="search"]::-webkit-search-decoration,
         input[type="search"]::-webkit-search-cancel-button,
         input[type="search"]::-webkit-search-results-button,
         input[type="search"]::-webkit-search-results-decoration { -webkit-appearance: none; }
+        
+        /* v17.0: 디버거 스타일 추가 */
+        #debugger { position: fixed; bottom: 10px; right: 10px; width: 320px; background-color: rgba(15, 23, 42, 0.9); color: #e2e8f0; border-radius: 8px; padding: 12px; font-size: 13px; font-family: monospace; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid #334155; opacity: 0; transform: translateY(20px); transition: opacity 0.3s, transform 0.3s; pointer-events: none; }
+        #debugger.show { opacity: 1; transform: translateY(0); }
+        #debugger .title { font-weight: bold; color: #5eead4; margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+        #debugger .log { word-break: break-all; }
+        #debugger .log-item { margin-top: 4px; border-left: 2px solid #64748b; padding-left: 8px; }
     </style>
 </head>
 <body>
@@ -44,7 +47,7 @@
         <header class="text-center py-10 md:py-16">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v16.1 The Fix</p>
+            <p class="text-xs text-slate-400 mt-1">v17.0 Naver Map Ready</p>
         </header>
 
         <div id="filters-wrapper">
@@ -84,6 +87,11 @@
         </main>
     </div>
     
+    <div id="debugger">
+        <div class="title">👨‍💻 개발자 디버깅 툴</div>
+        <div id="debugger-log" class="log"></div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const shopListEl = document.getElementById('shop-list');
@@ -95,6 +103,10 @@
             const sigunguFilter = document.getElementById('sigungu-filter');
             const categoryFilters = document.getElementById('category-filters');
             const randomBtn = document.getElementById('random-btn');
+            
+            // v17.0: 디버거 요소 가져오기
+            const debuggerEl = document.getElementById('debugger');
+            const debuggerLogEl = document.getElementById('debugger-log');
 
             let allShops = [];
             let filteredShops = [];
@@ -106,6 +118,17 @@
             const perPage = 18;
             let isLoading = false;
             let favorites = JSON.parse(localStorage.getItem('muk_favorites')) || [];
+            let debuggerTimeout;
+
+            // v17.0: 디버거 함수 추가
+            function showDebugger(logs) {
+                clearTimeout(debuggerTimeout);
+                debuggerLogEl.innerHTML = logs.map(log => `<div class="log-item">${log}</div>`).join('');
+                debuggerEl.classList.add('show');
+                debuggerTimeout = setTimeout(() => {
+                    debuggerEl.classList.remove('show');
+                }, 5000); // 5초 후에 사라짐
+            }
 
             window.addEventListener('scroll', () => filtersWrapper.classList.toggle('scrolled', window.scrollY > 10));
 
@@ -252,7 +275,6 @@
                     const isFavorited = favorites.includes(shopId);
                     
                     if (isSpotlight) {
-                        // 룰렛으로 선택된 카드는 바로 펼쳐지도록
                         setTimeout(() => card.classList.add('expanded'), 100);
                     }
 
@@ -309,9 +331,19 @@
                                     <p class="text-sm text-slate-700 flex items-center gap-3"><svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>${contactHTML}</p>
                                 </div>
                                 <div><h4 class="font-bold text-slate-800 mb-2">✨ 주요 착한 메뉴</h4><ul class="text-sm divide-y divide-slate-100">${menuListHTML}</ul></div>
-                                <div class="flex gap-2">
-                                    <button class="share-btn flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.665l3-3z" /><path d="M8.603 16.103a4 4 0 005.656-5.656l-3-3a4 4 0 00-5.865-.225.75.75 0 00.977 1.138 2.5 2.5 0 013.665.142l3 3a2.5 2.5 0 01-3.536 3.536l-1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 000 5.656z" /></svg>공유</button>
-                                    <button class="kakao-map-btn flex-1 bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75V15a.75.75 0 01-1.5 0V2.75A.75.75 0 0110 2z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 1.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z" clip-rule="evenodd" /></svg>길찾기</button>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button class="share-btn bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.665l3-3z" /><path d="M8.603 16.103a4 4 0 005.656-5.656l-3-3a4 4 0 00-5.865-.225.75.75 0 00.977 1.138 2.5 2.5 0 013.665.142l3 3a2.5 2.5 0 01-3.536 3.536l-1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 000 5.656z" /></svg>
+                                        <span>공유</span>
+                                    </button>
+                                    <button class="kakao-map-btn bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c-4.97 0-9 3.358-9 7.5c0 2.032.934 3.91 2.452 5.253L12 22l6.548-7.247C20.066 13.41 21 11.532 21 9.5C21 5.358 16.97 2 12 2m0 2c1.395 0 2.68.53 3.688 1.406c1.008.877 1.594 2.055 1.594 3.25c0 1.94-1.203 3.65-3.094 4.813L12 16.89l-2.188-2.422C8.016 13.257 6.719 11.453 6.719 9.656c0-1.195.586-2.373 1.594-3.25C9.32 4.53 10.605 4 12 4m0 2.5a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3Z"/></svg>
+                                        <span>카카오</span>
+                                    </button>
+                                    <button class="naver-map-btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="m12 0l8.73 4.4L12 24L3.27 4.4z"/></svg>
+                                        <span>네이버</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -356,11 +388,36 @@
                     });
 
                     const kakaoMapBtn = card.querySelector('.kakao-map-btn');
-                    kakaoMapBtn.disabled = !(shop.lat && shop.lng);
-                    kakaoMapBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        window.open(`https://map.kakao.com/link/to/${encodeURIComponent(shop['업소명'])},${shop.lat},${shop.lng}`, '_blank');
-                    });
+                    const hasCoords = shop.lat && shop.lng;
+                    kakaoMapBtn.disabled = !hasCoords;
+                    if(hasCoords) {
+                        kakaoMapBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            window.open(`https://map.kakao.com/link/to/${encodeURIComponent(shop['업소명'])},${shop.lat},${shop.lng}`, '_blank');
+                        });
+                    }
+
+                    // v17.0: 네이버 지도 길찾기 버튼 이벤트 리스너 추가
+                    const naverMapBtn = card.querySelector('.naver-map-btn');
+                    naverMapBtn.disabled = !hasCoords;
+                    if(hasCoords) {
+                        naverMapBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const shopName = encodeURIComponent(shop['업소명']);
+                            // 네이버 지도는 모바일 웹 URL을 사용하는 것이 호환성이 좋아!
+                            const naverMapUrl = `https://m.map.naver.com/map.naver?lat=${shop.lat}&lng=${shop.lng}&level=12&pinType=PLACE&pinTitle=${shopName}`;
+                            
+                            // 디버거에 정보 표시
+                            showDebugger([
+                                "네이버 길찾기 버튼 클릭됨!",
+                                `가게: ${shop['업소명']}`,
+                                `좌표: ${shop.lat}, ${shop.lng}`,
+                                `URL: ${naverMapUrl}`
+                            ]);
+                            
+                            window.open(naverMapUrl, '_blank');
+                        });
+                    }
 
                     shopListEl.appendChild(card);
                 });
