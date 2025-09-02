@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>광고 관리 페이지 v3.0 (모바일 최적화)</title>
+    <title>광고 관리 페이지 v3.1 (보안 강화)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -13,7 +13,6 @@
         .sortable-ghost { background: #e0f2fe; opacity: 0.5; }
         
         /* --- 모바일 UI 개선을 위한 스타일 --- */
-        /* 전체 화면 폼 컨테이너 (모바일용) */
         .form-container-mobile {
             position: fixed;
             top: 0;
@@ -31,7 +30,6 @@
         .form-container-mobile.active {
             transform: translateX(0);
         }
-        /* 데스크톱에서는 기존 모달처럼 보이게 처리 */
         @media (min-width: 768px) {
             .form-container-mobile {
                 position: fixed;
@@ -46,7 +44,7 @@
                 justify-content: center;
                 align-items: flex-start;
                 overflow-y: auto;
-                transform: none; /* 슬라이드 효과 제거 */
+                transform: none;
                 opacity: 0;
                 visibility: hidden;
                 transition: opacity 0.2s, visibility 0.2s;
@@ -57,13 +55,11 @@
             }
         }
 
-        /* 버튼 비활성화 스타일 */
         .button-disabled { 
             background-color: #94a3b8; 
             cursor: not-allowed; 
         }
         
-        /* 로딩 스피너 */
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -76,14 +72,12 @@
             to { transform: rotate(360deg); }
         }
         
-        /* 미디어 업로드 상태바 */
         #media-upload-status { transition: opacity 0.3s; }
         
-        /* 미디어 미리보기 컨테이너 */
         .preview-media-container {
             position: relative;
             width: 100%;
-            padding-top: 56.25%; /* 16:9 비율 */
+            padding-top: 56.25%;
             background-color: #e2e8f0;
             border-radius: 0.5rem;
         }
@@ -98,7 +92,6 @@
             border-radius: 0.5rem;
         }
 
-        /* 프로그레스 바 */
         .progress-bar {
             width: 100%;
             background-color: #e5e7eb;
@@ -113,10 +106,9 @@
             transition: width 0.2s ease-in-out;
         }
 
-        /* 커스텀 파일 입력 버튼 */
         .file-input-button {
             display: inline-block;
-            padding: 0.75rem 1.25rem; /* 터치 영역 확보 */
+            padding: 0.75rem 1.25rem;
             background-color: #3b82f6;
             color: white;
             border-radius: 0.5rem;
@@ -127,7 +119,6 @@
         .file-input-button:hover { background-color: #2563eb; }
         .file-input-hidden { display: none; }
         
-        /* 상태 뱃지 */
         .status-badge {
             font-size: 0.75rem;
             font-weight: 600;
@@ -135,7 +126,6 @@
             border-radius: 9999px;
         }
 
-        /* 커스텀 토글 스위치 (크기 증가) */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -172,7 +162,7 @@
             <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인</h1>
             <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-lg">
             <button id="login-button" class="w-full mt-4 px-4 py-3 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors text-lg">로그인</button>
-            <p id="auth-message" class="text-sm text-center mt-4 hidden"></p>
+            <p id="auth-message" class="text-sm text-center mt-4 hidden">Firebase 접속 정보를 받아오는 중...</p>
         </div>
     </div>
 
@@ -196,12 +186,10 @@
     <!-- 카드 광고 수정/추가 폼 (모바일: 전체화면, 데스크톱: 모달) -->
     <div id="ad-modal" class="form-container-mobile">
         <div class="bg-white w-full md:max-w-3xl md:my-8 md:rounded-lg md:shadow-xl flex flex-col flex-1">
-            <!-- 폼 헤더 (모바일에서만 보임) -->
             <div class="flex justify-between items-center p-4 border-b md:hidden">
                 <h2 id="modal-title" class="text-xl font-bold">새 카드 광고 추가</h2>
                 <button id="close-modal-button" class="text-2xl font-light">&times;</button>
             </div>
-            <!-- 폼 내용 -->
             <div class="p-6 flex-1 overflow-y-auto">
                  <div class="grid md:grid-cols-2 gap-6">
                     <div class="space-y-6 flex flex-col">
@@ -257,7 +245,6 @@
                     </div>
                 </div>
             </div>
-            <!-- 폼 푸터 (저장 버튼) -->
             <div class="p-4 bg-slate-50 border-t">
                 <button id="save-ad-button" class="w-full px-4 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 shadow-md transition-colors flex justify-center items-center gap-2 text-lg">저장하기</button>
             </div>
@@ -310,24 +297,18 @@
       import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
       import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
-	// 'import.meta.env' 라는 특수 요원이 .env 파일에서 값을 읽어와!
-	const firebaseConfig = {
-        apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
-        authDomain: "gtree-f3d92.firebaseapp.com",
-        projectId: "gtree-f3d92",
-        storageBucket: "gtree-f3d92.firebasestorage.app",
-        messagingSenderId: "857408421677",
-        appId: "1:857408421677:web:56b75913c99317f1ae5da4",
-        measurementId: "G-4T4J4KXGNH"
-		  };
+        // ===============================================================
+        // 🚀 광고 관리 시스템 v3.1
+        // ===============================================================
+        // [변경점]
+        // 1. 최신 admin v3.0 UI/기능을 기반으로 보안 강화 적용.
+        // 2. 하드코딩된 Firebase API 키를 제거하고, Netlify '비밀요원'에게 받아오도록 수정.
+        // 3. 앱 시작 시 Firebase 초기화가 완료된 후 로그인 및 기타 기능을 활성화.
+        // ===============================================================
 
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
-      const storage = getStorage(app);
-      const adsCollection = collection(db, "ads");
-
-      // 전역 변수들은 대부분 그대로 사용합니다.
+      // 전역 Firebase 서비스 변수 (초기화는 startApp에서)
+      let auth, db, storage, adsCollection;
+      
       let adList = [];
       let editingAdId = null;
       let selectedMediaFile = null; 
@@ -336,7 +317,6 @@
       let currentUploadTask = null;
       let tempPreviewUrl = null;
 
-      // DOM 요소 가져오기
       const authContainer = document.getElementById('auth-container');
       const adminPanel = document.getElementById('admin-panel');
       const passwordInput = document.getElementById('password-input');
@@ -374,23 +354,63 @@
       const iframeAdEndDateInput = document.getElementById('iframe-ad-end-date');
       const saveIframeAdButton = document.getElementById('save-iframe-ad-button');
 
-      // 이벤트 리스너 설정
-      loginButton.addEventListener('click', handleLogin);
-      passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
-      
-      addNewAdButton.addEventListener('click', handleAddNewAd);
-      closeModalButton.addEventListener('click', () => adModal.classList.remove('active'));
-      saveAdButton.addEventListener('click', handleSaveAd);
-      [adTitleInput, adDescriptionInput, adLinkInput, isPartnersCheckbox].forEach(input => {
-          input.addEventListener('input', () => updatePreview());
-      });
-      adMediaFileInput.addEventListener('change', handleFileUpload);
-      
-      addNewIframeAdButton.addEventListener('click', handleAddNewIframeAd);
-      closeIframeModalButton.addEventListener('click', () => iframeAdModal.classList.remove('active'));
-      saveIframeAdButton.addEventListener('click', handleSaveIframeAd);
+      /**
+       * 앱을 시작하는 메인 함수.
+       * Netlify Function을 통해 Firebase 설정을 받아온 후 모든 기능을 초기화한다.
+       */
+      async function startApp() {
+        try {
+            console.log("🚀 [v3.1] 앱 실행 시작!");
+            showAuthMessage("보안 서버에 접속 중...", false);
 
-      // 로그인 로직 (기존과 동일)
+            // 1. 비밀요원에게 Firebase 접속 정보 요청
+            const response = await fetch('/.netlify/functions/get-firebase-config');
+            if (!response.ok) throw new Error(`[오류] 비밀요원 응답 실패! 상태: ${response.status}`);
+            const firebaseConfig = await response.json();
+            console.log("✅ [Debug] 비밀요원으로부터 설정 정보 수신 완료!");
+
+            // 2. 수신한 정보로 Firebase 서비스 초기화
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+            adsCollection = collection(db, "ads");
+            console.log("✅ [Debug] 모든 Firebase 서비스 초기화 성공!");
+            
+            // 3. Firebase 준비 완료 후, 이벤트 리스너 설정 및 UI 활성화
+            setupEventListeners();
+            showAuthMessage("비밀번호를 입력하세요.", false);
+            loginButton.disabled = false; // 로그인 버튼 활성화
+
+        } catch (error) {
+            console.error("🔥 [치명적 오류] 앱 시작 중 문제 발생:", error);
+            showAuthMessage("초기화 실패. 관리자에게 문의하세요.", true);
+            loginButton.disabled = true;
+            loginButton.classList.add('button-disabled');
+        }
+      }
+
+      // DOM이 로드되면 앱 시작
+      document.addEventListener('DOMContentLoaded', startApp);
+      
+      function setupEventListeners() {
+        loginButton.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+        
+        addNewAdButton.addEventListener('click', handleAddNewAd);
+        closeModalButton.addEventListener('click', () => adModal.classList.remove('active'));
+        saveAdButton.addEventListener('click', handleSaveAd);
+        [adTitleInput, adDescriptionInput, adLinkInput, isPartnersCheckbox].forEach(input => {
+            input.addEventListener('input', () => updatePreview());
+        });
+        adMediaFileInput.addEventListener('change', handleFileUpload);
+        
+        addNewIframeAdButton.addEventListener('click', handleAddNewIframeAd);
+        closeIframeModalButton.addEventListener('click', () => iframeAdModal.classList.remove('active'));
+        saveIframeAdButton.addEventListener('click', handleSaveIframeAd);
+        console.log("✅ [Debug] 모든 이벤트 리스너 설정 완료.");
+      }
+      
       async function handleLogin() {
           const password = passwordInput.value;
           if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
@@ -412,7 +432,6 @@
           }
       }
       
-      // 광고 목록 리스너 (기존과 동일)
       function listenToAds() {
         const q = query(adsCollection, orderBy("order", "asc"));
         onSnapshot(q, (querySnapshot) => {
@@ -422,14 +441,12 @@
         });
       }
 
-      // 인증 메시지 표시 (기존과 동일)
       function showAuthMessage(message, isError) {
           authMessage.textContent = message;
           authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
           authMessage.classList.remove('hidden');
       }
       
-      // 순서 변경 기능 초기화 (기존과 동일)
       function initSortable() {
           new Sortable(adListContainer, {
               handle: '.drag-handle', animation: 150,
@@ -446,7 +463,6 @@
           });
       }
       
-      // 광고 상태 텍스트 생성 (기존과 동일)
       function getAdStatus(ad) {
           const now = new Date();
           const start = ad.startDate ? new Date(ad.startDate) : null;
@@ -458,14 +474,12 @@
           return `<span class="status-badge bg-green-200 text-green-600">진행중</span>`;
       }
 
-      // 날짜 포맷팅 (기존과 동일)
       function formatDateTime(dateTimeString) {
           if (!dateTimeString) return '...';
           const date = new Date(dateTimeString);
           return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
       }
 
-      // --- 광고 목록 렌더링 함수 (모바일 UI에 맞게 수정) ---
       function renderAdList() {
           adListContainer.innerHTML = '';
           if (adList.length === 0) { adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8">등록된 광고가 없습니다.</p>`; return; }
@@ -491,7 +505,7 @@
 
               adElement.innerHTML = `
                 <div class="p-4 flex items-start gap-4">
-                    <div class="drag-handle text-slate-400 pt-3 hidden sm:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
+                    <div class="drag-handle text-slate-400 pt-3 hidden sm:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
                     ${mediaIcon}
                     <div class="flex-grow overflow-hidden">
                         <p class="font-bold text-slate-800 truncate">${ad.title}</p>
@@ -519,13 +533,11 @@
               `;
               adListContainer.appendChild(adElement);
           });
-          // 이벤트 리스너 재설정
           document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', handleEditAd));
           document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', handleDeleteAd));
           document.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', handleToggleAdStatus));
       }
 
-      // 광고 상태 토글 (기존과 동일)
       async function handleToggleAdStatus(event) {
           const id = event.target.dataset.id;
           const isActive = event.target.checked;
@@ -545,7 +557,6 @@
           }
       }
 
-      // 파일 업로드 핸들러 (기존과 동일)
       function handleFileUpload(event) {
           const file = event.target.files[0];
           if (!file) {
@@ -570,7 +581,6 @@
           updatePreview();
       }
       
-      // 카드 모달 초기화
       function resetCardModalState() {
           saveAdButton.disabled = false;
           saveAdButton.innerHTML = `저장하기`;
@@ -594,7 +604,6 @@
           }
       }
 
-      // 새 카드 광고 추가
       function handleAddNewAd() {
           editingAdId = null;
           selectedMediaFile = null;
@@ -606,7 +615,6 @@
           adModal.classList.add('active');
       }
       
-      // iframe 모달 초기화
       function resetIframeModalState() {
           iframeAdTitleInput.value = '';
           iframeAdCodeInput.value = '';
@@ -618,7 +626,6 @@
           saveIframeAdButton.classList.remove('button-disabled');
       }
 
-      // 새 iframe 광고 추가
       function handleAddNewIframeAd() {
           editingAdId = null;
           iframeModalTitle.textContent = "새 iframe 광고 추가";
@@ -626,7 +633,6 @@
           iframeAdModal.classList.add('active');
       }
       
-      // 광고 수정
       function handleEditAd(event) {
           editingAdId = event.target.dataset.id;
           const ad = adList.find(ad => ad.id === editingAdId);
@@ -659,7 +665,6 @@
           }
       }
 
-      // 광고 삭제 (기존과 동일)
       async function handleDeleteAd(event) {
           const idToDelete = event.target.dataset.id;
           const adToDelete = adList.find(ad => ad.id === idToDelete);
@@ -677,7 +682,6 @@
           }
       }
 
-      // 미디어 업로드 (기존과 동일)
       async function uploadMediaFile() {
           return new Promise((resolve, reject) => {
               mediaUploadStatus.style.opacity = 1;
@@ -700,7 +704,6 @@
           });
       }
 
-      // 카드 광고 저장
       async function handleSaveAd() {
           if (!adTitleInput.value.trim()) { alert('광고 제목을 입력해주세요!'); adTitleInput.focus(); return; }
           if (adStartDateInput.value && adEndDateInput.value && adStartDateInput.value > adEndDateInput.value) {
@@ -730,7 +733,6 @@
                   Object.assign(adData, { order: existingAd.order, clickCount: existingAd.clickCount || 0, isActive: existingAd.isActive !== false });
                   await updateDoc(doc(db, "ads", editingAdId), adData);
               } else {
-			  // isActive 값을 false로 변경하여 기본적으로 비활성화 상태가 되도록 합니다.
                   Object.assign(adData, { order: adList.length, clickCount: 0, isActive: false });
                   await addDoc(adsCollection, adData);
               }
@@ -744,7 +746,6 @@
           }
       }
 
-      // iframe 광고 저장
       async function handleSaveIframeAd() {
           const title = iframeAdTitleInput.value.trim();
           const code = iframeAdCodeInput.value.trim();
@@ -767,7 +768,6 @@
                   Object.assign(adData, { order: existingAd.order, clickCount: 0, isActive: existingAd.isActive !== false });
                   await updateDoc(doc(db, "ads", editingAdId), adData);
               } else {
-			  // isActive 값을 false로 변경하여 기본적으로 비활성화 상태가 되도록 합니다.
                   Object.assign(adData, { order: adList.length, clickCount: 0, isActive: false });
                   await addDoc(adsCollection, adData);
               }
@@ -781,7 +781,6 @@
           }
       }
 
-      // 미리보기 업데이트 (기존과 동일)
       function updatePreview() {
           const title = adTitleInput.value || "광고 제목";
           const description = adDescriptionInput.value || "광고 설명이 여기에 표시됩니다.";
