@@ -113,7 +113,7 @@
                     <!-- 부제목을 flex로 변경하여 한 줄로 표현 -->
                     <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
                         <span>K-Startup, 청년창업, R&D 지원금</span>
-                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.2</span>
+                        <!-- <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v16.0</span> -->
                     </p>
                 </div>
 
@@ -124,7 +124,7 @@
             <!-- 필터 및 검색 UI -->
             <div class="relative flex-grow mb-4">
                 <input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="बजट 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             <div id="collapsible-filters" class="space-y-4">
                 <!-- 정렬 버튼 위치 이동 -->
@@ -224,22 +224,24 @@
     <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
-    <!-- Firebase SDK 및 앱 초기화 로직 -->
+    <!-- Firebase SDK 추가 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-      // ===============================================================
-      // 🚀 정부 지원사업 알리미 v1.2
-      // ===============================================================
-      // [변경점]
-      // 1. Firebase 설정(API 키 등)을 코드에서 완전히 제거!
-      // 2. Netlify의 '비밀요원(Function)'에게 접속 정보를 요청해서 받아오는 방식으로 변경.
-      // 3. 이제 이 코드는 Github에 100% 공개해도 안전합니다. 캬~
-      // ===============================================================
+	// 'import.meta.env' 라는 특수 요원이 .env 파일에서 값을 읽어와!
+      const firebaseConfig = {
+        apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
+        authDomain: "gtree-f3d92.firebaseapp.com",
+        projectId: "gtree-f3d92",
+        storageBucket: "gtree-f3d92.firebasestorage.app",
+        messagingSenderId: "857408421677",
+        appId: "1:857408421677:web:56b75913c99317f1ae5da4",
+        measurementId: "G-4T4J4KXGNH"
+      };
 
-      // 전역에서 사용할 변수 선언 (초기화는 startApp 내부에서)
-      let db;
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
 
       // --- JavaScript 코드 시작 ---
       const INITIAL_LOAD_COUNT = 12;
@@ -280,43 +282,7 @@
           closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
       };
 
-      /**
-       * 앱을 시작하는 메인 함수.
-       * Netlify Function을 통해 Firebase 설정을 받아온 후 모든 기능을 초기화한다.
-       */
-      async function startApp() {
-        try {
-            console.log("🚀 [v1.2] 앱 실행 시작!");
-            
-            // 1. 비밀요원에게 Firebase 접속 정보 요청
-            console.log("📡 [Debug] Netlify 비밀요원에게 Firebase 설정 정보 요청 중...");
-            const response = await fetch('/.netlify/functions/get-firebase-config');
-            
-            if (!response.ok) {
-                throw new Error(`[오류] 비밀요원 응답 실패! 상태: ${response.status}`);
-            }
-            const firebaseConfig = await response.json();
-            console.log("✅ [Debug] 비밀요원으로부터 설정 정보 수신 완료!");
-
-            // 2. 수신한 정보로 Firebase 앱 초기화
-            console.log("🔥 [Debug] Firebase 앱 초기화 시도...");
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app); // 전역 db 변수 초기화
-            console.log("✅ [Debug] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
-
-            // 3. 모든 기능 초기화 함수 호출
-            initialize();
-
-        } catch (error) {
-            console.error("🔥 [치명적 오류] 앱 시작 중 문제 발생:", error);
-            elements.statusContainer.classList.add('hidden');
-            elements.errorMessage.textContent = '앱을 시작하는 데 실패했습니다. 관리자에게 문의하세요.';
-            elements.errorMessage.classList.remove('hidden');
-        }
-      }
-
-      // DOM이 로드되면 앱 시작
-      document.addEventListener('DOMContentLoaded', startApp);
+      document.addEventListener('DOMContentLoaded', initialize);
 
       async function initialize() {
           addEventListeners();
@@ -465,6 +431,7 @@
             elements.modalBg.addEventListener('click', () => elements.modal.classList.add('hidden'));
             elements.closeModalButton.addEventListener('click', () => elements.modal.classList.add('hidden'));
             
+            // 상세 필터 토글 버튼 이벤트 리스너 (텍스트 변경 로직 제거)
             elements.toggleFiltersButton.addEventListener('click', () => { 
                 elements.collapsibleFilters.classList.toggle('expanded');
             });
@@ -583,7 +550,7 @@
                           </div>
                           <div>
                               <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기">
-                                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="बजट 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
+                                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
                               </button>
                               <button class="favorite-button text-2xl text-slate-400 hover:text-amber-400 transition-colors ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
                           </div>
@@ -605,6 +572,7 @@
             elements.resultsContainer.classList.add('hidden');
             elements.statusContainer.classList.remove('hidden'); // 필터링 시작 시 스켈레톤 보이기
 
+            // 필터링 작업이 오래 걸리는 것처럼 보이게 잠시 딜레이
             setTimeout(() => {
                 let items = [...allApiData]; 
                 if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
@@ -642,7 +610,7 @@
                 } else { 
                     displayData(filteredItems.slice(0, visibleItemCount)); 
                 }
-            }, 200);
+            }, 200); // 0.2초 딜레이
         }
 
       function renderActiveFilters() {
