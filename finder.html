@@ -4,62 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- v6.2: 교차 검증 버튼 제거 및 한전 문의 안내 문구 추가 -->
-    <title>v6.2 | 우리집 고압선 안심진단</title>
+    <title>v7.0 | 우리집 고압선 안심진단 (보안 강화)</title>
     <meta name="description" content="우리집 주변 고압선, 송전탑의 법적 안전거리를 10초 만에 확인하세요! 주소 입력만으로 765kV, 345kV 등 전압별 이격거리 기준에 맞는 전력 시설 정보를 정밀 분석해 드립니다.">
     <meta name="keywords" content="고압선, 송전탑, 변전소, 안전거리, 이격거리, 전자파, 우리집, 주소, 확인, 조회, 진단, 한전, 지원사업, 지도, 로드뷰">
     
     <meta property="og:title" content="우리집 고압선 안심진단 (지도/로드뷰 지원)">
     <meta property="og:description" content="주소 입력만으로 우리집 주변 고압선, 송전탑 위치를 지도에서 확인하고 로드뷰로 현장을 직접 보세요!">
-    <meta property="og:image" content="https://placehold.co/1200x630/0d6efd/ffffff?text=%EC%9A%B0%EB%A6%AC%EC%A7%91%20%EA%B3%A0%EC%95%95%EC%84%A0%0A%EC%95%88%EC%8B%AC%EC%A7%84%EB%8B%A8%20v6.2&font=noto-sans-kr">
+    <meta property="og:image" content="https://placehold.co/1200x630/0d6efd/ffffff?text=%EC%9A%B0%EB%A6%AC%EC%A7%91%20%EA%B3%A0%EC%95%95%EC%84%A0%0A%EC%95%88%EC%8B%AC%EC%A7%84%EB%8B%A8%20v7.0&font=noto-sans-kr">
     <meta property="og:url" content="https://kfund.ai/finder.html">
     <meta property="og:type" content="website">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=Bdae71c83941e7abbe59827c2625be7b&libraries=services"></script>
     
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-      import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-      
-      const firebaseConfig = {
-        apiKey: "AIzaSyDNoYO6orEBMvslNB135KCOfSUngRc6i1k",
-        authDomain: "gtree-f3d92.firebaseapp.com",
-        projectId: "gtree-f3d92",
-        storageBucket: "gtree-f3d92.firebasestorage.app",
-        messagingSenderId: "857408421677",
-        appId: "1:857408421677:web:56b75913c99317f1ae5da4",
-        measurementId: "G-4T4J4KXGNH"
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-      
-      window.fetchAndDisplayAd = async () => {
-        const adsCollection = collection(db, "ads");
-        const now = new Date().toISOString();
-        
-        const q = query(adsCollection, where("isActive", "==", true));
-        const querySnapshot = await getDocs(q);
-        
-        const allAds = [];
-        querySnapshot.forEach(doc => allAds.push({ id: doc.id, ...doc.data() }));
-
-        const validAds = allAds.filter(ad => {
-            const start = ad.startDate;
-            const end = ad.endDate;
-            if (start && now < start) return false;
-            if (end && now > end) return false;
-            return true;
-        });
-
-        if (validAds.length > 0) {
-            const randomAd = validAds[Math.floor(Math.random() * validAds.length)];
-            window.createAdCard(randomAd);
-        }
-      };
-    </script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; color: #212529; }
@@ -127,7 +84,7 @@
 
         <div id="result" class="pt-6">
             <div id="initial-message" class="text-center text-gray-500">
-                <p>🛰️ 시스템 초기화 및 좌표 동기화 중...</p>
+                <p>🛰️ 시스템 초기화 및 보안 서버 접속 중...</p>
             </div>
             <div id="loading" class="hidden flex flex-col items-center justify-center space-y-4">
                 <div class="loader"></div>
@@ -141,7 +98,6 @@
                 <div id="summary-briefing" class="summary-briefing mb-6 p-4 rounded-lg"></div>
                 <div id="facility-list" class="space-y-4"></div>
                 
-                <!-- v6.2: 안내 문구 컨테이너로 변경 -->
                 <div id="final-notice-container" class="mt-8 text-center"></div>
             </div>
         </div>
@@ -149,7 +105,6 @@
     </div>
 
     <div id="support-modal" class="modal-overlay">
-        <!-- Modal content is unchanged -->
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl sm:text-2xl font-bold title-text">송·변전설비 주변지역 지원사업 안내</h2>
@@ -180,6 +135,20 @@
     </div>
 
     <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // ===============================================================
+        // ⚡️ 우리집 고압선 안심진단 v7.0
+        // ===============================================================
+        // [변경점]
+        // 1. 하드코딩된 Firebase API 키를 제거.
+        // 2. Netlify '비밀요원'에게 접속 정보를 받아오도록 수정.
+        // 3. 앱 시작 시 카카오맵과 Firebase가 모두 준비된 후 탐지 기능 활성화.
+        // ===============================================================
+
+        let db; // 전역 Firestore 인스턴스
+
         const addressInput = document.getElementById('address');
         const searchBtn = document.getElementById('searchBtn');
         const initialMessageDiv = document.getElementById('initial-message');
@@ -188,7 +157,6 @@
         const resultMessage = document.getElementById('result-message');
         const summaryBriefing = document.getElementById('summary-briefing');
         const facilityList = document.getElementById('facility-list');
-        // v6.2: 컨테이너 ID 변경
         const finalNoticeContainer = document.getElementById('final-notice-container');
         const supportModal = document.getElementById('support-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
@@ -198,6 +166,51 @@
         let map = null;
         let markers = [];
         let circle = null;
+
+        /**
+         * 앱을 시작하는 메인 함수.
+         * Netlify Function을 통해 Firebase 설정을 받아온 후 모든 기능을 초기화한다.
+         */
+        async function startApp() {
+            try {
+                console.log("🚀 [v7.0] 앱 실행 시작!");
+
+                // 1. 비밀요원에게 Firebase 접속 정보 요청
+                const firebasePromise = fetch('/.netlify/functions/get-firebase-config')
+                    .then(res => {
+                        if (!res.ok) throw new Error(`[오류] 비밀요원 응답 실패! 상태: ${res.status}`);
+                        return res.json();
+                    });
+                
+                // 2. 카카오맵 SDK 로딩 대기
+                const kakaoMapPromise = new Promise((resolve, reject) => {
+                    if (window.kakao && window.kakao.maps) {
+                         kakao.maps.load(() => resolve());
+                    } else {
+                        reject(new Error("카카오맵 SDK 로딩 실패"));
+                    }
+                });
+
+                // 두 작업이 모두 끝날 때까지 기다림
+                const [firebaseConfig] = await Promise.all([firebasePromise, kakaoMapPromise]);
+                
+                console.log("✅ [Debug] 비밀요원 응답 및 카카오맵 SDK 로딩 완료!");
+
+                // 3. 수신한 정보로 Firebase 앱 초기화
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                console.log("✅ [Debug] Firebase 앱 초기화 성공!");
+
+                // 4. 모든 준비 완료 후, 탐지 기능 활성화
+                initializeSearch();
+
+            } catch(error) {
+                console.error("🔥 [치명적 오류] 앱 시작 중 문제 발생:", error);
+                displayError("시스템 초기화에 실패했습니다. 새로고침 해주세요.");
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', startApp);
         
         window.openRoadview = (lat, lon) => {
             const roadviewUrl = `https://map.kakao.com/link/roadview/${lat},${lon}`;
@@ -242,18 +255,41 @@
             } else {
                 facilityList.appendChild(adCard);
             }
-        }
-
-        kakao.maps.load(() => {
+        };
+        
+        // 광고 데이터를 불러오는 함수
+        async function fetchAndDisplayAd() {
+            if (!db) return; // db가 초기화되지 않았으면 실행하지 않음
+            const adsCollection = collection(db, "ads");
+            const now = new Date().toISOString();
+            
             try {
-                geocoderInstance = new kakao.maps.services.Geocoder();
-                initializeSearch();
+                const q = query(adsCollection, where("isActive", "==", true));
+                const querySnapshot = await getDocs(q);
+                
+                const allAds = [];
+                querySnapshot.forEach(doc => allAds.push({ id: doc.id, ...doc.data() }));
+
+                const validAds = allAds.filter(ad => {
+                    const start = ad.startDate;
+                    const end = ad.endDate;
+                    if (start && now < start) return false;
+                    if (end && now > end) return false;
+                    return true;
+                });
+
+                if (validAds.length > 0) {
+                    const randomAd = validAds[Math.floor(Math.random() * validAds.length)];
+                    createAdCard(randomAd);
+                }
             } catch (error) {
-                displayError("카카오맵 서비스 초기화에 실패했습니다.");
+                console.error("광고 로딩 중 오류 발생:", error);
             }
-        });
+        };
 
         function initializeSearch() {
+            geocoderInstance = new kakao.maps.services.Geocoder();
+            
             addressInput.disabled = false;
             searchBtn.disabled = false;
             searchBtn.textContent = '탐지 시작';
@@ -295,7 +331,6 @@
             loadingDiv.classList.remove('hidden');
             facilityList.innerHTML = '';
             summaryBriefing.innerHTML = '';
-            // v6.2: 최종 안내 문구 컨테이너 초기화 및 설정
             finalNoticeContainer.innerHTML = ''; 
             clearMap();
 
@@ -304,7 +339,6 @@
                     const lat = result[0].y;
                     const lon = result[0].x;
 
-                    // v6.2: 버튼 대신 안내 문구 설정
                     finalNoticeContainer.innerHTML = `
                         <p class="text-xs text-gray-500 bg-gray-100 p-3 rounded-lg">
                             ❗️ <strong>참고:</strong> 이 결과는 공공 데이터를 기반으로 한 예측 정보입니다. 정확한 내용은 <strong>한국전력공사(123)</strong>에 문의하세요.
@@ -472,9 +506,7 @@
                 facilityList.innerHTML += cardHTML;
             });
             
-            if (window.fetchAndDisplayAd) {
-                window.fetchAndDisplayAd();
-            }
+            fetchAndDisplayAd();
 
             if (closestFacility.distance < 300 && parseVoltage(closestFacility.tags.voltage) >= 345000) {
                  resultMessage.innerHTML = `<span class="text-red-600 font-bold">🚨 경고! ${Math.round(closestFacility.distance)}m 거리에 고압 시설이 있습니다!</span>`;
@@ -564,9 +596,7 @@
             resultMessage.innerHTML = `<span class="text-green-700 font-bold">✅ 클린 지역! 주변에 이격거리 기준을 초과하는 주요 전력시설이 없습니다.</span>`;
             summaryBriefing.classList.add('hidden');
             
-            if (window.fetchAndDisplayAd) {
-                window.fetchAndDisplayAd();
-            }
+            fetchAndDisplayAd();
         }
 
         function displayError(message) {
