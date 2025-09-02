@@ -229,7 +229,7 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-      const firebaseConfig = {
+	// 'import.meta.env' 라는 특수 요원이 .env 파일에서 값을 읽어와!
     const firebaseConfig = {
 		apiKey: import.meta.env.VITE_API_KEY,
 		authDomain: import.meta.env.VITE_AUTH_DOMAIN,
