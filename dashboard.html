@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v1.7</title>
+    <title>All-in-One 대시보드 v1.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -57,11 +57,21 @@
         .control-group button { background-color: var(--primary-color); color: black; font-weight: bold; }
         .inline-group { display: flex; justify-content: space-between; align-items: center; }
         .inline-group label { margin-bottom: 0; }
-        .inline-group input[type="color"] { width: 60px; padding: 2px; } 
         .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
         .style-grid .control-group { margin-bottom: 0; }
-        /* ✨FIX: Style consistency for color pickers */
-        .style-grid input[type="color"] { width: 100%; height: 42px; padding: 2px; }
+        
+        /* ✨FIX v1.8: Style consistency and robust sizing for all color pickers */
+        .control-group input[type="color"] {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            height: 42px; padding: 0;
+            border: 1px solid var(--border-color); border-radius: 6px;
+            background-color: transparent; cursor: pointer;
+        }
+        .control-group input[type="color"]::-webkit-color-swatch-wrapper { padding: 4px; }
+        .control-group input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+        .control-group input[type="color"]::-moz-color-swatch { border: none; border-radius: 4px; }
+        .inline-group input[type="color"] { width: 60px; flex-shrink: 0; }
+
         .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
         .viewport-btn { background-color: #334155; border: 1px solid #475569; color: var(--text-color); padding: 8px 12px; font-size: 14px; border-radius: 6px; }
         .viewport-btn.active { background-color: var(--primary-color); color: black; border-color: var(--primary-color); }
