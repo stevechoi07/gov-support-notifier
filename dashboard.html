@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v1.3</title>
+    <title>All-in-One 대시보드 v1.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -57,6 +57,8 @@
         .control-group button { background-color: var(--primary-color); color: black; font-weight: bold; }
         .inline-group { display: flex; justify-content: space-between; align-items: center; }
         .inline-group label { margin-bottom: 0; }
+        .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
+        .style-grid .control-group { margin-bottom: 0; }
         .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
         .viewport-btn { background-color: #334155; border: 1px solid #475569; color: var(--text-color); padding: 8px 12px; font-size: 14px; border-radius: 6px; }
         .viewport-btn.active { background-color: var(--primary-color); color: black; border-color: var(--primary-color); }
@@ -71,7 +73,6 @@
         .preview-wrapper.selected { background-color: rgba(52, 211, 153, 0.1); border-radius: 8px; }
         .preview-wrapper .component-content { text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
         .loader-editor { width: 16px; height: 16px; border-radius: 50%; display: inline-block; border-top: 2px solid #000; border-right: 2px solid transparent; box-sizing: border-box; animation: rotation 1s linear infinite; vertical-align: middle; margin-right: 8px; }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-900">
@@ -245,12 +246,15 @@
 
       function navigateTo(viewName, pageId = null) {
         ui.views.forEach(view => view.classList.add('hidden'));
-        ui.navLinks.forEach(link => link.dataset.view === viewName ? link.classList.add('active') : link.classList.remove('active'));
+        ui.navLinks.forEach(link => {
+            const linkView = link.dataset.view;
+            const isActive = viewName === linkView || (viewName === 'editor' && linkView === 'pages');
+            link.classList.toggle('active', isActive);
+        });
         
         const targetView = document.getElementById(`${viewName}-view`);
         if (targetView) targetView.classList.remove('hidden');
 
-        // Adjust padding for editor view
         ui.mainContent.classList.toggle('p-6', viewName !== 'editor');
 
         const viewConfig = {
@@ -324,7 +328,7 @@
                 this.pageSettings = data.pageSettings || { viewport: '375px,667px' };
                 const pageTitle = pagesList.find(p => p.id === this.currentPageId)?.name || '페이지';
                 ui.viewTitle.textContent = `📝 ${pageTitle} 편집 중...`;
-            } else { navigateTo('pages'); } //  페이지 없으면 목록으로
+            } else { navigateTo('pages'); }
             this.renderAll();
         },
 
@@ -338,19 +342,160 @@
 
         renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); },
         
-        renderPreview() { /* ... (Omitted for brevity, same as createlp.html) ... */ },
-        renderControls() { /* ... (Omitted for brevity, same as createlp.html) ... */ },
-        renderViewportControls() { /* ... (Omitted for brevity, same as createlp.html) ... */ },
+        hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; },
         
-        // --- Component Logic (Simplified for brevity) ---
+        renderPreview() {
+          this.elements.contentArea.innerHTML = '';
+          const { bgVideo, bgImage, bgColor, viewport } = this.pageSettings;
+          if (bgVideo) { this.elements.backgroundVideo.src = bgVideo; this.elements.backgroundVideo.style.display = 'block'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = 'transparent'; this.elements.preview.classList.add('has-background'); } 
+          else if (bgImage) { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.backgroundImage = `url('${bgImage}')`; this.elements.backgroundImageOverlay.style.display = 'block'; this.elements.preview.style.backgroundColor = 'transparent'; this.elements.preview.classList.add('has-background'); } 
+          else { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = bgColor; this.elements.preview.classList.remove('has-background'); }
+          const [width, height] = (viewport || '375px,667px').split(',');
+          this.elements.preview.style.width = width; this.elements.preview.style.height = height;
+          const hasBottomComponent = this.components.some(c => (c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom');
+          this.elements.contentArea.style.justifyContent = hasBottomComponent ? 'flex-start' : 'center';
+
+          this.components.forEach(c => {
+              const wrapper = document.createElement('div');
+              wrapper.className = 'preview-wrapper'; wrapper.dataset.id = c.id;
+              if (c.id === this.activeComponentId) wrapper.classList.add('selected');
+              wrapper.onclick = (e) => { e.stopPropagation(); this.selectComponent(c.id); };
+              if (c.type !== 'lead-form') { wrapper.style.textAlign = c.styles?.textAlign || 'center'; }
+              if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') { wrapper.style.marginTop = 'auto'; }
+
+              let element;
+              switch(c.type) {
+                  case 'heading': element = document.createElement('h1'); element.textContent = c.content; break;
+                  case 'paragraph': element = document.createElement('p'); element.textContent = c.content; break;
+                  case 'button': element = document.createElement('button'); element.textContent = c.content; break;
+                  case 'lead-form':
+                      element = document.createElement('form'); element.className = 'component-content';
+                      let formHTML = (this.allPossibleFormFields.filter(field => c.activeFields?.includes(field.name)) || [])
+                          .map(field => `<div><input type="${field.type}" name="${field.name}" placeholder="${field.label}" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--input-bg); color: var(--text-color);"></div>`).join('');
+                      formHTML += `<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer;">${c.submitText || '제출'}</button>`;
+                      element.innerHTML = formHTML; element.onsubmit = (e) => e.preventDefault();
+                      break;
+              }
+              if (c.type !== 'lead-form') element.className = 'component-content';
+              const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {};
+              Object.assign(element.style, otherStyles);
+              if (c.type === 'button') { element.style.backgroundColor = this.hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity); } 
+              else if (c.type === 'lead-form' && backgroundColor) { element.style.backgroundColor = backgroundColor; }
+              wrapper.appendChild(element);
+              this.elements.contentArea.appendChild(wrapper);
+          });
+        },
+        
+        renderControls() {
+            this.elements.pageBgColorInput.value = this.pageSettings.bgColor || '#DCEAF7';
+            this.elements.pageBackgroundImageInput.value = this.pageSettings.bgImage || '';
+            this.elements.pageBackgroundVideoInput.value = this.pageSettings.bgVideo || '';
+            this.elements.editorsContainer.innerHTML = '';
+            this.components.forEach((c) => {
+                const panel = document.createElement('div');
+                panel.className = 'editor-panel'; panel.dataset.id = c.id; panel.draggable = true; 
+                if (c.id === this.activeComponentId) panel.classList.add('selected');
+                let panelContentHTML = '';
+                if (c.type === 'lead-form') {
+                    let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #334155; padding: 10px; border-radius: 6px;">';
+                    this.allPossibleFormFields.forEach(field => { const isChecked = c.activeFields?.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; });
+                    checklistHTML += '</div></div>';
+                    panelContentHTML = `${checklistHTML}<div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="color" data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>`;
+                } else {
+                    let contentHTML = `<div class="control-group"><label>내용</label><textarea data-prop="content">${c.content}</textarea></div>`;
+                    if (c.type === 'button') { contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`; }
+                    let fontSelectorHTML = `<div class="control-group"><label>글꼴</label><select data-style="fontFamily"><option value="'Noto Sans KR', sans-serif">깔끔 고딕체</option><option value="'Nanum Myeongjo', serif">부드러운 명조체</option><option value="'Gaegu', cursive">귀여운 손글씨체</option></select></div>`;
+                    let styleGridHTML = '<div class="style-grid">';
+                    styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`;
+                    styleGridHTML += `<div class="control-group"><label>글자색</label><input type="color" data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`;
+                    styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
+                    if(c.type === 'button') { styleGridHTML += `<div class="control-group"><label>버튼 배경색</label><input type="color" data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`; }
+                    styleGridHTML += '</div>';
+                    panelContentHTML = contentHTML + fontSelectorHTML + styleGridHTML;
+                }
+                const typeLabel = { heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type];
+                panel.innerHTML = `<h4>${typeLabel} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${panelContentHTML}`;
+                this.elements.editorsContainer.appendChild(panel);
+                if (c.type !== 'lead-form') {
+                    const textAlignSelect = panel.querySelector('[data-style="textAlign"]'); if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center';
+                    const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
+                }
+            });
+            this.attachEventListenersToControls();
+        },
+        
+        renderViewportControls() {
+            this.elements.viewportControlsLeft.innerHTML = '';
+            const btnGroup = document.createElement('div'); btnGroup.className = 'viewport-controls';
+            this.viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (this.pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { this.pageSettings.viewport = opt.value; this.saveAndRender(); }; btnGroup.appendChild(btn); });
+            this.elements.viewportControlsLeft.appendChild(btnGroup);
+        },
+
+        attachEventListenersToControls() {
+          this.elements.editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
+              const id = Number(panel.dataset.id);
+              panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = () => this.updateComponent(id, { [input.dataset.prop]: input.value }); });
+              panel.querySelectorAll('[data-style]').forEach(input => {
+                  input.oninput = () => {
+                      let value = input.value;
+                      if (input.dataset.style === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value += 'px'; }
+                      this.updateComponent(id, { style: { [input.dataset.style]: value } });
+                  };
+              });
+              panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => {
+                  checkbox.onchange = () => {
+                      const fieldName = checkbox.dataset.fieldName;
+                      const component = this.components.find(c => c.id === id);
+                      if (!component) return;
+                      if (!component.activeFields) component.activeFields = [];
+                      if (checkbox.checked) {
+                          if (!component.activeFields.includes(fieldName)) component.activeFields.push(fieldName);
+                      } else {
+                          component.activeFields = component.activeFields.filter(name => name !== fieldName);
+                      }
+                      this.saveAndRender();
+                  };
+              });
+              panel.querySelector('.delete-btn').onclick = () => this.deleteComponent(id);
+              panel.addEventListener('dragstart', (e) => this.handleDragStart(e, id));
+              panel.addEventListener('dragover', this.handleDragOver);
+              panel.addEventListener('dragleave', this.handleDragLeave);
+              panel.addEventListener('drop', (e) => this.handleDrop(e, id));
+              panel.addEventListener('dragend', this.handleDragEnd);
+          });
+        },
+
+        handleDragStart(e, id) { this.draggedId = id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; },
+        handleDragOver(e) { e.preventDefault(); const draggedElement = document.querySelector('.editor-panel.dragging'); if (draggedElement && draggedElement !== e.currentTarget) e.currentTarget.classList.add('drag-over'); },
+        handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); },
+        handleDrop(e, toId) {
+            e.stopPropagation();
+            const fromIndex = this.components.findIndex(c => c.id === this.draggedId);
+            const toIndex = this.components.findIndex(c => c.id === toId);
+            if (fromIndex !== -1 && toIndex !== -1) {
+                const item = this.components.splice(fromIndex, 1)[0];
+                this.components.splice(toIndex, 0, item);
+                this.saveAndRender();
+            }
+        },
+        handleDragEnd(e) { this.draggedId = null; document.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('dragging', 'drag-over')); },
+
+        selectComponent(id) { this.activeComponentId = id; this.renderControls(); this.renderPreview(); },
+
         addComponent(type) {
-            const newComponent = { id: Date.now(), type, content: `새 ${type}`, styles: {} };
+            const newComponent = { id: Date.now(), type, styles: { fontFamily: "'Noto Sans KR', sans-serif" } };
+            switch(type) {
+                case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break;
+                case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break;
+                case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', backgroundColorOpacity: 1 }; break;
+                case 'lead-form': newComponent.submitText = '문의 남기기'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' }; break;
+            }
             this.components.push(newComponent);
             this.activeComponentId = newComponent.id;
             this.saveAndRender();
         },
         updateComponent(id, newData) {
-            const component = this.components.find(c => c.id === id);
+            let component = this.components.find(c => c.id === id);
             if (!component) return;
             if (newData.style) { 
                 component.styles = { ...component.styles, ...newData.style };
