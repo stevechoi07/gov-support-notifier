@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.4</title>
+    <title>All-in-One 대시보드 v2.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -66,7 +66,6 @@
         .clr-field { border: 1px solid var(--border-color) !important; border-radius: 6px !important; }
         .clr-field button { width: 42px !important; height: 42px !important; border-radius: 6px !important; }
         .clr-field input { background-color: var(--input-bg) !important; color: var(--text-color) !important; padding-left: 10px !important; }
-        /* ✨FIX v2.4: Layout fix for inline color picker */
         .inline-group .clr-field { width: 140px; flex-shrink: 0; }
 
         .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
@@ -356,10 +355,10 @@
         setupEventListeners() {
             this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
             document.addEventListener('coloris:pick', event => {
-                const target = event.target;
+                const target = event.detail.instance.el; // ✨FIX v2.5: Correctly get the target element
                 if (target.id === 'page-bg-color') {
                     this.pageSettings.bgColor = event.detail.color;
-                    this.saveAndRender(false, true); // (rerenderControls, rerenderPreview)
+                    this.saveAndRender(false, true);
                 } else {
                     const panel = target.closest('.editor-panel');
                     if (panel) {
@@ -381,7 +380,13 @@
             this.initSortable();
         },
         
-        hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f09]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; },
+        hexToRgba(hex, alpha = 1) { 
+            if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; // ✨FIX v2.5: Correct regex `0-9`
+            let c = hex.substring(1).split(''); 
+            if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } 
+            c = '0x' + c.join(''); 
+            return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; 
+        },
         
         renderPreview() {
           this.elements.contentArea.innerHTML = '';
