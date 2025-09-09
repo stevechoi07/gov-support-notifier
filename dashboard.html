@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v1.8</title>
+    <title>All-in-One 대시보드 v1.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -60,7 +60,6 @@
         .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
         .style-grid .control-group { margin-bottom: 0; }
         
-        /* ✨FIX v1.8: Style consistency and robust sizing for all color pickers */
         .control-group input[type="color"] {
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
             height: 42px; padding: 0;
@@ -300,7 +299,7 @@
         currentPageId: null, components: [], pageSettings: {}, activeComponentId: null, draggedId: null,
         elements: {},
         viewportOptions: [ { id: 'mobile', label: '🤳', value: '375px,667px' }, { id: 'tablet', label: '📱', value: '768px,1024px' }, { id: 'desktop', label: '🖥️', value: '1280px,800px' }, { id: 'full', label: '전체', value: '100%,100%' } ],
-        allPossibleFormFields: [ { name: 'name', label: '이름', type: 'text' }, { name: 'email', label: '이메일', type: 'email' }, { name: 'phone', label: '전화번호', type: 'tel' } ],
+        allPossibleFormFields: [ { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' }, { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' }, { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } ],
         
         async init(pageId) {
             this.currentPageId = pageId;
@@ -355,7 +354,7 @@
 
         renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); },
         
-        hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; },
+        hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f09]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; },
         
         renderPreview() {
           this.elements.contentArea.innerHTML = '';
@@ -384,7 +383,8 @@
                   case 'lead-form':
                       element = document.createElement('form'); element.className = 'component-content';
                       let formHTML = (this.allPossibleFormFields.filter(field => c.activeFields?.includes(field.name)) || [])
-                          .map(field => `<div><input type="${field.type}" name="${field.name}" placeholder="${field.label}" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--input-bg); color: var(--text-color);"></div>`).join('');
+                          .map(field => `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--input-bg); color: var(--text-color);"></div>`).join('');
+                      if (c.privacy?.enabled) { formHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="privacy-preview-${c.id}" style="width: auto; height: 16px; margin: 0;"><label for="privacy-preview-${c.id}" style="font-size: 12px; color: #94a3b8; font-weight: normal; cursor: pointer;">${c.privacy.text}</label></div>`; }
                       formHTML += `<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer;">${c.submitText || '제출'}</button>`;
                       element.innerHTML = formHTML; element.onsubmit = (e) => e.preventDefault();
                       break;
@@ -406,14 +406,22 @@
             this.elements.editorsContainer.innerHTML = '';
             this.components.forEach((c) => {
                 const panel = document.createElement('div');
-                panel.className = 'editor-panel'; panel.dataset.id = c.id; panel.draggable = true; 
+                panel.className = 'editor-panel'; panel.dataset.id = c.id;
+                // ✨FIX v1.9: Dragging is initiated by the handle (h4) only
+                const handle = document.createElement('h4');
+                handle.innerHTML = `${{ heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type]} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div>`;
+                handle.draggable = true;
+
                 if (c.id === this.activeComponentId) panel.classList.add('selected');
+                
                 let panelContentHTML = '';
                 if (c.type === 'lead-form') {
                     let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #334155; padding: 10px; border-radius: 6px;">';
                     this.allPossibleFormFields.forEach(field => { const isChecked = c.activeFields?.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; });
                     checklistHTML += '</div></div>';
-                    panelContentHTML = `${checklistHTML}<div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="color" data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>`;
+                    const privacy = c.privacy || { enabled: false, text: '' }; 
+                    const privacySettingsHTML = `<div class="control-group" style="background-color: #334155; padding: 10px; border-radius: 6px;"><div class="inline-group"><label for="privacy-enabled-${c.id}" style="cursor: pointer;">🔒 개인정보 수집 동의</label><input type="checkbox" id="privacy-enabled-${c.id}" data-control-type="privacy-toggle" ${privacy.enabled ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>${privacy.enabled ? `<div class="control-group" style="margin-top: 10px; margin-bottom: 0;"><label>동의 문구</label><textarea data-prop="privacy.text" style="height: 60px;">${privacy.text}</textarea></div>` : ''}</div>`;
+                    panelContentHTML = `${checklistHTML}<div class="control-group"><label>📝 구글 스크립트 URL</label><textarea data-prop="googleScriptUrl" placeholder="배포된 구글 웹 앱 URL" style="height: 80px;">${c.googleScriptUrl || ''}</textarea></div><div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group"><label>🎉 성공 메시지</label><input type="text" data-prop="successMessage" value="${c.successMessage || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="color" data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>${privacySettingsHTML}`;
                 } else {
                     let contentHTML = `<div class="control-group"><label>내용</label><textarea data-prop="content">${c.content}</textarea></div>`;
                     if (c.type === 'button') { contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`; }
@@ -426,9 +434,14 @@
                     styleGridHTML += '</div>';
                     panelContentHTML = contentHTML + fontSelectorHTML + styleGridHTML;
                 }
-                const typeLabel = { heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type];
-                panel.innerHTML = `<h4>${typeLabel} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${panelContentHTML}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = panelContentHTML;
+
+                panel.appendChild(handle);
+                panel.appendChild(contentDiv);
                 this.elements.editorsContainer.appendChild(panel);
+
                 if (c.type !== 'lead-form') {
                     const textAlignSelect = panel.querySelector('[data-style="textAlign"]'); if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center';
                     const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
@@ -447,19 +460,21 @@
         attachEventListenersToControls() {
           this.elements.editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
               const id = Number(panel.dataset.id);
+              const handle = panel.querySelector('h4');
 
-              // ✨FIX: Stop drag event propagation for color inputs & handle drag conflict
-              panel.querySelectorAll('input[type="color"]').forEach(colorInput => {
-                  colorInput.addEventListener('mouseenter', () => { panel.draggable = false; });
-                  colorInput.addEventListener('mouseleave', () => { panel.draggable = true; });
-              });
+              panel.addEventListener('dragover', this.handleDragOver);
+              panel.addEventListener('dragleave', this.handleDragLeave);
+              panel.addEventListener('drop', (e) => this.handleDrop(e, id));
+              
+              handle.addEventListener('dragstart', (e) => this.handleDragStart(e, id));
+              handle.addEventListener('dragend', this.handleDragEnd);
 
-              panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = () => this.updateComponent(id, { [input.dataset.prop]: input.value }); });
+              panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = (e) => this.updateComponent(id, e.target.dataset.prop, e.target.value); });
               panel.querySelectorAll('[data-style]').forEach(input => {
-                  input.oninput = () => {
-                      let value = input.value;
-                      if (input.dataset.style === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value += 'px'; }
-                      this.updateComponent(id, { style: { [input.dataset.style]: value } });
+                  input.oninput = (e) => {
+                      let value = e.target.value;
+                      if (e.target.dataset.style === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value += 'px'; }
+                      this.updateComponent(id, `styles.${e.target.dataset.style}`, value);
                   };
               });
               panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => {
@@ -476,16 +491,20 @@
                       this.saveAndRender();
                   };
               });
+
+              panel.querySelector('[data-control-type="privacy-toggle"]')?.addEventListener('change', (e) => {
+                  this.updateComponent(id, 'privacy.enabled', e.target.checked);
+              });
+              
               panel.querySelector('.delete-btn').onclick = () => this.deleteComponent(id);
-              panel.addEventListener('dragstart', (e) => this.handleDragStart(e, id));
-              panel.addEventListener('dragover', this.handleDragOver);
-              panel.addEventListener('dragleave', this.handleDragLeave);
-              panel.addEventListener('drop', (e) => this.handleDrop(e, id));
-              panel.addEventListener('dragend', this.handleDragEnd);
           });
         },
 
-        handleDragStart(e, id) { this.draggedId = id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; },
+        handleDragStart(e, id) {
+            this.draggedId = id;
+            e.currentTarget.closest('.editor-panel').classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        },
         handleDragOver(e) { e.preventDefault(); const draggedElement = document.querySelector('.editor-panel.dragging'); if (draggedElement && draggedElement !== e.currentTarget) e.currentTarget.classList.add('drag-over'); },
         handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); },
         handleDrop(e, toId) {
@@ -497,8 +516,9 @@
                 this.components.splice(toIndex, 0, item);
                 this.saveAndRender();
             }
+             e.currentTarget.classList.remove('drag-over');
         },
-        handleDragEnd(e) { this.draggedId = null; document.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('dragging', 'drag-over')); },
+        handleDragEnd() { this.draggedId = null; document.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('dragging', 'drag-over')); },
 
         selectComponent(id) { this.activeComponentId = id; this.renderControls(); this.renderPreview(); },
 
@@ -508,20 +528,27 @@
                 case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break;
                 case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break;
                 case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', backgroundColorOpacity: 1 }; break;
-                case 'lead-form': newComponent.submitText = '문의 남기기'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' }; break;
+                case 'lead-form': newComponent.googleScriptUrl = ''; newComponent.submitText = '문의 남기기'; newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' }; newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' }; break;
             }
             this.components.push(newComponent);
             this.activeComponentId = newComponent.id;
             this.saveAndRender();
         },
-        updateComponent(id, newData) {
+        
+        updateComponent(id, keyPath, value) {
             let component = this.components.find(c => c.id === id);
             if (!component) return;
-            if (newData.style) { 
-                component.styles = { ...component.styles, ...newData.style };
-            } else { Object.assign(component, newData); }
+
+            const keys = keyPath.split('.');
+            let current = component;
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!current[keys[i]]) current[keys[i]] = {};
+                current = current[keys[i]];
+            }
+            current[keys[keys.length - 1]] = value;
             this.saveAndRender();
         },
+
         deleteComponent(id) {
             if (!confirm('블록을 삭제하시겠습니까?')) return;
             this.components = this.components.filter(c => c.id !== id);
