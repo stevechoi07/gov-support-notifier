@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>통합 관리자 v1.0 (SPA)</title>
+    <title>통합 관리자 v1.1 (SPA)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f3f4f6; }
-        /* view-container: 화면 전환 시 부드럽게 나타나도록 설정 (선택 사항) */
         .view-container { display: none; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 로딩 스피너 스타일 (버튼용) */
+        .spinner { border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff; width: 16px; height: 16px; animation: spin 1s ease-in-out infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -29,127 +33,278 @@
 
     <div id="app-container" class="hidden">
         <div id="view-dashboard" class="view-container w-full max-w-4xl mx-auto p-4 sm:p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-slate-800">📋 나의 페이지 목록</h1>
-                <button id="add-new-page-button" class="px-6 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">➕ 새 페이지 만들기</button>
             </div>
-            <div id="page-list-content"></div>
-        </div>
 
         <div id="view-editor" class="view-container">
             </div>
     </div>
 
     <script type="module">
+      // --- Firebase SDK Import ---
+      // v1.1: import 구문을 한 곳으로 모아서 중복 가능성을 원천 차단합니다.
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-      import { getFirestore, collection, doc, getDoc, updateDoc, addDoc, onSnapshot, query, orderBy, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, addDoc, onSnapshot, query, orderBy, writeBatch, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-      // --- 전역 변수 ---
+      // --- 전역 변수 선언 ---
       let auth, db;
-      const appContainer = document.getElementById('app-container');
+      let currentPageId = null; // 편집기가 사용할 페이지 ID
+
+      // --- DOM 요소 캐싱 ---
       const authContainer = document.getElementById('auth-container');
+      const appContainer = document.getElementById('app-container');
+      const dashboardView = document.getElementById('view-dashboard');
+      const editorView = document.getElementById('view-editor');
       const loginButton = document.getElementById('login-button');
       const passwordInput = document.getElementById('password-input');
       const authMessage = document.getElementById('auth-message');
 
-      // --- 1. 앱 초기화 ---
-      document.addEventListener('DOMContentLoaded', initializeApp);
+      // --- 1. 앱 초기화 및 인증 상태 확인 ---
+      document.addEventListener('DOMContentLoaded', initializeAppCore);
 
-      async function initializeApp() {
+      async function initializeAppCore() {
+          console.log("DOM 로드 완료. Firebase 초기화 시작...");
           try {
               const response = await fetch('/.netlify/functions/get-firebase-config');
-              if (!response.ok) throw new Error(`Netlify Function 응답 실패`);
+              if (!response.ok) throw new Error(`Netlify Function 응답 실패 (상태: ${response.status})`);
               const firebaseConfig = await response.json();
+
               const app = initializeApp(firebaseConfig);
               auth = getAuth(app);
               db = getFirestore(app);
+              console.log("Firebase 초기화 성공.");
 
-              // *** 핵심: 인증 상태 리스너 ***
+              // 인증 상태 리스너: 로그인 상태를 실시간으로 감지
               onAuthStateChanged(auth, (user) => {
                   if (user) {
-                      // 사용자가 로그인되어 있음 (세션 유지 성공)
-                      console.log("로그인 상태 확인:", user.uid);
-                      authContainer.classList.add('hidden');
-                      appContainer.classList.remove('hidden');
-                      navigateTo('dashboard'); // 로그인 성공 시 대시보드 뷰로 이동
+                      console.log("인증 상태: 로그인됨 (User ID:", user.uid, ")");
+                      authContainer.style.display = 'none';
+                      appContainer.style.display = 'block';
+                      // URL 해시값을 기반으로 라우팅 (새로고침 시 현재 뷰 유지)
+                      handleRouting();
                   } else {
-                      // 사용자가 로그아웃되어 있음
-                      console.log("로그아웃 상태입니다.");
-                      authContainer.classList.remove('hidden');
-                      appContainer.classList.add('hidden');
+                      console.log("인증 상태: 로그아웃됨");
+                      authContainer.style.display = 'block';
+                      appContainer.style.display = 'none';
                   }
               });
 
               loginButton.addEventListener('click', handleLogin);
               passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+              // URL 해시 변경 감지 (뒤로가기/앞으로가기 버튼)
+              window.addEventListener('hashchange', handleRouting);
 
           } catch (error) {
               console.error("초기화 오류:", error);
-              showAuthMessage("초기화에 실패했습니다.", true);
+              showAuthMessage("초기화에 실패했습니다. Netlify Function 배포를 확인하세요.", true);
           }
       }
 
-      // --- 2. 인증 로직 ---
+      // --- 2. 로그인 로직 ---
       async function handleLogin() {
           const password = passwordInput.value;
           if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
-          // (로그인 버튼 로딩 상태 표시)
+          setButtonLoading(loginButton, true, "로그인 중...");
 
           try {
-              const response = await fetch('/.netlify/functions/login', { method: 'POST', body: JSON.stringify({ password }) });
+              const response = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
               const result = await response.json();
               if (response.ok && result.success) {
                   await signInWithCustomToken(auth, result.token);
-                  // onAuthStateChanged 리스너가 자동으로 화면 전환을 처리해줍니다.
+                  // 성공 시 onAuthStateChanged 리스너가 화면 전환을 처리함
+                  console.log("로그인 성공, 토큰 인증 완료.");
               } else {
-                  showAuthMessage(result.message || "로그인 실패.", true);
+                  showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
+                  setButtonLoading(loginButton, false, "로그인");
               }
           } catch (error) {
-              console.error('로그인 오류:', error);
+              console.error('로그인 요청 오류:', error);
+              showAuthMessage("로그인 서버 통신 오류.", true);
+              setButtonLoading(loginButton, false, "로그인");
+          }
+      }
+
+      // --- 3. SPA 라우팅 로직 ---
+      function handleRouting() {
+          const hash = window.location.hash;
+          console.log("라우팅 실행. 해시:", hash);
+
+          if (hash.startsWith('#editor/')) {
+              currentPageId = hash.split('/')[1];
+              showView('editor');
+              loadEditorContent(currentPageId);
+          } else {
+              showView('dashboard');
+              loadDashboardContent();
           }
       }
       
-      // --- 3. 화면 전환 로직 (SPA Router) ---
-      function navigateTo(viewName, context = {}) {
-          // 모든 뷰 숨기기
-          document.querySelectorAll('.view-container').forEach(view => view.style.display = 'none');
+      function navigateTo(path) {
+          window.location.hash = path;
+      }
 
-          if (viewName === 'dashboard') {
-              console.log("대시보드 뷰 로드");
-              document.getElementById('view-dashboard').style.display = 'block';
-              loadDashboardContent(); // 대시보드 콘텐츠 렌더링 함수 호출
-          } else if (viewName === 'editor') {
-              console.log(`편집기 뷰 로드 (Page ID: ${context.pageId})`);
-              document.getElementById('view-editor').style.display = 'block';
-              loadEditorContent(context.pageId); // 편집기 콘텐츠 렌더링 함수 호출
+      function showView(viewName) {
+          dashboardView.style.display = (viewName === 'dashboard') ? 'block' : 'none';
+          editorView.style.display = (viewName === 'editor') ? 'block' : 'none';
+      }
+
+      // --- 4. 대시보드 뷰 (페이지 목록) ---
+      function loadDashboardContent() {
+          console.log("대시보드 콘텐츠 로딩 중...");
+          // UI 템플릿 렌더링
+          dashboardView.innerHTML = `
+              <div class="flex justify-between items-center mb-6">
+                  <h1 class="text-2xl font-bold text-slate-800">📋 나의 페이지 목록</h1>
+                  <button id="add-new-page-btn" class="px-6 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">➕ 새 페이지 만들기</button>
+              </div>
+              <div id="page-list-container" class="space-y-4"></div>
+          `;
+          
+          // 새 페이지 만들기 버튼 이벤트
+          document.getElementById('add-new-page-btn').onclick = handleAddNewPage;
+
+          // Firestore에서 데이터 실시간 구독
+          const pagesRef = collection(db, "pages");
+          const q = query(pagesRef, orderBy("order", "asc"));
+          onSnapshot(q, (querySnapshot) => {
+              const pageListContainer = document.getElementById('page-list-container');
+              if (!pageListContainer) return; // 뷰가 전환된 경우 방지
+
+              pageListContainer.innerHTML = '';
+              let pageDataArray = []; // SortableJS 순서 업데이트를 위해 배열에 저장
+
+              if (querySnapshot.empty) {
+                  pageListContainer.innerHTML = `<p class="text-center text-slate-500 py-8">생성된 페이지가 없습니다.</p>`;
+                  return;
+              }
+
+              querySnapshot.forEach((doc) => {
+                  pageDataArray.push({ id: doc.id, ...doc.data() });
+                  const page = pageDataArray[pageDataArray.length - 1];
+                  const pageElement = createPageListItemHTML(page);
+                  pageListContainer.insertAdjacentHTML('beforeend', pageElement);
+              });
+              
+              // 목록 렌더링 후 이벤트 리스너 바인딩
+              bindDashboardEvents(pageListContainer, pageDataArray);
+          });
+      }
+
+      function createPageListItemHTML(page) {
+          const pageTitle = page.title || "제목 없음";
+          const lastUpdated = page.updatedAt ? new Date(page.updatedAt.seconds * 1000).toLocaleString('ko-KR') : "정보 없음";
+          const isChecked = page.isActive !== false ? 'checked' : '';
+          const inactiveClass = page.isActive === false ? 'opacity-40' : '';
+
+          return `
+            <div class="page-item bg-white rounded-xl shadow-md ${inactiveClass}" data-id="${page.id}">
+                <div class="p-4 flex items-center gap-4">
+                    <div class="drag-handle text-slate-400 p-2 cursor-grab hidden sm:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
+                    <div class="w-12 h-12 flex-shrink-0 bg-sky-100 text-sky-500 rounded-lg flex items-center justify-center text-2xl">📄</div>
+                    <div class="flex-grow overflow-hidden">
+                        <p class="font-bold text-slate-800 truncate">${pageTitle}</p>
+                        <p class="text-sm text-slate-500 mt-1">최종 수정: ${lastUpdated}</p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <label class="toggle-switch relative inline-block w-[50px] h-[30px]">
+                            <input type="checkbox" class="page-status-toggle opacity-0 w-0 h-0" ${isChecked}>
+                            <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-300 transition duration-400 rounded-full before:absolute before:content-[''] before:h-[22px] before:w-[22px] before:left-[4px] before:bottom-[4px] before:bg-white before:transition before:duration-400 before:rounded-full"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="border-t p-2 flex justify-end gap-2">
+                    <button class="edit-page-button text-sm font-medium text-sky-600 hover:bg-sky-50 px-4 py-2 rounded-md">수정하기</button>                    
+                    <button class="delete-page-button text-sm font-medium text-red-600 hover:bg-red-50 px-4 py-2 rounded-md">삭제</button>
+                </div>
+            </div>
+          `;
+      }
+      
+      function bindDashboardEvents(container, pageDataArray) {
+          container.querySelectorAll('.edit-page-button').forEach(btn => {
+              btn.onclick = () => navigateTo(`editor/${btn.closest('.page-item').dataset.id}`);
+          });
+          container.querySelectorAll('.delete-page-button').forEach(btn => {
+              btn.onclick = () => handleDeletePage(btn.closest('.page-item').dataset.id, pageDataArray);
+          });
+          container.querySelectorAll('.page-status-toggle').forEach(toggle => {
+              toggle.onchange = (e) => handleTogglePageStatus(e.target.closest('.page-item').dataset.id, e.target.checked);
+          });
+          
+          // SortableJS 초기화
+          new Sortable(container, {
+              handle: '.drag-handle', animation: 150,
+              onEnd: async (evt) => updatePageOrder(evt, pageDataArray)
+          });
+          // CSS 트릭: input:checked + span.slider:before { transform: translateX(20px); } input:checked + span.slider { background-color: #2563eb; }
+          // Tailwind CSS에서는 peer-checked/peer-focus 등을 사용하나, 여기서는 인라인 스타일이나 별도 CSS 클래스로 처리해야 함.
+          // 임시로 CSS 클래스 토글 방식 대신, style 태그에 직접 정의하거나 (위의 예시처럼) 간단한 JS 토글을 사용할 수 있습니다.
+          // 여기서는 createPageListItemHTML에서 inactiveClass로 상위 div의 투명도를 조절하는 방식을 사용.
+      }
+
+      async function handleAddNewPage() {
+          console.log("새 페이지 생성 시도...");
+          const newPageData = {
+              title: "새 페이지 제목",
+              isActive: false,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              order: document.querySelectorAll('#page-list-container .page-item').length,
+              components: [], // 빈 블록 배열
+              pageSettings: { bgColor: '#DCEAF7', bgImage: '', bgVideo: '' } // 기본 설정
+          };
+
+          try {
+              const docRef = await addDoc(collection(db, "pages"), newPageData);
+              console.log("새 페이지 생성 완료, ID:", docRef.id);
+              navigateTo(`editor/${docRef.id}`);
+          } catch (error) {
+              console.error("새 페이지 생성 오류:", error);
+              alert("페이지 생성에 실패했습니다.");
           }
       }
 
-      // --- 4. 뷰별 콘텐츠 로더 (TODO) ---
-      function loadDashboardContent() {
-          // TODO: 여기에 기존 dashboard.html의 목록 렌더링 로직을 붙여넣습니다.
-          // 예: onSnapshot으로 "pages" 컬렉션 구독, 목록 생성...
-          // [수정] 버튼 클릭 시: navigateTo('editor', { pageId: '...' });
-          console.log("대시보드 콘텐츠 로딩 로직 실행...");
-          document.getElementById('page-list-content').innerHTML = "<p>대시보드 로딩 완료. (여기에 목록이 표시됩니다)</p>";
-          // 임시 '새 페이지 만들기' 버튼 이벤트 리스너 (실제로는 loadDashboardContent 내부에서 생성된 버튼에 연결)
-           document.getElementById('add-new-page-button').onclick = async () => {
-                // 임시: 새 페이지 생성 로직 (dashboard.html에서 가져와야 함)
-                // const newPageRef = await addDoc(collection(db, "pages"), { title: "새 페이지", createdAt: new Date(), ... });
-                // navigateTo('editor', { pageId: newPageRef.id });
-                alert("새 페이지 생성 후 편집기로 이동하는 기능 구현 필요");
-           };
+      async function handleDeletePage(pageId, pageDataArray) {
+          const pageTitle = pageDataArray.find(p => p.id === pageId)?.title || "해당 페이지";
+          if (confirm(`'${pageTitle}' 페이지를 정말 삭제하시겠습니까?`)) {
+              try {
+                  await deleteDoc(doc(db, "pages", pageId));
+              } catch (error) { console.error("페이지 삭제 오류:", error); }
+          }
       }
 
+      async function handleTogglePageStatus(pageId, isActive) {
+          try {
+              await updateDoc(doc(db, "pages", pageId), { isActive: isActive, updatedAt: serverTimestamp() });
+          } catch (error) { console.error("상태 업데이트 오류:", error); }
+      }
+
+      async function updatePageOrder(evt, pageDataArray) {
+          const movedItem = pageDataArray.splice(evt.oldIndex, 1)[0];
+          pageDataArray.splice(evt.newIndex, 0, movedItem);
+          const batch = writeBatch(db);
+          pageDataArray.forEach((page, index) => {
+              batch.update(doc(db, "pages", page.id), { order: index });
+          });
+          try { await batch.commit(); } catch (error) { console.error("순서 업데이트 오류:", error); }
+      }
+
+      // --- 5. 편집기 뷰 (콘텐츠 수정) ---
       function loadEditorContent(pageId) {
-          // TODO: 여기에 기존 createlp.html의 편집기 초기화 로직을 붙여넣습니다.
-          // 예: pageId로 Firestore 문서 조회, 블록 데이터 렌더링...
-          // [저장] 버튼 로직...
-          console.log(`편집기 콘텐츠 로딩 로직 실행 (ID: ${pageId})...`);
-          document.getElementById('view-editor').innerHTML = `<p>편집기 로딩 완료 (ID: ${pageId}). (여기에 편집기가 표시됩니다)</p> <button onclick="navigateTo('dashboard')">목록으로 돌아가기</button>`;
-          // 임시 '돌아가기' 버튼 (실제로는 loadEditorContent 내부에서 생성된 버튼에 연결)
-          window.navigateTo = navigateTo; // 전역 스코프에 임시 할당 (인라인 이벤트용)
+          console.log(`편집기 콘텐츠 로딩 중 (ID: ${pageId})...`);
+          // TODO: 여기에 기존 creatlp.html의 편집기 UI와 로직을 이식합니다.
+          // 1. createlp.html의 body 내용을 가져와서 editorView.innerHTML에 삽입합니다.
+          // 2. creatlp.html의 스크립트 로직을 가져와서 여기서 실행되도록 수정합니다.
+          // 3. (중요) 편집기의 load/save 함수가 pageId를 사용하여 Firestore와 통신하도록 변경합니다.
+          editorView.innerHTML = `
+              <div class="p-8">
+                  <h2 class="text-2xl font-bold mb-4">페이지 편집기 (ID: ${pageId})</h2>
+                  <p class="mb-4">여기에 creatlp.html의 편집기 UI가 들어올 예정입니다.</p>
+                  <button onclick="navigateTo('')" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">← 대시보드로 돌아가기</button>
+              </div>
+          `;
+          // 임시로 전역 함수 노출 (인라인 클릭 이벤트용)
+          window.navigateTo = navigateTo;
       }
 
       // --- 유틸리티 함수 ---
@@ -157,6 +312,15 @@
           authMessage.textContent = message;
           authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
           authMessage.classList.remove('hidden');
+      }
+
+      function setButtonLoading(buttonElement, isLoading, loadingText) {
+          buttonElement.disabled = isLoading;
+          if (isLoading) {
+              buttonElement.innerHTML = `<span class="spinner"></span>${loadingText}`;
+          } else {
+              buttonElement.innerHTML = loadingText;
+          }
       }
 
     </script>
