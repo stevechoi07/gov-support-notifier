@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v1.1</title>
+    <title>All-in-One 대시보드 v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -23,26 +23,29 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Chzzk 스타일 사이드바 활성 링크 */
         .nav-link {
             border-left: 3px solid transparent;
             transition: background-color 0.2s, color 0.2s, border-color 0.2s;
         }
         .nav-link.active {
-            background-color: #1e293b; /* slate-800 */
-            color: #34d399; /* emerald-400 */
-            border-left-color: #34d399; /* emerald-400 */
+            background-color: #1e293b;
+            color: #34d399;
+            border-left-color: #34d399;
         }
-         .nav-link.active svg {
-            stroke: #34d399; /* emerald-400 */
-        }
+         .nav-link.active svg { stroke: #34d399; }
+
+        /* Publish Toggle Switch */
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .4s; border-radius: 30px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .toggle-slider { background-color: #34d399; }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
     </style>
 </head>
 <body class="bg-slate-900">
 
-    <!-- =============================================================== -->
-    <!-- 🔒 로그인 화면 (다크 모드 적용) -->
-    <!-- =============================================================== -->
+    <!-- 로그인 화면 -->
     <div id="auth-container" class="flex items-center justify-center min-h-screen p-4">
         <div class="w-full max-w-sm p-8 bg-slate-800 rounded-xl shadow-lg">
             <h1 class="text-2xl font-bold text-center text-emerald-400 mb-6">🚀 All-in-One 대시보드</h1>
@@ -52,9 +55,7 @@
         </div>
     </div>
 
-    <!-- =============================================================== -->
-    <!-- 📊 메인 대시보드 (다크 모드 적용) -->
-    <!-- =============================================================== -->
+    <!-- 메인 대시보드 -->
     <div id="dashboard-container" class="hidden">
         <div class="flex h-screen bg-slate-900">
             <!-- 왼쪽 사이드바 -->
@@ -72,7 +73,7 @@
                         <span class="ml-3">광고 관리</span>
                     </a>
                 </nav>
-                <div class="p-4 border-t border-slate-800">
+                 <div class="p-4 border-t border-slate-800">
                     <button id="logout-button" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg transition-colors text-slate-400 hover:bg-red-500 hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
                         <span class="ml-3">로그아웃</span>
@@ -82,14 +83,16 @@
 
             <!-- 오른쪽 메인 콘텐츠 -->
             <main class="flex-1 flex flex-col overflow-hidden">
-                <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center px-6">
+                <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6">
                     <h2 id="view-title" class="text-xl font-semibold text-slate-100"></h2>
+                    <div id="header-actions"></div>
                 </header>
                 <div class="flex-1 p-6 overflow-y-auto">
-                    <!-- 각 화면은 여기에 표시됩니다 -->
+                    
                     <div id="pages-view" class="view hidden">
-                        <h3 class="text-2xl font-bold text-slate-100">📄 페이지 관리</h3>
-                        <p class="mt-4 text-slate-400">이곳에 페이지 목록이 표시되고, 토글 버튼으로 게시 여부를 제어하게 될 것입니다.</p>
+                        <div id="page-list-container" class="space-y-4">
+                            <!-- 페이지 목록이 여기에 동적으로 렌더링됩니다. -->
+                        </div>
                     </div>
 
                     <div id="ads-view" class="view hidden">
@@ -101,15 +104,14 @@
         </div>
     </div>
 
-    <!-- =============================================================== -->
-    <!-- ⚙️ Firebase & App Logic -->
-    <!-- =============================================================== -->
+    <!-- Firebase & App Logic -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getAuth, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-      import { getFirestore } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
       
-      let auth, db;
+      let auth, db, pagesCollection;
+      let pagesList = [];
 
       const ui = {
           authContainer: document.getElementById('auth-container'),
@@ -121,27 +123,25 @@
           navLinks: document.querySelectorAll('.nav-link'),
           views: document.querySelectorAll('.view'),
           viewTitle: document.getElementById('view-title'),
+          headerActions: document.getElementById('header-actions'),
+          pageListContainer: document.getElementById('page-list-container'),
       };
 
       async function startApp() {
         try {
-            console.log("🚀 All-in-One 대시보드 v1.1 시작!");
-            showAuthMessage("보안 서버에 접속 중...", false);
             const response = await fetch('/.netlify/functions/get-firebase-config');
             if (!response.ok) throw new Error(`[오류] 비밀요원 응답 실패! 상태: ${response.status}`);
             const firebaseConfig = await response.json();
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            console.log("✅ Firebase 서비스 초기화 성공!");
+            pagesCollection = collection(db, "pages");
             setupEventListeners();
-            showAuthMessage("비밀번호를 입력하세요.", false);
             ui.loginButton.disabled = false;
         } catch (error) {
             console.error("🔥 [치명적 오류] 앱 시작 중 문제 발생:", error);
             showAuthMessage("초기화 실패. 관리자에게 문의하세요.", true);
             ui.loginButton.disabled = true;
-            ui.loginButton.classList.add('button-disabled');
         }
       }
 
@@ -149,14 +149,7 @@
         ui.loginButton.addEventListener('click', handleLogin);
         ui.passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
         ui.logoutButton.addEventListener('click', handleLogout);
-        ui.navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const viewName = link.dataset.view;
-                navigateTo(viewName);
-            });
-        });
-        console.log("✅ 이벤트 리스너 설정 완료.");
+        ui.navLinks.forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); navigateTo(link.dataset.view); }));
       }
       
       async function handleLogin() {
@@ -164,30 +157,127 @@
           if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
           ui.loginButton.disabled = true;
           ui.loginButton.innerHTML = `<div class="spinner"></div><span>로그인 중...</span>`;
-          showAuthMessage("비밀번호를 확인 중입니다...", false);
           try {
-              const response = await fetch('/.netlify/functions/login', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ password: password })
-              });
+              const response = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
               const result = await response.json();
               if (response.ok && result.success) {
                   await signInWithCustomToken(auth, result.token);
-                  console.log("✅ 로그인 성공!");
                   ui.authContainer.classList.add('hidden');
                   ui.dashboardContainer.classList.remove('hidden');
+                  listenToPages();
                   navigateTo('pages'); 
-              } else {
-                  showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
-              }
-          } catch (error) {
-              console.error('Login error:', error);
-              showAuthMessage("로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.", true);
-          } finally { 
-              ui.loginButton.disabled = false; 
-              ui.loginButton.textContent = "로그인";
-          }
+              } else { showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true); }
+          } catch (error) { showAuthMessage("로그인 중 오류가 발생했습니다.", true);
+          } finally { ui.loginButton.disabled = false; ui.loginButton.textContent = "로그인"; }
+      }
+
+      function listenToPages() {
+        onSnapshot(query(pagesCollection), (snapshot) => {
+            pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            pagesList.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+            if(document.getElementById('pages-view').style.display !== 'none') {
+                renderPages();
+            }
+        });
+      }
+
+      function renderPages() {
+        ui.pageListContainer.innerHTML = '';
+        if (pagesList.length === 0) {
+            ui.pageListContainer.innerHTML = `<p class="text-center text-slate-400 py-8">생성된 페이지가 없습니다. '새 페이지' 버튼을 눌러 시작하세요.</p>`;
+            return;
+        }
+        pagesList.forEach(page => {
+            const pageElement = document.createElement('div');
+            pageElement.className = "bg-slate-800 rounded-lg p-4 flex items-center justify-between";
+            const lastUpdated = page.updatedAt ? new Date(page.updatedAt.seconds * 1000).toLocaleString() : '정보 없음';
+            const isPublished = page.isPublished || false;
+
+            pageElement.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="w-2 h-10 rounded-full ${isPublished ? 'bg-emerald-400' : 'bg-slate-600'}"></div>
+                    <div>
+                        <h4 class="font-bold text-lg text-slate-100">${page.name}</h4>
+                        <p class="text-sm text-slate-400">최근 수정: ${lastUpdated}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium ${isPublished ? 'text-emerald-400' : 'text-slate-400'}">${isPublished ? '게시 중' : '비공개'}</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" class="publish-toggle" data-id="${page.id}" ${isPublished ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <button class="edit-page-btn text-slate-300 hover:text-white transition-colors" data-id="${page.id}" title="편집">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                    </button>
+                    <button class="delete-page-btn text-red-400 hover:text-red-500 transition-colors" data-id="${page.id}" data-name="${page.name}" title="삭제">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </div>
+            `;
+            ui.pageListContainer.appendChild(pageElement);
+        });
+
+        // Event Listeners for new buttons
+        document.querySelectorAll('.publish-toggle').forEach(t => t.addEventListener('change', handlePublishToggleChange));
+        document.querySelectorAll('.edit-page-btn').forEach(b => b.addEventListener('click', (e) => window.location.href = `createlp.html?pageId=${e.currentTarget.dataset.id}`));
+        document.querySelectorAll('.delete-page-btn').forEach(b => b.addEventListener('click', handleDeletePageClick));
+      }
+
+      async function handlePublishToggleChange(e) {
+        const pageIdToPublish = e.currentTarget.dataset.id;
+        const batch = writeBatch(db);
+        
+        // Unpublish all other pages
+        pagesList.forEach(p => {
+            if (p.id !== pageIdToPublish && p.isPublished) {
+                batch.update(doc(db, "pages", p.id), { isPublished: false });
+            }
+        });
+
+        // Set the new page as published
+        batch.update(doc(db, "pages", pageIdToPublish), { isPublished: true });
+        
+        try {
+            await batch.commit();
+            console.log(`Page ${pageIdToPublish} published successfully.`);
+        } catch (error) {
+            console.error("Error updating publish status:", error);
+            alert("게시 상태 변경에 실패했습니다.");
+        }
+      }
+
+      async function handleDeletePageClick(e) {
+        const { id, name } = e.currentTarget.dataset;
+        if(confirm(`'${name}' 페이지를 정말 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+            try {
+                await deleteDoc(doc(db, "pages", id));
+            } catch (error) {
+                console.error("Error deleting page: ", error);
+                alert("페이지 삭제에 실패했습니다.");
+            }
+        }
+      }
+
+      async function handleNewPageClick() {
+        const name = prompt("새 페이지의 이름을 입력하세요:");
+        if (name && name.trim()) {
+            try {
+                await addDoc(pagesCollection, {
+                    name: name.trim(),
+                    isPublished: false,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    components: [],
+                    pageSettings: { bgColor: '#DCEAF7', bgImage: '', bgVideo: '', viewport: '375px,667px' }
+                });
+            } catch (error) {
+                console.error("Error creating new page:", error);
+                alert("새 페이지 생성에 실패했습니다.");
+            }
+        }
       }
 
       async function handleLogout() {
@@ -199,23 +289,23 @@
 
       function navigateTo(viewName) {
         ui.views.forEach(view => view.classList.add('hidden'));
-        ui.navLinks.forEach(link => {
-            if (link.dataset.view === viewName) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
-        });
+        ui.navLinks.forEach(link => link.dataset.view === viewName ? link.classList.add('active') : link.classList.remove('active'));
+        
         const targetView = document.getElementById(`${viewName}-view`);
-        if (targetView) {
-            targetView.classList.remove('hidden');
-            const viewTitles = {
-                pages: '📄 페이지 관리',
-                ads: '📢 광고 관리'
-            };
-            ui.viewTitle.textContent = viewTitles[viewName] || 'Dashboard';
+        if (targetView) targetView.classList.remove('hidden');
+
+        const viewConfig = {
+            pages: { title: '📄 페이지 관리', action: `<button id="new-page-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600 transition-colors">✨ 새 페이지</button>` },
+            ads: { title: '📢 광고 관리', action: '' }
+        };
+
+        ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
+        ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
+        
+        if (viewName === 'pages') {
+            document.getElementById('new-page-btn')?.addEventListener('click', handleNewPageClick);
+            renderPages();
         }
-        console.log(` navigated to ${viewName}`);
       }
 
       function showAuthMessage(message, isError) {
