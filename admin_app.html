@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 관리자 v1.0 (SPA)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f3f4f6; }
+        /* view-container: 화면 전환 시 부드럽게 나타나도록 설정 (선택 사항) */
+        .view-container { display: none; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="auth-container">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
+                <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인</h1>
+                <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-lg">
+                <button id="login-button" class="w-full mt-4 px-4 py-3 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors text-lg">로그인</button>
+                <p id="auth-message" class="text-sm text-center mt-4 hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <div id="view-dashboard" class="view-container w-full max-w-4xl mx-auto p-4 sm:p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">📋 나의 페이지 목록</h1>
+                <button id="add-new-page-button" class="px-6 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">➕ 새 페이지 만들기</button>
+            </div>
+            <div id="page-list-content"></div>
+        </div>
+
+        <div id="view-editor" class="view-container">
+            </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+      import { getFirestore, collection, doc, getDoc, updateDoc, addDoc, onSnapshot, query, orderBy, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+      // --- 전역 변수 ---
+      let auth, db;
+      const appContainer = document.getElementById('app-container');
+      const authContainer = document.getElementById('auth-container');
+      const loginButton = document.getElementById('login-button');
+      const passwordInput = document.getElementById('password-input');
+      const authMessage = document.getElementById('auth-message');
+
+      // --- 1. 앱 초기화 ---
+      document.addEventListener('DOMContentLoaded', initializeApp);
+
+      async function initializeApp() {
+          try {
+              const response = await fetch('/.netlify/functions/get-firebase-config');
+              if (!response.ok) throw new Error(`Netlify Function 응답 실패`);
+              const firebaseConfig = await response.json();
+              const app = initializeApp(firebaseConfig);
+              auth = getAuth(app);
+              db = getFirestore(app);
+
+              // *** 핵심: 인증 상태 리스너 ***
+              onAuthStateChanged(auth, (user) => {
+                  if (user) {
+                      // 사용자가 로그인되어 있음 (세션 유지 성공)
+                      console.log("로그인 상태 확인:", user.uid);
+                      authContainer.classList.add('hidden');
+                      appContainer.classList.remove('hidden');
+                      navigateTo('dashboard'); // 로그인 성공 시 대시보드 뷰로 이동
+                  } else {
+                      // 사용자가 로그아웃되어 있음
+                      console.log("로그아웃 상태입니다.");
+                      authContainer.classList.remove('hidden');
+                      appContainer.classList.add('hidden');
+                  }
+              });
+
+              loginButton.addEventListener('click', handleLogin);
+              passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+
+          } catch (error) {
+              console.error("초기화 오류:", error);
+              showAuthMessage("초기화에 실패했습니다.", true);
+          }
+      }
+
+      // --- 2. 인증 로직 ---
+      async function handleLogin() {
+          const password = passwordInput.value;
+          if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
+          // (로그인 버튼 로딩 상태 표시)
+
+          try {
+              const response = await fetch('/.netlify/functions/login', { method: 'POST', body: JSON.stringify({ password }) });
+              const result = await response.json();
+              if (response.ok && result.success) {
+                  await signInWithCustomToken(auth, result.token);
+                  // onAuthStateChanged 리스너가 자동으로 화면 전환을 처리해줍니다.
+              } else {
+                  showAuthMessage(result.message || "로그인 실패.", true);
+              }
+          } catch (error) {
+              console.error('로그인 오류:', error);
+          }
+      }
+      
+      // --- 3. 화면 전환 로직 (SPA Router) ---
+      function navigateTo(viewName, context = {}) {
+          // 모든 뷰 숨기기
+          document.querySelectorAll('.view-container').forEach(view => view.style.display = 'none');
+
+          if (viewName === 'dashboard') {
+              console.log("대시보드 뷰 로드");
+              document.getElementById('view-dashboard').style.display = 'block';
+              loadDashboardContent(); // 대시보드 콘텐츠 렌더링 함수 호출
+          } else if (viewName === 'editor') {
+              console.log(`편집기 뷰 로드 (Page ID: ${context.pageId})`);
+              document.getElementById('view-editor').style.display = 'block';
+              loadEditorContent(context.pageId); // 편집기 콘텐츠 렌더링 함수 호출
+          }
+      }
+
+      // --- 4. 뷰별 콘텐츠 로더 (TODO) ---
+      function loadDashboardContent() {
+          // TODO: 여기에 기존 dashboard.html의 목록 렌더링 로직을 붙여넣습니다.
+          // 예: onSnapshot으로 "pages" 컬렉션 구독, 목록 생성...
+          // [수정] 버튼 클릭 시: navigateTo('editor', { pageId: '...' });
+          console.log("대시보드 콘텐츠 로딩 로직 실행...");
+          document.getElementById('page-list-content').innerHTML = "<p>대시보드 로딩 완료. (여기에 목록이 표시됩니다)</p>";
+          // 임시 '새 페이지 만들기' 버튼 이벤트 리스너 (실제로는 loadDashboardContent 내부에서 생성된 버튼에 연결)
+           document.getElementById('add-new-page-button').onclick = async () => {
+                // 임시: 새 페이지 생성 로직 (dashboard.html에서 가져와야 함)
+                // const newPageRef = await addDoc(collection(db, "pages"), { title: "새 페이지", createdAt: new Date(), ... });
+                // navigateTo('editor', { pageId: newPageRef.id });
+                alert("새 페이지 생성 후 편집기로 이동하는 기능 구현 필요");
+           };
+      }
+
+      function loadEditorContent(pageId) {
+          // TODO: 여기에 기존 createlp.html의 편집기 초기화 로직을 붙여넣습니다.
+          // 예: pageId로 Firestore 문서 조회, 블록 데이터 렌더링...
+          // [저장] 버튼 로직...
+          console.log(`편집기 콘텐츠 로딩 로직 실행 (ID: ${pageId})...`);
+          document.getElementById('view-editor').innerHTML = `<p>편집기 로딩 완료 (ID: ${pageId}). (여기에 편집기가 표시됩니다)</p> <button onclick="navigateTo('dashboard')">목록으로 돌아가기</button>`;
+          // 임시 '돌아가기' 버튼 (실제로는 loadEditorContent 내부에서 생성된 버튼에 연결)
+          window.navigateTo = navigateTo; // 전역 스코프에 임시 할당 (인라인 이벤트용)
+      }
+
+      // --- 유틸리티 함수 ---
+      function showAuthMessage(message, isError) {
+          authMessage.textContent = message;
+          authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
+          authMessage.classList.remove('hidden');
+      }
+
+    </script>
+</body>
+</html>
