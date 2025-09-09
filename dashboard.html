@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>페이지 관리 대시보드 v1.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .drag-handle { cursor: grab; }
+        .sortable-ghost { background: #e0f2fe; opacity: 0.5; }
+        .page-item.inactive { opacity: 0.4; }
+        .button-disabled { background-color: #94a3b8; cursor: not-allowed; }
+        .spinner { border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff; width: 16px; height: 16px; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 토글 스위치 스타일 */
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 30px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .toggle-slider { background-color: #2563eb; }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <div id="auth-container" class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
+            <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 페이지 빌더 로그인</h1>
+            <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-lg">
+            <button id="login-button" class="w-full mt-4 px-4 py-3 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors text-lg">로그인</button>
+            <p id="auth-message" class="text-sm text-center mt-4 hidden">Firebase 접속 정보를 받아오는 중...</p>
+        </div>
+    </div>
+
+    <div id="main-panel" class="hidden w-full max-w-4xl mx-auto p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+            <h1 class="text-2xl font-bold text-slate-800">📋 나의 페이지 목록</h1>
+            <button id="add-new-page-button" class="px-6 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">➕ 새 페이지 만들기</button>
+        </div>
+        
+        <div id="page-list-container" class="space-y-4">
+            </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+      import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+      // ===============================================================
+      // 🚀 페이지 관리 대시보드 v1.0
+      // ===============================================================
+      // [변경점]
+      // 1. '광고 관리'에서 '페이지 관리'로 컨셉 변경.
+      // 2. Firestore 컬렉션 이름을 'ads'에서 'pages'로 변경.
+      // 3. '새 페이지 만들기' 버튼 기능 및 편집 로직은 향후 creatlp.html과 연동 예정.
+      // ===============================================================
+
+      // --- 전역 변수 ---
+      let auth, db, pagesCollection;
+      let pageList = []; // 광고 목록(adList) 대신 페이지 목록(pageList) 사용
+
+      // --- DOM 요소 ---
+      const authContainer = document.getElementById('auth-container');
+      const mainPanel = document.getElementById('main-panel');
+      const passwordInput = document.getElementById('password-input');
+      const loginButton = document.getElementById('login-button');
+      const authMessage = document.getElementById('auth-message');
+      const pageListContainer = document.getElementById('page-list-container');
+      const addNewPageButton = document.getElementById('add-new-page-button');
+
+      // --- 앱 시작 및 초기화 ---
+      async function startApp() {
+        try {
+            showAuthMessage("보안 서버에 접속 중...", false);
+            const response = await fetch('/.netlify/functions/get-firebase-config');
+            if (!response.ok) throw new Error(`Netlify Function 응답 실패 (상태: ${response.status})`);
+            const firebaseConfig = await response.json();
+
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            pagesCollection = collection(db, "pages"); // 컬렉션 이름 변경!
+
+            setupEventListeners();
+            showAuthMessage("비밀번호를 입력하세요.", false);
+            loginButton.disabled = false;
+        } catch (error) {
+            console.error("앱 초기화 오류:", error);
+            showAuthMessage("초기화 실패. 관리자에게 문의하세요.", true);
+        }
+      }
+      document.addEventListener('DOMContentLoaded', startApp);
+
+      // --- 이벤트 리스너 설정 ---
+      function setupEventListeners() {
+        loginButton.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+        addNewPageButton.addEventListener('click', handleAddNewPage);
+      }
+
+      // --- 인증 로직 ---
+      async function handleLogin() {
+          const password = passwordInput.value;
+          if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
+          setButtonLoading(loginButton, true, "로그인 중...");
+
+          try {
+              const response = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: password }) });
+              const result = await response.json();
+              if (response.ok && result.success) {
+                  await signInWithCustomToken(auth, result.token);
+                  authContainer.classList.add('hidden');
+                  mainPanel.classList.remove('hidden');
+                  listenToPages(); // 페이지 리스너 호출
+                  initSortable();
+              } else {
+                  showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
+              }
+          } catch (error) {
+              console.error('로그인 오류:', error);
+              showAuthMessage("로그인 중 오류 발생.", true);
+          } finally {
+              setButtonLoading(loginButton, false, "로그인");
+          }
+      }
+
+      // --- 데이터 리스너 (Firestore 실시간 업데이트) ---
+      function listenToPages() {
+        const q = query(pagesCollection, orderBy("order", "asc"));
+        onSnapshot(q, (querySnapshot) => {
+            pageList = [];
+            querySnapshot.forEach((doc) => {
+                pageList.push({ id: doc.id, ...doc.data() });
+            });
+            renderPageList();
+        });
+      }
+
+      // --- 페이지 목록 렌더링 ---
+      function renderPageList() {
+          pageListContainer.innerHTML = '';
+          if (pageList.length === 0) {
+              pageListContainer.innerHTML = `<p class="text-center text-slate-500 py-8">생성된 페이지가 없습니다. '새 페이지 만들기' 버튼을 눌러 시작하세요.</p>`;
+              return;
+          }
+          
+          pageList.forEach((page) => {
+              const pageElement = document.createElement('div');
+              pageElement.className = `page-item bg-white rounded-xl shadow-md ${page.isActive === false ? 'inactive' : ''}`;
+              pageElement.dataset.id = page.id;
+              
+              const pageTitle = page.title || "제목 없음";
+              const pageUrl = page.urlSlug ? `/${page.urlSlug}` : "미설정"; // 페이지 고유 URL (추후 구현)
+              const lastUpdated = page.updatedAt ? new Date(page.updatedAt.seconds * 1000).toLocaleString('ko-KR') : "정보 없음";
+              const isChecked = page.isActive !== false ? 'checked' : '';
+
+              pageElement.innerHTML = `
+                <div class="p-4 flex items-center gap-4">
+                    <div class="drag-handle text-slate-400 p-2 hidden sm:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
+                    <div class="w-12 h-12 flex-shrink-0 bg-sky-100 text-sky-500 rounded-lg flex items-center justify-center text-2xl">📄</div>
+                    <div class="flex-grow overflow-hidden">
+                        <p class="font-bold text-slate-800 truncate">${pageTitle}</p>
+                        <p class="text-sm text-slate-500 mt-1">URL: ${pageUrl} | 최종 수정: ${lastUpdated}</p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <label class="toggle-switch">
+                            <input type="checkbox" class="page-status-toggle" data-id="${page.id}" ${isChecked}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="border-t p-2 flex justify-end gap-2">
+                    <button class="edit-page-button text-sm font-medium text-sky-600 hover:bg-sky-50 px-4 py-2 rounded-md" data-id="${page.id}">수정하기</button>                    
+                    <button class="delete-page-button text-sm font-medium text-red-600 hover:bg-red-50 px-4 py-2 rounded-md" data-id="${page.id}">삭제</button>
+                </div>
+              `;
+              pageListContainer.appendChild(pageElement);
+          });
+
+          // 렌더링 후 이벤트 리스너 연결
+          document.querySelectorAll('.edit-page-button').forEach(btn => btn.addEventListener('click', handleEditPage));
+          document.querySelectorAll('.delete-page-button').forEach(btn => btn.addEventListener('click', handleDeletePage));
+          document.querySelectorAll('.page-status-toggle').forEach(toggle => toggle.addEventListener('change', handleTogglePageStatus));
+      }
+
+      // --- CRUD 및 상호작용 함수 ---
+      async function handleAddNewPage() {
+          // 1단계: 먼저 Firestore에 기본 페이지 문서를 생성합니다.
+          const newPageData = {
+              title: "새 페이지 제목",
+              urlSlug: `page-${Date.now()}`, // 임시 고유 URL
+              isActive: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              order: pageList.length,
+              // contentBlocks: [] // creatlp.html에서 관리할 데이터 영역 (초기화)
+          };
+
+          try {
+              const docRef = await addDoc(pagesCollection, newPageData);
+              console.log("새 페이지 생성 완료, ID:", docRef.id);
+              // 2단계: 생성된 페이지 ID를 가지고 편집 페이지(createlp.html)로 이동합니다.
+              window.location.href = `createlp.html?pageId=${docRef.id}`;
+          } catch (error) {
+              console.error("새 페이지 생성 오류:", error);
+              alert("페이지 생성에 실패했습니다.");
+          }
+      }
+
+      function handleEditPage(event) {
+          const pageId = event.target.dataset.id;
+          // 페이지 ID를 가지고 creatlp.html 편집 페이지로 이동합니다.
+          window.location.href = `createlp.html?pageId=${pageId}`;
+      }
+
+      async function handleDeletePage(event) {
+          const pageId = event.target.dataset.id;
+          const page = pageList.find(p => p.id === pageId);
+          if (confirm(`'${page.title}' 페이지를 정말 삭제하시겠습니까?`)) {
+              try {
+                  await deleteDoc(doc(db, "pages", pageId));
+                  // TODO: 페이지에 연결된 이미지/파일이 있다면 Storage에서도 삭제하는 로직 추가 필요.
+              } catch (error) {
+                  console.error("페이지 삭제 오류:", error);
+                  alert("페이지 삭제에 실패했습니다.");
+              }
+          }
+      }
+      
+      async function handleTogglePageStatus(event) {
+          const pageId = event.target.dataset.id;
+          const isActive = event.target.checked;
+          try {
+              const pageRef = doc(db, "pages", pageId);
+              await updateDoc(pageRef, { isActive: isActive, updatedAt: new Date() });
+              const pageElement = event.target.closest('.page-item');
+              pageElement.classList.toggle('inactive', !isActive);
+          } catch (error) {
+              console.error("페이지 상태 업데이트 실패:", error);
+              alert("상태 변경에 실패했습니다.");
+              event.target.checked = !isActive; // 실패 시 원상 복구
+          }
+      }
+
+      // --- 정렬 기능 (SortableJS) ---
+      function initSortable() {
+          new Sortable(pageListContainer, {
+              handle: '.drag-handle', animation: 150,
+              onEnd: async function (evt) {
+                  // 배열 순서 반영
+                  const movedItem = pageList.splice(evt.oldIndex, 1)[0];
+                  pageList.splice(evt.newIndex, 0, movedItem);
+                  
+                  // Firestore에 순서 업데이트 (Batch Write)
+                  const batch = writeBatch(db);
+                  pageList.forEach((page, index) => {
+                      const docRef = doc(db, "pages", page.id);
+                      batch.update(docRef, { order: index });
+                  });
+                  await batch.commit();
+                  renderPageList(); // 순서 변경 후 UI 즉시 반영 (권장)
+              },
+          });
+      }
+
+      // --- 유틸리티 함수 ---
+      function showAuthMessage(message, isError) {
+          authMessage.textContent = message;
+          authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
+          authMessage.classList.remove('hidden');
+      }
+
+      function setButtonLoading(buttonElement, isLoading, loadingText) {
+          buttonElement.disabled = isLoading;
+          if (isLoading) {
+              buttonElement.classList.add('button-disabled');
+              buttonElement.innerHTML = `<span class="spinner inline-block mr-2"></span>${loadingText}`;
+          } else {
+              buttonElement.classList.remove('button-disabled');
+              buttonElement.innerHTML = loadingText;
+          }
+      }
+
+    </script>
+</body>
+</html>
