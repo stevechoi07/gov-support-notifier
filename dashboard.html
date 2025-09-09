@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v1.9</title>
+    <title>All-in-One 대시보드 v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ✨NEW v2.0: SortableJS library import -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
         /* =============================================================== */
@@ -46,8 +48,8 @@
         .editor-panel { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: var(--panel-bg); }
         .editor-panel.selected { border-color: var(--primary-color); box-shadow: 0 0 10px rgba(52, 211, 153, 0.3); }
         .editor-panel h4 { margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: grab; color: var(--text-color); }
-        .editor-panel.dragging { opacity: 0.5; }
-        .drag-over { border-top: 4px solid var(--primary-color) !important; transform: scale(1.02); }
+        /* ✨ SortableJS ghost class style */
+        .editor-panel.sortable-ghost { background: #1e293b; opacity: 0.5; }
         .panel-controls .delete-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; color: #94a3b8; }
         .panel-controls .delete-btn:hover { color: #f87171; }
         .control-group { margin-bottom: 15px; }
@@ -296,7 +298,8 @@
       // 🚀 Page Editor Logic (Integrated from createlp.html)
       // ===============================================================
       const editor = {
-        currentPageId: null, components: [], pageSettings: {}, activeComponentId: null, draggedId: null,
+        currentPageId: null, components: [], pageSettings: {}, activeComponentId: null, 
+        sortableInstance: null, // ✨NEW v2.0: SortableJS instance
         elements: {},
         viewportOptions: [ { id: 'mobile', label: '🤳', value: '375px,667px' }, { id: 'tablet', label: '📱', value: '768px,1024px' }, { id: 'desktop', label: '🖥️', value: '1280px,800px' }, { id: 'full', label: '전체', value: '100%,100%' } ],
         allPossibleFormFields: [ { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' }, { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' }, { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } ],
@@ -352,7 +355,12 @@
             this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages'));
         },
 
-        renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); },
+        renderAll() { 
+            this.renderPreview(); 
+            this.renderControls(); 
+            this.renderViewportControls(); 
+            this.initSortable(); // ✨ Init sortable after controls are rendered
+        },
         
         hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f09]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; },
         
@@ -406,11 +414,12 @@
             this.elements.editorsContainer.innerHTML = '';
             this.components.forEach((c) => {
                 const panel = document.createElement('div');
-                panel.className = 'editor-panel'; panel.dataset.id = c.id;
-                // ✨FIX v1.9: Dragging is initiated by the handle (h4) only
+                panel.className = 'editor-panel'; 
+                // ✨ Set data-id on the panel for SortableJS
+                panel.dataset.id = c.id;
+
                 const handle = document.createElement('h4');
                 handle.innerHTML = `${{ heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type]} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div>`;
-                handle.draggable = true;
 
                 if (c.id === this.activeComponentId) panel.classList.add('selected');
                 
@@ -460,14 +469,6 @@
         attachEventListenersToControls() {
           this.elements.editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
               const id = Number(panel.dataset.id);
-              const handle = panel.querySelector('h4');
-
-              panel.addEventListener('dragover', this.handleDragOver);
-              panel.addEventListener('dragleave', this.handleDragLeave);
-              panel.addEventListener('drop', (e) => this.handleDrop(e, id));
-              
-              handle.addEventListener('dragstart', (e) => this.handleDragStart(e, id));
-              handle.addEventListener('dragend', this.handleDragEnd);
 
               panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = (e) => this.updateComponent(id, e.target.dataset.prop, e.target.value); });
               panel.querySelectorAll('[data-style]').forEach(input => {
@@ -499,26 +500,27 @@
               panel.querySelector('.delete-btn').onclick = () => this.deleteComponent(id);
           });
         },
-
-        handleDragStart(e, id) {
-            this.draggedId = id;
-            e.currentTarget.closest('.editor-panel').classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        },
-        handleDragOver(e) { e.preventDefault(); const draggedElement = document.querySelector('.editor-panel.dragging'); if (draggedElement && draggedElement !== e.currentTarget) e.currentTarget.classList.add('drag-over'); },
-        handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); },
-        handleDrop(e, toId) {
-            e.stopPropagation();
-            const fromIndex = this.components.findIndex(c => c.id === this.draggedId);
-            const toIndex = this.components.findIndex(c => c.id === toId);
-            if (fromIndex !== -1 && toIndex !== -1) {
-                const item = this.components.splice(fromIndex, 1)[0];
-                this.components.splice(toIndex, 0, item);
-                this.saveAndRender();
+        
+        // ✨NEW v2.0: Initialize SortableJS
+        initSortable() {
+            if (this.sortableInstance) {
+                this.sortableInstance.destroy();
             }
-             e.currentTarget.classList.remove('drag-over');
+            this.sortableInstance = new Sortable(this.elements.editorsContainer, {
+                handle: 'h4', // Dragging is only possible via the handle
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: (evt) => {
+                    const fromIndex = evt.oldIndex;
+                    const toIndex = evt.newIndex;
+                    if (fromIndex !== toIndex) {
+                        const item = this.components.splice(fromIndex, 1)[0];
+                        this.components.splice(toIndex, 0, item);
+                        this.saveAndRender(false); // Save without re-rendering controls to avoid flicker
+                    }
+                },
+            });
         },
-        handleDragEnd() { this.draggedId = null; document.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('dragging', 'drag-over')); },
 
         selectComponent(id) { this.activeComponentId = id; this.renderControls(); this.renderPreview(); },
 
@@ -556,8 +558,12 @@
             this.saveAndRender();
         },
         
-        async saveAndRender() {
-            this.renderAll();
+        async saveAndRender(rerender = true) {
+            if (rerender) {
+                this.renderAll();
+            } else {
+                this.renderPreview(); // Only render preview to avoid control flicker during sort
+            }
             try {
                 const docRef = doc(db, "pages", this.currentPageId);
                 await updateDoc(docRef, { components: this.components, pageSettings: this.pageSettings, updatedAt: serverTimestamp() });
