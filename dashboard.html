@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.8</title>
+    <title>All-in-One 대시보드 v2.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -66,7 +66,7 @@
         .clr-field { border: 1px solid var(--border-color) !important; border-radius: 6px !important; }
         .clr-field button { width: 42px !important; height: 42px !important; border-radius: 6px !important; }
         .clr-field input { background-color: var(--input-bg) !important; color: var(--text-color) !important; padding-left: 10px !important; }
-        /* ✨FIX v2.8: Layout fix for ALL inline color pickers */
+        /* ✨FIX v2.9: Layout fix for ALL inline color pickers */
         .inline-group .clr-field { width: 120px; flex-shrink: 0; }
 
         .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
@@ -356,7 +356,7 @@
         setupEventListeners() {
             this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
             document.addEventListener('coloris:pick', event => {
-                const target = event.detail.instance.el;
+                const target = event.target; // ✨FIX v2.9: Correctly get the target element
                 console.log('🎨 Color Picked:', { color: event.detail.color, targetElement: target });
                 if (target.id === 'page-bg-color') {
                     this.pageSettings.bgColor = event.detail.color;
