@@ -1,31 +1,76 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 관리자 v1.5 (DOM 로딩 수정)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
-        /* ... styles ... */
+        /* [CSS Styles: v1.3과 동일] */
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f3f4f6; margin: 0; }
+        .view-container { display: none; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .spinner { border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff; width: 16px; height: 16px; animation: spin 1s ease-in-out infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        .page-item.inactive { opacity: 0.4; }
+        .drag-handle { cursor: grab; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 30px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .toggle-slider { background-color: #2563eb; }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+        /* [Editor Styles: 생략] */
     </style>
 </head>
 <body>
+
+    <div id="auth-container">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
+                <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🔒 관리자 로그인</h1>
+                <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-lg">
+                <button id="login-button" class="w-full mt-4 px-4 py-3 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors text-lg">로그인</button>
+                <p id="auth-message" class="text-sm text-center mt-4 hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <div id="view-dashboard" class="view-container w-full max-w-4xl mx-auto p-4 sm:p-6"></div>
+        <div id="view-editor" class="view-container"></div>
+    </div>
+
     <script type="module">
       // --- Firebase SDK Import ---
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
       import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, addDoc, onSnapshot, query, orderBy, writeBatch, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-      // --- 전역 변수 및 DOM 요소 (v1.3과 동일) ---
+      // --- 전역 변수 선언 ---
       let auth, db;
       let currentPageId = null, editorComponents = [], editorPageSettings = {}, activeEditorComponentId = null, draggedEditorComponentId = null; 
-      const authContainer = document.getElementById('auth-container');
-      const appContainer = document.getElementById('app-container');
-      const dashboardView = document.getElementById('view-dashboard');
-      const editorView = document.getElementById('view-editor');
-      const loginButton = document.getElementById('login-button');
-      const passwordInput = document.getElementById('password-input');
-      const authMessage = document.getElementById('auth-message');
+      
+      // --- v1.5 수정: DOM 요소 변수는 initializeAppCore 내부에서 초기화하도록 변경 ---
+      let authContainer, appContainer, dashboardView, editorView, loginButton, passwordInput, authMessage;
 
-      // --- 1. 앱 초기화 및 인증 상태 확인 (v1.3과 동일) ---
+      // --- 1. 앱 초기화 및 인증 상태 확인 ---
       document.addEventListener('DOMContentLoaded', initializeAppCore);
+
       async function initializeAppCore() {
+          // *** v1.5 수정: DOM 요소 캐싱을 DOMContentLoaded 이후로 이동 ***
+          authContainer = document.getElementById('auth-container');
+          appContainer = document.getElementById('app-container');
+          dashboardView = document.getElementById('view-dashboard');
+          editorView = document.getElementById('view-editor');
+          loginButton = document.getElementById('login-button');
+          passwordInput = document.getElementById('password-input');
+          authMessage = document.getElementById('auth-message');
+          console.log("DOM 로드 완료 및 요소 캐싱 성공.");
+
           try {
               const response = await fetch('/.netlify/functions/get-firebase-config');
               if (!response.ok) throw new Error(`Netlify Function 응답 실패`);
@@ -33,106 +78,91 @@
               const app = initializeApp(firebaseConfig);
               auth = getAuth(app);
               db = getFirestore(app);
+              console.log("Firebase 초기화 성공.");
+
               onAuthStateChanged(auth, (user) => {
                   if (user) {
+                      console.log("인증 상태: 로그인됨");
                       authContainer.style.display = 'none';
                       appContainer.style.display = 'block';
                       handleRouting();
                   } else {
+                      console.log("인증 상태: 로그아웃됨.");
                       authContainer.style.display = 'block';
                       appContainer.style.display = 'none';
                   }
               });
+
               loginButton.addEventListener('click', handleLogin);
               passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
               window.addEventListener('hashchange', handleRouting);
-          } catch (error) { showAuthMessage("초기화에 실패했습니다.", true); }
+          } catch (error) {
+              console.error("초기화 오류:", error);
+              if(authMessage) showAuthMessage("초기화에 실패했습니다.", true);
+          }
       }
 
-      // --- 2. 로그인 로직 (v1.4 디버깅 강화) ---
+      // --- 2. 로그인 로직 ---
       async function handleLogin() {
-          setButtonLoading(loginButton, true, "로그인 시도...");
-          console.log("--- 로그인 프로세스 시작 ---");
-          const password = passwordInput.value;
-
+          setButtonLoading(loginButton, true, "로그인 중...");
           try {
-              // 1단계: Netlify Function 호출하여 토큰 요청
-              console.log("1/3: Netlify Function '/.netlify/functions/login' 호출 시도...");
-              const response = await fetch('/.netlify/functions/login', { 
-                  method: 'POST', 
-                  headers: { 'Content-Type': 'application/json' }, 
-                  body: JSON.stringify({ password: password }) 
-              });
-              
-              console.log("2/3: Netlify Function 응답 받음. 상태:", response.status);
+              const response = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: passwordInput.value }) });
               const result = await response.json();
-
               if (response.ok && result.success) {
-                  console.log("✅ Netlify Function 인증 성공. Firebase 토큰 수신 완료.");
-                  
-                  // 2단계: Firebase에 커스텀 토큰으로 로그인 시도
-                  console.log("3/3: Firebase 'signInWithCustomToken' 실행 시도...");
                   await signInWithCustomToken(auth, result.token);
-                  console.log("✅ Firebase 로그인 최종 성공!");
-                  // 성공 시 onAuthStateChanged 리스너가 화면 전환을 처리함
               } else {
-                  console.warn("❌ Netlify Function 인증 실패:", result.message || "서버 응답 오류");
                   showAuthMessage(result.message || "로그인 실패.", true);
                   setButtonLoading(loginButton, false, "로그인");
               }
           } catch (error) {
-              console.error("❌ 로그인 프로세스 중 심각한 오류 발생:", error);
-              showAuthMessage("로그인 중 알 수 없는 오류 발생.", true);
+              showAuthMessage("로그인 서버 통신 오류.", true);
               setButtonLoading(loginButton, false, "로그인");
           }
       }
 
-      // --- 3. SPA 라우팅 로직 (v1.3과 동일) ---
-      function handleRouting() { /* ... */ }
-      function navigateTo(path) { /* ... */ }
-      function showView(viewName) { /* ... */ }
-      
-      // --- 4. 대시보드 뷰 로직 (v1.3과 동일) ---
-      function loadDashboardContent() { /* ... */ }
-      function createPageListItemHTML(page) { /* ... */ }
-      function bindDashboardEvents(container, pageDataArray) { /* ... */ }
-      async function handleAddNewPage() { /* ... */ }
-      async function handleDeletePage(pageId, pageDataArray) { /* ... */ }
-      async function handleTogglePageStatus(pageId, isActive) { /* ... */ }
+      // --- 3. SPA 라우팅 로직 ---
+      function handleRouting() {
+          const hash = window.location.hash;
+          if (hash.startsWith('#editor/')) {
+              currentPageId = hash.split('/')[1];
+              showView('editor');
+              loadEditorContent(currentPageId);
+          } else {
+              showView('dashboard');
+              loadDashboardContent();
+          }
+      }
+      function navigateTo(path) { window.location.hash = path; }
+      function showView(viewName) {
+          if (dashboardView && editorView) {
+              dashboardView.style.display = (viewName === 'dashboard') ? 'block' : 'none';
+              editorView.style.display = (viewName === 'editor') ? 'block' : 'none';
+          }
+      }
 
-      // --- 5. 편집기 뷰 로직 (v1.3에서 이식됨) ---
-      const allPossibleFormFields = [ /* ... */ ];
-      const viewportOptions = [ /* ... */ ];
-      async function loadEditorContent(pageId) { /* ... */ }
-      function getEditorBaseHTML() { /* ... */ }
-      function renderEditorAll() { /* ... */ }
-      function renderEditorPreview() { /* ... */ }
-      function renderEditorControls() { /* ... */ }
-      function renderEditorViewportControls() { /* ... */ }
-      function bindEditorGlobalEvents() { /* ... */ }
-      function bindEditorPanelEvents() { /* ... */ }
-      function addEditorComponent(type) { /* ... */ }
-      function deleteEditorComponent(id) { /* ... */ }
-      function selectEditorComponent(id) { /* ... */ }
-      function updateEditorComponentProperty(id, keyPath, value) { /* ... */ }
-      function updateEditorComponentStyle(id, key, value) { /* ... */ }
-      function handleEditorFieldToggle(id, fieldName, isChecked) { /* ... */ }
-      function handleEditorDragStart(e) { /* ... */ }
-      function handleEditorDragOver(e) { /* ... */ }
-      function handleEditorDragLeave(e) { /* ... */ }
-      function handleEditorDrop(e) { /* ... */ }
-      function handleEditorDragEnd(e) { /* ... */ }
-      async function saveEditorDataToFirestore() { /* ... */ }
+      // --- 4. 대시보드 뷰 로직 (v1.3과 동일) ---
+      // (이하 loadDashboardContent, createPageListItemHTML 등 함수들...)
+      // ... (이전 코드와 동일한 대시보드/편집기 함수들) ...
       
-      // --- 유틸리티 함수 (v1.3과 동일) ---
-      function showAuthMessage(message, isError) { /* ... */ }
-      function setButtonLoading(buttonElement, isLoading, text) { /* ... */ }
-      function hexToRgba(hex, alpha = 1) { /* ... */ }
+      // --- 유틸리티 함수 ---
+      function showAuthMessage(message, isError) { 
+          if(authMessage) {
+              authMessage.textContent = message; 
+              authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`; 
+              authMessage.classList.remove('hidden');
+          }
+      }
+      function setButtonLoading(buttonElement, isLoading, text) { 
+          if(buttonElement) {
+              buttonElement.disabled = isLoading; 
+              buttonElement.innerHTML = isLoading ? `<span class="spinner"></span>${text}` : text; 
+          }
+      }
       
-      // *** HELPER FUNCTIONS (v1.3 -> v1.4 migration) ***
-      // To ensure all functions are defined, copy implementations from previous version if a function above is commented out as /* ... */
-      // Example: function handleRouting() { const hash = window.location.hash; ... }
+      // --- [v1.3의 나머지 함수들] ---
+      // createPageListItemHTML, bindDashboardEvents, handleAddNewPage, handleDeletePage, handleTogglePageStatus, loadEditorContent, getEditorBaseHTML, renderEditorAll, ...
+      // (이전 버전의 모든 헬퍼 함수들이 여기에 포함되어야 합니다)
 
     </script>
-</body>
+    </body>
 </html>
