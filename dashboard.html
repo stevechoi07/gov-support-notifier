@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v1.4</title>
+    <title>All-in-One 대시보드 v1.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -57,6 +57,7 @@
         .control-group button { background-color: var(--primary-color); color: black; font-weight: bold; }
         .inline-group { display: flex; justify-content: space-between; align-items: center; }
         .inline-group label { margin-bottom: 0; }
+        .inline-group input[type="color"] { width: 60px; padding: 2px; } /* ✨FIX: Color picker width fix */
         .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
         .style-grid .control-group { margin-bottom: 0; }
         .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
@@ -434,6 +435,14 @@
         attachEventListenersToControls() {
           this.elements.editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
               const id = Number(panel.dataset.id);
+
+              // ✨FIX: Stop drag event propagation for color inputs
+              panel.querySelectorAll('input[type="color"]').forEach(colorInput => {
+                  colorInput.addEventListener('mousedown', (e) => {
+                      e.stopPropagation();
+                  });
+              });
+
               panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = () => this.updateComponent(id, { [input.dataset.prop]: input.value }); });
               panel.querySelectorAll('[data-style]').forEach(input => {
                   input.oninput = () => {
