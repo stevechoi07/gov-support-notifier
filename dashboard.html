@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.1</title>
+    <title>All-in-One 대시보드 v2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
@@ -508,6 +508,7 @@
                 ghostClass: 'sortable-ghost',
                 // ✨FIX v2.1: Prevent drag on form elements
                 filter: 'input, textarea, button, select',
+                preventOnFilter: true, // ✨NEW v2.2: The silver bullet
                 onEnd: (evt) => {
                     const fromIndex = evt.oldIndex;
                     const toIndex = evt.newIndex;
