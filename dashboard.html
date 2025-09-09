@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.3</title>
+    <title>All-in-One 대시보드 v2.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <!-- ✨NEW v2.3: Coloris library -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.js"></script>
 
@@ -64,10 +63,11 @@
         .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
         .style-grid .control-group { margin-bottom: 0; }
         
-        /* ✨NEW v2.3: Styling for Coloris inputs */
         .clr-field { border: 1px solid var(--border-color) !important; border-radius: 6px !important; }
         .clr-field button { width: 42px !important; height: 42px !important; border-radius: 6px !important; }
         .clr-field input { background-color: var(--input-bg) !important; color: var(--text-color) !important; padding-left: 10px !important; }
+        /* ✨FIX v2.4: Layout fix for inline color picker */
+        .inline-group .clr-field { width: 140px; flex-shrink: 0; }
 
         .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
         .viewport-btn { background-color: #334155; border: 1px solid #475569; color: var(--text-color); padding: 8px 12px; font-size: 14px; border-radius: 6px; }
@@ -162,7 +162,6 @@
             db = getFirestore(app);
             pagesCollection = collection(db, "pages");
             
-            // ✨NEW v2.3: Initialize Coloris
             Coloris({
                 el: '[data-color-picker]',
                 theme: 'large',
@@ -356,10 +355,22 @@
 
         setupEventListeners() {
             this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
-            // ✨FIX v2.3: Use 'coloris:pick' event for real-time updates
-            this.elements.pageBgColorInput.addEventListener('coloris:pick', (e) => { this.pageSettings.bgColor = e.target.value; this.saveAndRender(); });
-            this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(); });
-            this.elements.pageBackgroundVideoInput.addEventListener('input', (e) => { this.pageSettings.bgVideo = e.target.value; this.saveAndRender(); });
+            document.addEventListener('coloris:pick', event => {
+                const target = event.target;
+                if (target.id === 'page-bg-color') {
+                    this.pageSettings.bgColor = event.detail.color;
+                    this.saveAndRender(false, true); // (rerenderControls, rerenderPreview)
+                } else {
+                    const panel = target.closest('.editor-panel');
+                    if (panel) {
+                        const id = Number(panel.dataset.id);
+                        const styleProp = target.dataset.style;
+                        this.updateComponent(id, `styles.${styleProp}`, event.detail.color, false);
+                    }
+                }
+            });
+            this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(false, true); });
+            this.elements.pageBackgroundVideoInput.addEventListener('input', (e) => { this.pageSettings.bgVideo = e.target.value; this.saveAndRender(false, true); });
             this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages'));
         },
 
@@ -469,7 +480,7 @@
         renderViewportControls() {
             this.elements.viewportControlsLeft.innerHTML = '';
             const btnGroup = document.createElement('div'); btnGroup.className = 'viewport-controls';
-            this.viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (this.pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { this.pageSettings.viewport = opt.value; this.saveAndRender(); }; btnGroup.appendChild(btn); });
+            this.viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (this.pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { this.pageSettings.viewport = opt.value; this.saveAndRender(false, true); }; btnGroup.appendChild(btn); });
             this.elements.viewportControlsLeft.appendChild(btnGroup);
         },
 
@@ -477,24 +488,20 @@
           this.elements.editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
               const id = Number(panel.dataset.id);
 
-              panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = (e) => this.updateComponent(id, e.target.dataset.prop, e.target.value); });
-              
-              // ✨FIX v2.3: Use 'coloris:pick' event for all color pickers
-              panel.querySelectorAll('[data-color-picker]').forEach(picker => {
-                  picker.addEventListener('coloris:pick', (e) => {
-                      this.updateComponent(id, `styles.${e.target.dataset.style}`, e.target.value);
-                  });
+              panel.querySelectorAll('[data-prop]').forEach(input => { 
+                  input.oninput = (e) => this.updateComponent(id, e.target.dataset.prop, e.target.value, false); 
               });
-
+              
               panel.querySelectorAll('[data-style]').forEach(input => {
-                  if(input.dataset.colorPicker === undefined) { // Avoid double-handling color pickers
+                  if(input.dataset.colorPicker === undefined) {
                     input.oninput = (e) => {
                         let value = e.target.value;
                         if (e.target.dataset.style === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value += 'px'; }
-                        this.updateComponent(id, `styles.${e.target.dataset.style}`, value);
+                        this.updateComponent(id, `styles.${e.target.dataset.style}`, value, false);
                     };
                   }
               });
+
               panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => {
                   checkbox.onchange = () => {
                       const fieldName = checkbox.dataset.fieldName;
@@ -506,12 +513,12 @@
                       } else {
                           component.activeFields = component.activeFields.filter(name => name !== fieldName);
                       }
-                      this.saveAndRender();
+                      this.saveAndRender(true, true);
                   };
               });
 
               panel.querySelector('[data-control-type="privacy-toggle"]')?.addEventListener('change', (e) => {
-                  this.updateComponent(id, 'privacy.enabled', e.target.checked);
+                  this.updateComponent(id, 'privacy.enabled', e.target.checked, true);
               });
               
               panel.querySelector('.delete-btn').onclick = () => this.deleteComponent(id);
@@ -526,15 +533,13 @@
                 handle: 'h4',
                 animation: 150,
                 ghostClass: 'sortable-ghost',
-                filter: 'input, textarea, button, select',
-                preventOnFilter: true, // This ensures default behavior for filtered elements
                 onEnd: (evt) => {
                     const fromIndex = evt.oldIndex;
                     const toIndex = evt.newIndex;
                     if (fromIndex !== toIndex) {
                         const item = this.components.splice(fromIndex, 1)[0];
                         this.components.splice(toIndex, 0, item);
-                        this.saveAndRender(false);
+                        this.saveAndRender(false, true);
                     }
                 },
             });
@@ -552,10 +557,10 @@
             }
             this.components.push(newComponent);
             this.activeComponentId = newComponent.id;
-            this.saveAndRender();
+            this.saveAndRender(true, true);
         },
         
-        updateComponent(id, keyPath, value) {
+        updateComponent(id, keyPath, value, rerenderControls = false) {
             let component = this.components.find(c => c.id === id);
             if (!component) return;
 
@@ -566,21 +571,24 @@
                 current = current[keys[i]];
             }
             current[keys[keys.length - 1]] = value;
-            this.saveAndRender();
+            this.saveAndRender(rerenderControls, true);
         },
 
         deleteComponent(id) {
             if (!confirm('블록을 삭제하시겠습니까?')) return;
             this.components = this.components.filter(c => c.id !== id);
             if (this.activeComponentId === id) this.activeComponentId = null;
-            this.saveAndRender();
+            this.saveAndRender(true, true);
         },
         
-        async saveAndRender(rerender = true) {
-            if (rerender) {
-                this.renderAll();
-            } else {
+        async saveAndRender(rerenderControls = true, rerenderPreview = true) {
+            if (rerenderPreview) {
                 this.renderPreview();
+            }
+            if (rerenderControls) {
+                this.renderControls();
+                this.renderViewportControls();
+                this.initSortable();
             }
             try {
                 const docRef = doc(db, "pages", this.currentPageId);
