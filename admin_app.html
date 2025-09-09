@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>통합 관리자 v1.2 (편집기 통합)</title>
+    <title>통합 관리자 v1.3 (익명 인증 제외)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         /* --- 기본 SPA 스타일 --- */
@@ -16,7 +16,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         button:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
-        /* --- 대시보드 목록 스타일 (v1.1) --- */
+        /* --- 대시보드 목록 스타일 --- */
         .page-item.inactive { opacity: 0.4; }
         .drag-handle { cursor: grab; }
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; }
@@ -26,16 +26,14 @@
         input:checked + .toggle-slider { background-color: #2563eb; }
         input:checked + .toggle-slider:before { transform: translateX(20px); }
 
-        /* --- 편집기 스타일 (createlp.html에서 이식) --- */
+        /* --- 편집기 스타일 --- */
         :root { --primary-color: #1877f2; --background-color: #f0f2f5; --panel-bg: white; --text-color: #1c1e21; --border-color: #dddfe2; }
         #view-editor .main-container { display: flex; gap: 0; width: 100%; margin: auto; align-items: flex-start; }
         #view-editor #controls-wrapper { flex: 0 0 400px; position: sticky; top: 20px; max-height: 95vh; overflow-y: auto; background-color: var(--panel-bg); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px; }
         #view-editor .control-panel { padding: 25px; }
         #view-editor #preview-container { flex: 1; display: flex; flex-direction: column; padding-left: 20px; }
         #view-editor .editor-panel { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: white; }
-        #view-editor .editor-panel.selected { border-color: var(--primary-color); box-shadow: 0 0 10px rgba(24, 119, 242, 0.3); }
         #view-editor .editor-panel h4 { margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
-        #view-editor .panel-controls .delete-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; color: #999; }
         #view-editor .control-group { margin-bottom: 15px; }
         #view-editor .control-group label { display: block; margin-bottom: 5px; color: #606770; font-weight: 500; font-size: 14px; }
         #view-editor .control-group button, #view-editor .control-group select, #view-editor .viewport-btn { cursor: pointer; }
@@ -44,15 +42,10 @@
         #view-editor .inline-group label { margin-bottom: 0; }
         #view-editor .inline-group input[type="color"] { width: 42px; height: 32px; padding: 2px; flex-shrink: 0; border-radius: 4px; }
         #view-editor .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
-        #view-editor .style-grid .control-group { margin-bottom: 0; }
-        #view-editor .style-grid .full-width { grid-column: 1 / -1; }
         #view-editor .viewport-btn { background-color: #e4e6eb; border: 1px solid #ccc; color: #4b4f56; padding: 8px 12px; font-size: 14px; border-radius: 6px; }
         #view-editor .viewport-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
         #view-editor #preview-wrapper { width: 100%; flex-grow: 1; display: flex; justify-content: center; align-items: center; padding-top: 20px; }
         #view-editor #preview { background-color: var(--panel-bg); border-radius: 8px; position: relative; overflow: hidden; transition: all 0.4s ease-in-out; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        #view-editor #preview .background-video { position: absolute; top: 50%; left: 50%; width: auto; height: auto; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); z-index: 0; }
-        #view-editor #preview .background-image-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; z-index: 1; transition: background-image 0.3s; }
-        #view-editor #preview .background-image-overlay::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 2; }
         #view-editor #preview .content-area { position: relative; z-index: 3; display: flex; flex-direction: column; height: 100%; padding: 40px; box-sizing: border-box; }
         #view-editor .preview-wrapper { width: 100%; padding: 10px 0; border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
     </style>
@@ -71,11 +64,8 @@
     </div>
 
     <div id="app-container" class="hidden">
-        <div id="view-dashboard" class="view-container w-full max-w-4xl mx-auto p-4 sm:p-6">
-            </div>
-
-        <div id="view-editor" class="view-container">
-            </div>
+        <div id="view-dashboard" class="view-container w-full max-w-4xl mx-auto p-4 sm:p-6"></div>
+        <div id="view-editor" class="view-container"></div>
     </div>
 
     <script type="module">
@@ -86,11 +76,11 @@
 
       // --- 전역 변수 선언 ---
       let auth, db;
-      let currentPageId = null; // 현재 편집 중인 페이지 ID
-      let editorComponents = []; // 편집기용 컴포넌트 데이터 배열
-      let editorPageSettings = {}; // 편집기용 페이지 설정 객체
-      let activeEditorComponentId = null; // 편집기에서 현재 선택된 블록 ID
-      let draggedEditorComponentId = null; // 편집기에서 드래그 중인 블록 ID
+      let currentPageId = null; 
+      let editorComponents = []; 
+      let editorPageSettings = {}; 
+      let activeEditorComponentId = null; 
+      let draggedEditorComponentId = null; 
 
       // --- DOM 요소 캐싱 ---
       const authContainer = document.getElementById('auth-container');
@@ -105,7 +95,6 @@
       document.addEventListener('DOMContentLoaded', initializeAppCore);
 
       async function initializeAppCore() {
-          console.log("DOM 로드 완료. Firebase 초기화 시작...");
           try {
               const response = await fetch('/.netlify/functions/get-firebase-config');
               if (!response.ok) throw new Error(`Netlify Function 응답 실패`);
@@ -114,12 +103,16 @@
               auth = getAuth(app);
               db = getFirestore(app);
 
+              // *** 인증 상태 리스너 (v1.3 수정) ***
               onAuthStateChanged(auth, (user) => {
+                  // 익명 인증을 비활성화했기 때문에 'user' 객체가 존재하면 무조건 정식 사용자입니다.
                   if (user) {
+                      console.log("인증 상태: 로그인됨 (User ID:", user.uid, ")");
                       authContainer.style.display = 'none';
                       appContainer.style.display = 'block';
                       handleRouting();
                   } else {
+                      console.log("인증 상태: 로그아웃됨.");
                       authContainer.style.display = 'block';
                       appContainer.style.display = 'none';
                   }
@@ -134,7 +127,7 @@
           }
       }
 
-      // --- 2. 로그인 로직 (v1.1과 동일) ---
+      // --- 2. 로그인 로직 ---
       async function handleLogin() {
           setButtonLoading(loginButton, true, "로그인 중...");
           try {
@@ -147,7 +140,6 @@
                   setButtonLoading(loginButton, false, "로그인");
               }
           } catch (error) {
-              console.error('로그인 요청 오류:', error);
               showAuthMessage("로그인 서버 통신 오류.", true);
               setButtonLoading(loginButton, false, "로그인");
           }
@@ -171,7 +163,7 @@
           editorView.style.display = (viewName === 'editor') ? 'block' : 'none';
       }
 
-      // --- 4. 대시보드 뷰 로직 (v1.1과 동일) ---
+      // --- 4. 대시보드 뷰 로직 ---
       function loadDashboardContent() {
           dashboardView.innerHTML = `
               <div class="flex justify-between items-center mb-6">
@@ -208,24 +200,17 @@
       }
       async function handleAddNewPage() {
           const newPageData = { title: "새 페이지 제목", isActive: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), order: document.querySelectorAll('#page-list-container .page-item').length, components: [], pageSettings: { bgColor: '#DCEAF7', bgImage: '', bgVideo: '', viewport: '375px,667px' } };
-          try { const docRef = await addDoc(collection(db, "pages"), newPageData); navigateTo(`editor/${docRef.id}`); } catch (error) { console.error("새 페이지 생성 오류:", error); alert("페이지 생성에 실패했습니다."); }
+          try { const docRef = await addDoc(collection(db, "pages"), newPageData); navigateTo(`editor/${docRef.id}`); } catch (error) { console.error("새 페이지 생성 오류:", error); }
       }
       async function handleDeletePage(pageId, pageDataArray) { if (confirm(`'${pageDataArray.find(p => p.id === pageId)?.title || "해당 페이지"}' 페이지를 정말 삭제하시겠습니까?`)) { try { await deleteDoc(doc(db, "pages", pageId)); } catch (error) { console.error("페이지 삭제 오류:", error); } } }
       async function handleTogglePageStatus(pageId, isActive) { try { await updateDoc(doc(db, "pages", pageId), { isActive: isActive, updatedAt: serverTimestamp() }); } catch (error) { console.error("상태 업데이트 오류:", error); } }
 
-      // ===============================================================
-      // --- 5. 편집기 뷰 로직 (v1.2 신규 이식) ---
-      // ===============================================================
-      
+      // --- 5. 편집기 뷰 로직 (v1.2에서 이식됨) ---
       const allPossibleFormFields = [ { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' }, { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' }, { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } ];
       const viewportOptions = [ { id: 'mobile', label: '🤳', value: '375px,667px', title: '모바일' }, { id: 'tablet', label: '📱', value: '768px,1024px', title: '태블릿' }, { id: 'desktop', label: '🖥️', value: '1280px,800px', title: '데스크탑' }, { id: 'full', label: '전체', value: '100%,calc(95vh - 100px)', title: '전체 화면' } ];
 
-      // --- 5.1. 편집기 메인 로더 ---
       async function loadEditorContent(pageId) {
-          console.log(`편집기 콘텐츠 로딩 (ID: ${pageId})...`);
-          editorView.innerHTML = getEditorBaseHTML(); // 기본 UI 뼈대 생성
-
-          // Firestore에서 데이터 로드
+          editorView.innerHTML = getEditorBaseHTML();
           try {
               const docRef = doc(db, "pages", pageId);
               const docSnap = await getDoc(docRef);
@@ -233,275 +218,66 @@
                   const data = docSnap.data();
                   editorComponents = data.components || [];
                   editorPageSettings = data.pageSettings || { bgColor: '#DCEAF7', bgImage: '', bgVideo: '', viewport: '375px,667px' };
-                  console.log("편집기 데이터 로드 성공.");
               } else {
-                  console.warn("해당 ID의 문서를 찾을 수 없습니다. 새 데이터로 시작합니다.");
                   editorComponents = [];
                   editorPageSettings = { bgColor: '#DCEAF7', bgImage: '', bgVideo: '', viewport: '375px,667px' };
               }
-          } catch (error) {
-              console.error("편집기 데이터 로드 오류:", error);
-              alert("데이터 로드 중 오류 발생");
-          }
-          
-          // UI 렌더링 및 이벤트 바인딩
+          } catch (error) { console.error("편집기 데이터 로드 오류:", error); }
           renderEditorAll();
           bindEditorGlobalEvents();
       }
-
-      function getEditorBaseHTML() {
-          return `
-            <div class="main-container p-4">
-                <div id="controls-wrapper">
-                    <div class="control-panel">
-                        <div class="control-group">
-                            <button id="editor-back-btn" class="w-full text-left px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">← 대시보드로 돌아가기</button>
-                        </div>
-                        <h3 class="text-lg font-semibold mt-4 border-b pb-2 mb-3">- 콘텐츠 블록 추가 -</h3>
-                        <div class="grid grid-cols-2 gap-2 component-adders">
-                            <button data-type="heading" class="p-2 border rounded hover:bg-gray-100">➕ 제목</button>
-                            <button data-type="paragraph" class="p-2 border rounded hover:bg-gray-100">➕ 내용</button>
-                            <button data-type="button" class="p-2 border rounded hover:bg-gray-100">➕ 버튼</button>
-                            <button data-type="lead-form" class="p-2 border rounded hover:bg-gray-100">➕ 고객 정보</button>
-                        </div>
-                        <hr class="my-4">
-                        <h3 class="text-lg font-semibold border-b pb-2 mb-3">- 페이지 배경 설정 -</h3>
-                        <div class="control-group inline-group">
-                            <label for="page-bg-color">배경색</label>
-                            <input type="color" id="page-bg-color" value="#DCEAF7">
-                        </div>
-                        <div class="control-group">
-                            <label for="page-background-image">배경 이미지 URL</label>
-                            <input type="text" id="page-background-image" placeholder="https://example.com/image.jpg">
-                        </div>
-                        <div class="control-group">
-                            <label for="page-background-video">📹 배경 동영상 URL</label>
-                            <input type="text" id="page-background-video" placeholder="https://example.com/video.mp4">
-                        </div>
-                        <hr class="my-4">
-                        <div id="editors-container"></div>
-                        <hr class="my-4">
-                        <div class="control-group"><button id="editor-save-btn" class="w-full px-4 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600">💾 Firestore에 저장</button></div>
-                    </div>
-                </div>
-                <div id="preview-container">
-                    <div id="viewport-controls-left" class="flex justify-center gap-2 mb-4"></div>
-                    <div id="preview-wrapper">
-                        <div id="preview">
-                            <video class="background-video" autoplay loop muted playsinline></video>
-                            <div class="background-image-overlay"></div>
-                            <div class="content-area"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-          `;
-      }
-      
-      // --- 5.2. 편집기 렌더링 로직 ---
-      function renderEditorAll() {
-          renderEditorPreview();
-          renderEditorControls();
-          renderEditorViewportControls();
-      }
-
+      function getEditorBaseHTML() { return `<div class="main-container p-4"><div id="controls-wrapper"><div class="control-panel"><div class="control-group"><button id="editor-back-btn" class="w-full text-left px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">← 대시보드로 돌아가기</button></div><h3 class="text-lg font-semibold mt-4 border-b pb-2 mb-3">- 콘텐츠 블록 추가 -</h3><div class="grid grid-cols-2 gap-2 component-adders"><button data-type="heading" class="p-2 border rounded hover:bg-gray-100">➕ 제목</button><button data-type="paragraph" class="p-2 border rounded hover:bg-gray-100">➕ 내용</button><button data-type="button" class="p-2 border rounded hover:bg-gray-100">➕ 버튼</button><button data-type="lead-form" class="p-2 border rounded hover:bg-gray-100">➕ 고객 정보</button></div><hr class="my-4"><h3 class="text-lg font-semibold border-b pb-2 mb-3">- 페이지 배경 설정 -</h3><div class="control-group inline-group"><label for="page-bg-color">배경색</label><input type="color" id="page-bg-color" value="#DCEAF7"></div><div class="control-group"><label for="page-background-image">배경 이미지 URL</label><input type="text" id="page-background-image" placeholder="https://example.com/image.jpg"></div><div class="control-group"><label for="page-background-video">📹 배경 동영상 URL</label><input type="text" id="page-background-video" placeholder="https://example.com/video.mp4"></div><hr class="my-4"><div id="editors-container"></div><hr class="my-4"><div class="control-group"><button id="editor-save-btn" class="w-full px-4 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600">💾 Firestore에 저장</button></div></div></div><div id="preview-container"><div id="viewport-controls-left" class="flex justify-center gap-2 mb-4"></div><div id="preview-wrapper"><div id="preview"><video class="background-video" autoplay loop muted playsinline></video><div class="background-image-overlay"></div><div class="content-area"></div></div></div></div></div>`; }
+      function renderEditorAll() { renderEditorPreview(); renderEditorControls(); renderEditorViewportControls(); }
       function renderEditorPreview() {
-          const previewEl = document.getElementById('preview');
-          const contentAreaEl = previewEl.querySelector('.content-area');
-          contentAreaEl.innerHTML = '';
-          
-          // 배경 설정
-          const bgVideoEl = previewEl.querySelector('.background-video');
-          const bgImageOverlayEl = previewEl.querySelector('.background-image-overlay');
+          const previewEl = document.getElementById('preview'); if (!previewEl) return; const contentAreaEl = previewEl.querySelector('.content-area'); contentAreaEl.innerHTML = '';
+          const bgVideoEl = previewEl.querySelector('.background-video'); const bgImageOverlayEl = previewEl.querySelector('.background-image-overlay');
           if (editorPageSettings.bgVideo) { bgVideoEl.src = editorPageSettings.bgVideo; bgVideoEl.style.display = 'block'; bgImageOverlayEl.style.display = 'none'; previewEl.style.backgroundColor = 'transparent'; } 
           else if (editorPageSettings.bgImage) { bgVideoEl.style.display = 'none'; bgImageOverlayEl.style.backgroundImage = `url('${editorPageSettings.bgImage}')`; bgImageOverlayEl.style.display = 'block'; previewEl.style.backgroundColor = 'transparent'; } 
           else { bgVideoEl.style.display = 'none'; bgImageOverlayEl.style.display = 'none'; previewEl.style.backgroundColor = editorPageSettings.bgColor || '#DCEAF7'; }
-          
-          // 뷰포트 크기 설정
-          const [width, height] = (editorPageSettings.viewport || '375px,667px').split(',');
-          previewEl.style.width = width; previewEl.style.height = height;
-          
-          // 컴포넌트 렌더링
+          const [width, height] = (editorPageSettings.viewport || '375px,667px').split(','); previewEl.style.width = width; previewEl.style.height = height;
           editorComponents.forEach(c => {
-              const wrapper = document.createElement('div');
-              wrapper.className = 'preview-wrapper'; wrapper.dataset.id = c.id;
-              if (c.id === activeEditorComponentId) wrapper.classList.add('selected');
-              wrapper.onclick = (e) => { e.stopPropagation(); selectEditorComponent(c.id); };
-              if (c.type !== 'lead-form') { wrapper.style.textAlign = c.styles?.textAlign || 'center'; }
-              if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') { wrapper.style.marginTop = 'auto'; }
-
+              const wrapper = document.createElement('div'); wrapper.className = 'preview-wrapper'; wrapper.dataset.id = c.id; if (c.id === activeEditorComponentId) wrapper.classList.add('selected');
+              wrapper.onclick = (e) => { e.stopPropagation(); selectEditorComponent(c.id); }; if (c.type !== 'lead-form') { wrapper.style.textAlign = c.styles?.textAlign || 'center'; } if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') { wrapper.style.marginTop = 'auto'; }
               let element;
               switch(c.type) {
                   case 'heading': element = document.createElement('h1'); element.textContent = c.content; break;
                   case 'paragraph': element = document.createElement('p'); element.textContent = c.content; break;
                   case 'button': element = document.createElement('button'); element.textContent = c.content; break;
-                  case 'lead-form':
-                      element = document.createElement('form'); element.className = 'component-content';
-                      let formHTML = '';
-                      const activeFields = allPossibleFormFields.filter(field => c.activeFields.includes(field.name));
-                      activeFields.forEach(field => { formHTML += `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px;"></div>`; });
-                      if (c.privacy?.enabled) { formHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="privacy-preview-${c.id}" style="width: auto; height: 16px; margin: 0; accent-color: var(--primary-color);"><label for="privacy-preview-${c.id}" style="font-size: 12px; color: #555; font-weight: normal; cursor: pointer;">${c.privacy.text}</label></div>`; }
-                      formHTML += `<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer;">${c.submitText}</button>`;
-                      element.innerHTML = formHTML; element.onsubmit = (e) => e.preventDefault();
-                      break;
+                  case 'lead-form': element = document.createElement('form'); element.className = 'component-content'; let formHTML = ''; const activeFields = allPossibleFormFields.filter(field => c.activeFields.includes(field.name)); activeFields.forEach(field => { formHTML += `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px;"></div>`; }); if (c.privacy?.enabled) { formHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="privacy-preview-${c.id}" style="width: auto; height: 16px; margin: 0; accent-color: var(--primary-color);"><label for="privacy-preview-${c.id}" style="font-size: 12px; color: #555; font-weight: normal; cursor: pointer;">${c.privacy.text}</label></div>`; } formHTML += `<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer;">${c.submitText}</button>`; element.innerHTML = formHTML; element.onsubmit = (e) => e.preventDefault(); break;
               }
-              if (c.type !== 'lead-form') element.className = 'component-content';
-              const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {};
-              Object.assign(element.style, otherStyles);
-              if (c.type === 'button') { element.style.backgroundColor = hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity); } 
-              else if (c.type === 'lead-form' && backgroundColor) { element.style.backgroundColor = backgroundColor; }
-              wrapper.appendChild(element);
-              contentAreaEl.appendChild(wrapper);
+              if (c.type !== 'lead-form') element.className = 'component-content'; const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {}; Object.assign(element.style, otherStyles); if (c.type === 'button') { element.style.backgroundColor = hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity); } else if (c.type === 'lead-form' && backgroundColor) { element.style.backgroundColor = backgroundColor; } wrapper.appendChild(element); contentAreaEl.appendChild(wrapper);
           });
       }
-
       function renderEditorControls() {
-          document.getElementById('page-bg-color').value = editorPageSettings.bgColor || '#DCEAF7';
-          document.getElementById('page-background-image').value = editorPageSettings.bgImage || '';
-          document.getElementById('page-background-video').value = editorPageSettings.bgVideo || '';
-          const editorsContainer = document.getElementById('editors-container');
-          editorsContainer.innerHTML = '';
-          
+          document.getElementById('page-bg-color').value = editorPageSettings.bgColor || '#DCEAF7'; document.getElementById('page-background-image').value = editorPageSettings.bgImage || ''; document.getElementById('page-background-video').value = editorPageSettings.bgVideo || '';
+          const editorsContainer = document.getElementById('editors-container'); editorsContainer.innerHTML = '';
           editorComponents.forEach((c) => {
-              const panel = document.createElement('div');
-              panel.className = 'editor-panel'; panel.dataset.id = c.id; panel.draggable = true; 
-              if (c.id === activeEditorComponentId) panel.classList.add('selected');
-              let panelContentHTML = '';
-              if (c.type === 'lead-form') {
-                  let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #f7f7f7; padding: 10px; border-radius: 6px;">';
-                  allPossibleFormFields.forEach(field => { const isChecked = c.activeFields.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; });
-                  checklistHTML += '</div></div>';
-                  const privacy = c.privacy || { enabled: false, text: '' }; 
-                  const privacySettingsHTML = `<div class="control-group" style="background-color: #f7f7f7; padding: 10px; border-radius: 6px;"><div class="inline-group"><label for="privacy-enabled-${c.id}" style="cursor: pointer;">🔒 개인정보 수집 동의</label><input type="checkbox" id="privacy-enabled-${c.id}" data-control-type="privacy-toggle" ${privacy.enabled ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>${privacy.enabled ? `<div class="control-group" style="margin-top: 10px; margin-bottom: 0;"><label>동의 문구</label><textarea data-prop="privacy.text" style="height: 60px;">${privacy.text}</textarea></div>` : ''}</div>`;
-                  panelContentHTML = `${checklistHTML}<div class="control-group"><label>📝 구글 스크립트 URL</label><textarea data-prop="googleScriptUrl" placeholder="배포된 구글 웹 앱 URL을 붙여넣으세요" style="height: 80px;">${c.googleScriptUrl || ''}</textarea></div><div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group"><label>🎉 성공 메시지</label><input type="text" data-prop="successMessage" value="${c.successMessage || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="color" data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>${privacySettingsHTML}`;
-              } else {
-                  let contentHTML = `<div class="control-group"><label>내용</label><textarea data-prop="content">${c.content}</textarea></div>`;
-                  if (c.type === 'button') { contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`; }
-                  let fontSelectorHTML = `<div class="control-group"><label>글꼴</label><select data-style="fontFamily"><option value="'Noto Sans KR', sans-serif">깔끔 고딕체</option><option value="'Nanum Myeongjo', serif">부드러운 명조체</option><option value="'Gaegu', cursive">귀여운 손글씨체</option></select></div>`;
-                  let styleGridHTML = '<div class="style-grid">';
-                  if (c.type === 'button') { styleGridHTML += `<div class="control-group"><label>위치</label><select data-style="verticalAlign"><option value="center">가운데</option><option value="bottom">아래</option></select></div>`; } 
-                  else { styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`; }
-                  styleGridHTML += `<div class="control-group"><label>글자색</label><input type="color" data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`;
-                  styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
-                  if(c.type === 'button') { styleGridHTML += `<div class="control-group"><label>버튼 배경색</label><input type="color" data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`; }
-                  styleGridHTML += '</div>';
-                  let opacityControlsHTML = '';
-                  if (c.type === 'button') { const opacityValue = c.styles?.backgroundColorOpacity === undefined ? 1 : c.styles.backgroundColorOpacity; opacityControlsHTML = `<div class="control-group full-width"><label>배경 투명도</label><div class="inline-group" style="gap: 10px; align-items: center;"><input type="range" data-control-type="opacity-slider" min="0" max="1" step="0.01" value="${opacityValue}" style="width: 70%; padding: 0;"><input type="number" data-control-type="opacity-number" min="0" max="100" value="${Math.round(opacityValue * 100)}" style="width: 70px; text-align: right;"><span style="font-size: 16px;">%</span></div></div>`; }
-                  panelContentHTML = contentHTML + fontSelectorHTML + styleGridHTML + opacityControlsHTML;
-              }
-              const typeLabel = { heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type];
-              panel.innerHTML = `<h4>${typeLabel} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${panelContentHTML}`;
-              editorsContainer.appendChild(panel);
+              const panel = document.createElement('div'); panel.className = 'editor-panel'; panel.dataset.id = c.id; panel.draggable = true; if (c.id === activeEditorComponentId) panel.classList.add('selected'); let panelContentHTML = '';
+              if (c.type === 'lead-form') { let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #f7f7f7; padding: 10px; border-radius: 6px;">'; allPossibleFormFields.forEach(field => { const isChecked = c.activeFields.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; }); checklistHTML += '</div></div>'; const privacy = c.privacy || { enabled: false, text: '' }; const privacySettingsHTML = `<div class="control-group" style="background-color: #f7f7f7; padding: 10px; border-radius: 6px;"><div class="inline-group"><label for="privacy-enabled-${c.id}" style="cursor: pointer;">🔒 개인정보 수집 동의</label><input type="checkbox" id="privacy-enabled-${c.id}" data-control-type="privacy-toggle" ${privacy.enabled ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>${privacy.enabled ? `<div class="control-group" style="margin-top: 10px; margin-bottom: 0;"><label>동의 문구</label><textarea data-prop="privacy.text" style="height: 60px;">${privacy.text}</textarea></div>` : ''}</div>`; panelContentHTML = `${checklistHTML}<div class="control-group"><label>📝 구글 스크립트 URL</label><textarea data-prop="googleScriptUrl" placeholder="배포된 구글 웹 앱 URL을 붙여넣으세요" style="height: 80px;">${c.googleScriptUrl || ''}</textarea></div><div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group"><label>🎉 성공 메시지</label><input type="text" data-prop="successMessage" value="${c.successMessage || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="color" data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>${privacySettingsHTML}`; } 
+              else { let contentHTML = `<div class="control-group"><label>내용</label><textarea data-prop="content">${c.content}</textarea></div>`; if (c.type === 'button') { contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`; } let fontSelectorHTML = `<div class="control-group"><label>글꼴</label><select data-style="fontFamily"><option value="'Noto Sans KR', sans-serif">깔끔 고딕체</option><option value="'Nanum Myeongjo', serif">부드러운 명조체</option><option value="'Gaegu', cursive">귀여운 손글씨체</option></select></div>`; let styleGridHTML = '<div class="style-grid">'; if (c.type === 'button') { styleGridHTML += `<div class="control-group"><label>위치</label><select data-style="verticalAlign"><option value="center">가운데</option><option value="bottom">아래</option></select></div>`; } else { styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`; } styleGridHTML += `<div class="control-group"><label>글자색</label><input type="color" data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`; styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`; if(c.type === 'button') { styleGridHTML += `<div class="control-group"><label>버튼 배경색</label><input type="color" data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`; } styleGridHTML += '</div>'; let opacityControlsHTML = ''; if (c.type === 'button') { const opacityValue = c.styles?.backgroundColorOpacity === undefined ? 1 : c.styles.backgroundColorOpacity; opacityControlsHTML = `<div class="control-group full-width"><label>배경 투명도</label><div class="inline-group" style="gap: 10px; align-items: center;"><input type="range" data-control-type="opacity-slider" min="0" max="1" step="0.01" value="${opacityValue}" style="width: 70%; padding: 0;"><input type="number" data-control-type="opacity-number" min="0" max="100" value="${Math.round(opacityValue * 100)}" style="width: 70px; text-align: right;"><span style="font-size: 16px;">%</span></div></div>`; } panelContentHTML = contentHTML + fontSelectorHTML + styleGridHTML + opacityControlsHTML; }
+              const typeLabel = { heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type]; panel.innerHTML = `<h4>${typeLabel} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${panelContentHTML}`; editorsContainer.appendChild(panel);
               if (c.type !== 'lead-form') { const textAlignSelect = panel.querySelector('[data-style="textAlign"]'); if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center'; const verticalAlignSelect = panel.querySelector('[data-style="verticalAlign"]'); if(verticalAlignSelect) verticalAlignSelect.value = c.styles?.verticalAlign || 'center'; const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif"; }
           });
           bindEditorPanelEvents();
       }
-      
-      function renderEditorViewportControls() {
-          const container = document.getElementById('viewport-controls-left');
-          container.innerHTML = '';
-          viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (editorPageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { editorPageSettings.viewport = opt.value; renderEditorAll(); }; container.appendChild(btn); });
-      }
-
-      // --- 5.3. 편집기 이벤트 바인딩 및 핸들러 ---
-      function bindEditorGlobalEvents() {
-          document.getElementById('editor-back-btn').onclick = () => navigateTo('');
-          document.getElementById('editor-save-btn').onclick = saveEditorDataToFirestore;
-          document.querySelectorAll('.component-adders button').forEach(button => button.onclick = () => addEditorComponent(button.dataset.type));
-          document.getElementById('page-bg-color').oninput = (e) => { editorPageSettings.bgColor = e.target.value; renderEditorPreview(); };
-          document.getElementById('page-background-image').oninput = (e) => { editorPageSettings.bgImage = e.target.value; renderEditorPreview(); };
-          document.getElementById('page-background-video').oninput = (e) => { editorPageSettings.bgVideo = e.target.value; renderEditorPreview(); };
-      }
-
-      function bindEditorPanelEvents() {
-          document.querySelectorAll('#editors-container .editor-panel').forEach(panel => {
-              const id = Number(panel.dataset.id);
-              panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = () => { const keyPath = input.dataset.prop; const value = input.value; updateEditorComponentProperty(id, keyPath, value); renderEditorPreview(); }; });
-              panel.querySelectorAll('[data-style]').forEach(input => { input.oninput = () => { updateEditorComponentStyle(id, input.dataset.style, input.value); }; });
-              panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => { checkbox.onchange = () => { handleEditorFieldToggle(id, checkbox.dataset.fieldName, checkbox.checked); renderEditorPreview(); }; });
-              panel.querySelector('[data-control-type="privacy-toggle"]')?.addEventListener('change', (e) => { updateEditorComponentProperty(id, 'privacy.enabled', e.target.checked); renderEditorAll(); });
-              const opacitySlider = panel.querySelector('[data-control-type="opacity-slider"]');
-              const opacityNumber = panel.querySelector('[data-control-type="opacity-number"]');
-              if (opacitySlider && opacityNumber) {
-                  opacitySlider.oninput = () => { const value = parseFloat(opacitySlider.value); opacityNumber.value = Math.round(value * 100); updateEditorComponentStyle(id, 'backgroundColorOpacity', value); };
-                  opacityNumber.oninput = () => { let value = parseInt(opacityNumber.value, 10); if (isNaN(value)) value = 100; if (value < 0) value = 0; if (value > 100) value = 100; opacityNumber.value = value; updateEditorComponentStyle(id, 'backgroundColorOpacity', value / 100); };
-              }
-              panel.querySelector('.delete-btn').onclick = () => deleteEditorComponent(id);
-              panel.addEventListener('dragstart', handleEditorDragStart); panel.addEventListener('dragover', handleEditorDragOver); panel.addEventListener('dragleave', handleEditorDragLeave); panel.addEventListener('drop', handleEditorDrop); panel.addEventListener('dragend', handleEditorDragEnd);
-          });
-      }
-
-      function addEditorComponent(type) { 
-          const newComponent = { id: Date.now(), type, styles: { fontFamily: "'Noto Sans KR', sans-serif" } }; 
-          switch(type) { 
-              case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break; 
-              case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break; 
-              case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', verticalAlign: 'center', backgroundColorOpacity: 1 }; break;
-              case 'lead-form': newComponent.googleScriptUrl = ''; newComponent.submitText = '문의 남기기'; newComponent.successMessage = '성공적으로 제출되었습니다.'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2', verticalAlign: 'center' }; newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' }; break;
-          } 
-          editorComponents.push(newComponent); 
-          selectEditorComponent(newComponent.id); 
-      }
-      
+      function renderEditorViewportControls() { const container = document.getElementById('viewport-controls-left'); container.innerHTML = ''; viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (editorPageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { editorPageSettings.viewport = opt.value; renderEditorAll(); }; container.appendChild(btn); }); }
+      function bindEditorGlobalEvents() { document.getElementById('editor-back-btn').onclick = () => navigateTo(''); document.getElementById('editor-save-btn').onclick = saveEditorDataToFirestore; document.querySelectorAll('.component-adders button').forEach(button => button.onclick = () => addEditorComponent(button.dataset.type)); document.getElementById('page-bg-color').oninput = (e) => { editorPageSettings.bgColor = e.target.value; renderEditorPreview(); }; document.getElementById('page-background-image').oninput = (e) => { editorPageSettings.bgImage = e.target.value; renderEditorPreview(); }; document.getElementById('page-background-video').oninput = (e) => { editorPageSettings.bgVideo = e.target.value; renderEditorPreview(); }; }
+      function bindEditorPanelEvents() { document.querySelectorAll('#editors-container .editor-panel').forEach(panel => { const id = Number(panel.dataset.id); panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = () => { const keyPath = input.dataset.prop; const value = input.value; updateEditorComponentProperty(id, keyPath, value); renderEditorPreview(); }; }); panel.querySelectorAll('[data-style]').forEach(input => { input.oninput = () => { updateEditorComponentStyle(id, input.dataset.style, input.value); }; }); panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => { checkbox.onchange = () => { handleEditorFieldToggle(id, checkbox.dataset.fieldName, checkbox.checked); renderEditorPreview(); }; }); panel.querySelector('[data-control-type="privacy-toggle"]')?.addEventListener('change', (e) => { updateEditorComponentProperty(id, 'privacy.enabled', e.target.checked); renderEditorAll(); }); const opacitySlider = panel.querySelector('[data-control-type="opacity-slider"]'); const opacityNumber = panel.querySelector('[data-control-type="opacity-number"]'); if (opacitySlider && opacityNumber) { opacitySlider.oninput = () => { const value = parseFloat(opacitySlider.value); opacityNumber.value = Math.round(value * 100); updateEditorComponentStyle(id, 'backgroundColorOpacity', value); }; opacityNumber.oninput = () => { let value = parseInt(opacityNumber.value, 10); if (isNaN(value)) value = 100; if (value < 0) value = 0; if (value > 100) value = 100; opacityNumber.value = value; updateEditorComponentStyle(id, 'backgroundColorOpacity', value / 100); }; } panel.querySelector('.delete-btn').onclick = () => deleteEditorComponent(id); panel.addEventListener('dragstart', handleEditorDragStart); panel.addEventListener('dragover', handleEditorDragOver); panel.addEventListener('dragleave', handleEditorDragLeave); panel.addEventListener('drop', handleEditorDrop); panel.addEventListener('dragend', handleEditorDragEnd); }); }
+      function addEditorComponent(type) { const newComponent = { id: Date.now(), type, styles: { fontFamily: "'Noto Sans KR', sans-serif" } }; switch(type) { case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break; case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break; case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', verticalAlign: 'center', backgroundColorOpacity: 1 }; break; case 'lead-form': newComponent.googleScriptUrl = ''; newComponent.submitText = '문의 남기기'; newComponent.successMessage = '성공적으로 제출되었습니다.'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2', verticalAlign: 'center' }; newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' }; break; } editorComponents.push(newComponent); selectEditorComponent(newComponent.id); }
       function deleteEditorComponent(id) { if (!confirm('블록을 삭제하시겠습니까?')) return; editorComponents = editorComponents.filter(c => c.id !== id); if (activeEditorComponentId === id) activeEditorComponentId = null; renderEditorAll(); }
       function selectEditorComponent(id) { activeEditorComponentId = id; renderEditorControls(); renderEditorPreview(); const targetPanel = document.querySelector(`#editors-container .editor-panel[data-id="${id}"]`); if (targetPanel) targetPanel.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-      
-      function updateEditorComponentProperty(id, keyPath, value) {
-          const component = editorComponents.find(c => c.id === id); if (!component) return;
-          const keys = keyPath.split('.'); let current = component;
-          for (let i = 0; i < keys.length - 1; i++) { if (!current[keys[i]]) current[keys[i]] = {}; current = current[keys[i]]; }
-          current[keys[keys.length - 1]] = value;
-      }
-      function updateEditorComponentStyle(id, key, value) {
-          const component = editorComponents.find(c => c.id === id); if (!component) return;
-          if (key === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value = value.trim() + 'px'; }
-          if (!component.styles) component.styles = {};
-          component.styles[key] = value;
-          renderEditorPreview();
-      }
-      function handleEditorFieldToggle(id, fieldName, isChecked) {
-          const component = editorComponents.find(c => c.id === id); if (!component) return;
-          if (isChecked) { if (!component.activeFields.includes(fieldName)) { const newActiveFields = []; allPossibleFormFields.forEach(f => { if (component.activeFields.includes(f.name) || f.name === fieldName) newActiveFields.push(f.name); }); component.activeFields = newActiveFields; } } 
-          else { component.activeFields = component.activeFields.filter(name => name !== fieldName); }
-      }
-      
-      // 드래그앤드롭 핸들러
+      function updateEditorComponentProperty(id, keyPath, value) { const component = editorComponents.find(c => c.id === id); if (!component) return; const keys = keyPath.split('.'); let current = component; for (let i = 0; i < keys.length - 1; i++) { if (!current[keys[i]]) current[keys[i]] = {}; current = current[keys[i]]; } current[keys[keys.length - 1]] = value; }
+      function updateEditorComponentStyle(id, key, value) { const component = editorComponents.find(c => c.id === id); if (!component) return; if (key === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value = value.trim() + 'px'; } if (!component.styles) component.styles = {}; component.styles[key] = value; renderEditorPreview(); }
+      function handleEditorFieldToggle(id, fieldName, isChecked) { const component = editorComponents.find(c => c.id === id); if (!component) return; if (isChecked) { if (!component.activeFields.includes(fieldName)) { const newActiveFields = []; allPossibleFormFields.forEach(f => { if (component.activeFields.includes(f.name) || f.name === fieldName) newActiveFields.push(f.name); }); component.activeFields = newActiveFields; } } else { component.activeFields = component.activeFields.filter(name => name !== fieldName); } }
       function handleEditorDragStart(e) { draggedEditorComponentId = Number(this.dataset.id); this.classList.add('opacity-50'); e.dataTransfer.effectAllowed = 'move'; }
       function handleEditorDragOver(e) { e.preventDefault(); const targetElement = e.target.closest('.editor-panel'); if (targetElement && Number(targetElement.dataset.id) !== draggedEditorComponentId) { targetElement.style.borderTop = '3px solid var(--primary-color)'; } }
       function handleEditorDragLeave(e) { e.preventDefault(); const targetElement = e.target.closest('.editor-panel'); if (targetElement) { targetElement.style.borderTop = ''; } }
       function handleEditorDrop(e) { e.stopPropagation(); const targetElement = e.target.closest('.editor-panel'); if (!targetElement) return; const fromIndex = editorComponents.findIndex(c => c.id === draggedEditorComponentId); const toIndex = editorComponents.findIndex(c => c.id === Number(targetElement.dataset.id)); if (fromIndex !== -1 && toIndex !== -1) { const item = editorComponents.splice(fromIndex, 1)[0]; editorComponents.splice(toIndex, 0, item); renderEditorAll(); } }
       function handleEditorDragEnd(e) { draggedEditorComponentId = null; document.querySelectorAll('#editors-container .editor-panel').forEach(p => { p.classList.remove('opacity-50'); p.style.borderTop = ''; }); }
-
-      async function saveEditorDataToFirestore() {
-          const saveBtn = document.getElementById('editor-save-btn');
-          setButtonLoading(saveBtn, true, "저장 중...");
-          try {
-              const docRef = doc(db, "pages", currentPageId);
-              const dataToSave = {
-                  components: editorComponents,
-                  pageSettings: editorPageSettings,
-                  updatedAt: serverTimestamp()
-              };
-              // 페이지 제목도 업데이트 (첫 번째 heading 블록의 content로)
-              const firstHeading = editorComponents.find(c => c.type === 'heading');
-              if (firstHeading) {
-                  dataToSave.title = firstHeading.content;
-              }
-              await updateDoc(docRef, dataToSave);
-              setButtonLoading(saveBtn, false, "✅ 저장 완료!");
-              setTimeout(() => setButtonLoading(saveBtn, false, "💾 Firestore에 저장"), 2000);
-          } catch (error) {
-              console.error("Firestore 저장 오류:", error);
-              alert("저장에 실패했습니다.");
-              setButtonLoading(saveBtn, false, "저장 실패");
-          }
-      }
-
-      // --- 유틸리티 함수 ---
+      async function saveEditorDataToFirestore() { const saveBtn = document.getElementById('editor-save-btn'); setButtonLoading(saveBtn, true, "저장 중..."); try { const docRef = doc(db, "pages", currentPageId); const dataToSave = { components: editorComponents, pageSettings: editorPageSettings, updatedAt: serverTimestamp() }; const firstHeading = editorComponents.find(c => c.type === 'heading'); if (firstHeading) { dataToSave.title = firstHeading.content; } await updateDoc(docRef, dataToSave); setButtonLoading(saveBtn, false, "✅ 저장 완료!"); setTimeout(() => setButtonLoading(saveBtn, false, "💾 Firestore에 저장"), 2000); } catch (error) { console.error("Firestore 저장 오류:", error); alert("저장에 실패했습니다."); setButtonLoading(saveBtn, false, "저장 실패"); } }
       function showAuthMessage(message, isError) { authMessage.textContent = message; authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`; authMessage.classList.remove('hidden'); }
       function setButtonLoading(buttonElement, isLoading, text) { buttonElement.disabled = isLoading; buttonElement.innerHTML = isLoading ? `<span class="spinner"></span>${text}` : text; }
       function hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]]; c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; }
-
     </script>
 </body>
 </html>
