@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.5</title>
+    <title>All-in-One 대시보드 v2.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -355,7 +355,7 @@
         setupEventListeners() {
             this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
             document.addEventListener('coloris:pick', event => {
-                const target = event.detail.instance.el; // ✨FIX v2.5: Correctly get the target element
+                const target = event.detail.instance.el;
                 if (target.id === 'page-bg-color') {
                     this.pageSettings.bgColor = event.detail.color;
                     this.saveAndRender(false, true);
@@ -381,7 +381,7 @@
         },
         
         hexToRgba(hex, alpha = 1) { 
-            if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; // ✨FIX v2.5: Correct regex `0-9`
+            if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
             let c = hex.substring(1).split(''); 
             if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } 
             c = '0x' + c.join(''); 
