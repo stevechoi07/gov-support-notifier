@@ -3,62 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v1.0</title>
+    <title>All-in-One 대시보드 v1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; }
-        /* 커스텀 스크롤바 (선택 사항) */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .button-disabled { background-color: #94a3b8; cursor: not-allowed; }
+        ::-webkit-scrollbar-track { background: #1e293b; } /* slate-800 */
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        .button-disabled { background-color: #475569; cursor: not-allowed; }
         .spinner {
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
             border-top-color: #fff;
             width: 16px; height: 16px;
             animation: spin 1s ease-in-out infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Chzzk 스타일 사이드바 활성 링크 */
+        .nav-link {
+            border-left: 3px solid transparent;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .nav-link.active {
+            background-color: #1e293b; /* slate-800 */
+            color: #34d399; /* emerald-400 */
+            border-left-color: #34d399; /* emerald-400 */
+        }
+         .nav-link.active svg {
+            stroke: #34d399; /* emerald-400 */
+        }
     </style>
 </head>
-<body class="bg-slate-100">
+<body class="bg-slate-900">
 
     <!-- =============================================================== -->
-    <!-- 🔒 로그인 화면 -->
+    <!-- 🔒 로그인 화면 (다크 모드 적용) -->
     <!-- =============================================================== -->
     <div id="auth-container" class="flex items-center justify-center min-h-screen p-4">
-        <div class="w-full max-w-sm p-8 bg-white rounded-xl shadow-lg">
-            <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">🚀 All-in-One 대시보드</h1>
-            <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-lg">
-            <button id="login-button" class="w-full mt-4 px-4 py-3 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors text-lg">로그인</button>
+        <div class="w-full max-w-sm p-8 bg-slate-800 rounded-xl shadow-lg">
+            <h1 class="text-2xl font-bold text-center text-emerald-400 mb-6">🚀 All-in-One 대시보드</h1>
+            <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-3 border border-slate-600 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 text-lg placeholder-slate-400">
+            <button id="login-button" class="w-full mt-4 px-4 py-3 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 shadow-md transition-colors text-lg">로그인</button>
             <p id="auth-message" class="text-sm text-center mt-4 hidden">Firebase 접속 정보를 받아오는 중...</p>
         </div>
     </div>
 
     <!-- =============================================================== -->
-    <!-- 📊 메인 대시보드 -->
+    <!-- 📊 메인 대시보드 (다크 모드 적용) -->
     <!-- =============================================================== -->
     <div id="dashboard-container" class="hidden">
-        <div class="flex h-screen bg-slate-100">
+        <div class="flex h-screen bg-slate-900">
             <!-- 왼쪽 사이드바 -->
-            <aside class="w-64 bg-slate-800 text-slate-200 flex flex-col">
-                <div class="h-16 flex items-center justify-center border-b border-slate-700">
-                    <h1 class="text-xl font-bold text-white">Dashboard</h1>
+            <aside class="w-64 bg-black text-slate-300 flex flex-col">
+                <div class="h-16 flex items-center justify-center">
+                    <h1 class="text-xl font-bold text-emerald-400">Dashboard</h1>
                 </div>
                 <nav class="flex-1 px-4 py-6 space-y-2">
-                    <a href="#" data-view="pages" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors hover:bg-slate-700">
+                    <a href="#" data-view="pages" class="nav-link flex items-center px-3 py-2.5 rounded-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                         <span class="ml-3">페이지 관리</span>
                     </a>
-                    <a href="#" data-view="ads" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors hover:bg-slate-700">
+                    <a href="#" data-view="ads" class="nav-link flex items-center px-3 py-2.5 rounded-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="11" rx="2"/><path d="M20.6 7H3.4A1.4 1.4 0 0 1 2 5.6V4.4A1.4 1.4 0 0 1 3.4 3h17.2A1.4 1.4 0 0 1 22 4.4v1.2A1.4 1.4 0 0 1 20.6 7Z"/><path d="M8 3v8"/><path d="M16 3v8"/></svg>
                         <span class="ml-3">광고 관리</span>
                     </a>
                 </nav>
-                <div class="p-4 border-t border-slate-700">
+                <div class="p-4 border-t border-slate-800">
                     <button id="logout-button" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg transition-colors text-slate-400 hover:bg-red-500 hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
                         <span class="ml-3">로그아웃</span>
@@ -68,19 +82,19 @@
 
             <!-- 오른쪽 메인 콘텐츠 -->
             <main class="flex-1 flex flex-col overflow-hidden">
-                <header class="h-16 bg-white border-b flex items-center px-6">
-                    <h2 id="view-title" class="text-xl font-semibold text-slate-700"></h2>
+                <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center px-6">
+                    <h2 id="view-title" class="text-xl font-semibold text-slate-100"></h2>
                 </header>
                 <div class="flex-1 p-6 overflow-y-auto">
                     <!-- 각 화면은 여기에 표시됩니다 -->
                     <div id="pages-view" class="view hidden">
-                        <h3 class="text-2xl font-bold text-slate-800">📄 페이지 관리</h3>
-                        <p class="mt-4 text-slate-600">이곳에 페이지 목록이 표시되고, 토글 버튼으로 게시 여부를 제어하게 될 것입니다.</p>
+                        <h3 class="text-2xl font-bold text-slate-100">📄 페이지 관리</h3>
+                        <p class="mt-4 text-slate-400">이곳에 페이지 목록이 표시되고, 토글 버튼으로 게시 여부를 제어하게 될 것입니다.</p>
                     </div>
 
                     <div id="ads-view" class="view hidden">
-                         <h3 class="text-2xl font-bold text-slate-800">📢 광고 관리</h3>
-                         <p class="mt-4 text-slate-600">이곳에 `admin.html`에서 가져온 광고 관리 기능이 통합될 것입니다.</p>
+                         <h3 class="text-2xl font-bold text-slate-100">📢 광고 관리</h3>
+                         <p class="mt-4 text-slate-400">이곳에 `admin.html`에서 가져온 광고 관리 기능이 통합될 것입니다.</p>
                     </div>
                 </div>
             </main>
@@ -95,10 +109,8 @@
       import { getAuth, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
       import { getFirestore } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
       
-      // 전역 Firebase 서비스 변수
       let auth, db;
 
-      // --- UI 요소 ---
       const ui = {
           authContainer: document.getElementById('auth-container'),
           dashboardContainer: document.getElementById('dashboard-container'),
@@ -111,28 +123,20 @@
           viewTitle: document.getElementById('view-title'),
       };
 
-      /**
-       * 앱을 시작하는 메인 함수.
-       * Netlify Function을 통해 Firebase 설정을 받아온 후 모든 기능을 초기화한다.
-       */
       async function startApp() {
         try {
-            console.log("🚀 All-in-One 대시보드 v1.0 시작!");
+            console.log("🚀 All-in-One 대시보드 v1.1 시작!");
             showAuthMessage("보안 서버에 접속 중...", false);
-
             const response = await fetch('/.netlify/functions/get-firebase-config');
             if (!response.ok) throw new Error(`[오류] 비밀요원 응답 실패! 상태: ${response.status}`);
-            
             const firebaseConfig = await response.json();
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            
             console.log("✅ Firebase 서비스 초기화 성공!");
             setupEventListeners();
             showAuthMessage("비밀번호를 입력하세요.", false);
             ui.loginButton.disabled = false;
-
         } catch (error) {
             console.error("🔥 [치명적 오류] 앱 시작 중 문제 발생:", error);
             showAuthMessage("초기화 실패. 관리자에게 문의하세요.", true);
@@ -141,14 +145,10 @@
         }
       }
 
-      /**
-       * 모든 이벤트 리스너를 설정한다.
-       */
       function setupEventListeners() {
         ui.loginButton.addEventListener('click', handleLogin);
         ui.passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
         ui.logoutButton.addEventListener('click', handleLogout);
-
         ui.navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -159,17 +159,12 @@
         console.log("✅ 이벤트 리스너 설정 완료.");
       }
       
-      /**
-       * 로그인 처리를 담당한다.
-       */
       async function handleLogin() {
           const password = ui.passwordInput.value;
           if (!password) { showAuthMessage("비밀번호를 입력해주세요.", true); return; }
-          
           ui.loginButton.disabled = true;
           ui.loginButton.innerHTML = `<div class="spinner"></div><span>로그인 중...</span>`;
           showAuthMessage("비밀번호를 확인 중입니다...", false);
-          
           try {
               const response = await fetch('/.netlify/functions/login', {
                   method: 'POST',
@@ -182,7 +177,7 @@
                   console.log("✅ 로그인 성공!");
                   ui.authContainer.classList.add('hidden');
                   ui.dashboardContainer.classList.remove('hidden');
-                  navigateTo('pages'); // 로그인 후 첫 화면
+                  navigateTo('pages'); 
               } else {
                   showAuthMessage(result.message || "비밀번호가 틀렸습니다.", true);
               }
@@ -195,9 +190,6 @@
           }
       }
 
-      /**
-       * 로그아웃 처리를 담당한다.
-       */
       async function handleLogout() {
         if (confirm('정말 로그아웃 하시겠습니까?')) {
             await signOut(auth);
@@ -205,24 +197,15 @@
         }
       }
 
-      /**
-       * 특정 뷰(화면)으로 전환하는 SPA 네비게이션 함수.
-       * @param {string} viewName - 보여줄 뷰의 이름 ('pages', 'ads' 등)
-       */
       function navigateTo(viewName) {
-        // 모든 뷰 숨기기
         ui.views.forEach(view => view.classList.add('hidden'));
-        
-        // 클릭된 메뉴 활성화
         ui.navLinks.forEach(link => {
             if (link.dataset.view === viewName) {
-                link.classList.add('bg-slate-700', 'text-white');
+                link.classList.add('active');
             } else {
-                link.classList.remove('bg-slate-700', 'text-white');
+                link.classList.remove('active');
             }
         });
-
-        // 해당 뷰만 보여주기
         const targetView = document.getElementById(`${viewName}-view`);
         if (targetView) {
             targetView.classList.remove('hidden');
@@ -235,16 +218,12 @@
         console.log(` navigated to ${viewName}`);
       }
 
-      /**
-       * 로그인 화면에 메시지를 표시한다.
-       */
       function showAuthMessage(message, isError) {
           ui.authMessage.textContent = message;
           ui.authMessage.className = `text-sm text-center mt-4 ${isError ? 'text-red-500' : 'text-slate-500'}`;
           ui.authMessage.classList.remove('hidden');
       }
 
-      // DOM이 로드되면 앱 시작
       document.addEventListener('DOMContentLoaded', startApp);
     </script>
 </body>
