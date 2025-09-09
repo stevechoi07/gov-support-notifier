@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>creatlp v9.23 - 투명함의 미학 에디션</title>
+    <title>페이지 편집기 v2.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* [v1.0 스타일 코드 (기존 creatlp.html과 동일)] */
         :root { --primary-color: #1877f2; --background-color: #f0f2f5; --panel-bg: white; --text-color: #1c1e21; --border-color: #dddfe2; }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--background-color); margin: 0; padding: 20px; }
         .main-container { display: flex; gap: 0; width: 100%; max-width: 1400px; margin: auto; align-items: flex-start; }
@@ -55,49 +56,33 @@
         .preview-wrapper .component-content { text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
         .preview-wrapper button.component-content { transition: transform 0.1s ease, background-color 0.3s; }
         .preview-wrapper button.component-content:active { transform: scale(0.98); }
-        #version-history-container { margin-top: 15px; }
-        #version-history { max-height: 150px; overflow-y: auto; padding: 5px; border: 1px solid var(--border-color); border-radius: 6px; }
-        .version-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; border-radius: 4px; }
-        .version-item:hover { background-color: #f0f2f5; }
-        .version-item.active { background-color: var(--primary-color); color: white; font-weight: bold; }
-        .version-item.active .version-delete-btn { color: white; }
-        .version-delete-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 0 5px; }
-        .version-delete-btn:hover { color: #d9534f; }
-
         /* v9.19: UI/UX 개선 스타일 */
         #preview .component-content input[type="text"]:focus,
         #preview .component-content input[type="email"]:focus,
         #preview .component-content input[type="tel"]:focus,
-        #preview .component-content input[type="date"]:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
-            outline: none;
-            transition: all 0.2s ease-in-out;
-        }
-        .loader {
-            width: 16px; height: 16px; border-radius: 50%;
-            display: inline-block;
-            border-top: 2px solid #FFF;
-            border-right: 2px solid transparent;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        #preview .component-content input[type="date"]:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2); outline: none; transition: all 0.2s ease-in-out; }
+        .loader { width: 16px; height: 16px; border-radius: 50%; display: inline-block; border-top: 2px solid #FFF; border-right: 2px solid transparent; box-sizing: border-box; animation: rotation 1s linear infinite; vertical-align: middle; margin-right: 8px; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 로딩 오버레이 */
+        #loading-overlay { position: fixed; inset: 0; background-color: rgba(255, 255, 255, 0.8); display: flex; justify-content: center; align-items: center; z-index: 10000; transition: opacity 0.3s; }
+        #loading-overlay.hidden { opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body>
+    <div id="loading-overlay">
+        <div style="text-align: center;">
+            <div class="loader" style="width: 40px; height: 40px; border-width: 4px; border-top-color: var(--primary-color); margin-bottom: 20px;"></div>
+            <p style="font-size: 18px; color: var(--text-color);">페이지 데이터를 불러오는 중입니다...</p>
+        </div>
+    </div>
+
     <div class="main-container">
         <div id="controls-wrapper">
             <div class="control-panel">
-                <h2>🚀 빌더 v9.23</h2>
-                <h3>- 프리뷰 화면 설정 -</h3>
-                <div id="viewport-controls-left"></div>
-                <hr>
+                <h2>🚀 페이지 편집기 v2.0</h2>
+                <div class="control-group">
+                    <button id="back-to-dashboard-btn" style="background-color: #6c757d; color: white;">← 대시보드로 돌아가기</button>
+                </div>
                 <h3>- 콘텐츠 블록 추가 -</h3>
                 <div class="control-group component-adders">
                     <button data-type="heading">➕ 제목</button>
@@ -123,18 +108,14 @@
                 <div id="editors-container"></div>
                 <hr>
                 <h3>- 프로젝트 관리 -</h3>
-                <div class="control-group"><button id="save-btn">💾 현재 버전 저장</button></div>
-                <div id="version-history-container">
-                    <label>저장된 버전 목록</label>
-                    <div id="version-history"></div>
-                </div>
+                <div class="control-group"><button id="save-btn">💾 Firestore에 저장</button></div>
                 <div class="control-group" style="margin-top: 15px;"><button id="export-btn" style="background-color: #42b72a; color: white;">🚀 HTML 내보내기</button></div>
             </div>
         </div>
         <div id="preview-container">
              <div class="control-panel">
                 <h2>👀 라이브 프리뷰</h2>
-                <div id="preview-wrapper">
+                <div id="viewport-controls-left"></div> <div id="preview-wrapper">
                     <div id="preview">
                         <video class="background-video" autoplay loop muted playsinline></video>
                         <div class="background-image-overlay"></div>
@@ -145,459 +126,315 @@
         </div>
     </div>
 
-    <script>
-    // --- 1. 변수 설정 ---
-    const preview = document.getElementById('preview'), contentArea = preview.querySelector('.content-area'), backgroundImageOverlay = preview.querySelector('.background-image-overlay'), backgroundVideo = preview.querySelector('.background-video'), editorsContainer = document.getElementById('editors-container'), adders = document.querySelectorAll('.component-adders button'), pageBgColorInput = document.getElementById('page-bg-color'), pageBackgroundImageInput = document.getElementById('page-background-image'), pageBackgroundVideoInput = document.getElementById('page-background-video'), saveBtn = document.getElementById('save-btn'), exportBtn = document.getElementById('export-btn'), viewportControlsLeft = document.getElementById('viewport-controls-left'), versionHistoryContainer = document.getElementById('version-history');
-    let components = [], activeComponentId = null, pageSettings = { bgColor: '#DCEAF7', bgImage: '', bgVideo: '', viewport: '375px,667px' };
-    const viewportOptions = [ { id: 'mobile', label: '🤳', value: '375px,667px', title: '모바일' }, { id: 'tablet', label: '📱', value: '768px,1024px', title: '태블릿' }, { id: 'desktop', label: '🖥️', value: '1280px,800px', title: '데스크탑' }, { id: 'full', label: '전체', value: '100%,calc(95vh - 100px)', title: '전체 화면' } ];
-    let draggedId = null, currentVersionTimestamp = null;
-    const STORAGE_KEY = 'creatlp_projects_v9_23'; // v9.23용 새 저장 키
+    <script type="module">
+      // --- Firebase SDK Import ---
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      // 참고: getAuth는 Netlify Function을 통해 인증을 처리하므로, 여기서는 DB 접근 권한만 있으면 됩니다.
+      // 만약 규칙으로 보호된 리소스라면 인증 확인 로직이 필요할 수 있습니다.
 
-    const allPossibleFormFields = [
-        { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' },
-        { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' },
-        { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' },
-        { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' },
-        { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' }
-    ];
+      // ===============================================================
+      // 🚀 페이지 편집기 v2.0 - Firebase 연동 로직
+      // ===============================================================
 
-    function hexToRgba(hex, alpha = 1) {
-        if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
-        let c = hex.substring(1).split('');
-        if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; }
-        c = '0x' + c.join('');
-        return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`;
-    }
+      // --- 1. 전역 변수 및 Firebase 설정 ---
+      let db;
+      let currentPageId = null; // 현재 편집 중인 페이지의 Firestore 문서 ID
+      let components = []; // 페이지 구성 블록 데이터
+      let pageSettings = { bgColor: '#DCEAF7', bgImage: '', bgVideo: '', viewport: '375px,667px' }; // 페이지 설정
 
-    // --- 2. 렌더링 함수들 ---
-    function renderAll() { renderPreview(); renderControls(); renderViewportControls(); renderVersionHistory(); }
+      const elements = {
+          preview: document.getElementById('preview'),
+          contentArea: document.getElementById('preview').querySelector('.content-area'),
+          backgroundImageOverlay: document.getElementById('preview').querySelector('.background-image-overlay'),
+          backgroundVideo: document.getElementById('preview').querySelector('.background-video'),
+          editorsContainer: document.getElementById('editors-container'),
+          adders: document.querySelectorAll('.component-adders button'),
+          pageBgColorInput: document.getElementById('page-bg-color'),
+          pageBackgroundImageInput: document.getElementById('page-background-image'),
+          pageBackgroundVideoInput: document.getElementById('page-background-video'),
+          saveBtn: document.getElementById('save-btn'),
+          exportBtn: document.getElementById('export-btn'),
+          viewportControlsLeft: document.getElementById('viewport-controls-left'),
+          loadingOverlay: document.getElementById('loading-overlay'),
+          backToDashboardBtn: document.getElementById('back-to-dashboard-btn')
+      };
+      
+      let activeComponentId = null;
+      let draggedId = null;
+      const viewportOptions = [ { id: 'mobile', label: '🤳', value: '375px,667px', title: '모바일' }, { id: 'tablet', label: '📱', value: '768px,1024px', title: '태블릿' }, { id: 'desktop', label: '🖥️', value: '1280px,800px', title: '데스크탑' }, { id: 'full', label: '전체', value: '100%,calc(95vh - 100px)', title: '전체 화면' } ];
+      const allPossibleFormFields = [ { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' }, { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' }, { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } ];
 
-    function renderPreview() {
-        contentArea.innerHTML = '';
-        if (pageSettings.bgVideo) { backgroundVideo.src = pageSettings.bgVideo; backgroundVideo.style.display = 'block'; backgroundImageOverlay.style.display = 'none'; preview.style.backgroundColor = 'transparent'; preview.classList.add('has-background'); } 
-        else if (pageSettings.bgImage) { backgroundVideo.style.display = 'none'; backgroundImageOverlay.style.backgroundImage = `url('${pageSettings.bgImage}')`; backgroundImageOverlay.style.display = 'block'; preview.style.backgroundColor = 'transparent'; preview.classList.add('has-background'); } 
-        else { backgroundVideo.style.display = 'none'; backgroundImageOverlay.style.display = 'none'; preview.style.backgroundColor = pageSettings.bgColor; preview.classList.remove('has-background'); }
-        const [width, height] = pageSettings.viewport.split(',');
-        preview.style.width = width;
-        preview.style.height = height;
-        
-        const hasBottomComponent = components.some(c => (c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom');
-        contentArea.style.justifyContent = hasBottomComponent ? 'flex-start' : 'center';
+      // --- 2. 앱 시작 및 데이터 로딩 (v2.0 변경) ---
+      async function initializeAppWithFirebase() {
+          // 2.1. URL에서 Page ID 추출
+          const urlParams = new URLSearchParams(window.location.search);
+          currentPageId = urlParams.get('pageId');
+          
+          if (!currentPageId) {
+              alert("편집할 페이지 ID가 없습니다. 대시보드로 돌아갑니다.");
+              window.location.href = 'dashboard.html'; // ID 없으면 대시보드로 리다이렉트
+              return;
+          }
 
-        components.forEach(c => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'preview-wrapper';
-            wrapper.dataset.id = c.id;
-            if (c.id === activeComponentId) wrapper.classList.add('selected');
-            wrapper.onclick = (e) => { e.stopPropagation(); selectComponent(c.id); };
-            
-            if (c.type !== 'lead-form') {
-                 wrapper.style.textAlign = c.styles?.textAlign || 'center';
-            }
-             if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') {
-                wrapper.style.marginTop = 'auto';
-            }
+          // 2.2. Firebase 초기화 (Netlify Function에서 설정값 가져오기)
+          try {
+              const response = await fetch('/.netlify/functions/get-firebase-config');
+              if (!response.ok) throw new Error(`Netlify Function 응답 실패`);
+              const firebaseConfig = await response.json();
+              const app = initializeApp(firebaseConfig);
+              db = getFirestore(app);
+          } catch (error) {
+              console.error("Firebase 초기화 오류:", error);
+              alert("서버 연결에 실패했습니다. 대시보드로 돌아갑니다.");
+              window.location.href = 'dashboard.html';
+              return;
+          }
 
-            let element;
-            switch(c.type) {
-                case 'heading': element = document.createElement('h1'); element.textContent = c.content; break;
-                case 'paragraph': element = document.createElement('p'); element.textContent = c.content; break;
-                case 'button': element = document.createElement('button'); element.textContent = c.content; break;
-                case 'lead-form':
-                    element = document.createElement('form');
-                    element.className = 'component-content';
-                    let formHTML = '';
-                    const activeFields = allPossibleFormFields.filter(field => c.activeFields.includes(field.name));
-                    activeFields.forEach(field => {
-                        formHTML += `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px;"></div>`;
-                    });
+          // 2.3. Firestore에서 데이터 로드
+          await loadProjectFromFirestore();
 
-                    if (c.privacy.enabled) {
-                         formHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;">
-                                        <input type="checkbox" id="privacy-preview-${c.id}" style="width: auto; height: 16px; margin: 0; accent-color: var(--primary-color);">
-                                        <label for="privacy-preview-${c.id}" style="font-size: 12px; color: #555; font-weight: normal; cursor: pointer;">${c.privacy.text}</label>
-                                     </div>`;
-                    }
-                    
-                    formHTML += `<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer;">${c.submitText}</button>`;
-                    element.innerHTML = formHTML;
-                    element.onsubmit = (e) => e.preventDefault();
-                    break;
-            }
-            if (c.type !== 'lead-form') element.className = 'component-content';
-            
-            const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {};
-            Object.assign(element.style, otherStyles);
+          // 2.4. 편집기 UI 초기화 및 이벤트 리스너 연결
+          initializeEditorUI();
+      }
+      
+      async function loadProjectFromFirestore() {
+          const docRef = doc(db, "pages", currentPageId);
+          try {
+              const docSnap = await getDoc(docRef);
+              if (docSnap.exists()) {
+                  const data = docSnap.data();
+                  // Firestore에 저장된 components와 pageSettings 불러오기
+                  // 만약 데이터가 없으면(신규 생성 직후) 기본값 사용
+                  components = data.components || [];
+                  pageSettings = data.pageSettings || pageSettings;
+                  
+                  console.log("Firestore 데이터 로드 성공:", data);
+              } else {
+                  console.log("기존 데이터 없음. 새 페이지로 시작합니다.");
+                  // 새 페이지일 경우 기본 블록 추가
+                  if (components.length === 0) {
+                      addComponent('heading');
+                  }
+              }
+          } catch (error) {
+              console.error("데이터 로드 중 오류 발생:", error);
+              alert("데이터 로드에 실패했습니다.");
+          } finally {
+              elements.loadingOverlay.classList.add('hidden');
+              renderAll();
+          }
+      }
 
-            if (c.type === 'button') {
-                element.style.backgroundColor = hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity);
-            } else if (c.type === 'lead-form' && backgroundColor) {
-                element.style.backgroundColor = backgroundColor;
-            }
+      function initializeEditorUI() {
+          elements.adders.forEach(button => button.addEventListener('click', () => addComponent(button.dataset.type)));
+          elements.pageBgColorInput.addEventListener('input', (e) => { pageSettings.bgColor = e.target.value; renderAll(); });
+          elements.pageBackgroundImageInput.addEventListener('input', (e) => { pageSettings.bgImage = e.target.value; renderAll(); });
+          elements.pageBackgroundVideoInput.addEventListener('input', (e) => { pageSettings.bgVideo = e.target.value; renderAll(); });
+          elements.saveBtn.addEventListener('click', saveProjectToFirestore);
+          elements.exportBtn.addEventListener('click', exportHTML);
+          elements.backToDashboardBtn.addEventListener('click', () => { window.location.href = 'dashboard.html'; });
+          renderAll();
+      }
 
-            wrapper.appendChild(element);
-            contentArea.appendChild(wrapper);
-        });
-    }
+      // --- 3. 데이터 저장 (v2.0 변경) ---
+      async function saveProjectToFirestore() {
+          if (!currentPageId) { alert("페이지 ID가 유효하지 않습니다."); return; }
+          
+          setButtonLoading(elements.saveBtn, true, "저장 중...");
 
-    function renderControls() {
-        pageBgColorInput.value = pageSettings.bgColor;
-        pageBackgroundImageInput.value = pageSettings.bgImage;
-        pageBackgroundVideoInput.value = pageSettings.bgVideo;
-        editorsContainer.innerHTML = '';
-        components.forEach((c) => {
-            const panel = document.createElement('div');
-            panel.className = 'editor-panel';
-            panel.dataset.id = c.id;
-            panel.draggable = true; 
-            if (c.id === activeComponentId) panel.classList.add('selected');
-            
-            let panelContentHTML = '';
+          try {
+              const docRef = doc(db, "pages", currentPageId);
+              const dataToSave = {
+                  components: components, // 현재 블록 배열
+                  pageSettings: pageSettings, // 현재 페이지 설정
+                  updatedAt: new Date() // 최종 수정 시간 기록
+              };
+              
+              // setDoc을 사용하여 문서를 덮어쓰거나, updateDoc을 사용하여 일부 필드만 업데이트합니다.
+              // 여기서는 페이지 전체 데이터를 저장하므로 setDoc에 merge:true 옵션을 사용하거나 updateDoc을 사용합니다.
+              await updateDoc(docRef, dataToSave);
 
-            if (c.type === 'lead-form') {
-                let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #f7f7f7; padding: 10px; border-radius: 6px;">';
-                allPossibleFormFields.forEach(field => {
-                    const isChecked = c.activeFields.includes(field.name);
-                    checklistHTML += `
-                        <div class="inline-group" style="margin-bottom: 0;">
-                            <label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label>
-                            <input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;">
-                        </div>
-                    `;
-                });
-                checklistHTML += '</div></div>';
-                
-                 const privacy = c.privacy || { enabled: false, text: '' }; 
-                 const privacySettingsHTML = `
-                    <div class="control-group" style="background-color: #f7f7f7; padding: 10px; border-radius: 6px;">
-                        <div class="inline-group">
-                            <label for="privacy-enabled-${c.id}" style="cursor: pointer;">🔒 개인정보 수집 동의</label>
-                            <input type="checkbox" id="privacy-enabled-${c.id}" data-control-type="privacy-toggle" ${privacy.enabled ? 'checked' : ''} style="width: auto; cursor: pointer;">
-                        </div>
-                        ${privacy.enabled ? `<div class="control-group" style="margin-top: 10px; margin-bottom: 0;"><label>동의 문구</label><textarea data-prop="privacy.text" style="height: 60px;">${privacy.text}</textarea></div>` : ''}
-                    </div>
-                 `;
+              setButtonLoading(elements.saveBtn, false, "✅ 저장 완료!");
+              setTimeout(() => setButtonLoading(elements.saveBtn, false, "💾 Firestore에 저장"), 2000);
 
-                 panelContentHTML = `
-                    ${checklistHTML}
-                    <div class="control-group">
-                        <label>📝 구글 스크립트 URL</label>
-                        <textarea data-prop="googleScriptUrl" placeholder="배포된 구글 웹 앱 URL을 붙여넣으세요" style="height: 80px;">${c.googleScriptUrl || ''}</textarea>
-                    </div>
-                    <div class="control-group">
-                        <label>✅ 제출 버튼 텍스트</label>
-                        <input type="text" data-prop="submitText" value="${c.submitText || ''}">
-                    </div>
-                    <div class="control-group">
-                        <label>🎉 성공 메시지</label>
-                        <input type="text" data-prop="successMessage" value="${c.successMessage || ''}">
-                    </div>
-                     <div class="control-group inline-group">
-                        <label>버튼 색상</label>
-                        <input type="color" data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}">
-                    </div>
-                    ${privacySettingsHTML}
-                `;
-            } else {
-                let contentHTML = `<div class="control-group"><label>내용</label><textarea data-prop="content">${c.content}</textarea></div>`;
-                if (c.type === 'button') { contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`; }
-                let fontSelectorHTML = `<div class="control-group"><label>글꼴</label><select data-style="fontFamily"><option value="'Noto Sans KR', sans-serif">깔끔 고딕체</option><option value="'Nanum Myeongjo', serif">부드러운 명조체</option><option value="'Gaegu', cursive">귀여운 손글씨체</option></select></div>`;
-                
-                let styleGridHTML = '<div class="style-grid">';
-                if (c.type === 'button') { styleGridHTML += `<div class="control-group"><label>위치</label><select data-style="verticalAlign"><option value="center">가운데</option><option value="bottom">아래</option></select></div>`; } 
-                else { styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`; }
-                styleGridHTML += `<div class="control-group"><label>글자색</label><input type="color" data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`;
-                styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
-                if(c.type === 'button') {
-                    styleGridHTML += `<div class="control-group"><label>버튼 배경색</label><input type="color" data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`;
-                }
-                styleGridHTML += '</div>';
+          } catch (error) {
+              console.error("Firestore 저장 오류:", error);
+              alert("저장에 실패했습니다. 콘솔 로그를 확인해주세요.");
+              setButtonLoading(elements.saveBtn, false, "저장 실패");
+          }
+      }
 
-                let opacityControlsHTML = '';
-                if (c.type === 'button') {
-                    const opacityValue = c.styles?.backgroundColorOpacity === undefined ? 1 : c.styles.backgroundColorOpacity;
-                    opacityControlsHTML = `<div class="control-group full-width"><label>배경 투명도</label><div class="inline-group" style="gap: 10px; align-items: center;"><input type="range" data-control-type="opacity-slider" min="0" max="1" step="0.01" value="${opacityValue}" style="width: 70%; padding: 0;"><input type="number" data-control-type="opacity-number" min="0" max="100" value="${Math.round(opacityValue * 100)}" style="width: 70px; text-align: right;"><span style="font-size: 16px;">%</span></div></div>`;
-                }
-                panelContentHTML = contentHTML + fontSelectorHTML + styleGridHTML + opacityControlsHTML;
-            }
+      // --- 유틸리티 함수 ---
+      function setButtonLoading(buttonElement, isLoading, text) {
+          buttonElement.disabled = isLoading;
+          const originalText = isLoading ? text : text; // '저장하기' 텍스트를 동적으로 변경
+          if (isLoading) {
+              buttonElement.innerHTML = `<span class="loader" style="width: 14px; height: 14px; margin-right: 6px; vertical-align: baseline;"></span>${text}`;
+          } else {
+              buttonElement.innerHTML = text;
+          }
+      }
 
-            const typeLabel = { heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type];
-            panel.innerHTML = `<h4>${typeLabel} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${panelContentHTML}`;
-            editorsContainer.appendChild(panel);
-            
-            if (c.type !== 'lead-form') {
-                 const textAlignSelect = panel.querySelector('[data-style="textAlign"]'); if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center';
-                 const verticalAlignSelect = panel.querySelector('[data-style="verticalAlign"]'); if(verticalAlignSelect) verticalAlignSelect.value = c.styles?.verticalAlign || 'center';
-                 const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
-            }
-        });
-        attachEventListenersToControls();
-    }
-    
-    function renderViewportControls() {
-        viewportControlsLeft.innerHTML = '';
-        const btnGroup = document.createElement('div'); btnGroup.className = 'viewport-controls';
-        viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { pageSettings.viewport = opt.value; renderAll(); }; btnGroup.appendChild(btn); });
-        viewportControlsLeft.appendChild(btnGroup);
-    }
+      // ===============================================================
+      // --- 기존 creatlp.html 렌더링 및 편집 로직 (v1.0) ---
+      // (이 부분은 v1.0 코드와 거의 동일하며, 데이터 소스만 변경됨)
+      // ===============================================================
 
-    function attachEventListenersToControls() {
-        editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
-            const id = Number(panel.dataset.id);
+      function hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; }
+      function renderAll() { renderPreview(); renderControls(); renderViewportControls(); }
 
-            panel.querySelectorAll('[data-prop]').forEach(input => {
-                input.oninput = () => {
-                    const keyPath = input.dataset.prop;
-                    const value = input.value;
-                    const component = components.find(c => c.id === id);
-                    if (!component) return;
-                    
-                    const keys = keyPath.split('.');
-                    let current = component;
-                    for (let i = 0; i < keys.length - 1; i++) {
-                        current = current[keys[i]];
-                    }
-                    current[keys[keys.length - 1]] = value;
-                    renderAll();
-                };
-            });
-             panel.querySelectorAll('[data-style]').forEach(input => {
-                input.oninput = () => updateComponent(id, { style: { [input.dataset.style]: input.value } });
-            });
-            
-            panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => {
-                checkbox.onchange = () => {
-                    const fieldName = checkbox.dataset.fieldName;
-                    const component = components.find(c => c.id === id);
-                    if (!component) return;
-                    if (checkbox.checked) {
-                        if (!component.activeFields.includes(fieldName)) {
-                            const newActiveFields = [];
-                            allPossibleFormFields.forEach(f => {
-                                if (component.activeFields.includes(f.name) || f.name === fieldName) newActiveFields.push(f.name);
-                            });
-                            component.activeFields = newActiveFields;
-                        }
-                    } else {
-                        component.activeFields = component.activeFields.filter(name => name !== fieldName);
-                    }
-                    renderPreview();
-                };
-            });
+      function renderPreview() {
+          elements.contentArea.innerHTML = '';
+          if (pageSettings.bgVideo) { elements.backgroundVideo.src = pageSettings.bgVideo; elements.backgroundVideo.style.display = 'block'; elements.backgroundImageOverlay.style.display = 'none'; elements.preview.style.backgroundColor = 'transparent'; elements.preview.classList.add('has-background'); } 
+          else if (pageSettings.bgImage) { elements.backgroundVideo.style.display = 'none'; elements.backgroundImageOverlay.style.backgroundImage = `url('${pageSettings.bgImage}')`; elements.backgroundImageOverlay.style.display = 'block'; elements.preview.style.backgroundColor = 'transparent'; elements.preview.classList.add('has-background'); } 
+          else { elements.backgroundVideo.style.display = 'none'; elements.backgroundImageOverlay.style.display = 'none'; elements.preview.style.backgroundColor = pageSettings.bgColor; elements.preview.classList.remove('has-background'); }
+          const [width, height] = pageSettings.viewport.split(',');
+          elements.preview.style.width = width; elements.preview.style.height = height;
+          const hasBottomComponent = components.some(c => (c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom');
+          elements.contentArea.style.justifyContent = hasBottomComponent ? 'flex-start' : 'center';
 
-            panel.querySelector('[data-control-type="privacy-toggle"]')?.addEventListener('change', (e) => {
-                const component = components.find(c => c.id === id);
-                if(component) {
-                    component.privacy.enabled = e.target.checked;
-                    renderAll(); 
-                }
-            });
+          components.forEach(c => {
+              const wrapper = document.createElement('div');
+              wrapper.className = 'preview-wrapper'; wrapper.dataset.id = c.id;
+              if (c.id === activeComponentId) wrapper.classList.add('selected');
+              wrapper.onclick = (e) => { e.stopPropagation(); selectComponent(c.id); };
+              if (c.type !== 'lead-form') { wrapper.style.textAlign = c.styles?.textAlign || 'center'; }
+              if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') { wrapper.style.marginTop = 'auto'; }
 
-            const opacitySlider = panel.querySelector('[data-control-type="opacity-slider"]');
-            const opacityNumber = panel.querySelector('[data-control-type="opacity-number"]');
-            if (opacitySlider && opacityNumber) {
-                opacitySlider.oninput = () => {
-                    const value = parseFloat(opacitySlider.value);
-                    opacityNumber.value = Math.round(value * 100);
-                    updateComponent(id, { style: { backgroundColorOpacity: value } });
-                };
-                opacityNumber.oninput = () => {
-                    let value = parseInt(opacityNumber.value, 10);
-                    if (isNaN(value)) value = 100;
-                    if (value < 0) value = 0;
-                    if (value > 100) value = 100;
-                    opacityNumber.value = value;
-                    const sliderValue = value / 100;
-                    opacitySlider.value = sliderValue;
-                    updateComponent(id, { style: { backgroundColorOpacity: sliderValue } });
-                };
-            }
+              let element;
+              switch(c.type) {
+                  case 'heading': element = document.createElement('h1'); element.textContent = c.content; break;
+                  case 'paragraph': element = document.createElement('p'); element.textContent = c.content; break;
+                  case 'button': element = document.createElement('button'); element.textContent = c.content; break;
+                  case 'lead-form':
+                      element = document.createElement('form'); element.className = 'component-content';
+                      let formHTML = '';
+                      const activeFields = allPossibleFormFields.filter(field => c.activeFields.includes(field.name));
+                      activeFields.forEach(field => { formHTML += `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px;"></div>`; });
+                      if (c.privacy.enabled) { formHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="privacy-preview-${c.id}" style="width: auto; height: 16px; margin: 0; accent-color: var(--primary-color);"><label for="privacy-preview-${c.id}" style="font-size: 12px; color: #555; font-weight: normal; cursor: pointer;">${c.privacy.text}</label></div>`; }
+                      formHTML += `<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer;">${c.submitText}</button>`;
+                      element.innerHTML = formHTML; element.onsubmit = (e) => e.preventDefault();
+                      break;
+              }
+              if (c.type !== 'lead-form') element.className = 'component-content';
+              const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {};
+              Object.assign(element.style, otherStyles);
+              if (c.type === 'button') { element.style.backgroundColor = hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity); } 
+              else if (c.type === 'lead-form' && backgroundColor) { element.style.backgroundColor = backgroundColor; }
+              wrapper.appendChild(element);
+              elements.contentArea.appendChild(wrapper);
+          });
+      }
 
+      function renderControls() {
+          elements.pageBgColorInput.value = pageSettings.bgColor || '#DCEAF7';
+          elements.pageBackgroundImageInput.value = pageSettings.bgImage || '';
+          elements.pageBackgroundVideoInput.value = pageSettings.bgVideo || '';
+          elements.editorsContainer.innerHTML = '';
+          components.forEach((c) => {
+              const panel = document.createElement('div');
+              panel.className = 'editor-panel'; panel.dataset.id = c.id; panel.draggable = true; 
+              if (c.id === activeComponentId) panel.classList.add('selected');
+              let panelContentHTML = '';
+              if (c.type === 'lead-form') {
+                  let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #f7f7f7; padding: 10px; border-radius: 6px;">';
+                  allPossibleFormFields.forEach(field => { const isChecked = c.activeFields.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; });
+                  checklistHTML += '</div></div>';
+                  const privacy = c.privacy || { enabled: false, text: '' }; 
+                  const privacySettingsHTML = `<div class="control-group" style="background-color: #f7f7f7; padding: 10px; border-radius: 6px;"><div class="inline-group"><label for="privacy-enabled-${c.id}" style="cursor: pointer;">🔒 개인정보 수집 동의</label><input type="checkbox" id="privacy-enabled-${c.id}" data-control-type="privacy-toggle" ${privacy.enabled ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>${privacy.enabled ? `<div class="control-group" style="margin-top: 10px; margin-bottom: 0;"><label>동의 문구</label><textarea data-prop="privacy.text" style="height: 60px;">${privacy.text}</textarea></div>` : ''}</div>`;
+                  panelContentHTML = `${checklistHTML}<div class="control-group"><label>📝 구글 스크립트 URL</label><textarea data-prop="googleScriptUrl" placeholder="배포된 구글 웹 앱 URL을 붙여넣으세요" style="height: 80px;">${c.googleScriptUrl || ''}</textarea></div><div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group"><label>🎉 성공 메시지</label><input type="text" data-prop="successMessage" value="${c.successMessage || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="color" data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>${privacySettingsHTML}`;
+              } else {
+                  let contentHTML = `<div class="control-group"><label>내용</label><textarea data-prop="content">${c.content}</textarea></div>`;
+                  if (c.type === 'button') { contentHTML += `<div class="control-group"><label>🔗 링크 URL</label><input type="text" data-prop="link" value="${c.link || ''}" placeholder="https://example.com"></div>`; }
+                  let fontSelectorHTML = `<div class="control-group"><label>글꼴</label><select data-style="fontFamily"><option value="'Noto Sans KR', sans-serif">깔끔 고딕체</option><option value="'Nanum Myeongjo', serif">부드러운 명조체</option><option value="'Gaegu', cursive">귀여운 손글씨체</option></select></div>`;
+                  let styleGridHTML = '<div class="style-grid">';
+                  if (c.type === 'button') { styleGridHTML += `<div class="control-group"><label>위치</label><select data-style="verticalAlign"><option value="center">가운데</option><option value="bottom">아래</option></select></div>`; } 
+                  else { styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`; }
+                  styleGridHTML += `<div class="control-group"><label>글자색</label><input type="color" data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`;
+                  styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
+                  if(c.type === 'button') { styleGridHTML += `<div class="control-group"><label>버튼 배경색</label><input type="color" data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`; }
+                  styleGridHTML += '</div>';
+                  let opacityControlsHTML = '';
+                  if (c.type === 'button') { const opacityValue = c.styles?.backgroundColorOpacity === undefined ? 1 : c.styles.backgroundColorOpacity; opacityControlsHTML = `<div class="control-group full-width"><label>배경 투명도</label><div class="inline-group" style="gap: 10px; align-items: center;"><input type="range" data-control-type="opacity-slider" min="0" max="1" step="0.01" value="${opacityValue}" style="width: 70%; padding: 0;"><input type="number" data-control-type="opacity-number" min="0" max="100" value="${Math.round(opacityValue * 100)}" style="width: 70px; text-align: right;"><span style="font-size: 16px;">%</span></div></div>`; }
+                  panelContentHTML = contentHTML + fontSelectorHTML + styleGridHTML + opacityControlsHTML;
+              }
+              const typeLabel = { heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type];
+              panel.innerHTML = `<h4>${typeLabel} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div></h4>${panelContentHTML}`;
+              elements.editorsContainer.appendChild(panel);
+              if (c.type !== 'lead-form') { const textAlignSelect = panel.querySelector('[data-style="textAlign"]'); if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center'; const verticalAlignSelect = panel.querySelector('[data-style="verticalAlign"]'); if(verticalAlignSelect) verticalAlignSelect.value = c.styles?.verticalAlign || 'center'; const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif"; }
+          });
+          attachEventListenersToControls();
+      }
+      
+      function renderViewportControls() {
+          elements.viewportControlsLeft.innerHTML = '';
+          const btnGroup = document.createElement('div'); btnGroup.className = 'viewport-controls';
+          viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { pageSettings.viewport = opt.value; renderAll(); }; btnGroup.appendChild(btn); });
+          elements.viewportControlsLeft.appendChild(btnGroup);
+      }
+
+      function attachEventListenersToControls() {
+          elements.editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
+              const id = Number(panel.dataset.id);
+              panel.querySelectorAll('[data-prop]').forEach(input => { input.oninput = () => { const keyPath = input.dataset.prop; const value = input.value; const component = components.find(c => c.id === id); if (!component) return; const keys = keyPath.split('.'); let current = component; for (let i = 0; i < keys.length - 1; i++) { current = current[keys[i]]; } current[keys[keys.length - 1]] = value; renderAll(); }; });
+              panel.querySelectorAll('[data-style]').forEach(input => { input.oninput = () => updateComponent(id, { style: { [input.dataset.style]: input.value } }); });
+              panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => { checkbox.onchange = () => { const fieldName = checkbox.dataset.fieldName; const component = components.find(c => c.id === id); if (!component) return; if (checkbox.checked) { if (!component.activeFields.includes(fieldName)) { const newActiveFields = []; allPossibleFormFields.forEach(f => { if (component.activeFields.includes(f.name) || f.name === fieldName) newActiveFields.push(f.name); }); component.activeFields = newActiveFields; } } else { component.activeFields = component.activeFields.filter(name => name !== fieldName); } renderPreview(); }; });
+            panel.querySelector('[data-control-type="privacy-toggle"]')?.addEventListener('change', (e) => { const component = components.find(c => c.id === id); if(component) { component.privacy.enabled = e.target.checked; renderAll(); } });
+            const opacitySlider = panel.querySelector('[data-control-type="opacity-slider"]'); const opacityNumber = panel.querySelector('[data-control-type="opacity-number"]');
+            if (opacitySlider && opacityNumber) { opacitySlider.oninput = () => { const value = parseFloat(opacitySlider.value); opacityNumber.value = Math.round(value * 100); updateComponent(id, { style: { backgroundColorOpacity: value } }); }; opacityNumber.oninput = () => { let value = parseInt(opacityNumber.value, 10); if (isNaN(value)) value = 100; if (value < 0) value = 0; if (value > 100) value = 100; opacityNumber.value = value; const sliderValue = value / 100; opacitySlider.value = sliderValue; updateComponent(id, { style: { backgroundColorOpacity: sliderValue } }); }; }
             panel.querySelector('.delete-btn').onclick = () => deleteComponent(id);
             panel.addEventListener('dragstart', handleDragStart); panel.addEventListener('dragover', handleDragOver); panel.addEventListener('dragleave', handleDragLeave); panel.addEventListener('drop', handleDrop); panel.addEventListener('dragend', handleDragEnd);
         });
-    }
+      }
 
-    function handleDragStart(e) { draggedId = Number(this.dataset.id); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
-    function handleDragOver(e) { e.preventDefault(); const draggedElement = editorsContainer.querySelector('.dragging'); if (draggedElement && draggedElement !== this) { this.classList.add('drag-over'); } }
-    function handleDragLeave(e) { this.classList.remove('drag-over'); }
-    function handleDrop(e) { e.stopPropagation(); const fromIndex = components.findIndex(c => c.id === draggedId); const toIndex = components.findIndex(c => c.id === Number(this.dataset.id)); if (fromIndex !== -1 && toIndex !== -1) { const item = components.splice(fromIndex, 1)[0]; components.splice(toIndex, 0, item); renderAll(); } }
-    function handleDragEnd(e) { draggedId = null; editorsContainer.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('dragging', 'drag-over')); }
-    
-    function updateComponent(id, newData) { 
-        const component = components.find(c => c.id === id); 
-        if (!component) return; 
-        if (newData.style) { 
-            const key = Object.keys(newData.style)[0]; 
-            let value = Object.values(newData.style)[0]; 
-            if (key === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value = value.trim() + 'px'; } 
-            component.styles = { ...component.styles, [key]: value }; 
-        } else { 
-            Object.assign(component, newData); 
-        } 
-        renderAll(); 
-    }
-
-    function selectComponent(id) { activeComponentId = id; renderControls(); renderPreview(); const targetPanel = editorsContainer.querySelector(`.editor-panel[data-id="${id}"]`); if (targetPanel) targetPanel.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-    
-    function addComponent(type) { 
-        const newComponent = { id: Date.now(), type, styles: { fontFamily: "'Noto Sans KR', sans-serif" } }; 
-        switch(type) { 
-            case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break; 
-            case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break; 
-            case 'button': 
-                newComponent.content = 'Explore'; 
-                newComponent.link = ''; 
-                newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', verticalAlign: 'bottom', backgroundColorOpacity: 1 }; 
-                break;
-            case 'lead-form':
-                newComponent.googleScriptUrl = '';
-                newComponent.submitText = '문의 남기기';
-                newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!';
-                newComponent.activeFields = ['name', 'email'];
-                newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2', verticalAlign: 'bottom' };
-                newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' };
-                break;
-        } 
-        components.push(newComponent); 
-        selectComponent(newComponent.id); 
-    }
-
-    function deleteComponent(id) { if (!confirm('블록을 삭제하시겠습니까?')) return; components = components.filter(c => c.id !== id); if (activeComponentId === id) activeComponentId = null; renderAll(); }
-    function getTimestamp() { const d = new Date(); const pad = (n) => n.toString().padStart(2, '0'); return `${d.getFullYear().toString().slice(-2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
-    function formatTimestamp(ts) { return `20${ts.slice(0,2)}/${ts.slice(2,4)}/${ts.slice(4,6)} ${ts.slice(6,8)}:${ts.slice(8,10)}:${ts.slice(10,12)}`; }
-    function saveProject() { const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const timestamp = getTimestamp(); const currentProjectData = { pageSettings, components }; allProjects[timestamp] = currentProjectData; localStorage.setItem(STORAGE_KEY, JSON.stringify(allProjects)); currentVersionTimestamp = timestamp; const originalText = saveBtn.textContent; saveBtn.textContent = '✅ 저장 완료!'; setTimeout(() => saveBtn.textContent = originalText, 2000); renderVersionHistory(); }
-    function loadProject(timestamp) { const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const projectData = timestamp ? allProjects[timestamp] : Object.values(allProjects).pop(); if (projectData) { pageSettings = projectData.pageSettings; components = projectData.components; currentVersionTimestamp = timestamp || Object.keys(allProjects).pop(); } renderAll(); }
-    function deleteVersion(timestamp) { if (!confirm(`${formatTimestamp(timestamp)} 버전을 정말 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return; const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); delete allProjects[timestamp]; localStorage.setItem(STORAGE_KEY, JSON.stringify(allProjects)); if (currentVersionTimestamp === timestamp) { currentVersionTimestamp = null; } initializeBuilder(); }
-    function renderVersionHistory() { versionHistoryContainer.innerHTML = ''; const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const timestamps = Object.keys(allProjects).sort().reverse(); if (timestamps.length === 0) { versionHistoryContainer.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">저장된 버전이 없습니다.</p>'; return; } timestamps.forEach(ts => { const item = document.createElement('div'); item.className = 'version-item'; if (ts === currentVersionTimestamp) { item.classList.add('active'); } item.innerHTML = `<span>${formatTimestamp(ts)}</span><button class="version-delete-btn" title="이 버전 삭제">✖</button>`; item.onclick = (e) => { if (e.target.classList.contains('version-delete-btn')) { deleteVersion(ts); } else { loadProject(ts); } }; versionHistoryContainer.appendChild(item); }); }
-    
-    function initializeBuilder() { const allProjects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const latestTimestamp = Object.keys(allProjects).sort().pop(); if (latestTimestamp) { loadProject(latestTimestamp); } else { renderAll(); if(components.length === 0) { addComponent('button'); } } }
-    
-    function exportHTML() {
-        let usedFonts = new Set();
-        let leadFormScripts = '';
-        components.forEach(c => { if(c.styles?.fontFamily) usedFonts.add(c.styles.fontFamily.split(',')[0].replace(/'/g, "").replace(/ /g, "+")); });
-        const fontLink = usedFonts.size > 0 ? `<link href="https://fonts.googleapis.com/css2?family=${[...usedFonts].join('&family=')}:wght@400;700&display=swap" rel="stylesheet">` : '';
-        let contentHTML = '';
-        
-        components.forEach(c => {
-            const wrapperStyles = {};
-            if (c.type !== 'lead-form') wrapperStyles.textAlign = c.styles?.textAlign || 'center';
-            if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') wrapperStyles.marginTop = 'auto';
-            const wrapperStyleString = Object.entries(wrapperStyles).map(([k, v]) => `${k.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v}`).join(';');
-            
-            let elementHTML = '';
-            switch(c.type) {
-                case 'heading': case 'paragraph':
-                    const textStyles = {...c.styles}; delete textStyles.textAlign; delete textStyles.verticalAlign;
-                    const textStyleString = Object.entries(textStyles).map(([k,v])=>`${k.replace(/([A-Z])/g,"-$1").toLowerCase()}:${v}`).join(';');
-                    elementHTML = c.type === 'heading' ? `<h1 style="${textStyleString}">${c.content}</h1>` : `<p style="${textStyleString}">${c.content}</p>`;
-                    break;
-                case 'button': 
-                    const btnStyles = {...c.styles}; delete btnStyles.textAlign; delete btnStyles.verticalAlign;
-                    btnStyles.backgroundColor = hexToRgba(btnStyles.backgroundColor||'#1877f2', btnStyles.backgroundColorOpacity!==undefined?btnStyles.backgroundColorOpacity:1);
-                    delete btnStyles.backgroundColorOpacity;
-                    const btnStyleString = Object.entries(btnStyles).map(([k,v])=>`${k.replace(/([A-Z])/g,"-$1").toLowerCase()}:${v}`).join(';');
-                    const linkAction = c.link ? `onclick="window.open('${c.link.startsWith('http')?c.link:'//'+c.link}', '_blank')"` : '';
-                    elementHTML = `<button style="${btnStyleString}" ${linkAction}>${c.content}</button>`; 
-                    break;
-                case 'lead-form':
-                    const formId = `lead-form-${c.id}`;
-                    const formStyles = {...c.styles}; delete formStyles.verticalAlign;
-                    const formStyleString = Object.entries(formStyles).map(([k,v])=>`${k.replace(/([A-Z])/g,"-$1").toLowerCase()}:${v}`).join(';');
-                    let formFieldsHTML = '';
-                    const activeExportFields = allPossibleFormFields.filter(field => c.activeFields.includes(field.name));
-                    activeExportFields.forEach(field => {
-                        formFieldsHTML += `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px;"></div>`;
-                    });
-                    
-                    if (c.privacy.enabled) {
-                        formFieldsHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;">
-                                           <input type="checkbox" id="privacy-${formId}" style="width: auto; height: 16px; margin: 0; accent-color: var(--primary-color);">
-                                           <label for="privacy-${formId}" style="font-size: 12px; color: #333; font-weight: normal; cursor: pointer;">${c.privacy.text}</label>
-                                         </div>`;
-                    }
-
-                    elementHTML = `<form id="${formId}" style="${formStyleString}">${formFieldsHTML}<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">${c.submitText}</button></form><div id="success-${formId}" style="display:none; text-align:center; color: #333; padding: 20px; background-color: #DCEAF7; border-radius: 8px;">${c.successMessage}</div>`;
-
-                    const sanitizedUrl = (c.googleScriptUrl || '').replace(/\s/g, '');
-                    leadFormScripts += `
-                        const form_${c.id} = document.getElementById('${formId}');
-                        if (form_${c.id}) {
-                            const submitBtn_${c.id} = form_${c.id}.querySelector('button[type="submit"]');
-                            const privacyCheck_${c.id} = document.getElementById('privacy-${formId}');
-
-                            if (privacyCheck_${c.id}) {
-                                submitBtn_${c.id}.disabled = true;
-                                privacyCheck_${c.id}.addEventListener('change', () => {
-                                    submitBtn_${c.id}.disabled = !privacyCheck_${c.id}.checked;
-                                });
-                            }
-
-                            form_${c.id}.addEventListener('submit', e => {
-                                e.preventDefault();
-                                const originalBtnHTML = submitBtn_${c.id}.innerHTML;
-                                submitBtn_${c.id}.innerHTML = '<span class="loader"></span> 전송 중...';
-                                submitBtn_${c.id}.disabled = true;
-
-                                fetch('${sanitizedUrl}', { method: 'POST', body: new FormData(form_${c.id}) })
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        if(data.result === 'success') {
-                                            form_${c.id}.style.display = 'none';
-                                            document.getElementById('success-${formId}').style.display = 'block';
-                                        } else { throw new Error('Submission failed'); }
-                                    })
-                                    .catch(error => {
-                                        alert('오류가 발생했습니다. URL을 확인하거나 다시 시도해주세요.');
-                                        submitBtn_${c.id}.innerHTML = originalBtnHTML;
-                                        submitBtn_${c.id}.disabled = (privacyCheck_${c.id} ? !privacyCheck_${c.id}.checked : false);
-                                    });
-                            });
-                        }
-                    `;
-                    break;
-            }
-            contentHTML += `<div class="animated-block" style="${wrapperStyleString}">${elementHTML}</div>\n`;
-        });
-        
-        const justifyStyle = components.some(c => (c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') ? 'flex-start' : 'center';
-        let backgroundHTML = '';
-        if (pageSettings.bgVideo) { backgroundHTML = `<video autoplay loop muted playsinline style="position: absolute; top: 50%; left: 50%; width: auto; height: auto; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); z-index: 0;"><source src="${pageSettings.bgVideo}" type="video/mp4"></video>`; }
-        const bgStyle = pageSettings.bgImage && !pageSettings.bgVideo ? `background-image: url('${pageSettings.bgImage}');` : `background-color: ${pageSettings.bgColor};`;
-        const overlayStyle = pageSettings.bgImage || pageSettings.bgVideo ? `background: rgba(0,0,0,0.4);` : '';
-
-        // v9.19: 최종 HTML에 UI/UX 개선 스타일 주입
-        const finalCSS = `body,html{margin:0;padding:0;height:100%;font-family:'Noto Sans KR',sans-serif; overflow-x: hidden;}
-                          .container{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:${justifyStyle};position:relative;${bgStyle}background-size:cover;background-position:center;color:white;text-align:center;box-sizing:border-box;padding:40px; overflow-y: auto; overflow-x: hidden;}
-                          .container::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;${overlayStyle}; z-index: 1;}
-                          .content-wrapper{position:relative;z-index:2;width:100%;max-width:800px;display:flex;flex-direction:column;height:100%;}
-                          .content-wrapper > div{width:100%;}
-                          .animated-block{transition: opacity 0.6s ease-out, transform 0.6s ease-out;opacity: 0;transform: translateY(20px);}
-                          .animated-block.is-visible{opacity: 1;transform: translateY(0);}
-                          button { cursor: pointer; transition: transform 0.1s ease, background-color 0.3s; }
-                          button:active { transform: scale(0.98); }
-                          input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus, input[type="date"]:focus { border-color: #1877f2; box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2); outline: none; transition: all 0.2s ease-in-out; }
-                          .loader { width: 16px; height: 16px; border-radius: 50%; display: inline-block; border-top: 2px solid #FFF; border-right: 2px solid transparent; box-sizing: border-box; animation: rotation 1s linear infinite; }
-                          @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
-
+      function handleDragStart(e) { draggedId = Number(this.dataset.id); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+      function handleDragOver(e) { e.preventDefault(); const draggedElement = elements.editorsContainer.querySelector('.dragging'); if (draggedElement && draggedElement !== this) { this.classList.add('drag-over'); } }
+      function handleDragLeave(e) { this.classList.remove('drag-over'); }
+      function handleDrop(e) { e.stopPropagation(); const fromIndex = components.findIndex(c => c.id === draggedId); const toIndex = components.findIndex(c => c.id === Number(this.dataset.id)); if (fromIndex !== -1 && toIndex !== -1) { const item = components.splice(fromIndex, 1)[0]; components.splice(toIndex, 0, item); renderAll(); } }
+      function handleDragEnd(e) { draggedId = null; elements.editorsContainer.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('dragging', 'drag-over')); }
+      function updateComponent(id, newData) { const component = components.find(c => c.id === id); if (!component) return; if (newData.style) { const key = Object.keys(newData.style)[0]; let value = Object.values(newData.style)[0]; if (key === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value = value.trim() + 'px'; } component.styles = { ...component.styles, [key]: value }; } else { Object.assign(component, newData); } renderAll(); }
+      function selectComponent(id) { activeComponentId = id; renderControls(); renderPreview(); const targetPanel = elements.editorsContainer.querySelector(`.editor-panel[data-id="${id}"]`); if (targetPanel) targetPanel.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      function addComponent(type) { const newComponent = { id: Date.now(), type, styles: { fontFamily: "'Noto Sans KR', sans-serif" } }; switch(type) { case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break; case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break; case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = {...newGcomponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', verticalAlign: 'bottom', backgroundColorOpacity: 1 }; break; case 'lead-form': newComponent.googleScriptUrl = ''; newComponent.submitText = '문의 남기기'; newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2', verticalAlign: 'bottom' }; newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' }; break; } components.push(newComponent); selectComponent(newComponent.id); }
+      function deleteComponent(id) { if (!confirm('블록을 삭제하시겠습니까?')) return; components = components.filter(c => c.id !== id); if (activeComponentId === id) activeComponentId = null; renderAll(); }
+      
+      // HTML 내보내기 기능 (기존과 동일)
+      function exportHTML() {
+          let usedFonts = new Set();
+          let leadFormScripts = '';
+          components.forEach(c => { if(c.styles?.fontFamily) usedFonts.add(c.styles.fontFamily.split(',')[0].replace(/'/g, "").replace(/ /g, "+")); });
+          const fontLink = usedFonts.size > 0 ? `<link href="https://fonts.googleapis.com/css2?family=${[...usedFonts].join('&family=')}:wght@400;700&display=swap" rel="stylesheet">` : '';
+          let contentHTML = '';
+          components.forEach(c => {
+              const wrapperStyles = {};
+              if (c.type !== 'lead-form') wrapperStyles.textAlign = c.styles?.textAlign || 'center';
+              if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') wrapperStyles.marginTop = 'auto';
+              const wrapperStyleString = Object.entries(wrapperStyles).map(([k, v]) => `${k.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v}`).join(';');
+              let elementHTML = '';
+              switch(c.type) {
+                  case 'heading': case 'paragraph': const textStyles = {...c.styles}; delete textStyles.textAlign; delete textStyles.verticalAlign; const textStyleString = Object.entries(textStyles).map(([k,v])=>`${k.replace(/([A-Z])/g,"-$1").toLowerCase()}:${v}`).join(';'); elementHTML = c.type === 'heading' ? `<h1 style="${textStyleString}">${c.content}</h1>` : `<p style="${textStyleString}">${c.content}</p>`; break;
+                  case 'button': const btnStyles = {...c.styles}; delete btnStyles.textAlign; delete btnStyles.verticalAlign; btnStyles.backgroundColor = hexToRgba(btnStyles.backgroundColor||'#1877f2', btnStyles.backgroundColorOpacity!==undefined?btnStyles.backgroundColorOpacity:1); delete btnStyles.backgroundColorOpacity; const btnStyleString = Object.entries(btnStyles).map(([k,v])=>`${k.replace(/([A-Z])/g,"-$1").toLowerCase()}:${v}`).join(';'); const linkAction = c.link ? `onclick="window.open('${c.link.startsWith('http')?c.link:'//'+c.link}', '_blank')"` : ''; elementHTML = `<button style="${btnStyleString}" ${linkAction}>${c.content}</button>`; break;
+                  case 'lead-form':
+                      const formId = `lead-form-${c.id}`; const formStyles = {...c.styles}; delete formStyles.verticalAlign; const formStyleString = Object.entries(formStyles).map(([k,v])=>`${k.replace(/([A-Z])/g,"-$1").toLowerCase()}:${v}`).join(';');
+                      let formFieldsHTML = ''; const activeExportFields = allPossibleFormFields.filter(field => c.activeFields.includes(field.name)); activeExportFields.forEach(field => { formFieldsHTML += `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px;"></div>`; });
+                      if (c.privacy.enabled) { formFieldsHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="privacy-${formId}" style="width: auto; height: 16px; margin: 0; accent-color: var(--primary-color);"><label for="privacy-${formId}" style="font-size: 12px; color: #333; font-weight: normal; cursor: pointer;">${c.privacy.text}</label></div>`; }
+                      elementHTML = `<form id="${formId}" style="${formStyleString}">${formFieldsHTML}<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">${c.submitText}</button></form><div id="success-${formId}" style="display:none; text-align:center; color: #333; padding: 20px; background-color: #DCEAF7; border-radius: 8px;">${c.successMessage}</div>`;
+                      const sanitizedUrl = (c.googleScriptUrl || '').replace(/\s/g, '');
+                      leadFormScripts += `const form_${c.id} = document.getElementById('${formId}'); if (form_${c.id}) { const submitBtn_${c.id} = form_${c.id}.querySelector('button[type="submit"]'); const privacyCheck_${c.id} = document.getElementById('privacy-${formId}'); if (privacyCheck_${c.id}) { submitBtn_${c.id}.disabled = true; privacyCheck_${c.id}.addEventListener('change', () => { submitBtn_${c.id}.disabled = !privacyCheck_${c.id}.checked; }); } form_${c.id}.addEventListener('submit', e => { e.preventDefault(); const originalBtnHTML = submitBtn_${c.id}.innerHTML; submitBtn_${c.id}.innerHTML = '<span class="loader"></span> 전송 중...'; submitBtn_${c.id}.disabled = true; fetch('${sanitizedUrl}', { method: 'POST', body: new FormData(form_${c.id}) }).then(response => response.json()).then(data => { if(data.result === 'success') { form_${c.id}.style.display = 'none'; document.getElementById('success-${formId}').style.display = 'block'; } else { throw new Error('Submission failed'); } }).catch(error => { alert('오류가 발생했습니다. URL을 확인하거나 다시 시도해주세요.'); submitBtn_${c.id}.innerHTML = originalBtnHTML; submitBtn_${c.id}.disabled = (privacyCheck_${c.id} ? !privacyCheck_${c.id}.checked : false); }); }); }`;
+                      break;
+              }
+              contentHTML += `<div class="animated-block" style="${wrapperStyleString}">${elementHTML}</div>\n`;
+          });
+          const justifyStyle = components.some(c => (c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') ? 'flex-start' : 'center';
+        let backgroundHTML = ''; if (pageSettings.bgVideo) { backgroundHTML = `<video autoplay loop muted playsinline style="position: absolute; top: 50%; left: 50%; width: auto; height: auto; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); z-index: 0;"><source src="${pageSettings.bgVideo}" type="video/mp4"></video>`; } const bgStyle = pageSettings.bgImage && !pageSettings.bgVideo ? `background-image: url('${pageSettings.bgImage}');` : `background-color: ${pageSettings.bgColor};`; const overlayStyle = pageSettings.bgImage || pageSettings.bgVideo ? `background: rgba(0,0,0,0.4);` : '';
+        const finalCSS = `body,html{margin:0;padding:0;height:100%;font-family:'Noto Sans KR',sans-serif; overflow-x: hidden;} .container{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:${justifyStyle};position:relative;${bgStyle}background-size:cover;background-position:center;color:white;text-align:center;box-sizing:border-box;padding:40px; overflow-y: auto; overflow-x: hidden;} .container::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;${overlayStyle}; z-index: 1;} .content-wrapper{position:relative;z-index:2;width:100%;max-width:800px;display:flex;flex-direction:column;height:100%;} .content-wrapper > div{width:100%;} .animated-block{transition: opacity 0.6s ease-out, transform 0.6s ease-out;opacity: 0;transform: translateY(20px);} .animated-block.is-visible{opacity: 1;transform: translateY(0);} button { cursor: pointer; transition: transform 0.1s ease, background-color 0.3s; } button:active { transform: scale(0.98); } input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus, input[type="date"]:focus { border-color: #1877f2; box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2); outline: none; transition: all 0.2s ease-in-out; } .loader { width: 16px; height: 16px; border-radius: 50%; display: inline-block; border-top: 2px solid #FFF; border-right: 2px solid transparent; box-sizing: border-box; animation: rotation 1s linear infinite; } @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
         const finalHTML = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>My Page</title>${fontLink}<style>${finalCSS}</style></head><body><div class="container">${backgroundHTML}<div class="content-wrapper">${contentHTML}</div></div><script>document.addEventListener('DOMContentLoaded', () => { const animatedBlocks = document.querySelectorAll('.animated-block'); const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }); }, { threshold: 0.1 }); animatedBlocks.forEach(block => { observer.observe(block); }); ${leadFormScripts} });<\/script></body></html>`;
-        const blob = new Blob([finalHTML], { type: 'text/html' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'creatlp.html';
-        a.click();
-        const originalText = exportBtn.textContent; exportBtn.textContent = '✅ 내보내기 완료!'; setTimeout(() => exportBtn.textContent = originalText, 2000);
+        const blob = new Blob([finalHTML], { type: 'text/html' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'creatlp.html'; a.click();
     }
 
-    // --- 4. 이벤트 연결 및 초기 실행 ---
-    adders.forEach(button => button.addEventListener('click', () => addComponent(button.dataset.type)));
-    pageBgColorInput.addEventListener('input', (e) => { pageSettings.bgColor = e.target.value; renderAll(); });
-    pageBackgroundImageInput.addEventListener('input', (e) => { pageSettings.bgImage = e.target.value; renderAll(); });
-    pageBackgroundVideoInput.addEventListener('input', (e) => { pageSettings.bgVideo = e.target.value; renderAll(); });
-    saveBtn.addEventListener('click', saveProject);
-    exportBtn.addEventListener('click', exportHTML);
-    initializeBuilder();
+      // --- 5. 초기 실행 ---
+      document.addEventListener('DOMContentLoaded', initializeAppWithFirebase);
+
     </script>
 </body>
 </html>
