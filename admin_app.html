@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>통합 관리자 v1.10 (사이드바 레이아웃)</title>
+    <title>통합 관리자 v1.11 (사이드바 메뉴 구성)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -16,10 +16,10 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         button:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
-        /* --- v1.10 사이드바 레이아웃 스타일 --- */
+        /* --- v1.11 사이드바 레이아웃 스타일 --- */
         .sidebar { transition: transform 0.3s ease-in-out; }
-        .sidebar-nav-link { display: block; padding: 0.75rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s; font-weight: 500; }
-        .sidebar-nav-link:hover { background-color: #f3f4f6; }
+        .sidebar-nav-link { display: block; padding: 0.75rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s; font-weight: 500; color: #4b5563; }
+        .sidebar-nav-link:hover { background-color: #e0f2fe; color: #0369a1; }
         .sidebar-nav-link.active { background-color: #e0f2fe; color: #0369a1; font-weight: 600; }
         
         /* 모바일 대응: 작은 화면에서는 사이드바 숨기기 (토글 버튼 필요) */
@@ -67,9 +67,14 @@
     <div id="app-container" class="hidden h-screen flex">
         <aside id="sidebar" class="sidebar w-64 bg-white shadow-lg flex flex-col flex-shrink-0">
             <div class="p-4 border-b">
-                <h1 class="text-xl font-bold text-sky-600">🚀 프로필 공작소</h1>
+                <h1 class="text-xl font-bold text-sky-600 flex items-center gap-2">
+                    <img src="https://www.flaticon.com/svg/static/icons/svg/100/100236.svg" alt="로고" class="w-6 h-6"> 프로필 공작소
+                </h1>
             </div>
             <nav class="flex-grow p-4 space-y-2">
+                <button id="add-new-page-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 shadow-md transition-colors text-left mb-4">
+                    <span class="inline-block mr-2">+</span> 새 페이지 만들기
+                </button>
                 <a href="#dashboard" data-nav="dashboard" class="sidebar-nav-link">📋 페이지 목록</a>
                 </nav>
             <div class="p-4 border-t">
@@ -128,7 +133,9 @@
               loginButton.addEventListener('click', handleLogin);
               passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
               window.addEventListener('hashchange', handleRouting);
-              // 로그아웃 버튼 이벤트 리스너는 onAuthStateChanged 이후에 DOM이 확실히 보장될 때 연결
+              
+              // v1.11: 사이드바로 이동한 버튼들에 이벤트 리스너 연결
+              document.getElementById('add-new-page-btn').addEventListener('click', handleAddNewPage);
               document.getElementById('logout-btn').addEventListener('click', handleLogout);
 
           } catch (error) { console.error("초기화 오류:", error); }
@@ -180,13 +187,9 @@
       // --- 4. 대시보드 뷰 로직 ---
       function loadDashboardContent() {
           dashboardView.innerHTML = `
-              <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
-                  <h1 class="text-3xl font-bold text-slate-800">페이지 목록</h1>
-                  <button id="add-new-page-btn" class="px-6 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 shadow-md transition-colors">➕ 새 페이지 만들기</button>
-              </div>
+              <h1 class="text-3xl font-bold text-slate-800 mb-6">페이지 목록</h1>
               <div id="page-list-container" class="space-y-4"></div>
           `;
-          document.getElementById('add-new-page-btn').onclick = handleAddNewPage;
           
           const pagesRef = collection(db, "pages");
           const q = query(pagesRef, orderBy("order", "asc"));
