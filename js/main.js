@@ -192,6 +192,8 @@ async function handleNewPageClick() {
 
 
 // [ 네비게이션 함수 ]
+// main.js 파일의 navigateTo 함수를 아래 코드로 교체해주세요.
+
 function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
     if (!targetView) {
@@ -204,7 +206,7 @@ function navigateTo(viewName, pageId = null) {
         const isActive = (viewName === 'editor' && link.dataset.view === 'pages') || viewName === link.dataset.view;
         link.classList.toggle('active', isActive);
     });
-
+    
     targetView.classList.remove('hidden');
     ui.mainContent.classList.toggle('p-6', viewName !== 'editor');
 
@@ -225,7 +227,7 @@ function navigateTo(viewName, pageId = null) {
 
     ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
-
+    
     if (viewName === 'pages') {
         const newPageBtn = document.getElementById('new-page-btn');
         if (newPageBtn) newPageBtn.addEventListener('click', handleNewPageClick);
@@ -233,14 +235,26 @@ function navigateTo(viewName, pageId = null) {
     } else if (viewName === 'editor' && pageId) {
         editor.init(pageId);
     } else if (viewName === 'cards') {
+        // --- 🕵️‍♂️ 디버깅 코드 추가 ---
+        console.log("navigateTo: 'cards' 뷰 진입. 헤더 버튼 설정 시작.");
         const newCardBtn = document.getElementById('add-new-card-button');
         const newIframeCardBtn = document.getElementById('add-new-iframe-card-button');
-        if(newCardBtn) newCardBtn.addEventListener('click', () => cards.handleAddNewAd());
-        if(newIframeCardBtn) newIframeCardBtn.addEventListener('click', () => cards.handleAddNewIframeAd());
+        
+        console.log("미디어 카드 버튼 찾기:", newCardBtn);
+        if(newCardBtn) {
+            newCardBtn.addEventListener('click', () => cards.handleAddNewAd());
+            console.log("-> 미디어 카드 버튼에 이벤트 리스너 연결 완료.");
+        }
+
+        console.log("iframe 카드 버튼 찾기:", newIframeCardBtn);
+        if(newIframeCardBtn) {
+            newIframeCardBtn.addEventListener('click', () => cards.handleAddNewIframeAd());
+            console.log("-> iframe 카드 버튼에 이벤트 리스너 연결 완료.");
+        }
+        // --- 여기까지 ---
         cards.render();
     }
 }
-
 
 // ===============================================================
 // 🚀 Page Editor Logic
@@ -637,63 +651,61 @@ const cards = {
       const date = new Date(dateTimeString);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   },
-  render() {
-      if(!this.ui.adListContainer) return;
-      this.ui.adListContainer.innerHTML = '';
-      if (this.list.length === 0) {
-          this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8">등록된 카드가 없습니다.</p>`;
-          return;
-      }
-      this.list.forEach((ad) => {
-          const adElement = document.createElement('div');
-          adElement.className = `bg-slate-800 rounded-xl shadow-md transition-opacity ${ad.isActive === false ? 'opacity-40' : ''}`;
-          adElement.dataset.id = ad.id;
-          const isIframe = ad.adType === 'iframe';
-          const mediaIcon = isIframe 
-            ? `<div class="w-12 h-12 flex-shrink-0 bg-indigo-900 text-indigo-400 rounded-lg flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>` 
-            : (ad.mediaType === 'video' 
-                ? `<div class="w-12 h-12 flex-shrink-0 bg-rose-900 text-rose-400 rounded-lg flex items-center justify-center text-2xl">🎬</div>` 
-                : `<div class="w-12 h-12 flex-shrink-0 bg-sky-900 text-sky-400 rounded-lg flex items-center justify-center text-2xl">🖼️</div>`);
-          const clickCount = ad.clickCount || 0;
-          const statusBadge = this.getAdStatus(ad);
-          const periodText = (ad.startDate || ad.endDate) 
-            ? `${this.formatDateTime(ad.startDate)} ~ ${this.formatDateTime(ad.endDate)}`
-            : '항상 게시';
-          const isChecked = ad.isActive !== false ? 'checked' : '';
-          adElement.innerHTML = `
-            <div class="p-4 flex items-start gap-4">
-                <div class="drag-handle text-slate-500 pt-3 hidden sm:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
-                ${mediaIcon}
-                <div class="flex-grow overflow-hidden">
-                    <p class="font-bold text-slate-100 truncate">${ad.title}</p>
-                    <div class="flex items-center text-sm text-slate-400 mt-1 gap-2">
-                        ${statusBadge}
-                        <span class="text-slate-600">|</span>
-                        <div class="flex items-center ${isIframe ? 'hidden' : ''}" title="클릭 수">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                            <span>${clickCount}</span>
-                        </div>
-                    </div>
-                    <div class="text-xs text-slate-500 mt-2">${periodText}</div>
-                </div>
-                <div class="flex-shrink-0">
-                    <label class="toggle-switch">
-                        <input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-            <div class="border-t border-slate-700 p-2 flex justify-end gap-2">
-                <button class="edit-ad-button text-sm font-medium text-emerald-400 hover:bg-slate-700 px-4 py-2 rounded-md" data-id="${ad.id}">수정</button>
-                <button class="delete-ad-button text-sm font-medium text-red-400 hover:bg-slate-700 px-4 py-2 rounded-md" data-id="${ad.id}">삭제</button>
-            </div>
-          `;
-          if(this.ui.adListContainer) this.ui.adListContainer.appendChild(adElement);
-      });
-      document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
-      document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
-      document.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
-  },
+  
+// main.js 파일의 cards 객체 안, render 함수를 아래 코드로 교체해주세요.
+
+render() {
+    if(!this.ui.adListContainer) return;
+    this.ui.adListContainer.innerHTML = '';
+    if (this.list.length === 0) {
+        this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8">등록된 카드가 없습니다.</p>`;
+        return;
+    }
+    this.list.forEach((ad) => {
+        const adElement = document.createElement('div');
+        adElement.className = `bg-slate-800 rounded-xl shadow-md transition-opacity ${ad.isActive === false ? 'opacity-40' : ''}`;
+        adElement.dataset.id = ad.id;
+        // ... (adElement.innerHTML 부분은 이전과 동일) ...
+        adElement.innerHTML = `
+          <div class="p-4 flex items-start gap-4">
+              <div class="drag-handle text-slate-500 pt-3 hidden sm:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
+              <div class="w-12 h-12 flex-shrink-0 bg-sky-900 text-sky-400 rounded-lg flex items-center justify-center text-2xl">🖼️</div>
+              <div class="flex-grow overflow-hidden">
+                  <p class="font-bold text-slate-100 truncate">${ad.title}</p>
+                  <div class="text-sm text-slate-400 mt-1">${this.getAdStatus(ad)}</div>
+              </div>
+              <div class="flex-shrink-0">
+                  <label class="toggle-switch"><input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${ad.isActive !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+              </div>
+          </div>
+          <div class="border-t border-slate-700 p-2 flex justify-end gap-2">
+              <button class="edit-ad-button text-sm font-medium text-emerald-400 hover:bg-slate-700 px-4 py-2 rounded-md" data-id="${ad.id}">수정</button>
+              <button class="delete-ad-button text-sm font-medium text-red-400 hover:bg-slate-700 px-4 py-2 rounded-md" data-id="${ad.id}">삭제</button>
+          </div>
+        `;
+        if(this.ui.adListContainer) this.ui.adListContainer.appendChild(adElement);
+    });
+
+    // --- 🕵️‍♂️ 디버깅 코드 추가 ---
+    console.log("cards.render: 카드 목록 렌더링 완료. 수정/삭제 버튼 리스너 연결 시작.");
+    const editButtons = document.querySelectorAll('.edit-ad-button');
+    const deleteButtons = document.querySelectorAll('.delete-ad-button');
+    console.log(`수정 버튼 ${editButtons.length}개, 삭제 버튼 ${deleteButtons.length}개 찾음.`);
+
+    editButtons.forEach(btn => {
+        btn.addEventListener('click', this.handleEditAd.bind(this));
+    });
+    console.log("-> 수정 버튼들에 이벤트 리스너 연결 완료.");
+    
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', this.handleDeleteAd.bind(this));
+    });
+    console.log("-> 삭제 버튼들에 이벤트 리스너 연결 완료.");
+    // --- 여기까지 ---
+
+    document.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
+},
+
   async handleToggleAdStatus(event) {
       const id = event.target.dataset.id;
       const isActive = event.target.checked;
