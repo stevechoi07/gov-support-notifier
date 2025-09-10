@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.15</title>
+    <title>All-in-One 대시보드 v2.17</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -79,6 +79,8 @@
 
         .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
         .style-grid .control-group { margin-bottom: 0; }
+        
+        .style-grid + .control-group { margin-top: 15px; }
         
         .clr-field { border: 1px solid var(--border-color) !important; border-radius: 6px !important; }
         .clr-field button { width: 42px !important; height: 42px !important; border-radius: 6px !important; }
@@ -322,7 +324,13 @@
         currentPageId: null, components: [], pageSettings: {}, activeComponentId: null, 
         sortableInstance: null,
         elements: {},
-        viewportOptions: [ { id: 'mobile', label: '🤳', value: '375px,667px' }, { id: 'tablet', label: '📱', value: '768px,1024px' }, { id: 'desktop', label: '🖥️', value: '1280px,800px' }, { id: 'full', label: '전체', value: '100%,100%' } ],
+        // ✨FIX v2.17: Add 'title' property for tooltips
+        viewportOptions: [
+            { id: 'mobile',  label: '🤳', value: '375px,667px',  title: '모바일' },
+            { id: 'tablet',  label: '📱', value: '768px,1024px', title: '태블릿' },
+            { id: 'desktop', label: '🖥️', value: '1280px,800px', title: '데스크탑' },
+            { id: 'full',    label: '전체', value: '100%,100%',   title: '전체 화면' }
+        ],
         allPossibleFormFields: [ { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' }, { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' }, { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } ],
         
         async init(pageId) {
@@ -515,7 +523,6 @@
                     styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
                     styleGridHTML += '</div>';
 
-                    // ✨FIX v2.15: '버튼 배경색' 컨트롤을 style-grid 밖으로 분리하여 렌더링 오류 해결
                     let buttonBgColorHTML = '';
                     if(c.type === 'button') {
                         buttonBgColorHTML = `<div class="control-group inline-group"><label>버튼 배경색</label><input type="text" data-color-picker data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`;
