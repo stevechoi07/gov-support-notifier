@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.25</title>
+    <title>All-in-One 대시보드 v2.26</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -292,6 +292,7 @@
       const ui = {
           authContainer: null, dashboardContainer: null, passwordInput: null, loginButton: null, authMessage: null,
           logoutButton: null, navLinks: null, views: null, viewTitle: null, headerActions: null, pageListContainer: null,
+          mainContent: null, // 초기화되지 않았던 속성
       };
 
       function mapInitialUI() {
@@ -309,6 +310,8 @@
           ui.viewTitle = document.getElementById('view-title');
           ui.headerActions = document.getElementById('header-actions');
           ui.pageListContainer = document.getElementById('page-list-container');
+          // ✨✨✨ BUG FIX: mainContent 요소를 찾아서 ui 객체에 할당합니다.
+          ui.mainContent = document.getElementById('main-content');
       }
 
       async function initializeAppAndAuth() {
