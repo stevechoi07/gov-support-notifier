@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.24</title>
+    <title>All-in-One 대시보드 v2.25</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -334,13 +334,15 @@
                     ui.authContainer.classList.add('hidden');
                     ui.dashboardContainer.classList.remove('hidden');
                     
-                    mapDashboardUI();
-                    setupDashboardListeners();
-                    
-                    listenToPages();
-                    cards.init();
-                    
-                    navigateTo('pages');
+                    setTimeout(() => {
+                        mapDashboardUI();
+                        setupDashboardListeners();
+                        
+                        listenToPages();
+                        cards.init();
+                        
+                        navigateTo('pages');
+                    }, 0);
                 } else {
                     ui.authContainer.classList.remove('hidden');
                     ui.dashboardContainer.classList.add('hidden');
@@ -453,7 +455,7 @@
       async function handleLogout() { if (confirm('로그아웃 하시겠습니까?')) { await signOut(auth); } }
 
       function navigateTo(viewName, pageId = null) {
-        console.log(`Navigating to: ${viewName}`); 
+        console.log(`Navigating to: ${viewName}`);
         
         const targetView = document.getElementById(`${viewName}-view`);
         if (!targetView) {
@@ -872,6 +874,7 @@
             });
         },
         initSortable() {
+            if (!this.ui.adListContainer) return;
             new Sortable(this.ui.adListContainer, {
                 handle: '.drag-handle', animation: 150,
                 onEnd: async (evt) => {
