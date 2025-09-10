@@ -37,25 +37,8 @@ async function initializeAppAndAuth() {
                     navigateTo('pages');
                 }, 0);
             } else {
-                console.log("🔍 onAuthStateChanged: 로그아웃 상태 확인됨. 로그인 화면을 강제로 표시합니다.");
-
-                // ✨✨✨ 1. DOM 조작 테스트: 배경색을 강제로 변경해봅니다.
-                document.body.style.backgroundColor = 'darkblue';
-
-                // ✨✨✨ 2. ui.authContainer가 유효한지 다시 확인합니다.
-                if (ui.authContainer) {
-                    console.log("   -> ui.authContainer를 찾았습니다. 스타일과 내용을 강제로 변경합니다.");
-                    // ✨✨✨ 3. 클래스 조작 대신, 직접 스타일과 내용을 변경해봅니다.
-                    ui.authContainer.classList.remove('hidden');
-                    ui.authContainer.style.display = 'flex'; // 강제로 flex 표시
-                    ui.authContainer.innerHTML = '<h1 class="text-white text-4xl">스크립트 최종 생존 확인!</h1>';
-                } else {
-                    console.error("❌ onAuthStateChanged 내부에서 ui.authContainer가 null입니다!");
-                }
-                
-                if(ui.dashboardContainer) {
-                    ui.dashboardContainer.classList.add('hidden');
-                }
+                ui.authContainer.classList.remove('hidden');
+                ui.dashboardContainer.classList.add('hidden');
             }
             if (ui.loginButton) ui.loginButton.disabled = false;
         });
@@ -69,7 +52,6 @@ async function initializeAppAndAuth() {
 
 // --- 4. 이벤트 리스너 설정 ---
 function setupLoginListeners() {
-    // ui.loginButton이 null일 경우를 대비한 방어 코드
     if (ui.loginButton) {
         ui.loginButton.addEventListener('click', handleLogin);
     }
@@ -188,8 +170,6 @@ async function handleNewPageClick() {
 
 // [ 네비게이션 함수 ]
 function navigateTo(viewName, pageId = null) {
-    console.log(`Navigating to: ${viewName}`); 
-    
     const targetView = document.getElementById(`${viewName}-view`);
     if (!targetView) {
         console.error(`View not found: ${viewName}-view`);

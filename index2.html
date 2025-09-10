@@ -11,45 +11,27 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS 스타일은 이전과 동일합니다 (생략하지 않고 모두 포함) */
-        /* =============================================================== */
-        /* 🎨 Dashboard Global Styles */
-        /* =============================================================== */
+        /* CSS 스타일은 이전과 동일합니다 */
         body { font-family: 'Noto Sans KR', sans-serif; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        
-        #view-title[contenteditable="true"] {
-            cursor: text; padding: 5px 10px; border-radius: 6px; outline: none; transition: all 0.2s;
-        }
+        #view-title[contenteditable="true"] { cursor: text; padding: 5px 10px; border-radius: 6px; outline: none; transition: all 0.2s; }
         #view-title[contenteditable="true"]:hover { background-color: #334155; }
-        #view-title[contenteditable="true"]:focus {
-            background-color: #0f172a; box-shadow: 0 0 0 2px var(--primary-color, #34d399);
-        }
-
+        #view-title[contenteditable="true"]:focus { background-color: #0f172a; box-shadow: 0 0 0 2px var(--primary-color, #34d399); }
         .button-disabled { background-color: #475569; cursor: not-allowed; }
-        .spinner {
-            border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; border-top-color: #fff;
-            width: 16px; height: 16px; animation: spin 1s ease-in-out infinite;
-        }
+        .spinner { border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; border-top-color: #fff; width: 16px; height: 16px; animation: spin 1s ease-in-out infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
         .nav-link { border-left: 3px solid transparent; transition: all 0.2s; }
         .nav-link.active { background-color: #1e293b; color: #34d399; border-left-color: #34d399; }
         .nav-link.active svg { stroke: #34d399; }
-
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .4s; border-radius: 30px; }
         .toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .toggle-slider { background-color: #34d399; }
         input:checked + .toggle-slider:before { transform: translateX(20px); }
-
-        /* =============================================================== */
-        /* 📝 Page Editor Styles */
-        /* =============================================================== */
         #editor-view { --primary-color: #34d399; --background-color: #1e293b; --panel-bg: #0f172a; --text-color: #e2e8f0; --border-color: #334155; --input-bg: #1e293b; }
         .editor-main-container { display: flex; gap: 0; width: 100%; height: 100%; align-items: stretch; }
         #editor-controls-wrapper { flex: 0 0 400px; position: relative; max-height: 100%; overflow-y: auto; background-color: #020617; }
@@ -67,18 +49,15 @@
         .control-group button, .control-group select, .viewport-btn { cursor: pointer; }
         .control-group button, .control-group select, .control-group input, .control-group textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px; background-color: var(--input-bg); color: var(--text-color); }
         .control-group button { background-color: var(--primary-color); color: black; font-weight: bold; }
-        
         .inline-group { display: flex; align-items: center; }
         .inline-group label { margin-bottom: 0; margin-right: 10px; flex-shrink: 0; }
         .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
         .style-grid .control-group { margin-bottom: 0; }
         .style-grid + .control-group { margin-top: 15px; }
-        
         .clr-field { border: 1px solid var(--border-color) !important; border-radius: 6px !important; }
         .clr-field button { width: 42px !important; height: 42px !important; border-radius: 6px !important; }
         .clr-field input { background-color: var(--input-bg) !important; color: var(--text-color) !important; padding-left: 10px !important; }
         .inline-group .clr-field { width: 120px; flex-shrink: 0; }
-
         .viewport-controls { display: flex; justify-content: center; gap: 5px; padding: 10px; }
         .viewport-btn { background-color: #334155; border: 1px solid #475569; color: var(--text-color); padding: 8px 12px; font-size: 14px; border-radius: 6px; }
         .viewport-btn.active { background-color: var(--primary-color); color: black; border-color: var(--primary-color); }
@@ -92,70 +71,161 @@
         .preview-wrapper { width: 100%; padding: 10px 0; border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
         .preview-wrapper.selected { background-color: rgba(52, 211, 153, 0.1); border-radius: 8px; }
         .preview-wrapper .component-content { text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
-        
-        /* =============================================================== */
-        /* 🗂️ Content Card Styles */
-        /* =============================================================== */
         .drag-handle { cursor: grab; }
         .sortable-ghost { background: #334155; opacity: 0.5; }
-        
-        .form-container-mobile {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-start;
-            overflow-y: auto; z-index: 50;
-            opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s;
-        }
-        .form-container-mobile.active { 
-            opacity: 1; visibility: visible; 
-        }
-
+        .form-container-mobile { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-start; overflow-y: auto; z-index: 50; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s; }
+        .form-container-mobile.active { opacity: 1; visibility: visible; }
         #media-upload-status { transition: opacity 0.3s; }
-        .preview-media-container {
-            position: relative; width: 100%; padding-top: 56.25%; background-color: #1e293b; border-radius: 0.5rem;
-        }
-        .preview-media-container img,
-        .preview-media-container video {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem;
-        }
-        .progress-bar {
-            width: 100%; background-color: #334155; border-radius: 9999px; height: 8px; overflow: hidden;
-        }
-        .progress-bar-fill {
-            background-color: #34d399; height: 100%; width: 0%; transition: width 0.2s ease-in-out;
-        }
-        .file-input-button {
-            display: inline-block; padding: 0.75rem 1.25rem; background-color: #4f46e5; color: white;
-            border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: background-color 0.2s;
-        }
+        .preview-media-container { position: relative; width: 100%; padding-top: 56.25%; background-color: #1e293b; border-radius: 0.5rem; }
+        .preview-media-container img, .preview-media-container video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
+        .progress-bar { width: 100%; background-color: #334155; border-radius: 9999px; height: 8px; overflow: hidden; }
+        .progress-bar-fill { background-color: #34d399; height: 100%; width: 0%; transition: width 0.2s ease-in-out; }
+        .file-input-button { display: inline-block; padding: 0.75rem 1.25rem; background-color: #4f46e5; color: white; border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: background-color 0.2s; }
         .file-input-button:hover { background-color: #4338ca; }
         .file-input-hidden { display: none; }
-        .status-badge {
-            font-size: 0.75rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px;
-        }
+        .status-badge { font-size: 0.75rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-300">
 
     <div id="auth-container" class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-sm p-8 bg-slate-800 rounded-xl shadow-lg">
+            <h1 class="text-2xl font-bold text-center text-emerald-400 mb-6">🚀 All-in-One 대시보드</h1>
+            <input type="password" id="password-input" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-3 border border-slate-600 bg-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 text-lg placeholder-slate-400">
+            <button id="login-button" class="w-full mt-4 px-4 py-3 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 shadow-md transition-colors text-lg">로그인</button>
+            <p id="auth-message" class="text-sm text-center mt-4 hidden"></p>
         </div>
+    </div>
 
     <div id="dashboard-container" class="hidden">
         <div class="flex h-screen bg-slate-900">
             <aside class="w-64 bg-black text-slate-300 flex flex-col">
-                </aside>
+                <div class="h-16 flex items-center justify-center"><h1 class="text-xl font-bold text-emerald-400">Dashboard</h1></div>
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <a href="#" data-view="pages" class="nav-link flex items-center px-3 py-2.5 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span class="ml-3">페이지 관리</span></a>
+                    <a href="#" data-view="cards" class="nav-link flex items-center px-3 py-2.5 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span class="ml-3">콘텐츠 카드 관리</span></a>
+                </nav>
+                 <div class="p-4 border-t border-slate-800"><button id="logout-button" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg transition-colors text-slate-400 hover:bg-red-500 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg><span class="ml-3">로그아웃</span></button></div>
+            </aside>
 
             <main class="flex-1 flex flex-col overflow-hidden">
                 <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6">
-                    </header>
+                    <h2 id="view-title" class="text-xl font-semibold text-slate-100"></h2>
+                    <div id="header-actions"></div>
+                </header>
                 <div class="flex-1 overflow-y-auto" id="main-content">
+                    <div id="pages-view" class="view hidden p-6"><div id="page-list-container" class="space-y-4"></div></div>
+                    <div id="cards-view" class="view hidden p-6">
+                        <div id="ad-list-container" class="space-y-4"></div>
                     </div>
+                    <div id="editor-view" class="view hidden h-full"></div>
+                </div>
             </main>
         </div>
 
         <div id="ad-modal" class="form-container-mobile">
+            <div class="bg-slate-800 w-full md:max-w-3xl md:my-8 md:rounded-lg md:shadow-xl flex flex-col flex-1 border border-slate-700">
+                <div class="flex justify-between items-center p-4 border-b border-slate-700">
+                    <h2 id="modal-title" class="text-xl font-bold">새 콘텐츠 카드</h2>
+                    <button id="close-modal-button" class="text-2xl font-light">&times;</button>
+                </div>
+                <div class="p-6 flex-1 overflow-y-auto">
+                     <div class="grid md:grid-cols-2 gap-6">
+                        <div class="space-y-6 flex flex-col">
+                            <div class="flex-grow space-y-6">
+                                <div>
+                                    <label for="ad-title" class="block text-sm font-medium text-slate-400 mb-1">제목 (필수)</label>
+                                    <input type="text" id="ad-title" class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <div>
+                                    <label for="ad-description" class="block text-sm font-medium text-slate-400 mb-1">설명</label>
+                                    <textarea id="ad-description" rows="3" class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                                    <div class="flex items-center mt-2">
+                                        <input id="is-partners-checkbox" type="checkbox" class="h-4 w-4 rounded border-slate-500 bg-slate-600 text-emerald-500 focus:ring-emerald-500">
+                                        <label for="is-partners-checkbox" class="ml-2 block text-sm">쿠팡 파트너스 문구 포함</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="ad-link" class="block text-sm font-medium text-slate-400 mb-1">연결 링크 (URL)</label>
+                                    <input type="url" id="ad-link" placeholder="https://example.com" class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="ad-start-date" class="block text-sm font-medium text-slate-400 mb-1">게시 시작일</label>
+                                        <input type="datetime-local" id="ad-start-date" class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label for="ad-end-date" class="block text-sm font-medium text-slate-400 mb-1">게시 종료일</label>
+                                        <input type="datetime-local" id="ad-end-date" class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 -mt-2">날짜를 지정하지 않으면 항상 게시됩니다.</p>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-400 mb-2">미디어 (이미지/동영상)</label>
+                                    <div class="flex items-center gap-4">
+                                        <label for="ad-media-file" class="file-input-button flex-shrink-0">파일 선택</label>
+                                        <span id="file-name-display" class="text-sm text-slate-500 truncate">선택된 파일 없음</span>
+                                    </div>
+                                    <input type="file" id="ad-media-file" accept="image/png, image/jpeg, image/gif, video/mp4, video/webm" class="file-input-hidden">
+                                    <p class="mt-1 text-xs text-slate-500">권장: 16:9 비율, 최대 50MB</p>
+                                    <div id="media-upload-status" class="mt-2 space-y-1 opacity-0">
+                                        <div class="flex justify-between text-xs font-semibold text-emerald-400">
+                                            <span id="upload-label">업로드 중...</span>
+                                            <span id="upload-progress">0%</span>
+                                        </div>
+                                        <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 md:mt-0">
+                            <h2 class="text-lg font-bold mb-2">미리보기</h2>
+                            <div id="ad-preview" class="bg-slate-700 rounded-xl shadow-md overflow-hidden relative"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 bg-slate-900/50 border-t border-slate-700">
+                    <button id="save-ad-button" class="w-full px-4 py-3 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 shadow-md transition-colors flex justify-center items-center gap-2 text-lg">저장하기</button>
+                </div>
             </div>
+        </div>
         <div id="iframe-ad-modal" class="form-container-mobile">
+            <div class="bg-slate-800 w-full md:max-w-xl md:my-8 md:rounded-lg md:shadow-xl flex flex-col flex-1 border border-slate-700">
+                <div class="flex justify-between items-center p-4 border-b border-slate-700">
+                    <h2 id="iframe-modal-title" class="text-xl font-bold">새 iframe 카드</h2>
+                    <button id="close-iframe-modal-button" class="text-2xl font-light">&times;</button>
+                </div>
+                <div class="p-6 space-y-6 flex-1 overflow-y-auto">
+                    <div>
+                        <label for="iframe-ad-title" class="block text-sm font-medium text-slate-400 mb-1">제목 (관리용, 필수)</label>
+                        <input type="text" id="iframe-ad-title" class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label for="iframe-ad-code" class="block text-sm font-medium text-slate-400 mb-1">iframe 광고 코드 (필수)</label>
+                        <textarea id="iframe-ad-code" rows="6" placeholder='<iframe src="..."></iframe>' class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-sm"></textarea>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="iframe-is-partners-checkbox" type="checkbox" class="h-4 w-4 rounded border-slate-500 bg-slate-600 text-emerald-500 focus:ring-emerald-500">
+                        <label for="iframe-is-partners-checkbox" class="ml-2 block text-sm">쿠팡 파트너스 문구 포함</label>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="iframe-ad-start-date" class="block text-sm font-medium text-slate-400 mb-1">게시 시작일</label>
+                            <input type="datetime-local" id="iframe-ad-start-date" class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label for="iframe-ad-end-date" class="block text-sm font-medium text-slate-400 mb-1">게시 종료일</label>
+                            <input type="datetime-local" id="iframe-ad-end-date" class="w-full px-3 py-2 border border-slate-600 bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 -mt-2">날짜를 지정하지 않으면 항상 게시됩니다.</p>
+                </div>
+                <div class="p-4 bg-slate-900/50 border-t border-slate-700">
+                    <button id="save-iframe-ad-button" class="w-full px-4 py-3 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 shadow-md transition-colors flex justify-center items-center gap-2 text-lg">저장하기</button>
+                </div>
             </div>
+        </div>
+
     </div>
 
     <script type="module" src="js/main.js"></script>
