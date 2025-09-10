@@ -885,4 +885,4 @@ const cards = {
 };
 
 // --- 6. 앱 실행 ---
-document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
+window.initializeAppAndAuth = initializeAppAndAuth;
