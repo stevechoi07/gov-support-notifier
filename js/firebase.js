@@ -6,26 +6,26 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
+// Firebase 구성 정보 가져오기 및 초기화
 let auth, db, storage;
 
 try {
     const response = await fetch('/.netlify/functions/get-firebase-config');
-
     if (!response.ok) {
         throw new Error(`Firebase 설정 로딩 실패! (상태: ${response.status})`);
     }
-
     const firebaseConfig = await response.json();
     const app = initializeApp(firebaseConfig);
 
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
-
 } catch (error) {
-    console.error("firebase.js 초기화 중 에러 발생:", error);
+    console.error("firebase.js 초기화 중 심각한 에러 발생:", error);
+    // 이 에러를 외부에서도 알 수 있도록 다시 던져줍니다.
     throw error;
 }
+
 
 // 초기화된 Firebase 서비스들을 다른 파일에서 사용할 수 있도록 export
 export { auth, db, storage };

@@ -871,5 +871,4 @@ const cards = {
 };
 
 // --- 6. 앱 실행 ---
-// HTML 문서가 준비되면 앱을 실행하도록 이벤트 리스너를 다시 추가합니다.
 document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
