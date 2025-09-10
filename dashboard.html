@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.17</title>
+    <title>All-in-One 대시보드 v2.18</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -247,12 +247,18 @@
         document.querySelectorAll('.delete-page-btn').forEach(b => b.addEventListener('click', handleDeletePageClick));
       }
 
+      // ✨FIX v2.18: Simplify toggle logic to allow multiple published pages
       async function handlePublishToggleChange(e) {
-        const pageIdToPublish = e.currentTarget.dataset.id;
-        const batch = writeBatch(db);
-        pagesList.forEach(p => { if (p.id !== pageIdToPublish && p.isPublished) batch.update(doc(db, "pages", p.id), { isPublished: false }); });
-        batch.update(doc(db, "pages", pageIdToPublish), { isPublished: true });
-        try { await batch.commit(); } catch (error) { alert("게시 상태 변경에 실패했습니다."); }
+        const pageIdToChange = e.currentTarget.dataset.id;
+        const isNowPublished = e.currentTarget.checked;
+        try {
+            const docRef = doc(db, "pages", pageIdToChange);
+            await updateDoc(docRef, { isPublished: isNowPublished });
+        } catch (error) {
+            console.error("게시 상태 변경 실패:", error);
+            alert("게시 상태 변경에 실패했습니다.");
+            e.currentTarget.checked = !isNowPublished; // Revert on failure
+        }
       }
 
       async function handleDeletePageClick(e) {
@@ -324,7 +330,6 @@
         currentPageId: null, components: [], pageSettings: {}, activeComponentId: null, 
         sortableInstance: null,
         elements: {},
-        // ✨FIX v2.17: Add 'title' property for tooltips
         viewportOptions: [
             { id: 'mobile',  label: '🤳', value: '375px,667px',  title: '모바일' },
             { id: 'tablet',  label: '📱', value: '768px,1024px', title: '태블릿' },
