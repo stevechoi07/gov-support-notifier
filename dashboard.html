@@ -455,7 +455,7 @@
       async function handleLogout() { if (confirm('로그아웃 하시겠습니까?')) { await signOut(auth); } }
 
       function navigateTo(viewName, pageId = null) {
-        console.log(`Navigating to: ${viewName}`);
+        console.log(`Navigating to: ${viewName}`); 
         
         const targetView = document.getElementById(`${viewName}-view`);
         if (!targetView) {
