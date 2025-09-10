@@ -1,4 +1,4 @@
-// js/main.js - 3단계 전체 코드
+// js/main.js - 4단계 전체 코드
 
 // --- 1. 모듈 가져오기 (부품 조립) ---
 import { auth, db, storage } from './firebase.js';
@@ -7,7 +7,7 @@ import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersist
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, getDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
-console.log('3단계 성공: main.js에 editor 객체 추가 후에도 살아있다!');
+console.log('4단계 성공: main.js에 모든 코드 추가 후에도 살아있다!');
 
 // --- 2. 전역 변수 및 상태 관리 ---
 let pagesCollection;
