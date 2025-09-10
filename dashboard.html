@@ -336,8 +336,9 @@
                 if (user) {
                     ui.authContainer.classList.add('hidden');
                     ui.dashboardContainer.classList.remove('hidden');
+                    
                     listenToPages();
-                    cards.init(); 
+                    cards.init();
                     
                     const currentView = [...ui.navLinks].find(link => link.classList.contains('active'))?.dataset.view || 'pages';
                     navigateTo(currentView);
@@ -474,14 +475,20 @@
         ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
         ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
         
+        // ✨FIX v2.23: Attach event listeners AFTER header buttons are rendered
         if (viewName === 'pages') {
-            document.getElementById('new-page-btn')?.addEventListener('click', handleNewPageClick);
+            const newPageBtn = document.getElementById('new-page-btn');
+            if (newPageBtn) newPageBtn.addEventListener('click', handleNewPageClick);
             renderPages();
         } else if (viewName === 'editor' && pageId) {
             editor.init(pageId);
         } else if (viewName === 'cards') {
-            document.getElementById('add-new-card-button').addEventListener('click', () => cards.handleAddNewAd());
-            document.getElementById('add-new-iframe-card-button').addEventListener('click', () => cards.handleAddNewIframeAd());
+            const newCardBtn = document.getElementById('add-new-card-button');
+            const newIframeCardBtn = document.getElementById('add-new-iframe-card-button');
+            if(newCardBtn) newCardBtn.addEventListener('click', () => cards.handleAddNewAd());
+            if(newIframeCardBtn) newIframeCardBtn.addEventListener('click', () => cards.handleAddNewIframeAd());
+            // cards.init() is already called on login, just need to render
+            cards.render();
         }
       }
 
