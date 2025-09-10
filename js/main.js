@@ -13,6 +13,7 @@ let pagesList = [];
 
 // --- 3. 앱 초기화 및 메인 로직 ---
 async function initializeAppAndAuth() {
+	console.log("🔥 initializeAppAndAuth 함수가 DOMContentLoaded 이후에 호출되었습니다!"); // ◀◀◀ 이 로그를 추가해주세요!
     try {
         pagesCollection = collection(db, "pages");
         
