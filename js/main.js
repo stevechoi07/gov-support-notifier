@@ -15,32 +15,40 @@ let pagesList = [];
 async function initializeAppAndAuth() {
     try {
         pagesCollection = collection(db, "pages");
-
+        
         mapInitialUI();
         setupLoginListeners();
-
+        
         Coloris({
             el: '[data-color-picker]', theme: 'large', themeMode: 'dark', alpha: false, format: 'hex',
             swatches: [ '#0f172a', '#334155', '#e2e8f0', '#34d399', '#f87171', '#fb923c', '#facc15', '#4ade80', '#60a5fa', '#c084fc' ]
         });
 
         onAuthStateChanged(auth, user => {
+            console.log("onAuthStateChanged 이벤트 발생!", user); // ◀◀◀ 1. 감시자 동작 확인
             if (user) {
+                console.log("✅ 사용자 확인됨, 대시보드 UI로 전환 시도..."); // ◀◀◀ 2. 로그인 성공 확인
                 ui.authContainer.classList.add('hidden');
                 ui.dashboardContainer.classList.remove('hidden');
-
+                
                 setTimeout(() => {
+                    console.log("대시보드 초기화 작업 시작..."); // ◀◀◀ 3. 대시보드 준비 시작
                     mapDashboardUI();
+                    console.log("-> mapDashboardUI() 실행 완료.");
                     setupDashboardListeners();
+                    console.log("-> setupDashboardListeners() 실행 완료.");
                     listenToPages();
+                    console.log("-> listenToPages() 실행 완료.");
                     cards.init();
+                    console.log("-> cards.init() 실행 완료.");
                     navigateTo('pages');
+                    console.log("-> navigateTo('pages') 실행 완료.");
                 }, 0);
             } else {
+                console.log("사용자 없음, 로그인 화면 유지.");
                 ui.authContainer.classList.remove('hidden');
                 ui.dashboardContainer.classList.add('hidden');
             }
-            if (ui.loginButton) ui.loginButton.disabled = false;
         });
 
     } catch (error) {
