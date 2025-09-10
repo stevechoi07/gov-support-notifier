@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.12</title>
+    <title>All-in-One 대시보드 v2.13</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -58,8 +58,11 @@
         .control-group button, .control-group select, .viewport-btn { cursor: pointer; }
         .control-group button, .control-group select, .control-group input, .control-group textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px; background-color: var(--input-bg); color: var(--text-color); }
         .control-group button { background-color: var(--primary-color); color: black; font-weight: bold; }
-        .inline-group { display: flex; justify-content: space-between; align-items: center; }
-        .inline-group label { margin-bottom: 0; }
+        
+        /* ✨FIX v2.13: inline-group 레이아웃 안정성 개선 */
+        .inline-group { display: flex; align-items: center; }
+        .inline-group label { margin-bottom: 0; margin-right: 10px; flex-shrink: 0; }
+
         .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; align-items: end; }
         .style-grid .control-group { margin-bottom: 0; }
         
@@ -350,7 +353,6 @@
         setupEventListeners() {
             this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
             
-            // ✨FIX v2.12: 페이지 배경색에도 oninput 이벤트를 적용하여 기능 정상화 및 코드 통일
             this.elements.pageBgColorInput.addEventListener('input', (e) => {
                 this.pageSettings.bgColor = e.target.value;
                 this.saveAndRender(false, true);
@@ -455,7 +457,6 @@
                     styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`;
                     styleGridHTML += `<div class="control-group"><label>글자색</label><input type="text" data-color-picker data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`;
                     styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
-                    // ✨FIX v2.12: '버튼 배경색' 컨트롤에 inline-group 클래스를 추가하여 스타일 개선
                     if(c.type === 'button') { styleGridHTML += `<div class="control-group inline-group"><label>버튼 배경색</label><input type="text" data-color-picker data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`; }
                     styleGridHTML += '</div>';
                     panelContentHTML = contentHTML + fontSelectorHTML + styleGridHTML;
@@ -479,7 +480,23 @@
         renderViewportControls() {
             this.elements.viewportControlsLeft.innerHTML = '';
             const btnGroup = document.createElement('div'); btnGroup.className = 'viewport-controls';
-            this.viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (this.pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { this.pageSettings.viewport = opt.value; this.saveAndRender(false, true); }; btnGroup.appendChild(btn); });
+            this.viewportOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'viewport-btn';
+                btn.dataset.value = opt.value;
+                btn.title = opt.title;
+                btn.innerHTML = opt.label;
+                if (this.pageSettings.viewport === opt.value) {
+                    btn.classList.add('active');
+                }
+                // ✨FIX v2.13: 버튼 클릭 시 활성화 상태가 즉시 반영되도록 renderViewportControls 호출 추가
+                btn.onclick = () => {
+                    this.pageSettings.viewport = opt.value;
+                    this.saveAndRender(false, true);
+                    this.renderViewportControls(); // UI 상태 업데이트
+                };
+                btnGroup.appendChild(btn);
+            });
             this.elements.viewportControlsLeft.appendChild(btnGroup);
         },
 
