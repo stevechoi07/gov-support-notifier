@@ -1,5 +1,7 @@
 // js/main.js
 
+console.log("🔍 main.js 스크립트 파일 로드 시작!");
+
 // --- 1. 모듈 가져오기 (부품 조립) ---
 import { auth, db, storage } from './firebase.js';
 import { ui, mapInitialUI, mapDashboardUI } from './ui.js';
@@ -7,14 +9,18 @@ import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersist
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, getDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
+console.log("🔍 Firebase 및 UI 모듈 import 성공!");
+
 // --- 2. 전역 변수 및 상태 관리 ---
 let pagesCollection;
 let pagesList = [];
 
 // --- 3. 앱 초기화 및 메인 로직 ---
 async function initializeAppAndAuth() {
+    console.log("🔍 initializeAppAndAuth 함수 실행 시작!");
     try {
         pagesCollection = collection(db, "pages");
+        console.log("🔍 Firestore 'pages' 컬렉션 연결 성공!");
         
         mapInitialUI();
         setupLoginListeners();
@@ -23,9 +29,12 @@ async function initializeAppAndAuth() {
             el: '[data-color-picker]', theme: 'large', themeMode: 'dark', alpha: false, format: 'hex',
             swatches: [ '#0f172a', '#334155', '#e2e8f0', '#34d399', '#f87171', '#fb923c', '#facc15', '#4ade80', '#60a5fa', '#c084fc' ]
         });
+        console.log("🔍 UI 매핑 및 이벤트 리스너 설정 완료!");
 
         onAuthStateChanged(auth, user => {
+            console.log("🔍 onAuthStateChanged 콜백 실행됨. 사용자:", user);
             if (user) {
+                console.log("   -> 사용자 로그인 상태입니다.");
                 ui.authContainer.classList.add('hidden');
                 ui.dashboardContainer.classList.remove('hidden');
                 
@@ -35,16 +44,19 @@ async function initializeAppAndAuth() {
                     listenToPages();
                     cards.init();
                     navigateTo('pages');
+                    console.log("   -> 대시보드 초기화 완료!");
                 }, 0);
             } else {
+                console.log("   -> 사용자 로그아웃 상태입니다.");
                 ui.authContainer.classList.remove('hidden');
                 ui.dashboardContainer.classList.add('hidden');
             }
             if (ui.loginButton) ui.loginButton.disabled = false;
         });
+        console.log("🔍 onAuthStateChanged 리스너 등록 완료!");
 
     } catch (error) {
-        console.error("초기화 실패:", error);
+        console.error("❌ initializeAppAndAuth 함수에서 심각한 에러 발생:", error);
         showAuthMessage("초기화 실패. 관리자에게 문의하세요.", true);
         if (ui.loginButton) ui.loginButton.disabled = true;
     }
