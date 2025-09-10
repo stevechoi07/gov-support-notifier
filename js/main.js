@@ -37,8 +37,25 @@ async function initializeAppAndAuth() {
                     navigateTo('pages');
                 }, 0);
             } else {
-                ui.authContainer.classList.remove('hidden');
-                ui.dashboardContainer.classList.add('hidden');
+                console.log("🔍 onAuthStateChanged: 로그아웃 상태 확인됨. 로그인 화면을 강제로 표시합니다.");
+
+                // ✨✨✨ 1. DOM 조작 테스트: 배경색을 강제로 변경해봅니다.
+                document.body.style.backgroundColor = 'darkblue';
+
+                // ✨✨✨ 2. ui.authContainer가 유효한지 다시 확인합니다.
+                if (ui.authContainer) {
+                    console.log("   -> ui.authContainer를 찾았습니다. 스타일과 내용을 강제로 변경합니다.");
+                    // ✨✨✨ 3. 클래스 조작 대신, 직접 스타일과 내용을 변경해봅니다.
+                    ui.authContainer.classList.remove('hidden');
+                    ui.authContainer.style.display = 'flex'; // 강제로 flex 표시
+                    ui.authContainer.innerHTML = '<h1 class="text-white text-4xl">스크립트 최종 생존 확인!</h1>';
+                } else {
+                    console.error("❌ onAuthStateChanged 내부에서 ui.authContainer가 null입니다!");
+                }
+                
+                if(ui.dashboardContainer) {
+                    ui.dashboardContainer.classList.add('hidden');
+                }
             }
             if (ui.loginButton) ui.loginButton.disabled = false;
         });
@@ -871,4 +888,5 @@ const cards = {
 };
 
 // --- 6. 앱 실행 ---
+// ✨✨✨ BUG FIX: HTML 문서가 완전히 로드된 후 스크립트를 실행하도록 수정합니다.
 document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
