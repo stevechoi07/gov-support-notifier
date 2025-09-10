@@ -13,10 +13,13 @@ let pagesList = [];
 
 // --- 3. 앱 초기화 및 메인 로직 ---
 async function initializeAppAndAuth() {
+    console.log("1. initializeAppAndAuth 함수 실행 시작!"); // ◀◀◀ 디버깅 로그
     try {
         pagesCollection = collection(db, "pages");
         
         mapInitialUI();
+        console.log("2. mapInitialUI 실행 완료. 로그인 버튼:", ui.loginButton); // ◀◀◀ 디버깅 로그
+        
         setupLoginListeners();
         
         Coloris({
@@ -52,7 +55,9 @@ async function initializeAppAndAuth() {
 
 // --- 4. 이벤트 리스너 설정 ---
 function setupLoginListeners() {
+    console.log("3. setupLoginListeners 함수 실행 시작!"); // ◀◀◀ 디버깅 로그
     if (ui.loginButton) {
+        console.log("4. 로그인 버튼에 클릭 이벤트 연결 성공!"); // ◀◀◀ 디버깅 로그
         ui.loginButton.addEventListener('click', handleLogin);
     }
     if (ui.passwordInput) {
@@ -69,7 +74,8 @@ function setupDashboardListeners() {
 
 // [ 인증 관련 함수 ]
 async function handleLogin() {
-    console.log("🔍 handleLogin 함수 실행!");
+    console.log("5. 로그인 버튼 클릭! handleLogin 함수 실행!"); // ◀◀◀ 디버깅 로그
+    
     ui.loginButton.disabled = true;
     ui.loginButton.innerHTML = `<div class="spinner"></div><span>로그인 중...</span>`;
     
