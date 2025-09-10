@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.26</title>
+    <title>All-in-One 대시보드 v2.27</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -98,21 +98,17 @@
         .drag-handle { cursor: grab; }
         .sortable-ghost { background: #334155; opacity: 0.5; }
         
+        /* ✨✨✨ BUG FIX: 모달 스타일을 데스크탑 기준으로 통합 */
         .form-container-mobile {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #020617; z-index: 50;
-            transform: translateX(100%); transition: transform 0.3s ease-in-out;
-            overflow-y: auto; display: flex; flex-direction: column;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-start;
+            overflow-y: auto; z-index: 50;
+            opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s;
         }
-        .form-container-mobile.active { transform: translateX(0); }
-        @media (min-width: 768px) {
-            .form-container-mobile {
-                position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
-                background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-start;
-                overflow-y: auto; transform: none; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s;
-            }
-            .form-container-mobile.active { opacity: 1; visibility: visible; }
+        .form-container-mobile.active { 
+            opacity: 1; visibility: visible; 
         }
+
         #media-upload-status { transition: opacity 0.3s; }
         .preview-media-container {
             position: relative; width: 100%; padding-top: 56.25%; background-color: #1e293b; border-radius: 0.5rem;
@@ -177,7 +173,7 @@
 
         <div id="ad-modal" class="form-container-mobile">
             <div class="bg-slate-800 w-full md:max-w-3xl md:my-8 md:rounded-lg md:shadow-xl flex flex-col flex-1 border border-slate-700">
-                <div class="flex justify-between items-center p-4 border-b border-slate-700 md:hidden">
+                <div class="flex justify-between items-center p-4 border-b border-slate-700">
                     <h2 id="modal-title" class="text-xl font-bold">새 콘텐츠 카드</h2>
                     <button id="close-modal-button" class="text-2xl font-light">&times;</button>
                 </div>
@@ -243,7 +239,7 @@
         </div>
         <div id="iframe-ad-modal" class="form-container-mobile">
             <div class="bg-slate-800 w-full md:max-w-xl md:my-8 md:rounded-lg md:shadow-xl flex flex-col flex-1 border border-slate-700">
-                <div class="flex justify-between items-center p-4 border-b border-slate-700 md:hidden">
+                <div class="flex justify-between items-center p-4 border-b border-slate-700">
                     <h2 id="iframe-modal-title" class="text-xl font-bold">새 iframe 카드</h2>
                     <button id="close-iframe-modal-button" class="text-2xl font-light">&times;</button>
                 </div>
@@ -292,7 +288,7 @@
       const ui = {
           authContainer: null, dashboardContainer: null, passwordInput: null, loginButton: null, authMessage: null,
           logoutButton: null, navLinks: null, views: null, viewTitle: null, headerActions: null, pageListContainer: null,
-          mainContent: null, // 초기화되지 않았던 속성
+          mainContent: null,
       };
 
       function mapInitialUI() {
@@ -310,7 +306,6 @@
           ui.viewTitle = document.getElementById('view-title');
           ui.headerActions = document.getElementById('header-actions');
           ui.pageListContainer = document.getElementById('page-list-container');
-          // ✨✨✨ BUG FIX: mainContent 요소를 찾아서 ui 객체에 할당합니다.
           ui.mainContent = document.getElementById('main-content');
       }
 
