@@ -9,11 +9,24 @@ export const ui = {
 
 // 로그인 화면 UI 요소를 매핑하는 함수
 export function mapInitialUI() {
+    console.log("🔍 mapInitialUI 함수 정밀 감식 시작!");
+    
     ui.authContainer = document.getElementById('auth-container');
+    console.log("   -> #auth-container 찾기 결과:", ui.authContainer);
+
     ui.dashboardContainer = document.getElementById('dashboard-container');
+    console.log("   -> #dashboard-container 찾기 결과:", ui.dashboardContainer);
+
     ui.passwordInput = document.getElementById('password-input');
+    console.log("   -> #password-input 찾기 결과:", ui.passwordInput);
+
     ui.loginButton = document.getElementById('login-button');
+    console.log("   -> #login-button 찾기 결과:", ui.loginButton);
+
     ui.authMessage = document.getElementById('auth-message');
+    console.log("   -> #auth-message 찾기 결과:", ui.authMessage);
+    
+    console.log("🔍 mapInitialUI 함수 정밀 감식 완료!");
 }
 
 // 대시보드 화면 UI 요소를 매핑하는 함수
