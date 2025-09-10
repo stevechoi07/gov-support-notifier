@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.11</title>
+    <title>All-in-One 대시보드 v2.12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -350,13 +350,10 @@
         setupEventListeners() {
             this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
             
-            // ✨FIX v2.11: 'coloris:pick'은 페이지 배경색 전용으로 단순화. 컴포넌트 색상은 oninput으로 통합.
-            document.addEventListener('coloris:pick', event => {
-                const target = event.target;
-                if (target.id === 'page-bg-color') {
-                    this.pageSettings.bgColor = event.detail.color;
-                    this.saveAndRender(false, true);
-                }
+            // ✨FIX v2.12: 페이지 배경색에도 oninput 이벤트를 적용하여 기능 정상화 및 코드 통일
+            this.elements.pageBgColorInput.addEventListener('input', (e) => {
+                this.pageSettings.bgColor = e.target.value;
+                this.saveAndRender(false, true);
             });
 
             this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(false, true); });
@@ -458,7 +455,8 @@
                     styleGridHTML += `<div class="control-group"><label>정렬</label><select data-style="textAlign"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>`;
                     styleGridHTML += `<div class="control-group"><label>글자색</label><input type="text" data-color-picker data-style="color" value="${c.styles?.color || '#FFFFFF'}"></div>`;
                     styleGridHTML += `<div class="control-group"><label>글자 크기</label><input type="text" data-style="fontSize" value="${(c.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>`;
-                    if(c.type === 'button') { styleGridHTML += `<div class="control-group"><label>버튼 배경색</label><input type="text" data-color-picker data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`; }
+                    // ✨FIX v2.12: '버튼 배경색' 컨트롤에 inline-group 클래스를 추가하여 스타일 개선
+                    if(c.type === 'button') { styleGridHTML += `<div class="control-group inline-group"><label>버튼 배경색</label><input type="text" data-color-picker data-style="backgroundColor" value="${c.styles?.backgroundColor || '#1877f2'}"></div>`; }
                     styleGridHTML += '</div>';
                     panelContentHTML = contentHTML + fontSelectorHTML + styleGridHTML;
                 }
@@ -493,7 +491,6 @@
                   input.oninput = (e) => this.updateComponent(id, e.target.dataset.prop, e.target.value, false); 
               });
               
-              // ✨FIX v2.11: 컬러 피커를 포함한 모든 스타일 입력창이 oninput을 사용하도록 통합.
               panel.querySelectorAll('[data-style]').forEach(input => {
                   input.oninput = (e) => {
                       let value = e.target.value;
