@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.23</title>
+    <title>All-in-One 대시보드 v2.24</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -303,7 +303,7 @@
           pageListContainer: document.getElementById('page-list-container'),
       };
 
-      async function initializeFirebase() {
+      async function initializeAppAndAuth() {
         try {
             const response = await fetch('/.netlify/functions/get-firebase-config');
             if (!response.ok) throw new Error(`비밀요원 응답 실패!`);
@@ -313,25 +313,13 @@
             db = getFirestore(app);
             storage = getStorage(app);
             pagesCollection = collection(db, "pages");
-            return auth;
-        } catch (error) {
-            showAuthMessage("초기화 실패. 관리자에게 문의하세요.", true);
-            ui.loginButton.disabled = true;
-            return null;
-        }
-      }
+            
+            setupCommonListeners();
+            Coloris({
+                el: '[data-color-picker]', theme: 'large', themeMode: 'dark', alpha: false, format: 'hex',
+                swatches: [ '#0f172a', '#334155', '#e2e8f0', '#34d399', '#f87171', '#fb923c', '#facc15', '#4ade80', '#60a5fa', '#c084fc' ]
+            });
 
-      function setupCommonListeners() {
-        ui.loginButton.addEventListener('click', handleLogin);
-        ui.passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
-        ui.logoutButton.addEventListener('click', handleLogout);
-        ui.navLinks.forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); navigateTo(link.dataset.view); }));
-      }
-
-      document.addEventListener('DOMContentLoaded', () => {
-        setupCommonListeners();
-        initializeFirebase().then(auth => {
-            if (!auth) return;
             onAuthStateChanged(auth, user => {
                 if (user) {
                     ui.authContainer.classList.add('hidden');
@@ -348,12 +336,21 @@
                 }
                 ui.loginButton.disabled = false;
             });
-        });
-        Coloris({
-            el: '[data-color-picker]', theme: 'large', themeMode: 'dark', alpha: false, format: 'hex',
-            swatches: [ '#0f172a', '#334155', '#e2e8f0', '#34d399', '#f87171', '#fb923c', '#facc15', '#4ade80', '#60a5fa', '#c084fc' ]
-        });
-      });
+
+        } catch (error) {
+            showAuthMessage("초기화 실패. 관리자에게 문의하세요.", true);
+            ui.loginButton.disabled = true;
+        }
+      }
+
+      function setupCommonListeners() {
+        ui.loginButton.addEventListener('click', handleLogin);
+        ui.passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+        ui.logoutButton.addEventListener('click', handleLogout);
+        ui.navLinks.forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); navigateTo(link.dataset.view); }));
+      }
+
+      document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
       
       async function handleLogin() {
           ui.loginButton.disabled = true;
@@ -448,12 +445,11 @@
         });
         
         const targetView = document.getElementById(`${viewName}-view`);
-        if (targetView) {
-            targetView.classList.remove('hidden');
-        } else {
+        if (!targetView) {
             console.error(`View not found: ${viewName}-view`);
             return;
         }
+        targetView.classList.remove('hidden');
 
         ui.mainContent.classList.toggle('p-6', viewName !== 'editor');
 
@@ -475,7 +471,6 @@
         ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
         ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
         
-        // ✨FIX v2.23: Attach event listeners AFTER header buttons are rendered
         if (viewName === 'pages') {
             const newPageBtn = document.getElementById('new-page-btn');
             if (newPageBtn) newPageBtn.addEventListener('click', handleNewPageClick);
@@ -487,7 +482,6 @@
             const newIframeCardBtn = document.getElementById('add-new-iframe-card-button');
             if(newCardBtn) newCardBtn.addEventListener('click', () => cards.handleAddNewAd());
             if(newIframeCardBtn) newIframeCardBtn.addEventListener('click', () => cards.handleAddNewIframeAd());
-            // cards.init() is already called on login, just need to render
             cards.render();
         }
       }
@@ -594,7 +588,7 @@
         },
         renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); this.initSortable(); },
         hexToRgba(hex, alpha = 1) { 
-            if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
+            if (!/^#([A-Fa-f09]{3}){1,2}$/.test(hex)) return hex;
             let c = hex.substring(1).split(''); 
             if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } 
             c = '0x' + c.join(''); 
