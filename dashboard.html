@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.22</title>
+    <title>All-in-One 대시보드 v2.23</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -337,7 +337,7 @@
                     ui.authContainer.classList.add('hidden');
                     ui.dashboardContainer.classList.remove('hidden');
                     listenToPages();
-                    if (!cards.isInitialized) cards.init();
+                    cards.init(); 
                     
                     const currentView = [...ui.navLinks].find(link => link.classList.contains('active'))?.dataset.view || 'pages';
                     navigateTo(currentView);
@@ -791,7 +791,7 @@
       const cards = {
         list: [], editingId: null, selectedMediaFile: null, currentMediaUrl: '', currentMediaType: 'image',
         currentUploadTask: null, tempPreviewUrl: null, ui: {}, isInitialized: false,
-
+        
         init() {
             if (this.isInitialized) return;
             this.collection = collection(db, "ads");
@@ -846,7 +846,9 @@
             const q = query(this.collection, orderBy("order", "asc"));
             onSnapshot(q, (querySnapshot) => {
                 this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                this.render();
+                if (!document.getElementById('cards-view').classList.contains('hidden')) {
+                    this.render();
+                }
             });
         },
         initSortable() {
@@ -951,6 +953,12 @@
                 this.ui.fileNameDisplay.textContent = '선택된 파일 없음'; this.selectedMediaFile = null;
                 if (this.tempPreviewUrl) URL.revokeObjectURL(this.tempPreviewUrl);
                 this.tempPreviewUrl = null; this.updatePreview(); return;
+            }
+            if (file.size > 50 * 1024 * 1024) {
+                alert('파일 크기는 50MB를 초과할 수 없습니다.');
+                this.ui.adMediaFileInput.value = '';
+                this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
+                return;
             }
             this.selectedMediaFile = file; this.ui.fileNameDisplay.textContent = file.name;
             this.currentMediaType = file.type.startsWith('image/') ? 'image' : 'video';
@@ -1132,7 +1140,7 @@
               </div>`;
         },
       };
-      document.addEventListener('DOMContentLoaded', startApp);
+      
     </script>
 </body>
 </html>
