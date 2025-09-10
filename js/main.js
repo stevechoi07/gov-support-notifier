@@ -1,5 +1,8 @@
 // js/main.js v1.0 - Clean Slate Version
 
+
+
+
 // --- 1. 모듈 가져오기 (부품 조립) ---
 import { auth, db, storage } from './firebase.js';
 import { ui, mapInitialUI, mapDashboardUI } from './ui.js';
