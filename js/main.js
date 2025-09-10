@@ -69,8 +69,13 @@ async function initializeAppAndAuth() {
 
 // --- 4. 이벤트 리스너 설정 ---
 function setupLoginListeners() {
-    ui.loginButton.addEventListener('click', handleLogin);
-    ui.passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+    // ui.loginButton이 null일 경우를 대비한 방어 코드
+    if (ui.loginButton) {
+        ui.loginButton.addEventListener('click', handleLogin);
+    }
+    if (ui.passwordInput) {
+        ui.passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+    }
 }
 
 function setupDashboardListeners() {
@@ -888,5 +893,4 @@ const cards = {
 };
 
 // --- 6. 앱 실행 ---
-// ✨✨✨ BUG FIX: HTML 문서가 완전히 로드된 후 스크립트를 실행하도록 수정합니다.
 document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
