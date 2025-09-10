@@ -69,15 +69,35 @@ function setupDashboardListeners() {
 
 // [ 인증 관련 함수 ]
 async function handleLogin() {
+    console.log("🔍 handleLogin 함수 실행!");
     ui.loginButton.disabled = true;
     ui.loginButton.innerHTML = `<div class="spinner"></div><span>로그인 중...</span>`;
+    
     try {
         await setPersistence(auth, browserSessionPersistence);
-        const response = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: ui.passwordInput.value }) });
+        console.log("   -> Firebase 인증 지속성 설정 완료.");
+
+        console.log("   -> Netlify 로그인 함수에 요청 전송 시작...");
+        const response = await fetch('/.netlify/functions/login', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ password: ui.passwordInput.value }) 
+        });
+        console.log("   -> Netlify 함수로부터 응답 받음:", response);
+
         const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.message || "비밀번호가 틀렸습니다.");
+        console.log("   -> 응답 결과(JSON):", result);
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "비밀번호가 틀렸습니다.");
+        }
+
+        console.log("   -> Firebase 커스텀 토큰으로 로그인 시도...");
         await signInWithCustomToken(auth, result.token);
+        console.log("   -> Firebase 로그인 성공!");
+
     } catch (error) { 
+        console.error("❌ handleLogin 함수에서 에러 발생:", error);
         showAuthMessage(error.message, true);
         ui.loginButton.disabled = false;
         ui.loginButton.innerHTML = '로그인';
