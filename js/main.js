@@ -96,7 +96,8 @@ function showAuthMessage(message, isError) {
 
 // [ 페이지 관리 관련 함수 ]
 function listenToPages() {
-    onSnapshot(query(pagesCollection, orderBy("createdAt", "desc")), (snapshot) => {
+    const q = query(pagesCollection, orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
         pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (ui.pageListContainer && !document.getElementById('pages-view').classList.contains('hidden')) {
             renderPages();
