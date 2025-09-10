@@ -536,8 +536,10 @@ const editor = {
   }
 };
 
+// js/main.js 파일의 cards 객체를 아래 코드로 완전히 교체하세요.
+
 // ===============================================================
-// 🚀 Content Card Logic
+// 🚀 Content Card Logic (v1.1 - Null-Safe Version)
 // ===============================================================
 const cards = {
   list: [], editingId: null, selectedMediaFile: null, currentMediaUrl: '', currentMediaType: 'image',
@@ -686,18 +688,19 @@ const cards = {
                 <button class="delete-ad-button text-sm font-medium text-red-400 hover:bg-slate-700 px-4 py-2 rounded-md" data-id="${ad.id}">삭제</button>
             </div>
           `;
-          this.ui.adListContainer.appendChild(adElement);
+          if(this.ui.adListContainer) this.ui.adListContainer.appendChild(adElement);
       });
-      this.ui.adListContainer.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
-      this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
-      this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
+      document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
+      document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
+      document.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
   },
   async handleToggleAdStatus(event) {
       const id = event.target.dataset.id;
       const isActive = event.target.checked;
       try {
           await updateDoc(doc(db, "ads", id), { isActive: isActive });
-          event.target.closest('[data-id]').classList.toggle('opacity-40', !isActive);
+          const adElement = event.target.closest('[data-id]');
+          if(adElement) adElement.classList.toggle('opacity-40', !isActive);
       } catch (error) {
           alert("상태 변경에 실패했습니다.");
           event.target.checked = !isActive;
@@ -706,17 +709,21 @@ const cards = {
   handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) {
-          this.ui.fileNameDisplay.textContent = '선택된 파일 없음'; this.selectedMediaFile = null;
+          if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
+          this.selectedMediaFile = null;
           if (this.tempPreviewUrl) URL.revokeObjectURL(this.tempPreviewUrl);
-          this.tempPreviewUrl = null; this.updatePreview(); return;
+          this.tempPreviewUrl = null;
+          this.updatePreview();
+          return;
       }
       if (file.size > 50 * 1024 * 1024) {
           alert('파일 크기는 50MB를 초과할 수 없습니다.');
-          this.ui.adMediaFileInput.value = '';
-          this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
+          if(this.ui.adMediaFileInput) this.ui.adMediaFileInput.value = '';
+          if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
           return;
       }
-      this.selectedMediaFile = file; this.ui.fileNameDisplay.textContent = file.name;
+      this.selectedMediaFile = file;
+      if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = file.name;
       this.currentMediaType = file.type.startsWith('image/') ? 'image' : 'video';
       if (this.tempPreviewUrl) URL.revokeObjectURL(this.tempPreviewUrl);
       this.tempPreviewUrl = URL.createObjectURL(file);
@@ -803,6 +810,7 @@ const cards = {
               await deleteDoc(doc(db, "ads", idToDelete));
           } catch (error) {
               console.warn("파일 삭제 실패:", error.message);
+              // 파일 삭제에 실패하더라도 문서 삭제는 시도
               await deleteDoc(doc(db, "ads", idToDelete));
           }
       }
@@ -897,7 +905,7 @@ const cards = {
       }
   },
   updatePreview() {
-      if (!this.ui.adPreview || !this.ui.adTitleInput) return;
+      if (!this.ui.adPreview || !this.ui.adTitleInput || !this.ui.adDescriptionInput || !this.ui.isPartnersCheckbox) return;
       const title = this.ui.adTitleInput.value || "카드 제목";
       const description = this.ui.adDescriptionInput.value || "카드 설명이 여기에 표시됩니다.";
       const mediaSrc = this.tempPreviewUrl || this.currentMediaUrl;
