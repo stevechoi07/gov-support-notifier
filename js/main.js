@@ -883,4 +883,5 @@ const cards = {
 };
 
 // --- 6. 앱 실행 ---
-document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
+// ✨✨✨ BUG FIX: DOMContentLoaded 이벤트 리스너를 제거하고 함수를 직접 호출합니다.
+initializeAppAndAuth();
