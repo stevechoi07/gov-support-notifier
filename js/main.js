@@ -885,4 +885,10 @@ const cards = {
 };
 
 // --- 6. 앱 실행 ---
-window.initializeAppAndAuth = initializeAppAndAuth;
+// js/main.js 의 가장 마지막 부분
+
+// 1. 기존의 addEventListener 라인을 삭제합니다.
+// document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
+
+// 2. initializeAppAndAuth 함수를 외부에서 사용할 수 있도록 export 합니다.
+export { initializeAppAndAuth };
