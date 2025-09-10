@@ -7,8 +7,6 @@ import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersist
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, getDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
-console.log('4단계 성공: main.js에 모든 코드 추가 후에도 살아있다!');
-
 // --- 2. 전역 변수 및 상태 관리 ---
 let pagesCollection;
 let pagesList = [];
