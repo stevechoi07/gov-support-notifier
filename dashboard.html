@@ -289,13 +289,9 @@
       let auth, db, storage, pagesCollection;
       let pagesList = [];
 
-      // ✨FIX v2.23: Defer UI mapping until after login
       const ui = {
-          authContainer: null,
-          dashboardContainer: null,
-          passwordInput: null,
-          loginButton: null,
-          authMessage: null,
+          authContainer: null, dashboardContainer: null, passwordInput: null, loginButton: null, authMessage: null,
+          logoutButton: null, navLinks: null, views: null, viewTitle: null, headerActions: null, pageListContainer: null,
       };
 
       function mapInitialUI() {
@@ -344,8 +340,7 @@
                     listenToPages();
                     cards.init();
                     
-                    const currentView = [...ui.navLinks].find(link => link.classList.contains('active'))?.dataset.view || 'pages';
-                    navigateTo(currentView);
+                    navigateTo('pages');
                 } else {
                     ui.authContainer.classList.remove('hidden');
                     ui.dashboardContainer.classList.add('hidden');
@@ -391,13 +386,14 @@
         onSnapshot(query(pagesCollection), (snapshot) => {
             pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             pagesList.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-            if (!document.getElementById('pages-view').classList.contains('hidden')) {
+            if (ui.pageListContainer && !document.getElementById('pages-view').classList.contains('hidden')) {
                 renderPages();
             }
         });
       }
 
       function renderPages() {
+        if (!ui.pageListContainer) return;
         ui.pageListContainer.innerHTML = pagesList.length === 0 
             ? `<p class="text-center text-slate-400 py-8">생성된 페이지가 없습니다.</p>`
             : pagesList.map(page => {
@@ -457,19 +453,20 @@
       async function handleLogout() { if (confirm('로그아웃 하시겠습니까?')) { await signOut(auth); } }
 
       function navigateTo(viewName, pageId = null) {
-        console.log(`Navigating to: ${viewName}`); // 디버깅용 로그
-        
-        ui.views.forEach(view => view.classList.add('hidden'));
-        ui.navLinks.forEach(link => {
-            const isActive = (viewName === 'editor' && link.dataset.view === 'pages') || viewName === link.dataset.view;
-            link.classList.toggle('active', isActive);
-        });
+        console.log(`Navigating to: ${viewName}`); 
         
         const targetView = document.getElementById(`${viewName}-view`);
         if (!targetView) {
             console.error(`View not found: ${viewName}-view`);
             return;
         }
+
+        ui.views.forEach(view => view.classList.add('hidden'));
+        ui.navLinks.forEach(link => {
+            const isActive = (viewName === 'editor' && link.dataset.view === 'pages') || viewName === link.dataset.view;
+            link.classList.toggle('active', isActive);
+        });
+        
         targetView.classList.remove('hidden');
 
         ui.mainContent.classList.toggle('p-6', viewName !== 'editor');
@@ -868,7 +865,8 @@
             const q = query(this.collection, orderBy("order", "asc"));
             onSnapshot(q, (querySnapshot) => {
                 this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (!document.getElementById('cards-view').classList.contains('hidden')) {
+                if (ui.dashboardContainer.classList.contains('hidden') === false && 
+                    document.getElementById('cards-view').classList.contains('hidden') === false) {
                     this.render();
                 }
             });
