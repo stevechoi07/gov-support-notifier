@@ -289,19 +289,31 @@
       let auth, db, storage, pagesCollection;
       let pagesList = [];
 
+      // ✨FIX v2.23: Defer UI mapping until after login
       const ui = {
-          authContainer: document.getElementById('auth-container'),
-          dashboardContainer: document.getElementById('dashboard-container'),
-          passwordInput: document.getElementById('password-input'),
-          loginButton: document.getElementById('login-button'),
-          logoutButton: document.getElementById('logout-button'),
-          authMessage: document.getElementById('auth-message'),
-          navLinks: document.querySelectorAll('.nav-link'),
-          views: document.querySelectorAll('.view'),
-          viewTitle: document.getElementById('view-title'),
-          headerActions: document.getElementById('header-actions'),
-          pageListContainer: document.getElementById('page-list-container'),
+          authContainer: null,
+          dashboardContainer: null,
+          passwordInput: null,
+          loginButton: null,
+          authMessage: null,
       };
+
+      function mapInitialUI() {
+          ui.authContainer = document.getElementById('auth-container');
+          ui.dashboardContainer = document.getElementById('dashboard-container');
+          ui.passwordInput = document.getElementById('password-input');
+          ui.loginButton = document.getElementById('login-button');
+          ui.authMessage = document.getElementById('auth-message');
+      }
+
+      function mapDashboardUI() {
+          ui.logoutButton = document.getElementById('logout-button');
+          ui.navLinks = document.querySelectorAll('.nav-link');
+          ui.views = document.querySelectorAll('.view');
+          ui.viewTitle = document.getElementById('view-title');
+          ui.headerActions = document.getElementById('header-actions');
+          ui.pageListContainer = document.getElementById('page-list-container');
+      }
 
       async function initializeAppAndAuth() {
         try {
@@ -314,7 +326,8 @@
             storage = getStorage(app);
             pagesCollection = collection(db, "pages");
             
-            setupCommonListeners();
+            mapInitialUI();
+            setupLoginListeners();
             Coloris({
                 el: '[data-color-picker]', theme: 'large', themeMode: 'dark', alpha: false, format: 'hex',
                 swatches: [ '#0f172a', '#334155', '#e2e8f0', '#34d399', '#f87171', '#fb923c', '#facc15', '#4ade80', '#60a5fa', '#c084fc' ]
@@ -324,6 +337,9 @@
                 if (user) {
                     ui.authContainer.classList.add('hidden');
                     ui.dashboardContainer.classList.remove('hidden');
+                    
+                    mapDashboardUI();
+                    setupDashboardListeners();
                     
                     listenToPages();
                     cards.init();
@@ -343,9 +359,12 @@
         }
       }
 
-      function setupCommonListeners() {
+      function setupLoginListeners() {
         ui.loginButton.addEventListener('click', handleLogin);
         ui.passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+      }
+
+      function setupDashboardListeners() {
         ui.logoutButton.addEventListener('click', handleLogout);
         ui.navLinks.forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); navigateTo(link.dataset.view); }));
       }
@@ -438,6 +457,8 @@
       async function handleLogout() { if (confirm('로그아웃 하시겠습니까?')) { await signOut(auth); } }
 
       function navigateTo(viewName, pageId = null) {
+        console.log(`Navigating to: ${viewName}`); // 디버깅용 로그
+        
         ui.views.forEach(view => view.classList.add('hidden'));
         ui.navLinks.forEach(link => {
             const isActive = (viewName === 'editor' && link.dataset.view === 'pages') || viewName === link.dataset.view;
@@ -588,7 +609,7 @@
         },
         renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); this.initSortable(); },
         hexToRgba(hex, alpha = 1) { 
-            if (!/^#([A-Fa-f09]{3}){1,2}$/.test(hex)) return hex;
+            if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
             let c = hex.substring(1).split(''); 
             if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } 
             c = '0x' + c.join(''); 
@@ -882,6 +903,7 @@
             return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         },
         render() {
+            if(!this.ui.adListContainer) return;
             this.ui.adListContainer.innerHTML = '';
             if (this.list.length === 0) {
                 this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8">등록된 카드가 없습니다.</p>`;
