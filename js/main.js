@@ -542,7 +542,7 @@ const editor = {
 const cards = {
   list: [], editingId: null, selectedMediaFile: null, currentMediaUrl: '', currentMediaType: 'image',
   currentUploadTask: null, tempPreviewUrl: null, ui: {}, isInitialized: false,
-
+  
   init() {
       if (this.isInitialized) return;
       this.collection = collection(db, "ads");
@@ -584,21 +584,23 @@ const cards = {
       };
   },
   addEventListeners() {
-      this.ui.closeModalButton.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
-      this.ui.saveAdButton.addEventListener('click', this.handleSaveAd.bind(this));
+      if (this.ui.closeModalButton) this.ui.closeModalButton.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
+      if (this.ui.saveAdButton) this.ui.saveAdButton.addEventListener('click', this.handleSaveAd.bind(this));
+      
       [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => {
-          input.addEventListener('input', () => this.updatePreview());
+          if (input) input.addEventListener('input', () => this.updatePreview());
       });
-      this.ui.adMediaFileInput.addEventListener('change', this.handleFileUpload.bind(this));
-      this.ui.closeIframeModalButton.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
-      this.ui.saveIframeAdButton.addEventListener('click', this.handleSaveIframeAd.bind(this));
+      
+      if (this.ui.adMediaFileInput) this.ui.adMediaFileInput.addEventListener('change', this.handleFileUpload.bind(this));
+      if (this.ui.closeIframeModalButton) this.ui.closeIframeModalButton.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
+      if (this.ui.saveIframeAdButton) this.ui.saveIframeAdButton.addEventListener('click', this.handleSaveIframeAd.bind(this));
   },
   listen() {
       const q = query(this.collection, orderBy("order", "asc"));
       onSnapshot(q, (querySnapshot) => {
           this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          if (ui.dashboardContainer.classList.contains('hidden') === false && 
-              document.getElementById('cards-view').classList.contains('hidden') === false) {
+          const cardsView = document.getElementById('cards-view');
+          if (ui.dashboardContainer && !ui.dashboardContainer.classList.contains('hidden') && cardsView && !cardsView.classList.contains('hidden')) {
               this.render();
           }
       });
@@ -722,33 +724,46 @@ const cards = {
   },
   resetCardModalState() {
       const btn = this.ui.saveAdButton;
-      btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
-      this.ui.mediaUploadStatus.style.opacity = 0; this.ui.uploadProgress.textContent = '0%';
-      this.ui.progressBarFill.style.width = '0%'; this.ui.uploadLabel.textContent = '업로드 중...';
-      this.ui.adTitleInput.value = ''; this.ui.adDescriptionInput.value = ''; this.ui.adLinkInput.value = '';
-      this.ui.isPartnersCheckbox.checked = false; this.ui.adStartDateInput.value = '';
-      this.ui.adEndDateInput.value = ''; this.ui.adMediaFileInput.value = '';
-      this.ui.fileNameDisplay.textContent = '선택된 파일 없음'; this.ui.adPreview.innerHTML = '';
+      if (btn) {
+        btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
+      }
+      if (this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0;
+      if (this.ui.uploadProgress) this.ui.uploadProgress.textContent = '0%';
+      if (this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%';
+      if (this.ui.uploadLabel) this.ui.uploadLabel.textContent = '업로드 중...';
+      if (this.ui.adTitleInput) this.ui.adTitleInput.value = '';
+      if (this.ui.adDescriptionInput) this.ui.adDescriptionInput.value = '';
+      if (this.ui.adLinkInput) this.ui.adLinkInput.value = '';
+      if (this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.checked = false;
+      if (this.ui.adStartDateInput) this.ui.adStartDateInput.value = '';
+      if (this.ui.adEndDateInput) this.ui.adEndDateInput.value = '';
+      if (this.ui.adMediaFileInput) this.ui.adMediaFileInput.value = '';
+      if (this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
+      if (this.ui.adPreview) this.ui.adPreview.innerHTML = '';
       if (this.tempPreviewUrl) { URL.revokeObjectURL(this.tempPreviewUrl); this.tempPreviewUrl = null; }
   },
   handleAddNewAd() {
       this.editingId = null; this.selectedMediaFile = null; this.currentMediaUrl = ''; this.currentMediaType = 'image';
-      this.ui.modalTitle.textContent = "새 미디어 카드";
+      if (this.ui.modalTitle) this.ui.modalTitle.textContent = "새 미디어 카드";
       this.resetCardModalState(); this.updatePreview();
-      this.ui.adModal.classList.add('active');
+      if (this.ui.adModal) this.ui.adModal.classList.add('active');
   },
   resetIframeModalState() {
       const btn = this.ui.saveIframeAdButton;
-      this.ui.iframeAdTitleInput.value = ''; this.ui.iframeAdCodeInput.value = '';
-      this.ui.iframeIsPartnersCheckbox.checked = false; this.ui.iframeAdStartDateInput.value = '';
-      this.ui.iframeAdEndDateInput.value = '';
-      btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled');
+      if (this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = '';
+      if (this.ui.iframeAdCodeInput) this.ui.iframeAdCodeInput.value = '';
+      if (this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false;
+      if (this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
+      if (this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
+      if (btn) {
+        btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled');
+      }
   },
   handleAddNewIframeAd() {
       this.editingId = null;
-      this.ui.iframeModalTitle.textContent = "새 iframe 카드";
+      if (this.ui.iframeModalTitle) this.ui.iframeModalTitle.textContent = "새 iframe 카드";
       this.resetIframeModalState();
-      this.ui.iframeAdModal.classList.add('active');
+      if (this.ui.iframeAdModal) this.ui.iframeAdModal.classList.add('active');
   },
   handleEditAd(event) {
       this.editingId = event.target.dataset.id;
@@ -756,24 +771,27 @@ const cards = {
       if (!ad) return;
       if (ad.adType === 'iframe') {
           this.resetIframeModalState();
-          this.ui.iframeModalTitle.textContent = "iframe 카드 수정";
-          this.ui.iframeAdTitleInput.value = ad.title;
-          this.ui.iframeAdCodeInput.value = ad.iframeCode || '';
-          this.ui.iframeIsPartnersCheckbox.checked = ad.isPartners || false;
-          this.ui.iframeAdStartDateInput.value = ad.startDate || '';
-          this.ui.iframeAdEndDateInput.value = ad.endDate || '';
-          this.ui.iframeAdModal.classList.add('active');
+          if (this.ui.iframeModalTitle) this.ui.iframeModalTitle.textContent = "iframe 카드 수정";
+          if (this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = ad.title;
+          if (this.ui.iframeAdCodeInput) this.ui.iframeAdCodeInput.value = ad.iframeCode || '';
+          if (this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = ad.isPartners || false;
+          if (this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = ad.startDate || '';
+          if (this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = ad.endDate || '';
+          if (this.ui.iframeAdModal) this.ui.iframeAdModal.classList.add('active');
       } else {
           this.resetCardModalState();
           this.selectedMediaFile = null;
           this.currentMediaUrl = ad.mediaUrl || ''; this.currentMediaType = ad.mediaType || 'image';
-          this.ui.modalTitle.textContent = "미디어 카드 수정";
-          this.ui.adTitleInput.value = ad.title;
-          this.ui.adDescriptionInput.value = ad.description || ''; this.ui.adLinkInput.value = ad.link || '';
-          this.ui.isPartnersCheckbox.checked = ad.isPartners || false;
-          this.ui.adStartDateInput.value = ad.startDate || ''; this.ui.adEndDateInput.value = ad.endDate || '';
-          this.ui.fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
-          this.updatePreview(); this.ui.adModal.classList.add('active');
+          if (this.ui.modalTitle) this.ui.modalTitle.textContent = "미디어 카드 수정";
+          if (this.ui.adTitleInput) this.ui.adTitleInput.value = ad.title;
+          if (this.ui.adDescriptionInput) this.ui.adDescriptionInput.value = ad.description || '';
+          if (this.ui.adLinkInput) this.ui.adLinkInput.value = ad.link || '';
+          if (this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.checked = ad.isPartners || false;
+          if (this.ui.adStartDateInput) this.ui.adStartDateInput.value = ad.startDate || '';
+          if (this.ui.adEndDateInput) this.ui.adEndDateInput.value = ad.endDate || '';
+          if (this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
+          this.updatePreview();
+          if (this.ui.adModal) this.ui.adModal.classList.add('active');
       }
   },
   async handleDeleteAd(event) {
@@ -791,6 +809,7 @@ const cards = {
   },
   async uploadMediaFile() {
       return new Promise((resolve, reject) => {
+          if (!this.ui.mediaUploadStatus) return reject('Media upload status element not found');
           this.ui.mediaUploadStatus.style.opacity = 1;
           const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
           const folder = this.currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
@@ -799,8 +818,8 @@ const cards = {
           this.currentUploadTask.on('state_changed', 
               (snapshot) => {
                   const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                  this.ui.uploadProgress.textContent = `${Math.round(progress)}%`;
-                  this.ui.progressBarFill.style.width = `${progress}%`;
+                  if (this.ui.uploadProgress) this.ui.uploadProgress.textContent = `${Math.round(progress)}%`;
+                  if (this.ui.progressBarFill) this.ui.progressBarFill.style.width = `${progress}%`;
               }, 
               (error) => { reject(error); }, 
               async () => {
@@ -811,9 +830,11 @@ const cards = {
       });
   },
   async handleSaveAd() {
-      if (!this.ui.adTitleInput.value.trim()) { alert('카드 제목을 입력해주세요!'); return; }
+      if (!this.ui.adTitleInput || !this.ui.adTitleInput.value.trim()) { alert('카드 제목을 입력해주세요!'); return; }
       const btn = this.ui.saveAdButton;
-      btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+      if (btn) {
+        btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+      }
       try {
           let mediaUrlToSave = this.currentMediaUrl;
           if (this.selectedMediaFile) {
@@ -821,7 +842,7 @@ const cards = {
                   try { await deleteObject(ref(storage, this.currentMediaUrl)); } catch (e) { console.warn("Could not delete old file:", e.message); }
               }
               mediaUrlToSave = await this.uploadMediaFile();
-              this.ui.uploadLabel.textContent = '업로드 완료!';
+              if (this.ui.uploadLabel) this.ui.uploadLabel.textContent = '업로드 완료!';
           }
           const adData = {
               adType: 'card', title: this.ui.adTitleInput.value, description: this.ui.adDescriptionInput.value,
@@ -837,10 +858,12 @@ const cards = {
               Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
               await addDoc(this.collection, adData);
           }
-          this.ui.adModal.classList.remove('active');
+          if (this.ui.adModal) this.ui.adModal.classList.remove('active');
       } catch (error) {
           console.error("저장 중 오류 발생:", error); alert("작업에 실패했습니다.");
-          btn.disabled = false; btn.innerHTML = `저장하기`;
+          if (btn) {
+            btn.disabled = false; btn.innerHTML = `저장하기`;
+          }
       }
   },
   async handleSaveIframeAd() {
@@ -848,7 +871,9 @@ const cards = {
       const code = this.ui.iframeAdCodeInput.value.trim();
       if (!title || !code) { alert('제목과 코드를 모두 입력해주세요!'); return; }
       const btn = this.ui.saveIframeAdButton;
-      btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+      if (btn) {
+        btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+      }
       try {
           const adData = {
               adType: 'iframe', title: title, iframeCode: code,
@@ -863,13 +888,16 @@ const cards = {
               Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
               await addDoc(this.collection, adData);
           }
-          this.ui.iframeAdModal.classList.remove('active');
+          if (this.ui.iframeAdModal) this.ui.iframeAdModal.classList.remove('active');
       } catch (error) {
           console.error("iframe 카드 저장 중 오류:", error); alert("작업에 실패했습니다.");
-          btn.disabled = false; btn.innerHTML = '저장하기';
+          if (btn) {
+            btn.disabled = false; btn.innerHTML = '저장하기';
+          }
       }
   },
   updatePreview() {
+      if (!this.ui.adPreview || !this.ui.adTitleInput) return;
       const title = this.ui.adTitleInput.value || "카드 제목";
       const description = this.ui.adDescriptionInput.value || "카드 설명이 여기에 표시됩니다.";
       const mediaSrc = this.tempPreviewUrl || this.currentMediaUrl;
