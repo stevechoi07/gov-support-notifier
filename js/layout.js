@@ -1,19 +1,21 @@
-// js/layout.js v1.5 - cards.js 실제 데이터 최종 연동
+// js/layout.js v1.6 - 타이밍 문제 해결 (Lazy Initialization)
 
 import { getFirestoreDB } from './firebase.js'; 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
 import { pagesList } from './pages.js';
-// ✨ [수정] cards.js에서 cardsList를 가져옵니다.
 import { cardsList } from './cards.js';
 
-const db = getFirestoreDB();
+// ✨ [삭제] 파일 상단에서 db 객체를 미리 생성하지 않습니다.
+
 const layoutListContainer = document.getElementById('layout-list-container');
 const modalElements = {};
 let sortableInstance = null;
 let currentLayoutIds = [];
 
 function listenToLayoutChanges(layoutId) {
+    // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
+    const db = getFirestoreDB();
     const layoutRef = doc(db, "layouts", layoutId);
     onSnapshot(layoutRef, async (snapshot) => {
         if (!snapshot.exists() || !snapshot.data().contentIds) {
@@ -31,8 +33,9 @@ function listenToLayoutChanges(layoutId) {
 
 async function fetchContentsDetails(ids) {
     if (ids.length === 0) return [];
+    // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
+    const db = getFirestoreDB();
     const contentPromises = ids.map(id => {
-        // 'ads' 컬렉션을 사용하도록 수정되었습니다. (cards.js 기준)
         const collectionName = id.startsWith('page_') ? 'pages' : 'ads';
         const contentRef = doc(db, collectionName, id);
         return getDoc(contentRef);
@@ -43,9 +46,10 @@ async function fetchContentsDetails(ids) {
 }
 
 function renderLayoutList(contents) {
+    // 이 함수는 db를 직접 사용하지 않으므로 수정이 필요 없습니다.
     if (contents.length === 0) {
         layoutListContainer.innerHTML = `<div class="text-center py-16">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-600 mb-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-600 mb-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
             <h3 class="text-lg font-semibold text-slate-400">레이아웃이 비어있습니다.</h3>
             <p class="text-slate-500 mt-1">상단의 '콘텐츠 추가' 버튼을 눌러 페이지나 카드를 추가해보세요.</p>
         </div>`;
@@ -63,7 +67,7 @@ function renderLayoutList(contents) {
         return `
             <div class="layout-item flex items-center bg-slate-800 rounded-lg p-3 gap-4 shadow-sm" data-id="${content.id}">
                 <div class="drag-handle cursor-move text-slate-600 hover:text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24" 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
                 </div>
                 <div class="w-24 h-14 bg-cover bg-center rounded-md" style="background-color: ${previewBgColor}; ${previewImage ? `background-image: url('${previewImage}')` : ''}"></div>
                 <div class="flex-1 overflow-hidden">
@@ -87,6 +91,8 @@ function attachEventListeners() {
             const item = e.currentTarget.closest('.layout-item');
             const contentId = item.dataset.id;
             if (confirm(`'${item.querySelector('h4').textContent}' 콘텐츠를 레이아웃에서 제거하시겠습니까?`)) {
+                // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
+                const db = getFirestoreDB();
                 const layoutRef = doc(db, "layouts", "mainLayout");
                 await updateDoc(layoutRef, { contentIds: arrayRemove(contentId) });
                 showToast('콘텐츠가 레이아웃에서 제거되었습니다.');
@@ -100,6 +106,8 @@ function initializeSortable() {
     sortableInstance = new Sortable(layoutListContainer, {
         handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost',
         onEnd: async (evt) => {
+            // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
+            const db = getFirestoreDB();
             const newOrder = Array.from(evt.to.children).map(item => item.dataset.id);
             const layoutRef = doc(db, "layouts", "mainLayout");
             await updateDoc(layoutRef, { contentIds: newOrder });
@@ -142,18 +150,18 @@ function switchTab(tabName) {
 
 async function addItemToLayout(contentId) {
     try {
+        // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
+        const db = getFirestoreDB();
         const layoutRef = doc(db, "layouts", "mainLayout");
         await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) });
-        showToast('콘텐츠가 레이아out에 추가되었습니다.');
+        showToast('콘텐츠가 레이아웃에 추가되었습니다.');
     } catch (error) {
         console.error("레이아웃에 아이템 추가 실패:", error);
         showToast("아이템 추가에 실패했습니다.", "error");
     }
 }
 
-// ✨ [수정] 실제 페이지와 카드 데이터를 모두 사용하여 모달을 렌더링합니다.
 export function handleAddContentClick() {
-    // 1. 페이지 목록 렌더링
     modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
         const isAdded = currentLayoutIds.includes(page.id);
         const previewImage = page.pageSettings?.bgImage || '';
@@ -168,7 +176,6 @@ export function handleAddContentClick() {
             </div>`;
     }).join('') || `<p class="text-slate-500 text-center py-4">추가할 페이지가 없습니다.</p>`;
 
-    // 2. 카드 목록 렌더링
     modalElements.cardsListContainer.innerHTML = cardsList.map(card => {
         const isAdded = currentLayoutIds.includes(card.id);
         const previewImage = card.mediaUrl || '';
@@ -190,8 +197,9 @@ export function handleAddContentClick() {
 let isInitialized = false;
 
 export function initLayoutView() {
-    if (!db) {
-        console.error("Firestore is not initialized yet!");
+    // ✨ [수정] 이 함수 자체는 db를 직접 쓰지 않지만, 호출하는 함수들이 쓰므로 여기서 db를 체크해주는 것이 좋습니다.
+    if (!getFirestoreDB()) {
+        console.error("Firestore is not available at initLayoutView");
         return;
     }
     if (isInitialized) return;

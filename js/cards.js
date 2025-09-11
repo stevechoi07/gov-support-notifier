@@ -1,31 +1,21 @@
-// js/cards.js v1.5 - Firebase Getter 적용
+// js/cards.js v1.6 - 타이밍 문제 해결 (Lazy Initialization)
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
-// ✨ [수정] db, storage 대신 게이트키퍼 함수를 import 합니다.
 import { getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
-// ✨ [수정] 파일 상단에서 한 번만 호출하여 db와 storage 객체를 할당합니다.
-const db = getFirestoreDB();
-const storage = getFirebaseStorage();
+// ✨ [삭제] 파일 상단에서 db, storage 객체를 미리 생성하지 않습니다.
 
-export let cardsList = []; // layout.js에서 참조할 수 있도록 export
+export let cardsList = [];
 
-// onSnapshot 콜백에서 cardsList를 업데이트합니다.
 function updateCardsList(newList) {
-    cardsList.length = 0; // 배열을 비웁니다.
-    Array.prototype.push.apply(cardsList, newList); // 새 항목을 추가합니다.
+    cardsList.length = 0;
+    Array.prototype.push.apply(cardsList, newList);
 }
 
 export const cards = {
-    // `list` 속성을 `cardsList` 참조로 변경합니다.
-    get list() {
-        return cardsList;
-    },
-    set list(value) {
-        updateCardsList(value);
-    },
-
+    get list() { return cardsList; },
+    set list(value) { updateCardsList(value); },
     editingId: null,
     selectedMediaFile: null,
     currentMediaUrl: '',
@@ -36,21 +26,21 @@ export const cards = {
     isInitialized: false,
     
     init() {
-        if (!db || !storage) {
-            console.error("Firebase is not initialized yet!");
+        if (!getFirestoreDB() || !getFirebaseStorage()) { // ✨ [수정]
+            console.error("Firebase is not available at initCards");
             return;
         }
         if (this.isInitialized) {
             this.render();
             return;
         }
-        this.collection = collection(db, "ads");
         this.mapUI();
         this.addEventListeners();
         this.listen();
         this.initSortable();
         this.isInitialized = true;
     },
+
 
     mapUI() {
         this.ui = {
@@ -98,11 +88,10 @@ export const cards = {
     },
 
     listen() {
+        const db = getFirestoreDB(); // ✨ [수정]
         const q = query(collection(db, "ads"), orderBy("order", "asc"));
         onSnapshot(q, (querySnapshot) => {
-            // Firestore에서 데이터가 변경될 때마다 this.list (실제로는 cardsList)를 업데이트합니다.
             this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
             const cardsView = document.getElementById('cards-view');
             if (cardsView && !cardsView.classList.contains('hidden')) {
                 this.render();
@@ -110,21 +99,17 @@ export const cards = {
         });
     },
 
-    initSortable() {
+      initSortable() {
         if (!this.ui.adListContainer) return;
         new Sortable(this.ui.adListContainer, {
             handle: '.content-card-drag-handle', 
             animation: 150,
             ghostClass: 'sortable-ghost',
             onEnd: async (evt) => {
+                const db = getFirestoreDB(); // ✨ [수정]
                 if (evt.oldIndex === evt.newIndex) return;
-                
-                // 정렬된 DOM 요소 순서대로 새로운 ID 배열 생성
                 const newOrderIds = Array.from(evt.to.children).map(item => item.dataset.id);
-
-                // this.list 배열을 새로운 순서에 맞게 재정렬
                 this.list.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
-
                 const batch = writeBatch(db);
                 this.list.forEach((ad, index) => {
                     batch.update(doc(db, "ads", ad.id), { order: index });
@@ -226,6 +211,7 @@ export const cards = {
     },
 
     async handleToggleAdStatus(event) {
+        const db = getFirestoreDB(); // ✨ [수정]
         const id = event.target.dataset.id;
         const isActive = event.target.checked;
         try {
@@ -330,7 +316,9 @@ export const cards = {
         }
     },
 
-    async handleDeleteAd(event) {
+   async handleDeleteAd(event) {
+        const db = getFirestoreDB(); // ✨ [수정]
+        const storage = getFirebaseStorage(); // ✨ [수정]
         const idToDelete = event.currentTarget.dataset.id;
         const adToDelete = this.list.find(ad => ad.id === idToDelete);
         if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
