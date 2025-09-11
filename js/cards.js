@@ -62,9 +62,11 @@ export const cards = {
     addEventListeners() {
         this.ui.closeModalButton?.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
         this.ui.saveAdButton?.addEventListener('click', this.handleSaveAd.bind(this));
+        
         [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => {
             if(input) input.addEventListener('input', () => this.updatePreview());
         });
+        
         this.ui.adMediaFileInput?.addEventListener('change', this.handleFileUpload.bind(this));
         this.ui.closeIframeModalButton?.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
@@ -111,19 +113,24 @@ export const cards = {
     
     render() {
         if (!this.ui.adListContainer) return;
+
         this.ui.adListContainer.className = 'card-grid';
+
         if (this.list.length === 0) {
             this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8 col-span-full">등록된 카드가 없습니다.</p>`;
             return;
         }
+        
         this.ui.adListContainer.innerHTML = this.list.map(ad => {
             const isIframe = ad.adType === 'iframe';
             const clickCount = ad.clickCount || 0;
             const statusBadge = this.getAdStatus(ad);
             const isChecked = ad.isActive !== false;
-            const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
+
             let previewHTML = '';
             let typeIconHTML = '';
+            // 🔴 미디어 파일이 없는 경우를 위한 클래스 조건부 추가
+            const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
 
             if (isIframe) {
                 typeIconHTML = `<div class="content-card-type-icon" title="iframe 카드">🔗</div>`;
@@ -138,11 +145,13 @@ export const cards = {
                         previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
                     }
                 } else {
+                    // 미디어 URL이 없을 경우, typeIconHTML은 필요 없고 noMediaClass만 적용
                     previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
                 }
             }
+
             return `
-            <div class="content-card ${ad.isActive === false ? 'opacity-40' : ''}" data-id="${ad.id}">
+            <div class="content-card" data-id="${ad.id}">
                 ${previewHTML}
                 <div class="content-card-content">
                     <div class="content-card-header">
@@ -150,7 +159,11 @@ export const cards = {
                     </div>
                     <div class="content-card-info">
                         ${statusBadge}
-                        ${!isIframe ? `<span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${clickCount}</span>` : ''}
+                        ${!isIframe ? `
+                        <span class="flex items-center" title="클릭 수">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            ${clickCount}
+                        </span>` : ''}
                     </div>
                     <div class="content-card-actions">
                         <div class="publish-info">
@@ -176,7 +189,6 @@ export const cards = {
             </div>`;
         }).join('');
 
-        // 🔴 정상 동작했던 방식대로, render 함수가 끝난 후 이벤트 리스너를 다시 붙여줍니다.
         this.ui.adListContainer.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
         this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
         this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
@@ -193,6 +205,7 @@ export const cards = {
         const isActive = event.target.checked;
         try {
             await updateDoc(doc(db, "ads", id), { isActive: isActive });
+            event.target.closest('.content-card').classList.toggle('opacity-40', !isActive);
         } catch (error) {
             alert("상태 변경에 실패했습니다.");
             event.target.checked = !isActive;
@@ -221,7 +234,9 @@ export const cards = {
 
     resetCardModalState() {
         const btn = this.ui.saveAdButton;
-        if(btn) { btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled'); }
+        if(btn) {
+            btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
+        }
         if(this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0; 
         if(this.ui.uploadProgress) this.ui.uploadProgress.textContent = '0%';
         if(this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%'; 
@@ -252,7 +267,9 @@ export const cards = {
         if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false; 
         if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
         if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
-        if(btn){ btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled'); }
+        if(btn){
+            btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled');
+        }
     },
 
     handleAddNewIframeAd() {
@@ -266,7 +283,6 @@ export const cards = {
         this.editingId = event.currentTarget.dataset.id;
         const ad = this.list.find(ad => ad.id === this.editingId);
         if (!ad) return;
-
         if (ad.adType === 'iframe') {
             this.resetIframeModalState();
             this.ui.iframeModalTitle.textContent = "iframe 카드 수정";
@@ -284,8 +300,7 @@ export const cards = {
             this.ui.adTitleInput.value = ad.title;
             this.ui.adDescriptionInput.value = ad.description || ''; this.ui.adLinkInput.value = ad.link || '';
             this.ui.isPartnersCheckbox.checked = ad.isPartners || false;
-            this.ui.adStartDateInput.value = ad.startDate || '';
-            this.ui.adEndDateInput.value = ad.endDate || '';
+            this.ui.adStartDateInput.value = ad.startDate || ''; this.ui.adEndDateInput.value = ad.endDate || '';
             this.ui.fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
             this.updatePreview(); this.ui.adModal.classList.add('active');
         }
@@ -306,7 +321,7 @@ export const cards = {
             }
         }
     },
-    
+
     async uploadMediaFile() {
         return new Promise((resolve, reject) => {
             this.ui.mediaUploadStatus.style.opacity = 1;
