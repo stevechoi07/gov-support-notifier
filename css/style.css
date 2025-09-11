@@ -120,3 +120,99 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .status-badge {
     font-size: 0.75rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px;
 }
+
+/* css/style.css 파일 맨 아래에 추가 */
+
+/* =============================================================== */
+/* 🖼️ Page Management Card View Styles */
+/* =============================================================== */
+.page-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.page-card {
+    background-color: #1e293b; /* bg-slate-800 */
+    border-radius: 0.75rem; /* rounded-xl */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.page-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.page-card-preview {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+    background-size: cover;
+    background-position: center;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+}
+
+.page-card-preview h4 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.25rem; /* text-xl */
+    font-weight: 700; /* font-bold */
+    padding: 0.5rem 1rem;
+    background-color: rgba(0,0,0,0.4);
+    border-radius: 0.5rem;
+    text-align: center;
+    width: calc(100% - 2rem);
+}
+
+.page-card-content {
+    padding: 1rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-card-info {
+    font-size: 0.875rem; /* text-sm */
+    color: #94a3b8; /* text-slate-400 */
+    margin-bottom: 1rem;
+}
+
+.page-card-actions {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px solid #334155; /* border-slate-700 */
+    padding-top: 1rem;
+}
+
+.page-card-actions .publish-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-card-actions .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.page-card-actions .action-buttons button {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 9999px; /* rounded-full */
+    transition: background-color 0.2s;
+}
+
+.page-card-actions .action-buttons button:hover {
+    background-color: #334155; /* bg-slate-700 */
+}

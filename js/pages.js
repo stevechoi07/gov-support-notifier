@@ -4,30 +4,57 @@ import { db } from './firebase.js';
 import { ui } from './ui.js';
 import { navigateTo } from './navigation.js';
 
-let pagesCollection;
 export let pagesList = []; // editor.js에서 참조할 수 있도록 export
 let isInitialized = false;
 
 function renderPages() {
     if (!ui.pageListContainer) return;
+    
+    // 기존의 pageListContainer의 자식 클래스를 수정하여 grid 레이아웃을 적용합니다.
+    ui.pageListContainer.className = 'page-grid';
+
     ui.pageListContainer.innerHTML = pagesList.length === 0
-        ? `<p class="text-center text-slate-400 py-8">생성된 페이지가 없습니다.</p>`
+        ? `<p class="text-center text-slate-400 py-8 col-span-full">생성된 페이지가 없습니다.</p>`
         : pagesList.map(page => {
             const lastUpdated = page.updatedAt ? new Date(page.updatedAt.seconds * 1000).toLocaleString() : '정보 없음';
             const isPublished = page.isPublished || false;
+            
+            // 페이지 배경 설정을 가져옵니다.
+            const bgColor = page.pageSettings?.bgColor || '#0f172a'; // 기본 배경색
+            const bgImage = page.pageSettings?.bgImage || '';
+            
+            // 미리보기 영역의 인라인 스타일을 생성합니다.
+            const previewStyle = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''}`;
+
             return `
-            <div class="bg-slate-800 rounded-lg p-4 flex items-center justify-between">
-                <div class="flex items-center gap-4"><div class="w-2 h-10 rounded-full ${isPublished ? 'bg-emerald-400' : 'bg-slate-600'}"></div>
-                    <div><h4 class="font-bold text-lg text-slate-100">${page.name}</h4><p class="text-sm text-slate-400">최근 수정: ${lastUpdated}</p></div>
+            <div class="page-card">
+                <div class="page-card-preview" style="${previewStyle}">
+                    <h4>${page.name}</h4>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2"><span class="text-sm font-medium ${isPublished ? 'text-emerald-400' : 'text-slate-400'}">${isPublished ? '게시 중' : '비공개'}</span><label class="toggle-switch"><input type="checkbox" class="publish-toggle" data-id="${page.id}" ${isPublished ? 'checked' : ''}><span class="toggle-slider"></span></label></div>
-                    <button class="edit-page-btn text-slate-300 hover:text-white" data-id="${page.id}" title="편집"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
-                    <button class="delete-page-btn text-red-400 hover:text-red-500" data-id="${page.id}" data-name="${page.name}" title="삭제"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                <div class="page-card-content">
+                    <p class="page-card-info">최근 수정: ${lastUpdated}</p>
+                    <div class="page-card-actions">
+                        <div class="publish-info">
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="publish-toggle" data-id="${page.id}" ${isPublished ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="text-sm font-medium ${isPublished ? 'text-emerald-400' : 'text-slate-400'}">${isPublished ? '게시 중' : '비공개'}</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="edit-page-btn text-slate-300 hover:text-white" data-id="${page.id}" title="편집">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                            </button>
+                            <button class="delete-page-btn text-red-400 hover:text-red-500" data-id="${page.id}" data-name="${page.name}" title="삭제">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>`;
         }).join('');
 
+    // 이벤트 리스너를 다시 연결합니다.
     document.querySelectorAll('.publish-toggle').forEach(t => t.addEventListener('change', handlePublishToggleChange));
     document.querySelectorAll('.edit-page-btn').forEach(b => b.addEventListener('click', (e) => navigateTo('editor', e.currentTarget.dataset.id)));
     document.querySelectorAll('.delete-page-btn').forEach(b => b.addEventListener('click', handleDeletePageClick));
@@ -60,7 +87,7 @@ export async function handleNewPageClick() {
         try {
             const newPageRef = await addDoc(collection(db, "pages"), {
                 name: name.trim(), isPublished: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), components: [],
-                pageSettings: { bgColor: '#DCEAF7', bgImage: '', bgVideo: '', viewport: '375px,667px' }
+                pageSettings: { bgColor: '#1e293b', bgImage: '', bgVideo: '', viewport: '375px,667px' }
             });
             navigateTo('editor', newPageRef.id);
         } catch (error) { alert("새 페이지 생성에 실패했습니다."); }
