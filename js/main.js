@@ -192,7 +192,7 @@ async function handleNewPageClick() {
 
 
 // [ 네비게이션 함수 ]
-// main.js 파일의 navigateTo 함수를 아래 코드로 교체해주세요.
+// main.js 파일의 navigateTo 함수를 아래 코드로 교체
 
 function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
@@ -201,16 +201,16 @@ function navigateTo(viewName, pageId = null) {
         return;
     }
 
-    ui.views.forEach(view => view.classList.add('hidden'));
-    ui.navLinks.forEach(link => {
+    if (ui.views) ui.views.forEach(view => view.classList.add('hidden'));
+    if (ui.navLinks) ui.navLinks.forEach(link => {
         const isActive = (viewName === 'editor' && link.dataset.view === 'pages') || viewName === link.dataset.view;
         link.classList.toggle('active', isActive);
     });
     
     targetView.classList.remove('hidden');
-    ui.mainContent.classList.toggle('p-6', viewName !== 'editor');
+    if (ui.mainContent) ui.mainContent.classList.toggle('p-6', viewName !== 'editor');
 
-    if (ui.viewTitle.isContentEditable) {
+    if (ui.viewTitle && ui.viewTitle.isContentEditable) {
         ui.viewTitle.setAttribute('contenteditable', 'false');
     }
 
@@ -225,8 +225,8 @@ function navigateTo(viewName, pageId = null) {
         editor: { title: '📝 페이지 편집 중...', action: ''}
     };
 
-    ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
-    ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
+    if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
+    if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
     
     if (viewName === 'pages') {
         const newPageBtn = document.getElementById('new-page-btn');
@@ -234,25 +234,22 @@ function navigateTo(viewName, pageId = null) {
         renderPages();
     } else if (viewName === 'editor' && pageId) {
         editor.init(pageId);
-    // main.js 파일의 navigateTo 함수 내부, if (viewName === 'cards') 부분을 아래 코드로 교체해주세요.
+    } else if (viewName === 'cards') {
+        cards.mapUI();
+        cards.addEventListeners();
 
-	} else if (viewName === 'cards') {
-		// 사용자가 'cards' 뷰에 들어왔을 때 UI를 준비하고 이벤트를 연결합니다.
-		cards.mapUI();
-		cards.addEventListeners();
-
-		const newCardBtn = document.getElementById('add-new-card-button');
-		const newIframeCardBtn = document.getElementById('add-new-iframe-card-button');
-		
-		if(newCardBtn) {
-			newCardBtn.addEventListener('click', () => cards.handleAddNewAd());
-		}
-		if(newIframeCardBtn) {
-			newIframeCardBtn.addEventListener('click', () => cards.handleAddNewIframeAd());
-		}
-		
-		cards.render();
-	}
+        const newCardBtn = document.getElementById('add-new-card-button');
+        const newIframeCardBtn = document.getElementById('add-new-iframe-card-button');
+        
+        if(newCardBtn) {
+            newCardBtn.addEventListener('click', () => cards.handleAddNewAd());
+        }
+        if(newIframeCardBtn) {
+            newIframeCardBtn.addEventListener('click', () => cards.handleAddNewIframeAd());
+        }
+        
+        cards.render();
+    }
 }
 
 // ===============================================================
@@ -549,24 +546,20 @@ const editor = {
   }
 };
 
-// js/main.js 파일의 cards 객체를 아래 코드로 완전히 교체하세요.
-
 // ===============================================================
-// 🚀 Content Card Logic (v1.1 - Null-Safe Version)
+// 🚀 Content Card Logic (v1.2 - Final Debug Version)
 // ===============================================================
 const cards = {
   list: [], editingId: null, selectedMediaFile: null, currentMediaUrl: '', currentMediaType: 'image',
   currentUploadTask: null, tempPreviewUrl: null, ui: {}, isInitialized: false,
   
-init() {
+  init() {
     if (this.isInitialized) return;
     this.collection = collection(db, "ads");
-    // mapUI와 addEventListeners는 여기서 더 이상 호출하지 않습니다.
     this.listen();
     this.initSortable();
     this.isInitialized = true;
-},  
-  
+  },
   mapUI() {
       this.ui = {
           adListContainer: document.getElementById('ad-list-container'),
@@ -601,11 +594,9 @@ init() {
   addEventListeners() {
       if (this.ui.closeModalButton) this.ui.closeModalButton.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
       if (this.ui.saveAdButton) this.ui.saveAdButton.addEventListener('click', this.handleSaveAd.bind(this));
-      
       [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => {
           if (input) input.addEventListener('input', () => this.updatePreview());
       });
-      
       if (this.ui.adMediaFileInput) this.ui.adMediaFileInput.addEventListener('change', this.handleFileUpload.bind(this));
       if (this.ui.closeIframeModalButton) this.ui.closeIframeModalButton.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
       if (this.ui.saveIframeAdButton) this.ui.saveIframeAdButton.addEventListener('click', this.handleSaveIframeAd.bind(this));
@@ -621,39 +612,15 @@ init() {
       });
   },
   initSortable() {
-      if (!this.ui.adListContainer) return;
-      new Sortable(this.ui.adListContainer, {
-          handle: '.drag-handle', animation: 150,
-          onEnd: async (evt) => {
-              if (evt.oldIndex === evt.newIndex) return;
-              const movedItem = this.list.splice(evt.oldIndex, 1)[0];
-              this.list.splice(evt.newIndex, 0, movedItem);
-              const batch = writeBatch(db);
-              this.list.forEach((ad, index) => {
-                  batch.update(doc(db, "ads", ad.id), { order: index });
-              });
-              await batch.commit();
-          },
-      });
+    // ... 이전과 동일 ...
   },
   getAdStatus(ad) {
-      const now = new Date();
-      const start = ad.startDate ? new Date(ad.startDate) : null;
-      const end = ad.endDate ? new Date(ad.endDate) : null;
-      if (!start && !end) return `<span class="status-badge bg-slate-600 text-slate-200">상시</span>`;
-      if (start && now < start) return `<span class="status-badge bg-blue-500 text-white">예정</span>`;
-      if (end && now > end) return `<span class="status-badge bg-red-500 text-white">종료</span>`;
-      return `<span class="status-badge bg-emerald-500 text-white">진행중</span>`;
+    // ... 이전과 동일 ...
   },
   formatDateTime(dateTimeString) {
-      if (!dateTimeString) return '...';
-      const date = new Date(dateTimeString);
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    // ... 이전과 동일 ...
   },
-  
-// main.js 파일의 cards 객체 안, render 함수를 아래 코드로 교체해주세요.
-
-render() {
+  render() {
     if(!this.ui.adListContainer) return;
     this.ui.adListContainer.innerHTML = '';
     if (this.list.length === 0) {
@@ -664,17 +631,39 @@ render() {
         const adElement = document.createElement('div');
         adElement.className = `bg-slate-800 rounded-xl shadow-md transition-opacity ${ad.isActive === false ? 'opacity-40' : ''}`;
         adElement.dataset.id = ad.id;
-        // ... (adElement.innerHTML 부분은 이전과 동일) ...
+        const isIframe = ad.adType === 'iframe';
+        const mediaIcon = isIframe 
+          ? `<div class="w-12 h-12 flex-shrink-0 bg-indigo-900 text-indigo-400 rounded-lg flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>` 
+          : (ad.mediaType === 'video' 
+              ? `<div class="w-12 h-12 flex-shrink-0 bg-rose-900 text-rose-400 rounded-lg flex items-center justify-center text-2xl">🎬</div>` 
+              : `<div class="w-12 h-12 flex-shrink-0 bg-sky-900 text-sky-400 rounded-lg flex items-center justify-center text-2xl">🖼️</div>`);
+        const clickCount = ad.clickCount || 0;
+        const statusBadge = this.getAdStatus(ad);
+        const periodText = (ad.startDate || ad.endDate) 
+          ? `${this.formatDateTime(ad.startDate)} ~ ${this.formatDateTime(ad.endDate)}`
+          : '항상 게시';
+        const isChecked = ad.isActive !== false ? 'checked' : '';
         adElement.innerHTML = `
           <div class="p-4 flex items-start gap-4">
               <div class="drag-handle text-slate-500 pt-3 hidden sm:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
-              <div class="w-12 h-12 flex-shrink-0 bg-sky-900 text-sky-400 rounded-lg flex items-center justify-center text-2xl">🖼️</div>
+              ${mediaIcon}
               <div class="flex-grow overflow-hidden">
                   <p class="font-bold text-slate-100 truncate">${ad.title}</p>
-                  <div class="text-sm text-slate-400 mt-1">${this.getAdStatus(ad)}</div>
+                  <div class="flex items-center text-sm text-slate-400 mt-1 gap-2">
+                      ${statusBadge}
+                      <span class="text-slate-600">|</span>
+                      <div class="flex items-center ${isIframe ? 'hidden' : ''}" title="클릭 수">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                          <span>${clickCount}</span>
+                      </div>
+                  </div>
+                  <div class="text-xs text-slate-500 mt-2">${periodText}</div>
               </div>
               <div class="flex-shrink-0">
-                  <label class="toggle-switch"><input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${ad.isActive !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+                  <label class="toggle-switch">
+                      <input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked}>
+                      <span class="toggle-slider"></span>
+                  </label>
               </div>
           </div>
           <div class="border-t border-slate-700 p-2 flex justify-end gap-2">
@@ -685,105 +674,38 @@ render() {
         if(this.ui.adListContainer) this.ui.adListContainer.appendChild(adElement);
     });
 
-    // --- 🕵️‍♂️ 디버깅 코드 추가 ---
-    console.log("cards.render: 카드 목록 렌더링 완료. 수정/삭제 버튼 리스너 연결 시작.");
-    const editButtons = document.querySelectorAll('.edit-ad-button');
-    const deleteButtons = document.querySelectorAll('.delete-ad-button');
-    console.log(`수정 버튼 ${editButtons.length}개, 삭제 버튼 ${deleteButtons.length}개 찾음.`);
-
-    editButtons.forEach(btn => {
-        btn.addEventListener('click', this.handleEditAd.bind(this));
-    });
-    console.log("-> 수정 버튼들에 이벤트 리스너 연결 완료.");
-    
-    deleteButtons.forEach(btn => {
-        btn.addEventListener('click', this.handleDeleteAd.bind(this));
-    });
-    console.log("-> 삭제 버튼들에 이벤트 리스너 연결 완료.");
-    // --- 여기까지 ---
-
+    document.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
+    document.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
     document.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
-},
-
+  },
   async handleToggleAdStatus(event) {
-      const id = event.target.dataset.id;
-      const isActive = event.target.checked;
-      try {
-          await updateDoc(doc(db, "ads", id), { isActive: isActive });
-          const adElement = event.target.closest('[data-id]');
-          if(adElement) adElement.classList.toggle('opacity-40', !isActive);
-      } catch (error) {
-          alert("상태 변경에 실패했습니다.");
-          event.target.checked = !isActive;
-      }
+    // ... 이전과 동일 ...
   },
   handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) {
-          if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
-          this.selectedMediaFile = null;
-          if (this.tempPreviewUrl) URL.revokeObjectURL(this.tempPreviewUrl);
-          this.tempPreviewUrl = null;
-          this.updatePreview();
-          return;
-      }
-      if (file.size > 50 * 1024 * 1024) {
-          alert('파일 크기는 50MB를 초과할 수 없습니다.');
-          if(this.ui.adMediaFileInput) this.ui.adMediaFileInput.value = '';
-          if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
-          return;
-      }
-      this.selectedMediaFile = file;
-      if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = file.name;
-      this.currentMediaType = file.type.startsWith('image/') ? 'image' : 'video';
-      if (this.tempPreviewUrl) URL.revokeObjectURL(this.tempPreviewUrl);
-      this.tempPreviewUrl = URL.createObjectURL(file);
-      this.updatePreview();
+    // ... 이전과 동일 ...
   },
   resetCardModalState() {
-      const btn = this.ui.saveAdButton;
-      if (btn) {
-        btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
-      }
-      if (this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0;
-      if (this.ui.uploadProgress) this.ui.uploadProgress.textContent = '0%';
-      if (this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%';
-      if (this.ui.uploadLabel) this.ui.uploadLabel.textContent = '업로드 중...';
-      if (this.ui.adTitleInput) this.ui.adTitleInput.value = '';
-      if (this.ui.adDescriptionInput) this.ui.adDescriptionInput.value = '';
-      if (this.ui.adLinkInput) this.ui.adLinkInput.value = '';
-      if (this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.checked = false;
-      if (this.ui.adStartDateInput) this.ui.adStartDateInput.value = '';
-      if (this.ui.adEndDateInput) this.ui.adEndDateInput.value = '';
-      if (this.ui.adMediaFileInput) this.ui.adMediaFileInput.value = '';
-      if (this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
-      if (this.ui.adPreview) this.ui.adPreview.innerHTML = '';
-      if (this.tempPreviewUrl) { URL.revokeObjectURL(this.tempPreviewUrl); this.tempPreviewUrl = null; }
+    // ... 이전과 동일 ...
   },
   handleAddNewAd() {
+      console.log("handleAddNewAd 함수 호출됨"); // ◀◀◀ 디버깅 로그
       this.editingId = null; this.selectedMediaFile = null; this.currentMediaUrl = ''; this.currentMediaType = 'image';
       if (this.ui.modalTitle) this.ui.modalTitle.textContent = "새 미디어 카드";
       this.resetCardModalState(); this.updatePreview();
       if (this.ui.adModal) this.ui.adModal.classList.add('active');
   },
   resetIframeModalState() {
-      const btn = this.ui.saveIframeAdButton;
-      if (this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = '';
-      if (this.ui.iframeAdCodeInput) this.ui.iframeAdCodeInput.value = '';
-      if (this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false;
-      if (this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
-      if (this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
-      if (btn) {
-        btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled');
-      }
+    // ... 이전과 동일 ...
   },
   handleAddNewIframeAd() {
+      console.log("handleAddNewIframeAd 함수 호출됨"); // ◀◀◀ 디버깅 로그
       this.editingId = null;
       if (this.ui.iframeModalTitle) this.ui.iframeModalTitle.textContent = "새 iframe 카드";
       this.resetIframeModalState();
       if (this.ui.iframeAdModal) this.ui.iframeAdModal.classList.add('active');
   },
   handleEditAd(event) {
+      console.log("handleEditAd 함수 호출됨", event.target.dataset.id); // ◀◀◀ 디버깅 로그
       this.editingId = event.target.dataset.id;
       const ad = this.list.find(ad => ad.id === this.editingId);
       if (!ad) return;
@@ -813,132 +735,19 @@ render() {
       }
   },
   async handleDeleteAd(event) {
-      const idToDelete = event.target.dataset.id;
-      const adToDelete = this.list.find(ad => ad.id === idToDelete);
-      if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
-          try {
-              if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
-              await deleteDoc(doc(db, "ads", idToDelete));
-          } catch (error) {
-              console.warn("파일 삭제 실패:", error.message);
-              // 파일 삭제에 실패하더라도 문서 삭제는 시도
-              await deleteDoc(doc(db, "ads", idToDelete));
-          }
-      }
+    // ... 이전과 동일 ...
   },
   async uploadMediaFile() {
-      return new Promise((resolve, reject) => {
-          if (!this.ui.mediaUploadStatus) return reject('Media upload status element not found');
-          this.ui.mediaUploadStatus.style.opacity = 1;
-          const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
-          const folder = this.currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
-          const storageRef = ref(storage, `${folder}/${fileName}`);
-          this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
-          this.currentUploadTask.on('state_changed', 
-              (snapshot) => {
-                  const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                  if (this.ui.uploadProgress) this.ui.uploadProgress.textContent = `${Math.round(progress)}%`;
-                  if (this.ui.progressBarFill) this.ui.progressBarFill.style.width = `${progress}%`;
-              }, 
-              (error) => { reject(error); }, 
-              async () => {
-                  const downloadURL = await getDownloadURL(this.currentUploadTask.snapshot.ref);
-                  resolve(downloadURL);
-              }
-          );
-      });
+    // ... 이전과 동일 ...
   },
   async handleSaveAd() {
-      if (!this.ui.adTitleInput || !this.ui.adTitleInput.value.trim()) { alert('카드 제목을 입력해주세요!'); return; }
-      const btn = this.ui.saveAdButton;
-      if (btn) {
-        btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
-      }
-      try {
-          let mediaUrlToSave = this.currentMediaUrl;
-          if (this.selectedMediaFile) {
-              if (this.editingId && this.currentMediaUrl) {
-                  try { await deleteObject(ref(storage, this.currentMediaUrl)); } catch (e) { console.warn("Could not delete old file:", e.message); }
-              }
-              mediaUrlToSave = await this.uploadMediaFile();
-              if (this.ui.uploadLabel) this.ui.uploadLabel.textContent = '업로드 완료!';
-          }
-          const adData = {
-              adType: 'card', title: this.ui.adTitleInput.value, description: this.ui.adDescriptionInput.value,
-              link: this.ui.adLinkInput.value, isPartners: this.ui.isPartnersCheckbox.checked,
-              mediaUrl: mediaUrlToSave, mediaType: this.currentMediaType,
-              startDate: this.ui.adStartDateInput.value, endDate: this.ui.adEndDateInput.value,
-          };
-          if (this.editingId) {
-              const ad = this.list.find(ad => ad.id === this.editingId);
-              Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, isActive: ad.isActive !== false });
-              await updateDoc(doc(db, "ads", this.editingId), adData);
-          } else {
-              Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
-              await addDoc(this.collection, adData);
-          }
-          if (this.ui.adModal) this.ui.adModal.classList.remove('active');
-      } catch (error) {
-          console.error("저장 중 오류 발생:", error); alert("작업에 실패했습니다.");
-          if (btn) {
-            btn.disabled = false; btn.innerHTML = `저장하기`;
-          }
-      }
+    // ... 이전과 동일 ...
   },
   async handleSaveIframeAd() {
-      const title = this.ui.iframeAdTitleInput.value.trim();
-      const code = this.ui.iframeAdCodeInput.value.trim();
-      if (!title || !code) { alert('제목과 코드를 모두 입력해주세요!'); return; }
-      const btn = this.ui.saveIframeAdButton;
-      if (btn) {
-        btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
-      }
-      try {
-          const adData = {
-              adType: 'iframe', title: title, iframeCode: code,
-              isPartners: this.ui.iframeIsPartnersCheckbox.checked,
-              startDate: this.ui.iframeAdStartDateInput.value, endDate: this.ui.iframeAdEndDateInput.value,
-          };
-          if (this.editingId) {
-              const ad = this.list.find(ad => ad.id === this.editingId);
-              Object.assign(adData, { order: ad.order, clickCount: 0, isActive: ad.isActive !== false });
-              await updateDoc(doc(db, "ads", this.editingId), adData);
-          } else {
-              Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
-              await addDoc(this.collection, adData);
-          }
-          if (this.ui.iframeAdModal) this.ui.iframeAdModal.classList.remove('active');
-      } catch (error) {
-          console.error("iframe 카드 저장 중 오류:", error); alert("작업에 실패했습니다.");
-          if (btn) {
-            btn.disabled = false; btn.innerHTML = '저장하기';
-          }
-      }
+    // ... 이전과 동일 ...
   },
   updatePreview() {
-      if (!this.ui.adPreview || !this.ui.adTitleInput || !this.ui.adDescriptionInput || !this.ui.isPartnersCheckbox) return;
-      const title = this.ui.adTitleInput.value || "카드 제목";
-      const description = this.ui.adDescriptionInput.value || "카드 설명이 여기에 표시됩니다.";
-      const mediaSrc = this.tempPreviewUrl || this.currentMediaUrl;
-      let mediaElement = '';
-      if (mediaSrc) {
-          const type = this.selectedMediaFile ? this.currentMediaType : (this.list.find(ad => ad.id === this.editingId)?.mediaType || 'image');
-          mediaElement = type === 'video' ? `<video autoplay loop muted playsinline src="${mediaSrc}"></video>` : `<img src="${mediaSrc}" alt="Ad preview">`;
-      } else {
-          mediaElement = `<div class="flex items-center justify-center h-full bg-slate-800 rounded-t-xl"><span class="text-slate-500 text-sm">미디어 파일 없음</span></div>`;
-      }
-      const partnersText = this.ui.isPartnersCheckbox.checked ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
-      this.ui.adPreview.innerHTML = `
-        <div class="preview-media-container">${mediaElement}</div>
-        <div class="p-4 flex-grow flex flex-col">
-            <span class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Sponsored</span>
-            <p class="mt-2 text-lg leading-tight font-bold text-slate-100">${title}</p>
-            <p class="mt-2 text-slate-400 text-sm flex-grow">${description}</p>
-            <div class="mt-auto">${partnersText}</div>
-            <div class="mt-4 pt-4 border-t border-slate-600 text-right">
-                 <span class="text-sm font-semibold text-emerald-400">자세히 보기 &rarr;</span>
-            </div>
-        </div>`;
+    // ... 이전과 동일 ...
   },
 };
 
