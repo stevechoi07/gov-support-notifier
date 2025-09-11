@@ -1,11 +1,13 @@
-// js/firebase.js v1.3 - Getter 함수 패턴 적용
+// js/firebase.js v2.0 - 디버깅용 버전 확인 로그 추가
+
+// ✨ [디버깅 코드] 이 메시지가 콘솔에 보이는지 확인해주세요!
+console.log("🔥🔥🔥 Firebase.js v2.0 파일이 성공적으로 로드되었습니다! 🔥🔥🔥");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
-// 모듈 내부에서만 사용되는 비공개 변수
 let auth, db, storage;
 
 const initFirebase = async () => {
@@ -29,8 +31,6 @@ const initFirebase = async () => {
 
 export const firebaseReady = initFirebase();
 
-// <<< 여기가 핵심! <<<
-// 더 이상 변수를 직접 export하지 않고, 함수를 통해 반환합니다.
 export const getFirebaseAuth = () => auth;
 export const getFirestoreDB = () => db;
 export const getFirebaseStorage = () => storage;
