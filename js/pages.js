@@ -2,13 +2,15 @@
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ui } from './ui.js';
-import { firebaseReady, getFirestoreDB } from './firebase.js'; // ✨ 직접 import
+import { firebaseReady, getFirestoreDB } from './firebase.js';
 
 export let pagesList = [];
 let isInitialized = false;
 
 export async function renderPages() {
-    const navigate = (await import('./navigation.js')).navigateTo;
+    // 순환 참조를 피하기 위해 필요할 때만 동적으로 import 합니다.
+    const { navigateTo } = await import('./navigation.js');
+
     if (!ui.pageListContainer) return;
     ui.pageListContainer.className = 'page-grid';
     ui.pageListContainer.innerHTML = pagesList.length === 0
@@ -48,13 +50,15 @@ export async function renderPages() {
             </div>`;
         }).join('');
 
-    document.querySelectorAll('.edit-page-btn').forEach(b => b.addEventListener('click', (e) => navigate('editor', e.currentTarget.dataset.id)));
-    document.querySelectorAll('.delete-page-btn').forEach(b => b.addEventListener('click', handleDeletePageClick));
     document.querySelectorAll('.publish-toggle').forEach(t => t.addEventListener('change', handlePublishToggleChange));
+    document.querySelectorAll('.edit-page-btn').forEach(b => b.addEventListener('click', (e) => navigateTo('editor', e.currentTarget.dataset.id)));
+    document.querySelectorAll('.delete-page-btn').forEach(b => b.addEventListener('click', handleDeletePageClick));
 }
 
+
 async function handlePublishToggleChange(e) {
-	await firebaseReady; const db = getFirestoreDB(); // ✨ 안전장치
+    await firebaseReady;
+    const db = getFirestoreDB();
     const pageIdToChange = e.currentTarget.dataset.id;
     const isNowPublished = e.currentTarget.checked;
     try {
@@ -68,7 +72,8 @@ async function handlePublishToggleChange(e) {
 }
 
 async function handleDeletePageClick(e) {
-	await firebaseReady; const db = getFirestoreDB(); // ✨ 안전장치
+    await firebaseReady;
+    const db = getFirestoreDB();
     const { id, name } = e.currentTarget.dataset;
     if (confirm(`'${name}' 페이지를 정말 삭제하시겠습니까?`)) {
         try { await deleteDoc(doc(db, "pages", id)); } catch (error) { alert("페이지 삭제에 실패했습니다."); }
@@ -76,7 +81,8 @@ async function handleDeletePageClick(e) {
 }
 
 export async function handleNewPageClick() {
-	await firebaseReady; const db = getFirestoreDB(); // ✨ 안전장치
+    await firebaseReady;
+    const db = getFirestoreDB();
     const name = prompt("새 페이지의 이름을 입력하세요:");
     if (name && name.trim()) {
         try {
@@ -90,11 +96,12 @@ export async function handleNewPageClick() {
             return null;
         }
     }
-    return newPageRef.id;
+    return null;
 }
 
 async function listenToPages() {
-    await firebaseReady; const db = getFirestoreDB(); // ✨ 안전장치
+    await firebaseReady;
+    const db = getFirestoreDB();
     const q = query(collection(db, "pages"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

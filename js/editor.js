@@ -1,13 +1,13 @@
-// js/editor.js v1.12 - SyntaxError 버그 수정
+// js/editor.js v2.0 - 자생력 강화 버전
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ui } from './ui.js';
 import { pagesList } from './pages.js';
 import { navigateTo } from './navigation.js';
+import { firebaseReady, getFirestoreDB } from './firebase.js';
 
 export const editor = {
     currentPageId: null, 
-    db: null,
     components: [], 
     pageSettings: {}, 
     activeComponentId: null, 
@@ -27,12 +27,8 @@ export const editor = {
         { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } 
     ],
 
-    async init(pageId, { db }) {
-        this.db = db;
-        if (!this.db) {
-            console.error("Editor 모듈 초기화 실패: DB가 제공되지 않음");
-            return;
-        }
+    async init(pageId) {
+        await firebaseReady;
         this.currentPageId = pageId;
         const editorView = document.getElementById('editor-view');
         if (!editorView) return;
@@ -68,7 +64,9 @@ export const editor = {
     },
 
     async loadProject() {
-        const docRef = doc(this.db, "pages", this.currentPageId);
+        await firebaseReady;
+        const db = getFirestoreDB();
+        const docRef = doc(db, "pages", this.currentPageId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
@@ -134,6 +132,8 @@ export const editor = {
     },
 
     async handleTitleUpdate() {
+        await firebaseReady;
+        const db = getFirestoreDB();
         const newTitle = ui.viewTitle.textContent.trim();
         const originalTitle = ui.viewTitle.dataset.originalTitle;
         if (!newTitle) {
@@ -143,7 +143,7 @@ export const editor = {
         }
         if (newTitle === originalTitle) return;
         try {
-            const docRef = doc(this.db, "pages", this.currentPageId);
+            const docRef = doc(db, "pages", this.currentPageId);
             await updateDoc(docRef, { name: newTitle });
             ui.viewTitle.dataset.originalTitle = newTitle;
             const pageInList = pagesList.find(p => p.id === this.currentPageId);
@@ -330,15 +330,7 @@ export const editor = {
             case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break;
             case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break;
             case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', backgroundColorOpacity: 1 }; break;
-            case 'lead-form':
-                newComponent.googleScriptUrl = '';
-                newComponent.submitText = '문의 남기기';
-                newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!';
-                newComponent.activeFields = ['name', 'email'];
-                // ✨ [버그 수정] 객체 정의 끝에 있던 잘못된 대괄호 ']' 제거
-                newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' };
-                newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' };
-                break;
+            case 'lead-form': newComponent.googleScriptUrl = ''; newComponent.submitText = '문의 남기기'; newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' }; newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' }; break;
         }
         this.components.push(newComponent);
         this.activeComponentId = newComponent.id;
@@ -353,7 +345,7 @@ export const editor = {
             if (!current[keys[i]]) current[keys[i]] = {};
             current = current[keys[i]];
         }
-        current[keys[keys.length - 1]] = value;
+        current[keys[keys.length - 1]]] = value;
         this.saveAndRender(rerenderControls, true);
     },
     deleteComponent(id) {
@@ -362,13 +354,16 @@ export const editor = {
         if (this.activeComponentId === id) this.activeComponentId = null;
         this.saveAndRender(true, true);
     },
+
     async saveAndRender(rerenderControls = true, rerenderPreview = true) {
         if (rerenderPreview) this.renderPreview();
         if (rerenderControls) { 
             this.renderControls();
         }
         try {
-            const docRef = doc(this.db, "pages", this.currentPageId);
+            await firebaseReady;
+            const db = getFirestoreDB();
+            const docRef = doc(db, "pages", this.currentPageId);
             await updateDoc(docRef, { components: this.components, pageSettings: this.pageSettings, updatedAt: serverTimestamp() });
         } catch (error) { console.error("자동 저장 실패:", error); }
     }

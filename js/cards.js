@@ -1,12 +1,11 @@
-// js/cards.js v1.9 - 의존성 주입(DI) 적용
+// js/cards.js v2.0 - 자생력 강화 버전
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
+import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
 export const cards = {
     list: [],
-    db: null,
-    storage: null,
     editingId: null,
     selectedMediaFile: null,
     currentMediaUrl: '',
@@ -16,18 +15,11 @@ export const cards = {
     ui: {},
     isInitialized: false,
     
-    init({ db, storage }) {
-        this.db = db;
-        this.storage = storage;
-        if (!this.db || !this.storage) {
-            console.error("Cards 모듈 초기화 실패: DB 또는 스토리지가 제공되지 않음");
-            return;
-        }
+    init() {
         if (this.isInitialized) {
             this.render();
             return;
         }
-
         this.mapUI();
         this.addEventListeners();
         this.listen();
@@ -80,8 +72,10 @@ export const cards = {
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
     },
 
-    listen() {
-        const q = query(collection(this.db, "ads"), orderBy("order", "asc"));
+    async listen() {
+        await firebaseReady;
+        const db = getFirestoreDB();
+        const q = query(collection(db, "ads"), orderBy("order", "asc"));
         onSnapshot(q, (querySnapshot) => {
             this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const cardsView = document.getElementById('cards-view');
@@ -98,15 +92,17 @@ export const cards = {
             animation: 150,
             ghostClass: 'sortable-ghost',
             onEnd: async (evt) => {
+                await firebaseReady;
+                const db = getFirestoreDB();
                 if (evt.oldIndex === evt.newIndex) return;
 
                 const newOrderIds = Array.from(evt.to.children).map(item => item.dataset.id);
                 const reorderedList = newOrderIds.map(id => this.list.find(item => item.id === id));
                 
-                const batch = writeBatch(this.db);
+                const batch = writeBatch(db);
                 reorderedList.forEach((ad, index) => {
                     if (ad) {
-                        batch.update(doc(this.db, "ads", ad.id), { order: index });
+                        batch.update(doc(db, "ads", ad.id), { order: index });
                     }
                 });
                 await batch.commit();
@@ -183,9 +179,11 @@ export const cards = {
     },
 
     async handleToggleAdStatus(event) {
+        await firebaseReady;
+        const db = getFirestoreDB();
         const id = event.target.dataset.id;
         const isActive = event.target.checked;
-        try { await updateDoc(doc(this.db, "ads", id), { isActive: isActive }); } catch (error) {
+        try { await updateDoc(doc(db, "ads", id), { isActive: isActive }); } catch (error) {
             alert("상태 변경에 실패했습니다.");
             event.target.checked = !isActive;
         }
@@ -286,25 +284,30 @@ export const cards = {
     },
 
     async handleDeleteAd(event) {
+        await firebaseReady;
+        const db = getFirestoreDB();
+        const storage = getFirebaseStorage();
         const idToDelete = event.currentTarget.dataset.id;
         const adToDelete = this.list.find(ad => ad.id === idToDelete);
         if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
             try {
-                if (adToDelete.mediaUrl) { await deleteObject(ref(this.storage, adToDelete.mediaUrl)); }
-                await deleteDoc(doc(this.db, "ads", idToDelete));
+                if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
+                await deleteDoc(doc(db, "ads", idToDelete));
             } catch (error) {
                 if (error.code !== 'storage/object-not-found') { console.error("파일 삭제 중 에러 발생:", error); }
-                await deleteDoc(doc(this.db, "ads", idToDelete));
+                await deleteDoc(doc(db, "ads", idToDelete));
             }
         }
     },
 
     async uploadMediaFile() {
+        await firebaseReady;
+        const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
             this.ui.mediaUploadStatus.style.opacity = 1;
             const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
             const folder = this.currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
-            const storageRef = ref(this.storage, `${folder}/${fileName}`);
+            const storageRef = ref(storage, `${folder}/${fileName}`);
             this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
             this.currentUploadTask.on('state_changed', 
                 (snapshot) => {
@@ -322,6 +325,8 @@ export const cards = {
     },
 
     async handleSaveAd() {
+        await firebaseReady;
+        const db = getFirestoreDB();
         if (!this.ui.adTitleInput.value.trim()) { alert('카드 제목을 입력해주세요!'); return; }
         const btn = this.ui.saveAdButton;
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
@@ -329,7 +334,8 @@ export const cards = {
             let mediaUrlToSave = this.currentMediaUrl;
             if (this.selectedMediaFile) {
                 if (this.editingId && this.currentMediaUrl) {
-                    try { await deleteObject(ref(this.storage, this.currentMediaUrl)); } catch (e) { console.warn("Could not delete old file:", e.message); }
+                    const storage = getFirebaseStorage();
+                    try { await deleteObject(ref(storage, this.currentMediaUrl)); } catch (e) { console.warn("Could not delete old file:", e.message); }
                 }
                 mediaUrlToSave = await this.uploadMediaFile();
                 this.ui.uploadLabel.textContent = '업로드 완료!';
@@ -343,10 +349,10 @@ export const cards = {
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, isActive: ad.isActive !== false });
-                await updateDoc(doc(this.db, "ads", this.editingId), adData);
+                await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
-                await addDoc(collection(this.db, "ads"), adData);
+                await addDoc(collection(db, "ads"), adData);
             }
             this.ui.adModal.classList.remove('active');
         } catch (error) {
@@ -356,6 +362,8 @@ export const cards = {
     },
 
     async handleSaveIframeAd() {
+        await firebaseReady;
+        const db = getFirestoreDB();
         const title = this.ui.iframeAdTitleInput.value.trim();
         const code = this.ui.iframeAdCodeInput.value.trim();
         if (!title || !code) { alert('제목과 코드를 모두 입력해주세요!'); return; }
@@ -370,10 +378,10 @@ export const cards = {
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: 0, isActive: ad.isActive !== false });
-                await updateDoc(doc(this.db, "ads", this.editingId), adData);
+                await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
-                await addDoc(collection(this.db, "ads"), adData);
+                await addDoc(collection(db, "ads"), adData);
             }
             this.ui.iframeAdModal.classList.remove('active');
         } catch (error) {
