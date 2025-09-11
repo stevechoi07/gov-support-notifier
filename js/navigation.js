@@ -3,7 +3,7 @@ import { ui } from './ui.js';
 import { init as initPages, handleNewPageClick } from './pages.js';
 import { cards } from './cards.js';
 import { editor } from './editor.js';
-import { init as initLayout } from './layout.js'; // 🔴 layout.js 모듈 가져오기
+import { init as initLayout } from './layout.js';
 
 export function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
@@ -26,7 +26,6 @@ export function navigateTo(viewName, pageId = null) {
     }
 
     const viewConfig = {
-        // 🔴 'layout' 뷰의 제목과 헤더 버튼 설정 추가
         layout: { title: '🎨 레이아웃 관리', action: `<button id="add-content-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 콘텐츠 추가</button>` },
         pages: { title: '📄 페이지 관리', action: `<button id="new-page-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">✨ 새 페이지</button>` },
         cards: { title: '🗂️ 콘텐츠 카드 관리', action: `
@@ -41,7 +40,6 @@ export function navigateTo(viewName, pageId = null) {
     if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
-    // 🔴 각 뷰에 맞는 초기화 함수 호출 로직에 'layout' 추가
     if (viewName === 'layout') {
         initLayout();
         // TODO: document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
@@ -50,8 +48,19 @@ export function navigateTo(viewName, pageId = null) {
         document.getElementById('new-page-btn')?.addEventListener('click', handleNewPageClick);
     } else if (viewName === 'cards') {
         cards.init();
-        document.getElementById('add-new-card-button')?.addEventListener('click', () => cards.handleAddNewAd());
-        document.getElementById('add-new-iframe-card-button')?.addEventListener('click', () => cards.handleAddNewIframeAd());
+        
+        // 🔴 이벤트 위임 방식으로 헤더 버튼 리스너를 설정합니다.
+        ui.headerActions.addEventListener('click', (e) => {
+            const iframeButton = e.target.closest('#add-new-iframe-card-button');
+            const mediaButton = e.target.closest('#add-new-card-button');
+
+            if (iframeButton) {
+                cards.handleAddNewIframeAd();
+            } else if (mediaButton) {
+                cards.handleAddNewAd();
+            }
+        });
+
     } else if (viewName === 'editor' && pageId) {
         editor.init(pageId);
     }

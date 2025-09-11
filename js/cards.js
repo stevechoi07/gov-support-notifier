@@ -62,14 +62,29 @@ export const cards = {
     addEventListeners() {
         this.ui.closeModalButton?.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
         this.ui.saveAdButton?.addEventListener('click', this.handleSaveAd.bind(this));
-        
         [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => {
             if(input) input.addEventListener('input', () => this.updatePreview());
         });
-        
         this.ui.adMediaFileInput?.addEventListener('change', this.handleFileUpload.bind(this));
         this.ui.closeIframeModalButton?.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
+
+        this.ui.adListContainer?.addEventListener('click', (e) => {
+            const editButton = e.target.closest('.edit-ad-button');
+            const deleteButton = e.target.closest('.delete-ad-button');
+            if (editButton) {
+                this.handleEditAd(editButton.dataset.id);
+            } else if (deleteButton) {
+                this.handleDeleteAd(deleteButton.dataset.id);
+            }
+        });
+
+        this.ui.adListContainer?.addEventListener('change', (e) => {
+            const toggle = e.target.closest('.ad-status-toggle');
+            if (toggle) {
+                this.handleToggleAdStatus(toggle.dataset.id, toggle.checked);
+            }
+        });
     },
 
     listen() {
@@ -126,6 +141,7 @@ export const cards = {
             const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
             let previewHTML = '';
             let typeIconHTML = '';
+
             if (isIframe) {
                 typeIconHTML = `<div class="content-card-type-icon" title="iframe 카드">🔗</div>`;
                 previewHTML = `<div class="content-card-preview ${noMediaClass}">${typeIconHTML}</div>`;
@@ -143,7 +159,7 @@ export const cards = {
                 }
             }
             return `
-            <div class="content-card" data-id="${ad.id}">
+            <div class="content-card ${ad.isActive === false ? 'opacity-40' : ''}" data-id="${ad.id}">
                 ${previewHTML}
                 <div class="content-card-content">
                     <div class="content-card-header">
@@ -151,11 +167,7 @@ export const cards = {
                     </div>
                     <div class="content-card-info">
                         ${statusBadge}
-                        ${!isIframe ? `
-                        <span class="flex items-center" title="클릭 수">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                            ${clickCount}
-                        </span>` : ''}
+                        ${!isIframe ? `<span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${clickCount}</span>` : ''}
                     </div>
                     <div class="content-card-actions">
                         <div class="publish-info">
@@ -180,23 +192,245 @@ export const cards = {
                 </div>
             </div>`;
         }).join('');
-
-        this.ui.adListContainer.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
-        this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
-        this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
     },
     
-    formatDateTime(dateTimeString) { /* 이전과 동일 */ },
-    async handleToggleAdStatus(event) { /* 이전과 동일 */ },
-    handleFileUpload(event) { /* 이전과 동일 */ },
-    resetCardModalState() { /* 이전과 동일 */ },
-    handleAddNewAd() { /* 이전과 동일 */ },
-    resetIframeModalState() { /* 이전과 동일 */ },
-    handleAddNewIframeAd() { /* 이전과 동일 */ },
-    handleEditAd(event) { /* 이전과 동일 */ },
-    async handleDeleteAd(event) { /* 이전과 동일 */ },
-    async uploadMediaFile() { /* 이전과 동일 */ },
-    async handleSaveAd() { /* 이전과 동일 */ },
-    async handleSaveIframeAd() { /* 이전과 동일 */ },
-    updatePreview() { /* 이전과 동일 */ },
+    formatDateTime(dateTimeString) {
+        if (!dateTimeString) return '...';
+        const date = new Date(dateTimeString);
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    },
+
+    async handleToggleAdStatus(id, isActive) {
+        try {
+            await updateDoc(doc(db, "ads", id), { isActive: isActive });
+            const cardElement = this.ui.adListContainer.querySelector(`.content-card[data-id="${id}"]`);
+            if (cardElement) {
+                cardElement.classList.toggle('opacity-40', !isActive);
+            }
+        } catch (error) {
+            alert("상태 변경에 실패했습니다.");
+            const toggle = this.ui.adListContainer.querySelector(`.ad-status-toggle[data-id="${id}"]`);
+            if(toggle) toggle.checked = !isActive;
+        }
+    },
+
+    handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            this.ui.fileNameDisplay.textContent = '선택된 파일 없음'; this.selectedMediaFile = null;
+            if (this.tempPreviewUrl) URL.revokeObjectURL(this.tempPreviewUrl);
+            this.tempPreviewUrl = null; this.updatePreview(); return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            alert('파일 크기는 50MB를 초과할 수 없습니다.');
+            this.ui.adMediaFileInput.value = '';
+            this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
+            return;
+        }
+        this.selectedMediaFile = file; this.ui.fileNameDisplay.textContent = file.name;
+        this.currentMediaType = file.type.startsWith('image/') ? 'image' : 'video';
+        if (this.tempPreviewUrl) URL.revokeObjectURL(this.tempPreviewUrl);
+        this.tempPreviewUrl = URL.createObjectURL(file);
+        this.updatePreview();
+    },
+
+    resetCardModalState() {
+        const btn = this.ui.saveAdButton;
+        if(btn) {
+            btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
+        }
+        if(this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0; 
+        if(this.ui.uploadProgress) this.ui.uploadProgress.textContent = '0%';
+        if(this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%'; 
+        if(this.ui.uploadLabel) this.ui.uploadLabel.textContent = '업로드 중...';
+        if(this.ui.adTitleInput) this.ui.adTitleInput.value = ''; 
+        if(this.ui.adDescriptionInput) this.ui.adDescriptionInput.value = ''; 
+        if(this.ui.adLinkInput) this.ui.adLinkInput.value = '';
+        if(this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.checked = false; 
+        if(this.ui.adStartDateInput) this.ui.adStartDateInput.value = '';
+        if(this.ui.adEndDateInput) this.ui.adEndDateInput.value = ''; 
+        if(this.ui.adMediaFileInput) this.ui.adMediaFileInput.value = '';
+        if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음'; 
+        if(this.ui.adPreview) this.ui.adPreview.innerHTML = '';
+        if (this.tempPreviewUrl) { URL.revokeObjectURL(this.tempPreviewUrl); this.tempPreviewUrl = null; }
+    },
+
+    handleAddNewAd() {
+        this.editingId = null; this.selectedMediaFile = null; this.currentMediaUrl = ''; this.currentMediaType = 'image';
+        if(this.ui.modalTitle) this.ui.modalTitle.textContent = "새 미디어 카드";
+        this.resetCardModalState(); this.updatePreview();
+        if(this.ui.adModal) this.ui.adModal.classList.add('active');
+    },
+
+    resetIframeModalState() {
+        const btn = this.ui.saveIframeAdButton;
+        if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = ''; 
+        if(this.ui.iframeAdCodeInput) this.ui.iframeAdCodeInput.value = '';
+        if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false; 
+        if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
+        if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
+        if(btn){
+            btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled');
+        }
+    },
+
+    handleAddNewIframeAd() {
+        this.editingId = null;
+        if(this.ui.iframeModalTitle) this.ui.iframeModalTitle.textContent = "새 iframe 카드";
+        this.resetIframeModalState();
+        if(this.ui.iframeAdModal) this.ui.iframeAdModal.classList.add('active');
+    },
+
+    handleEditAd(id) {
+        this.editingId = id;
+        const ad = this.list.find(ad => ad.id === this.editingId);
+        if (!ad) return;
+
+        if (ad.adType === 'iframe') {
+            this.resetIframeModalState();
+            this.ui.iframeModalTitle.textContent = "iframe 카드 수정";
+            this.ui.iframeAdTitleInput.value = ad.title;
+            this.ui.iframeAdCodeInput.value = ad.iframeCode || '';
+            this.ui.iframeIsPartnersCheckbox.checked = ad.isPartners || false;
+            this.ui.iframeAdStartDateInput.value = ad.startDate || '';
+            this.ui.iframeAdEndDateInput.value = ad.endDate || '';
+            this.ui.iframeAdModal.classList.add('active');
+        } else {
+            this.resetCardModalState();
+            this.selectedMediaFile = null;
+            this.currentMediaUrl = ad.mediaUrl || ''; this.currentMediaType = ad.mediaType || 'image';
+            this.ui.modalTitle.textContent = "미디어 카드 수정";
+            this.ui.adTitleInput.value = ad.title;
+            this.ui.adDescriptionInput.value = ad.description || ''; this.ui.adLinkInput.value = ad.link || '';
+            this.ui.isPartnersCheckbox.checked = ad.isPartners || false;
+            this.ui.adStartDateInput.value = ad.startDate || '';
+            this.ui.adEndDateInput.value = ad.endDate || '';
+            this.ui.fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
+            this.updatePreview(); this.ui.adModal.classList.add('active');
+        }
+    },
+
+    async handleDeleteAd(id) {
+        const adToDelete = this.list.find(ad => ad.id === id);
+        if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
+            try {
+                if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
+                await deleteDoc(doc(db, "ads", id));
+            } catch (error) {
+                if (error.code !== 'storage/object-not-found') {
+                    console.error("파일 삭제 중 에러 발생:", error);
+                }
+                await deleteDoc(doc(db, "ads", id));
+            }
+        }
+    },
+    
+    async uploadMediaFile() {
+        return new Promise((resolve, reject) => {
+            this.ui.mediaUploadStatus.style.opacity = 1;
+            const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
+            const folder = this.currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
+            const storageRef = ref(storage, `${folder}/${fileName}`);
+            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
+            this.currentUploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    this.ui.uploadProgress.textContent = `${Math.round(progress)}%`;
+                    this.ui.progressBarFill.style.width = `${progress}%`;
+                }, 
+                (error) => { reject(error); }, 
+                async () => {
+                    const downloadURL = await getDownloadURL(this.currentUploadTask.snapshot.ref);
+                    resolve(downloadURL);
+                }
+            );
+        });
+    },
+
+    async handleSaveAd() {
+        if (!this.ui.adTitleInput.value.trim()) { alert('카드 제목을 입력해주세요!'); return; }
+        const btn = this.ui.saveAdButton;
+        btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+        try {
+            let mediaUrlToSave = this.currentMediaUrl;
+            if (this.selectedMediaFile) {
+                if (this.editingId && this.currentMediaUrl) {
+                    try { await deleteObject(ref(storage, this.currentMediaUrl)); } catch (e) { console.warn("Could not delete old file:", e.message); }
+                }
+                mediaUrlToSave = await this.uploadMediaFile();
+                this.ui.uploadLabel.textContent = '업로드 완료!';
+            }
+            const adData = {
+                adType: 'card', title: this.ui.adTitleInput.value, description: this.ui.adDescriptionInput.value,
+                link: this.ui.adLinkInput.value, isPartners: this.ui.isPartnersCheckbox.checked,
+                mediaUrl: mediaUrlToSave, mediaType: this.currentMediaType,
+                startDate: this.ui.adStartDateInput.value, endDate: this.ui.adEndDateInput.value,
+            };
+            if (this.editingId) {
+                const ad = this.list.find(ad => ad.id === this.editingId);
+                Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, isActive: ad.isActive !== false });
+                await updateDoc(doc(db, "ads", this.editingId), adData);
+            } else {
+                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
+                await addDoc(this.collection, adData);
+            }
+            this.ui.adModal.classList.remove('active');
+        } catch (error) {
+            console.error("저장 중 오류 발생:", error); alert("작업에 실패했습니다.");
+            btn.disabled = false; btn.innerHTML = `저장하기`;
+        }
+    },
+
+    async handleSaveIframeAd() {
+        const title = this.ui.iframeAdTitleInput.value.trim();
+        const code = this.ui.iframeAdCodeInput.value.trim();
+        if (!title || !code) { alert('제목과 코드를 모두 입력해주세요!'); return; }
+        const btn = this.ui.saveIframeAdButton;
+        btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+        try {
+            const adData = {
+                adType: 'iframe', title: title, iframeCode: code,
+                isPartners: this.ui.iframeIsPartnersCheckbox.checked,
+                startDate: this.ui.iframeAdStartDateInput.value, endDate: this.ui.iframeAdEndDateInput.value,
+            };
+            if (this.editingId) {
+                const ad = this.list.find(ad => ad.id === this.editingId);
+                Object.assign(adData, { order: ad.order, clickCount: 0, isActive: ad.isActive !== false });
+                await updateDoc(doc(db, "ads", this.editingId), adData);
+            } else {
+                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
+                await addDoc(this.collection, adData);
+            }
+            this.ui.iframeAdModal.classList.remove('active');
+        } catch (error) {
+            console.error("iframe 카드 저장 중 오류:", error); alert("작업에 실패했습니다.");
+            btn.disabled = false; btn.innerHTML = '저장하기';
+        }
+    },
+
+    updatePreview() {
+        if (!this.ui.adPreview) return;
+        const title = this.ui.adTitleInput.value || "카드 제목";
+        const description = this.ui.adDescriptionInput.value || "카드 설명이 여기에 표시됩니다.";
+        const mediaSrc = this.tempPreviewUrl || this.currentMediaUrl;
+        let mediaElement = '';
+        if (mediaSrc) {
+            const type = this.selectedMediaFile ? this.currentMediaType : (this.list.find(ad => ad.id === this.editingId)?.mediaType || 'image');
+            mediaElement = type === 'video' ? `<video autoplay loop muted playsinline src="${mediaSrc}"></video>` : `<img src="${mediaSrc}" alt="Ad preview">`;
+        } else {
+            mediaElement = `<div class="flex items-center justify-center h-full bg-slate-800 rounded-t-xl"><span class="text-slate-500 text-sm">미디어 파일 없음</span></div>`;
+        }
+        const partnersText = this.ui.isPartnersCheckbox.checked ? `<p class="mt-2 text-xs text-slate-500">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
+        this.ui.adPreview.innerHTML = `
+          <div class="preview-media-container">${mediaElement}</div>
+          <div class="p-4 flex-grow flex flex-col">
+              <span class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Sponsored</span>
+              <p class="mt-2 text-lg leading-tight font-bold text-slate-100">${title}</p>
+              <p class="mt-2 text-slate-400 text-sm flex-grow">${description}</p>
+              <div class="mt-auto">${partnersText}</div>
+              <div class="mt-4 pt-4 border-t border-slate-600 text-right">
+                   <span class="text-sm font-semibold text-emerald-400">자세히 보기 &rarr;</span>
+              </div>
+          </div>`;
+    },
 };
