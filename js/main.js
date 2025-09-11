@@ -1,4 +1,4 @@
-// js/main.js v1.5 - Firebase 준비를 명시적으로 기다림
+// js/main.js v1.6
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { firebaseReady, getFirebaseAuth } from './firebase.js';
@@ -6,9 +6,12 @@ import { ui, mapInitialUI, mapDashboardUI } from './ui.js';
 import { setupLoginListeners, handleLogout } from './auth.js';
 import { navigateTo } from './navigation.js';
 
+let isDashboardInitialized = false;
+
+// 앱을 시작하고 인증 상태를 감시하는 메인 함수
 async function initializeAppAndAuth() {
      try {
-        // Firebase 발전소가 예열을 마칠 때까지 여기서 확실하게 기다립니다.
+        // Firebase가 준비될 때까지 명시적으로 기다립니다.
         await firebaseReady;
 
         mapInitialUI();
@@ -26,22 +29,24 @@ async function initializeAppAndAuth() {
 
         onAuthStateChanged(getFirebaseAuth(), user => {
             if (user) {
-                // 이제 이 코드는 100% 안전한 타이밍에 실행됩니다.
+              // 대시보드 중복 초기화를 방지합니다.
+                if (isDashboardInitialized) return;
+
                 ui.authContainer.classList.add('hidden');
                 ui.dashboardContainer.classList.remove('hidden');
                 mapDashboardUI();
                 setupDashboardListeners();
                 navigateTo('layout'); 
+              isDashboardInitialized = true;
             } else {
                 ui.authContainer.classList.remove('hidden');
                 ui.dashboardContainer.classList.add('hidden');
+              isDashboardInitialized = false; // 로그아웃 시 상태 초기화
             }
         });
 
     } catch (error) {
         console.error("initializeAppAndAuth 함수에서 에러 발생:", error);
-        // showAuthMessage 함수가 auth.js에 있으므로 여기서 직접 호출하기보다
-        // auth.js를 통해 UI를 업데이트하는 것이 좋습니다.
         const authMessageEl = document.getElementById('auth-message');
         if (authMessageEl) {
             authMessageEl.textContent = "초기화 실패. 관리자에게 문의하세요.";
@@ -53,6 +58,7 @@ async function initializeAppAndAuth() {
     }
 }
 
+// 대시보드의 모든 이벤트 리스너를 설정하는 함수
 function setupDashboardListeners() {
     if (ui.logoutButton) {
         ui.logoutButton.addEventListener('click', handleLogout);
@@ -65,6 +71,12 @@ function setupDashboardListeners() {
             });
         });
     }
+
+    // 'navigate'라는 방송(Custom Event)을 들을 수 있도록 리스너를 설정합니다.
+    document.addEventListener('navigate', (e) => {
+        const { view, pageId } = e.detail;
+        navigateTo(view, pageId);
+    });
 }
 
 export { initializeAppAndAuth };

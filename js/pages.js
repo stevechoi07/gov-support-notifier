@@ -1,212 +1,132 @@
-// js/layout.js v1.4
+// js/pages.js v1.5
 
-import { doc, getDoc, onSnapshot, updateDoc, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getFirestoreDB } from './firebase.js';
-import { showToast } from './ui.js';
-import { pagesList } from './pages.js';
-import { cards } from './cards.js';
+import { ui } from './ui.js';
+// 'navigate' 이벤트를 사용하므로 navigateTo 직접 import는 필요 없습니다.
 
-const layoutListContainer = document.getElementById('layout-list-container');
-const modalElements = {};
-let sortableInstance = null;
-let currentLayoutIds = [];
-
-function listenToLayoutChanges(layoutId) {
-    const db = getFirestoreDB();
-    const layoutRef = doc(db, "layouts", layoutId);
-    onSnapshot(layoutRef, async (snapshot) => {
-        if (!snapshot.exists() || !snapshot.data().contentIds) {
-            console.log("Layout data not found or is empty.");
-            currentLayoutIds = [];
-            renderLayoutList([]);
-            return;
-        }
-        const contentIds = snapshot.data().contentIds;
-        currentLayoutIds = contentIds;
-        
-        const contents = await fetchContentsDetails(contentIds);
-        renderLayoutList(contents);
-    }, (error) => {
-        console.error("Error listening to layout document:", error);
-    });
-}
-
-async function fetchContentsDetails(ids) {
-    if (ids.length === 0) return [];
-    const db = getFirestoreDB();
-
-    const contentPromises = ids.map(id => {
-        const collectionName = id.startsWith('page_') ? 'pages' : 'cards';
-        const contentRef = doc(db, collectionName, id);
-        return getDoc(contentRef);
-    });
-
-    const contentSnaps = await Promise.all(contentPromises);
-    return contentSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter(Boolean);
-}
-
-function renderLayoutList(contents) {
-    if (!layoutListContainer) return;
-    
-    if (contents.length === 0) {
-        layoutListContainer.innerHTML = `<div class="text-center py-16">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-600 mb-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-            <h3 class="text-lg font-semibold text-slate-400">레이아웃이 비어있습니다.</h3>
-            <p class="text-slate-500 mt-1">상단의 '콘텐츠 추가' 버튼을 눌러 페이지나 카드를 추가해보세요.</p>
-        </div>`;
-        return;
-    }
-
-    const sortedContents = currentLayoutIds.map(id => contents.find(c => c.id === id)).filter(Boolean);
-
-    layoutListContainer.innerHTML = sortedContents.map(content => {
-        const isPage = content.id.startsWith('page_');
-        const typeLabel = isPage ? '📄 페이지' : '🗂️ 카드';
-        const typeColor = isPage ? 'bg-sky-500/20 text-sky-400' : 'bg-amber-500/20 text-amber-400';
-        const previewImage = content.mediaUrl || content.pageSettings?.bgImage || content.pageSettings?.bgColor || 'https://via.placeholder.com/150';
-        const previewStyle = content.mediaUrl || content.pageSettings?.bgImage 
-            ? `background-image: url('${previewImage}')`
-            : `background-color: ${previewImage}`;
-
-        return `
-            <div class="layout-item flex items-center bg-slate-800 rounded-lg p-3 gap-4 shadow-sm" data-id="${content.id}">
-                <div class="drag-handle cursor-move text-slate-600 hover:text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
-                </div>
-                <div class="w-24 h-14 bg-cover bg-center rounded-md" style="${previewStyle}"></div>
-                <div class="flex-1">
-                    <h4 class="font-bold text-slate-200">${content.title || content.name}</h4>
-                    <span class="text-xs font-semibold px-2 py-1 rounded-full ${typeColor}">${typeLabel}</span>
-                </div>
-                <div class="flex items-center gap-6">
-                    <button class="remove-btn text-slate-500 hover:text-red-500 transition-colors" title="레이아웃에서 제거">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    attachEventListeners();
-    initializeSortable();
-}
-
-function attachEventListeners() {
-    layoutListContainer.querySelectorAll('.layout-item .remove-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const item = e.currentTarget.closest('.layout-item');
-            const contentId = item.dataset.id;
-            if (confirm(`'${item.querySelector('h4').textContent}' 콘텐츠를 레이아웃에서 제거하시겠습니까?`)) {
-                const layoutRef = doc(getFirestoreDB(), "layouts", "mainLayout");
-                await updateDoc(layoutRef, { contentIds: arrayRemove(contentId) });
-                showToast('콘텐츠가 레이아웃에서 제거되었습니다.');
-            }
-        });
-    });
-}
-
-function initializeSortable() {
-    if (sortableInstance) sortableInstance.destroy();
-    sortableInstance = new Sortable(layoutListContainer, {
-        handle: '.drag-handle',
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        onEnd: async (evt) => {
-            const newOrder = Array.from(evt.to.children).map(item => item.dataset.id);
-            const layoutRef = doc(getFirestoreDB(), "layouts", "mainLayout");
-            await updateDoc(layoutRef, { contentIds: newOrder });
-            showToast('레이아웃 순서가 저장되었습니다.', 'success');
-        },
-    });
-}
-
-function mapModalUI() {
-    modalElements.modal = document.getElementById('add-content-modal');
-    modalElements.closeButton = document.getElementById('close-add-content-modal-button');
-    modalElements.finishButton = document.getElementById('finish-adding-content-button');
-    modalElements.tabs = document.querySelectorAll('#add-content-tabs .tab-button');
-    modalElements.tabContents = document.querySelectorAll('#add-content-modal .tab-content');
-    modalElements.pagesListContainer = document.getElementById('add-content-pages-list');
-    modalElements.cardsListContainer = document.getElementById('add-content-cards-list');
-}
-
-function setupModalListeners() {
-    modalElements.closeButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
-    modalElements.finishButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
-    
-    modalElements.tabs?.forEach(tab => {
-        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-    });
-
-    modalElements.modal?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('add-button') && !e.target.disabled) {
-            addItemToLayout(e.target.dataset.id);
-        }
-    });
-}
-
-function switchTab(tabName) {
-    modalElements.tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabName));
-    modalElements.tabContents.forEach(content => content.classList.toggle('active', content.id.includes(tabName)));
-}
-
-async function addItemToLayout(contentId) {
-    try {
-        const layoutRef = doc(getFirestoreDB(), "layouts", "mainLayout");
-        await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) });
-        showToast('콘텐츠가 레이아웃에 추가되었습니다.');
-    } catch (error) {
-        console.error("레이아웃에 아이템 추가 실패:", error);
-        showToast("아이템 추가에 실패했습니다.", "error");
-    }
-}
-
-export function handleAddContentClick() {
-    if (!modalElements.modal) {
-        mapModalUI();
-        setupModalListeners();
-    }
-    
-    modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
-        const isAdded = currentLayoutIds.includes(page.id);
-        const bgColor = page.pageSettings?.bgColor || '#0f172a';
-        const bgImage = page.pageSettings?.bgImage || '';
-        const previewStyle = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''}`;
-        return `
-            <div class="add-content-item">
-                <div class="item-info">
-                    <div class="preview" style="${previewStyle}"></div>
-                    <span class="title">${page.name}</span>
-                </div>
-                <button class="add-button" data-id="${page.id}" ${isAdded ? 'disabled' : ''}>
-                    ${isAdded ? '추가됨' : '추가'}
-                </button>
-            </div>`;
-    }).join('') || `<p class="text-slate-500 text-center">추가할 페이지가 없습니다.</p>`;
-
-    modalElements.cardsListContainer.innerHTML = cards.list.map(card => {
-        const isAdded = currentLayoutIds.includes(card.id);
-        const previewStyle = card.mediaUrl ? `background-image: url('${card.mediaUrl}');` : 'background-color: #334155;';
-        return `
-            <div class="add-content-item">
-                <div class="item-info">
-                    <div class="preview" style="${previewStyle}"></div>
-                    <span class="title">${card.title}</span>
-                </div>
-                <button class="add-button" data-id="${card.id}" ${isAdded ? 'disabled' : ''}>
-                    ${isAdded ? '추가됨' : '추가'}
-                </button>
-            </div>`;
-    }).join('') || `<p class="text-slate-500 text-center">추가할 콘텐츠 카드가 없습니다.</p>`;
-
-    switchTab('pages');
-    modalElements.modal.classList.add('active');
-}
-
+export let pagesList = []; // editor.js, layout.js 등에서 참조할 수 있도록 export
 let isInitialized = false;
-export function initLayoutView() {
-    if (isInitialized) return;
-    listenToLayoutChanges('mainLayout');
-    isInitialized = true;
-    console.log("Layout View Initialized.");
+
+function renderPages() {
+    if (!ui.pageListContainer) return;
+    
+    ui.pageListContainer.className = 'page-grid';
+
+    ui.pageListContainer.innerHTML = pagesList.length === 0
+        ? `<p class="text-center text-slate-400 py-8 col-span-full">생성된 페이지가 없습니다.</p>`
+        : pagesList.map(page => {
+            const lastUpdated = page.updatedAt ? new Date(page.updatedAt.seconds * 1000).toLocaleString() : '정보 없음';
+            const isPublished = page.isPublished || false;
+            
+            const bgColor = page.pageSettings?.bgColor || '#0f172a';
+            const bgImage = page.pageSettings?.bgImage || '';
+            
+            const previewStyle = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''}`;
+
+            return `
+            <div class="page-card">
+                <div class="page-card-preview" style="${previewStyle}">
+                    <h4>${page.name}</h4>
+                </div>
+                <div class="page-card-content">
+                    <p class="page-card-info">최근 수정: ${lastUpdated}</p>
+                    <div class="page-card-actions">
+                        <div class="publish-info">
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="publish-toggle" data-id="${page.id}" ${isPublished ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="text-sm font-medium ${isPublished ? 'text-emerald-400' : 'text-slate-400'}">${isPublished ? '게시 중' : '비공개'}</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="edit-page-btn text-slate-300 hover:text-white" data-id="${page.id}" title="편집">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                            </button>
+                            <button class="delete-page-btn text-red-400 hover:text-red-500" data-id="${page.id}" data-name="${page.name}" title="삭제">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+
+    document.querySelectorAll('.publish-toggle').forEach(t => t.addEventListener('change', handlePublishToggleChange));
+    document.querySelectorAll('.edit-page-btn').forEach(b => b.addEventListener('click', (e) => {
+        document.dispatchEvent(new CustomEvent('navigate', { 
+            detail: { view: 'editor', pageId: e.currentTarget.dataset.id } 
+        }));
+    }));
+    document.querySelectorAll('.delete-page-btn').forEach(b => b.addEventListener('click', handleDeletePageClick));
+}
+
+async function handlePublishToggleChange(e) {
+    const pageIdToChange = e.currentTarget.dataset.id;
+    const isNowPublished = e.currentTarget.checked;
+    try {
+        const docRef = doc(getFirestoreDB(), "pages", pageIdToChange);
+        await updateDoc(docRef, { isPublished: isNowPublished });
+    } catch (error) {
+        console.error("게시 상태 변경 실패:", error);
+        alert("게시 상태 변경에 실패했습니다.");
+        e.currentTarget.checked = !isNowPublished;
+    }
+}
+
+async function handleDeletePageClick(e) {
+    const { id, name } = e.currentTarget.dataset;
+    if (confirm(`'${name}' 페이지를 정말 삭제하시겠습니까?`)) {
+        try { 
+            await deleteDoc(doc(getFirestoreDB(), "pages", id)); 
+        } catch (error) { 
+            console.error("페이지 삭제 실패:", error);
+            alert("페이지 삭제에 실패했습니다."); 
+        }
+    }
+}
+
+export async function handleNewPageClick() {
+    const name = prompt("새 페이지의 이름을 입력하세요:");
+    if (name && name.trim()) {
+        try {
+            const newPageRef = await addDoc(collection(getFirestoreDB(), "pages"), {
+                name: name.trim(), 
+                isPublished: false, 
+                createdAt: serverTimestamp(), 
+                updatedAt: serverTimestamp(), 
+                components: [],
+                pageSettings: { bgColor: '#1e293b', bgImage: '', bgVideo: '', viewport: '375px,667px' }
+            });
+            document.dispatchEvent(new CustomEvent('navigate', {
+                detail: { view: 'editor', pageId: newPageRef.id }
+            }));
+        } catch (error) { 
+            console.error("새 페이지 생성 실패:", error);
+            alert("새 페이지 생성에 실패했습니다."); 
+        }
+    }
+}
+
+function listenToPages() {
+    const q = query(collection(getFirestoreDB(), "pages"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+        pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const pagesView = document.getElementById('pages-view');
+        if (ui.pageListContainer && pagesView && !pagesView.classList.contains('hidden')) {
+            renderPages();
+        }
+    }, (error) => {
+        console.error("Error listening to pages collection:", error);
+    });
+}
+
+export function initPagesView() {
+    if (isInitialized) {
+        renderPages();
+        return;
+    };
+    listenToPages();
+    isInitialized = true;
+    console.log("Pages View Initialized.");
 }
