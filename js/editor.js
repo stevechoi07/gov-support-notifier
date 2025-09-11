@@ -345,7 +345,7 @@ export const editor = {
             if (!current[keys[i]]) current[keys[i]] = {};
             current = current[keys[i]];
         }
-        current[keys[keys.length - 1]]] = value;
+        current[keys[keys.length - 1]] = value;
         this.saveAndRender(rerenderControls, true);
     },
     deleteComponent(id) {
