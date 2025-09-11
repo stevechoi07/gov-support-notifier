@@ -1,15 +1,26 @@
-// js/main.js v2.0 - export 문제 해결
+// js/main.js v2.1 - 데이터 모듈 선제적 초기화 적용
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-import { firebaseReady, getFirebaseAuth } from './firebase.js';
+import { firebaseReady, getFirebaseAuth, getFirestoreDB, getFirebaseStorage } from './firebase.js'; // ✨ getFirestoreDB, getFirebaseStorage 추가
 import { ui, mapInitialUI, mapDashboardUI } from './ui.js';
 import { setupLoginListeners, handleLogout, showAuthMessage } from './auth.js';
 import { navigateTo } from './navigation.js';
+
+// ✨ [핵심 수정] pages와 cards 모듈을 미리 import 합니다.
+import { init as initPages } from './pages.js';
+import { cards } from './cards.js';
 
 async function initializeAppAndAuth() {
     try {
         await firebaseReady;
         const auth = getFirebaseAuth();
+        
+        // ✨ [핵심 수정] Firebase 준비 직후, 핵심 데이터 모듈들을 먼저 초기화합니다.
+        const db = getFirestoreDB();
+        const storage = getFirebaseStorage();
+        initPages({ db });
+        cards.init({ db, storage });
+        console.log('✅ [main.js] Pages와 Cards 모듈 선제적 초기화 완료!');
 
         mapInitialUI();
         setupLoginListeners();
@@ -35,7 +46,6 @@ async function initializeAppAndAuth() {
                 ui.dashboardContainer.classList.remove('hidden');
                 mapDashboardUI();
                 setupDashboardListeners();
-				console.log('➡️ [main.js] 로그인 성공! navigateTo("layout") 호출 직전.'); // 👈 이 줄을 추가하세요.
                 navigateTo('layout'); 
             } else {
                 ui.authContainer.classList.remove('hidden');
@@ -64,6 +74,5 @@ function setupDashboardListeners() {
     }
 }
 
-// ✨ [수정] 파일 맨 아래에서 함수를 직접 호출하는 대신, export 구문을 추가합니다.
-// initializeAppAndAuth(); // 이 줄을 삭제하거나 주석 처리
-export { initializeAppAndAuth }; // 이 줄을 추가
+// ✨ 기존 export 구문은 삭제하고, 함수를 직접 호출하도록 변경합니다.
+initializeAppAndAuth();
