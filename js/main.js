@@ -1,4 +1,4 @@
-// js/main.js v2.29 - The Conductor
+// js/main.js v2.38 - The Conductor (Stabilized)
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { auth } from './firebase.js';
@@ -27,14 +27,18 @@ async function initializeAppAndAuth() {
                 // 사용자가 로그인한 경우
                 ui.authContainer.classList.add('hidden');
                 ui.dashboardContainer.classList.remove('hidden');
+                
+                // 🔴 setTimeout을 사용하여 DOM 렌더링 후 대시보드 로직이 실행되도록 보장합니다.
+                setTimeout(() => {
+                    // 대시보드 UI가 표시된 직후에 대시보드용 UI 요소를 매핑합니다.
+                    mapDashboardUI();
+                    // 대시보드 공용 이벤트(로그아웃, 네비게이션)를 설정합니다.
+                    setupDashboardListeners();
 
-                // 대시보드 UI가 표시된 직후에 대시보드용 UI 요소를 매핑합니다.
-                mapDashboardUI();
-                // 대시보드 공용 이벤트(로그아웃, 네비게이션)를 설정합니다.
-                setupDashboardListeners();
+                    // 기본 화면인 '레이아웃 관리' 뷰로 이동시킵니다.
+                    navigateTo('layout');
+                }, 0);
 
-                // 기본 화면인 '페이지 관리' 뷰로 이동시킵니다.
-                navigateTo('pages');
             } else {
                 // 사용자가 로그아웃한 경우
                 ui.authContainer.classList.remove('hidden');
