@@ -86,7 +86,6 @@ export const cards = {
     initSortable() {
         if (!this.ui.adListContainer) return;
         new Sortable(this.ui.adListContainer, {
-            // 🔴 드래그 핸들을 명확하게 지정해줍니다.
             handle: '.content-card-drag-handle', 
             animation: 150,
             onEnd: async (evt) => {
@@ -130,17 +129,24 @@ export const cards = {
 
             let previewHTML = '';
             let typeIconHTML = '';
+            // 🔴 미디어 파일이 없는 경우를 위한 클래스 조건부 추가
+            const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
 
             if (isIframe) {
                 typeIconHTML = `<div class="content-card-type-icon" title="iframe 카드">🔗</div>`;
-                previewHTML = `<div class="content-card-preview">${typeIconHTML}</div>`;
+                previewHTML = `<div class="content-card-preview ${noMediaClass}">${typeIconHTML}</div>`;
             } else {
-                if (ad.mediaType === 'video') {
-                    typeIconHTML = `<div class="content-card-type-icon" title="비디오 카드">🎬</div>`;
-                    previewHTML = `<div class="content-card-preview"><video muted playsinline src="${ad.mediaUrl}"></video>${typeIconHTML}</div>`;
+                if (ad.mediaUrl) {
+                    if (ad.mediaType === 'video') {
+                        typeIconHTML = `<div class="content-card-type-icon" title="비디오 카드">🎬</div>`;
+                        previewHTML = `<div class="content-card-preview"><video muted playsinline src="${ad.mediaUrl}"></video>${typeIconHTML}</div>`;
+                    } else {
+                        typeIconHTML = `<div class="content-card-type-icon" title="이미지 카드">🖼️</div>`;
+                        previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
+                    }
                 } else {
-                    typeIconHTML = `<div class="content-card-type-icon" title="이미지 카드">🖼️</div>`;
-                    previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
+                    // 미디어 URL이 없을 경우, typeIconHTML은 필요 없고 noMediaClass만 적용
+                    previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
                 }
             }
 

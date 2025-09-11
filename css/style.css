@@ -351,3 +351,18 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .content-card-drag-handle:hover {
     color: rgba(255, 255, 255, 0.8);
 }
+
+/* 미디어가 없을 때 미리보기 영역의 배경을 더 밝게 */
+.content-card-preview.no-media {
+    background-color: #334155; /* bg-slate-700 */
+    border: 1px dashed rgba(255, 255, 255, 0.2); /* 점선 테두리 추가 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1; /* text-slate-300 */
+    font-size: 0.9rem;
+}
+
+.content-card-preview.no-media::before {
+    content: "미디어 없음";
+}
