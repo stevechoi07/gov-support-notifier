@@ -1,4 +1,4 @@
-// js/main.js v2.35.1
+// js/main.js
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { auth } from './firebase.js';
 import { ui, mapInitialUI, mapDashboardUI } from './ui.js';
@@ -20,11 +20,11 @@ async function initializeAppAndAuth() {
                 ui.authContainer.classList.add('hidden');
                 ui.dashboardContainer.classList.remove('hidden');
                 
-                // DOM이 준비된 후 실행되도록 setTimeout 래퍼를 유지합니다.
                 setTimeout(() => {
                     mapDashboardUI();
                     setupDashboardListeners();
-                    navigateTo('pages'); // 첫 화면을 '페이지 관리'로 설정
+                    // 🔴 첫 화면을 '레이아웃 관리'로 설정
+                    navigateTo('layout'); 
                 }, 0);
 
             } else {
@@ -54,5 +54,4 @@ function setupDashboardListeners() {
     }
 }
 
-// ✅ 사용자님께서 확인하신 가장 안정적인 방식으로 함수를 export 합니다.
 export { initializeAppAndAuth };
