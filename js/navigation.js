@@ -1,7 +1,7 @@
-// js/navigation.js v2.4 - 역할 축소 버전 (layoutManager.js 경로 수정)
+// js/navigation.js v2.4 - 역할 재조정
 
 import { ui } from './ui.js';
-import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
+// ✨ firebase 관련 import는 더 이상 필요 없습니다. 각 모듈이 직접 처리합니다.
 
 export async function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
@@ -38,6 +38,7 @@ export async function navigateTo(viewName, pageId = null) {
     if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
+    // ✨ 각 모듈의 init 함수를 파라미터 없이 호출합니다.
     if (viewName === 'layout') {
         const { initLayoutView, handleAddContentClick } = await import('./layoutManager.js');
         initLayoutView();
