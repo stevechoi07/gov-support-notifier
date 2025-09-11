@@ -1,4 +1,7 @@
-// js/layout.js v1.8 - cards.js v1.8 규격에 맞게 연동 및 타이밍 문제 해결
+// js/layout.js v1.8-debug - 디버깅용 버전 확인 로그 추가
+
+// ✨ [디버깅 코드] 이 메시지가 콘솔에 보이는지 확인해주세요!
+console.log("🎨🎨🎨 Layout.js v1.8-debug 파일이 로드되었습니다! (타이밍 문제 해결 버전) 🎨🎨🎨");
 
 import { getFirestoreDB } from './firebase.js'; 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
@@ -13,6 +16,7 @@ let currentLayoutIds = [];
 
 function listenToLayoutChanges(layoutId) {
     const db = getFirestoreDB();
+    if (!db) return; // 안전장치
     const layoutRef = doc(db, "layouts", layoutId);
     onSnapshot(layoutRef, async (snapshot) => {
         if (!snapshot.exists() || !snapshot.data().contentIds) {
@@ -31,6 +35,7 @@ function listenToLayoutChanges(layoutId) {
 async function fetchContentsDetails(ids) {
     if (ids.length === 0) return [];
     const db = getFirestoreDB();
+    if (!db) return []; // 안전장치
     const contentPromises = ids.map(id => {
         const collectionName = id.startsWith('page_') ? 'pages' : 'ads';
         const contentRef = doc(db, collectionName, id);
@@ -42,6 +47,7 @@ async function fetchContentsDetails(ids) {
 }
 
 function renderLayoutList(contents) {
+    if (!layoutListContainer) return;
     if (contents.length === 0) {
         layoutListContainer.innerHTML = `<div class="text-center py-16">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-600 mb-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
@@ -87,6 +93,7 @@ function attachEventListeners() {
             const contentId = item.dataset.id;
             if (confirm(`'${item.querySelector('h4').textContent}' 콘텐츠를 레이아웃에서 제거하시겠습니까?`)) {
                 const db = getFirestoreDB();
+                if (!db) return; // 안전장치
                 const layoutRef = doc(db, "layouts", "mainLayout");
                 await updateDoc(layoutRef, { contentIds: arrayRemove(contentId) });
                 showToast('콘텐츠가 레이아웃에서 제거되었습니다.');
@@ -96,11 +103,13 @@ function attachEventListeners() {
 }
 
 function initializeSortable() {
+    if (!layoutListContainer) return;
     if (sortableInstance) sortableInstance.destroy();
     sortableInstance = new Sortable(layoutListContainer, {
         handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost',
         onEnd: async (evt) => {
             const db = getFirestoreDB();
+            if (!db) return; // 안전장치
             const newOrder = Array.from(evt.to.children).map(item => item.dataset.id);
             const layoutRef = doc(db, "layouts", "mainLayout");
             await updateDoc(layoutRef, { contentIds: newOrder });
@@ -144,6 +153,7 @@ function switchTab(tabName) {
 async function addItemToLayout(contentId) {
     try {
         const db = getFirestoreDB();
+        if (!db) return; // 안전장치
         const layoutRef = doc(db, "layouts", "mainLayout");
         await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) });
         showToast('콘텐츠가 레이아웃에 추가되었습니다.');
