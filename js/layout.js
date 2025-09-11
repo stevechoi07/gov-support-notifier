@@ -5,7 +5,7 @@ import { showToast } from './ui.js';
 import { pagesList } from './pages.js';
 import { cards } from './cards.js';
 
-let db; // ✨ 모듈 스코프에 db 변수 선언
+let db;
 const layoutListContainer = document.getElementById('layout-list-container');
 const modalElements = {};
 let sortableInstance = null;
@@ -191,7 +191,6 @@ export function handleAddContentClick() {
 
 export function initLayoutView({ db: firestoreDB }) {
     db = firestoreDB;
-	console.log('📥 [layout.js] 주입받은 DB:', db); // 👈 이 줄을 추가하세요.
     if (!db) {
         console.error("Layout View 초기화 실패: DB가 제공되지 않음");
         return;
