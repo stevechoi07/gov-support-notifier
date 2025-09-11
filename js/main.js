@@ -1,26 +1,15 @@
-// js/main.js v2.1 - 데이터 모듈 선제적 초기화 적용
+// js/main.js v2.2 - 단순화 버전 (선제적 초기화 제거)
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-import { firebaseReady, getFirebaseAuth, getFirestoreDB, getFirebaseStorage } from './firebase.js'; // ✨ getFirestoreDB, getFirebaseStorage 추가
+import { firebaseReady, getFirebaseAuth } from './firebase.js';
 import { ui, mapInitialUI, mapDashboardUI } from './ui.js';
 import { setupLoginListeners, handleLogout, showAuthMessage } from './auth.js';
 import { navigateTo } from './navigation.js';
-
-// ✨ [핵심 수정] pages와 cards 모듈을 미리 import 합니다.
-import { init as initPages } from './pages.js';
-import { cards } from './cards.js';
 
 async function initializeAppAndAuth() {
     try {
         await firebaseReady;
         const auth = getFirebaseAuth();
-        
-        // ✨ [핵심 수정] Firebase 준비 직후, 핵심 데이터 모듈들을 먼저 초기화합니다.
-        const db = getFirestoreDB();
-        const storage = getFirebaseStorage();
-        initPages({ db });
-        cards.init({ db, storage });
-        console.log('✅ [main.js] Pages와 Cards 모듈 선제적 초기화 완료!');
 
         mapInitialUI();
         setupLoginListeners();
@@ -74,5 +63,4 @@ function setupDashboardListeners() {
     }
 }
 
-// ✨ 기존 export 구문은 삭제하고, 함수를 직접 호출하도록 변경합니다.
 initializeAppAndAuth();

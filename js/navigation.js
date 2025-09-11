@@ -1,4 +1,4 @@
-// js/navigation.js v2.2 - 순환 참조 해결
+/// js/navigation.js v2.3 - 의존성 명시적 초기화
 
 import { ui } from './ui.js';
 import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
@@ -43,19 +43,24 @@ export async function navigateTo(viewName, pageId = null) {
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
     if (viewName === 'layout') {
+        // ✨ [핵심 수정!] layout을 초기화하기 전에, layout이 의존하는 모듈들을 먼저 초기화합니다.
+        const { init: initPages } = await import('./pages.js');
+        const { cards } = await import('./cards.js');
+        initPages({ db }, navigateTo);
+        cards.init({ db, storage });
+        
+        // ✨ 그리고 나서 layout을 초기화합니다.
         const { initLayoutView, handleAddContentClick } = await import('./layout.js');
         initLayoutView({ db });
         document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
+
     } else if (viewName === 'pages') {
         const { init, handleNewPageClick } = await import('./pages.js');
-        // ✨ [핵심 수정] pages 모듈을 초기화할 때, navigateTo 함수 자체를 넘겨줍니다.
         init({ db }, navigateTo);
-        
-        // ✨ [핵심 수정] '새 페이지' 버튼의 이벤트 핸들러를 재정의합니다.
         document.getElementById('new-page-btn')?.addEventListener('click', async () => {
-            const newPageId = await handleNewPageClick(); // pages.js는 이제 페이지 ID를 반환합니다.
+            const newPageId = await handleNewPageClick();
             if (newPageId) {
-                navigateTo('editor', newPageId); // navigation.js가 직접 화면 이동을 처리합니다.
+                navigateTo('editor', newPageId);
             }
         });
     } else if (viewName === 'cards') {
