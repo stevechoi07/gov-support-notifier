@@ -48,19 +48,9 @@ export function navigateTo(viewName, pageId = null) {
         document.getElementById('new-page-btn')?.addEventListener('click', handleNewPageClick);
     } else if (viewName === 'cards') {
         cards.init();
-        
-        // 🔴 이벤트 위임 방식으로 헤더 버튼 리스너를 설정합니다.
-        ui.headerActions.addEventListener('click', (e) => {
-            const iframeButton = e.target.closest('#add-new-iframe-card-button');
-            const mediaButton = e.target.closest('#add-new-card-button');
-
-            if (iframeButton) {
-                cards.handleAddNewIframeAd();
-            } else if (mediaButton) {
-                cards.handleAddNewAd();
-            }
-        });
-
+        // 🔴 헤더 버튼 리스너를 다시 여기서 설정합니다.
+        document.getElementById('add-new-card-button')?.addEventListener('click', () => cards.handleAddNewAd());
+        document.getElementById('add-new-iframe-card-button')?.addEventListener('click', () => cards.handleAddNewIframeAd());
     } else if (viewName === 'editor' && pageId) {
         editor.init(pageId);
     }

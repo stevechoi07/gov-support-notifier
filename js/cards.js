@@ -68,23 +68,6 @@ export const cards = {
         this.ui.adMediaFileInput?.addEventListener('change', this.handleFileUpload.bind(this));
         this.ui.closeIframeModalButton?.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
-
-        this.ui.adListContainer?.addEventListener('click', (e) => {
-            const editButton = e.target.closest('.edit-ad-button');
-            const deleteButton = e.target.closest('.delete-ad-button');
-            if (editButton) {
-                this.handleEditAd(editButton.dataset.id);
-            } else if (deleteButton) {
-                this.handleDeleteAd(deleteButton.dataset.id);
-            }
-        });
-
-        this.ui.adListContainer?.addEventListener('change', (e) => {
-            const toggle = e.target.closest('.ad-status-toggle');
-            if (toggle) {
-                this.handleToggleAdStatus(toggle.dataset.id, toggle.checked);
-            }
-        });
     },
 
     listen() {
@@ -192,6 +175,11 @@ export const cards = {
                 </div>
             </div>`;
         }).join('');
+
+        // 🔴 정상 동작했던 방식대로, render 함수가 끝난 후 이벤트 리스너를 다시 붙여줍니다.
+        this.ui.adListContainer.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
+        this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
+        this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
     },
     
     formatDateTime(dateTimeString) {
@@ -200,17 +188,14 @@ export const cards = {
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     },
 
-    async handleToggleAdStatus(id, isActive) {
+    async handleToggleAdStatus(event) {
+        const id = event.target.dataset.id;
+        const isActive = event.target.checked;
         try {
             await updateDoc(doc(db, "ads", id), { isActive: isActive });
-            const cardElement = this.ui.adListContainer.querySelector(`.content-card[data-id="${id}"]`);
-            if (cardElement) {
-                cardElement.classList.toggle('opacity-40', !isActive);
-            }
         } catch (error) {
             alert("상태 변경에 실패했습니다.");
-            const toggle = this.ui.adListContainer.querySelector(`.ad-status-toggle[data-id="${id}"]`);
-            if(toggle) toggle.checked = !isActive;
+            event.target.checked = !isActive;
         }
     },
 
@@ -236,9 +221,7 @@ export const cards = {
 
     resetCardModalState() {
         const btn = this.ui.saveAdButton;
-        if(btn) {
-            btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
-        }
+        if(btn) { btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled'); }
         if(this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0; 
         if(this.ui.uploadProgress) this.ui.uploadProgress.textContent = '0%';
         if(this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%'; 
@@ -269,9 +252,7 @@ export const cards = {
         if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false; 
         if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
         if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
-        if(btn){
-            btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled');
-        }
+        if(btn){ btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled'); }
     },
 
     handleAddNewIframeAd() {
@@ -281,8 +262,8 @@ export const cards = {
         if(this.ui.iframeAdModal) this.ui.iframeAdModal.classList.add('active');
     },
 
-    handleEditAd(id) {
-        this.editingId = id;
+    handleEditAd(event) {
+        this.editingId = event.currentTarget.dataset.id;
         const ad = this.list.find(ad => ad.id === this.editingId);
         if (!ad) return;
 
@@ -310,17 +291,18 @@ export const cards = {
         }
     },
 
-    async handleDeleteAd(id) {
-        const adToDelete = this.list.find(ad => ad.id === id);
+    async handleDeleteAd(event) {
+        const idToDelete = event.currentTarget.dataset.id;
+        const adToDelete = this.list.find(ad => ad.id === idToDelete);
         if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
             try {
                 if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
-                await deleteDoc(doc(db, "ads", id));
+                await deleteDoc(doc(db, "ads", idToDelete));
             } catch (error) {
                 if (error.code !== 'storage/object-not-found') {
                     console.error("파일 삭제 중 에러 발생:", error);
                 }
-                await deleteDoc(doc(db, "ads", id));
+                await deleteDoc(doc(db, "ads", idToDelete));
             }
         }
     },
