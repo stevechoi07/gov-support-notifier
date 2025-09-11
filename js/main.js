@@ -547,7 +547,7 @@ const editor = {
 };
 
 // ===============================================================
-// 🚀 Content Card Logic (v1.2 - Final Debug Version)
+// 🚀 Content Card Logic (v1.3 - Final Diagnostics Version)
 // ===============================================================
 const cards = {
   list: [], editingId: null, selectedMediaFile: null, currentMediaUrl: '', currentMediaType: 'image',
@@ -560,7 +560,10 @@ const cards = {
     this.initSortable();
     this.isInitialized = true;
   },
+
+  // ✅ 디버깅 코드가 추가된 mapUI 함수
   mapUI() {
+      console.log("cards.mapUI: 모달 내부 UI 요소 찾기 시작...");
       this.ui = {
           adListContainer: document.getElementById('ad-list-container'),
           adModal: document.getElementById('ad-modal'),
@@ -590,16 +593,32 @@ const cards = {
           iframeAdEndDateInput: document.getElementById('iframe-ad-end-date'),
           saveIframeAdButton: document.getElementById('save-iframe-ad-button'),
       };
+      console.log("cards.mapUI: 찾은 UI 요소들:", this.ui);
   },
+
+  // ✅ 디버깅 코드가 추가된 addEventListeners 함수
   addEventListeners() {
+      console.log("cards.addEventListeners: 이벤트 리스너 연결 시작.");
+      console.log("-> closeModalButton:", this.ui.closeModalButton);
       if (this.ui.closeModalButton) this.ui.closeModalButton.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
+      
+      console.log("-> saveAdButton:", this.ui.saveAdButton);
       if (this.ui.saveAdButton) this.ui.saveAdButton.addEventListener('click', this.handleSaveAd.bind(this));
+      
+      console.log("-> adTitleInput (미리보기용):", this.ui.adTitleInput);
       [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => {
           if (input) input.addEventListener('input', () => this.updatePreview());
       });
+      
+      console.log("-> adMediaFileInput:", this.ui.adMediaFileInput);
       if (this.ui.adMediaFileInput) this.ui.adMediaFileInput.addEventListener('change', this.handleFileUpload.bind(this));
+      
+      console.log("-> closeIframeModalButton:", this.ui.closeIframeModalButton);
       if (this.ui.closeIframeModalButton) this.ui.closeIframeModalButton.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
+      
+      console.log("-> saveIframeAdButton:", this.ui.saveIframeAdButton);
       if (this.ui.saveIframeAdButton) this.ui.saveIframeAdButton.addEventListener('click', this.handleSaveIframeAd.bind(this));
+      console.log("cards.addEventListeners: 이벤트 리스너 연결 완료.");
   },
   listen() {
       const q = query(this.collection, orderBy("order", "asc"));
