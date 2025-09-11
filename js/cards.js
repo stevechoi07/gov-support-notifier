@@ -1,6 +1,6 @@
-// js/cards.js v1.3
+// js/cards.js v1.4
 
-import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 import { getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
@@ -20,7 +20,8 @@ export const cards = {
             this.render();
             return;
         }
-        this.collection = collection(getFirestoreDB(), "cards");
+        // <<< 여기가 핵심! 컬렉션 이름을 'ads'로 변경
+        this.collection = collection(getFirestoreDB(), "ads"); 
         this.mapUI();
         this.addEventListeners();
         this.listen();
@@ -97,7 +98,7 @@ export const cards = {
                 const db = getFirestoreDB();
                 const batch = writeBatch(db);
                 this.list.forEach((ad, index) => {
-                    batch.update(doc(db, "cards", ad.id), { order: index });
+                    batch.update(doc(db, "ads", ad.id), { order: index });
                 });
                 await batch.commit();
             },
@@ -116,9 +117,7 @@ export const cards = {
     
     render() {
         if (!this.ui.adListContainer) return;
-
         this.ui.adListContainer.className = 'card-grid';
-
         if (this.list.length === 0) {
             this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8 col-span-full">등록된 카드가 없습니다.</p>`;
             return;
@@ -129,7 +128,6 @@ export const cards = {
             const clickCount = ad.clickCount || 0;
             const statusBadge = this.getAdStatus(ad);
             const isChecked = ad.isActive !== false;
-
             let previewHTML = '';
             let typeIconHTML = '';
             const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
@@ -150,7 +148,6 @@ export const cards = {
                     previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
                 }
             }
-
             return `
             <div class="content-card" data-id="${ad.id}">
                 ${previewHTML}
@@ -199,6 +196,18 @@ export const cards = {
         if (!dateTimeString) return '...';
         const date = new Date(dateTimeString);
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    },
+
+    async handleToggleAdStatus(event) {
+        const id = event.target.dataset.id;
+        const isActive = event.target.checked;
+        try {
+            await updateDoc(doc(getFirestoreDB(), "ads", id), { isActive: isActive });
+            event.target.closest('.content-card').classList.toggle('opacity-40', !isActive);
+        } catch (error) {
+            alert("상태 변경에 실패했습니다.");
+            event.target.checked = !isActive;
+        }
     },
 
     handleFileUpload(event) {
@@ -295,11 +304,27 @@ export const cards = {
         }
     },
 
+    async handleDeleteAd(event) {
+        const idToDelete = event.currentTarget.dataset.id;
+        const adToDelete = this.list.find(ad => ad.id === idToDelete);
+        if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
+            try {
+                if (adToDelete.mediaUrl) { await deleteObject(ref(getFirebaseStorage(), adToDelete.mediaUrl)); }
+                await deleteDoc(doc(getFirestoreDB(), "ads", idToDelete));
+            } catch (error) {
+                if (error.code !== 'storage/object-not-found') {
+                    console.error("파일 삭제 중 에러 발생:", error);
+                }
+                await deleteDoc(doc(getFirestoreDB(), "ads", idToDelete));
+            }
+        }
+    },
+
     async uploadMediaFile() {
         return new Promise((resolve, reject) => {
             this.ui.mediaUploadStatus.style.opacity = 1;
-            const fileName = `card_${Date.now()}_${this.selectedMediaFile.name}`;
-            const folder = this.currentMediaType === 'video' ? 'card_videos' : 'card_images';
+            const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
+            const folder = this.currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
             const storageRef = ref(getFirebaseStorage(), `${folder}/${fileName}`);
             this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
             this.currentUploadTask.on('state_changed', 
@@ -335,12 +360,13 @@ export const cards = {
                 link: this.ui.adLinkInput.value, isPartners: this.ui.isPartnersCheckbox.checked,
                 mediaUrl: mediaUrlToSave, mediaType: this.currentMediaType,
                 startDate: this.ui.adStartDateInput.value, endDate: this.ui.adEndDateInput.value,
-              createdAt: serverTimestamp()
             };
             if (this.editingId) {
-                const docRef = doc(getFirestoreDB(), "cards", this.editingId);
-                await updateDoc(docRef, adData);
+                const ad = this.list.find(ad => ad.id === this.editingId);
+                Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, isActive: ad.isActive !== false, updatedAt: serverTimestamp() });
+                await updateDoc(doc(getFirestoreDB(), "ads", this.editingId), adData);
             } else {
+                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
                 await addDoc(this.collection, adData);
             }
             this.ui.adModal.classList.remove('active');
@@ -361,12 +387,13 @@ export const cards = {
                 adType: 'iframe', title: title, iframeCode: code,
                 isPartners: this.ui.iframeIsPartnersCheckbox.checked,
                 startDate: this.ui.iframeAdStartDateInput.value, endDate: this.ui.iframeAdEndDateInput.value,
-              createdAt: serverTimestamp()
             };
             if (this.editingId) {
-                const docRef = doc(getFirestoreDB(), "cards", this.editingId);
-                await updateDoc(docRef, adData);
+                const ad = this.list.find(ad => ad.id === this.editingId);
+                Object.assign(adData, { order: ad.order, clickCount: 0, isActive: ad.isActive !== false, updatedAt: serverTimestamp() });
+                await updateDoc(doc(getFirestoreDB(), "ads", this.editingId), adData);
             } else {
+                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
                 await addDoc(this.collection, adData);
             }
             this.ui.iframeAdModal.classList.remove('active');

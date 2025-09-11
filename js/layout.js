@@ -1,4 +1,4 @@
-// js/layout.js v1.4
+// js/layout.js v1.5
 
 import { doc, getDoc, onSnapshot, updateDoc, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { getFirestoreDB } from './firebase.js';
@@ -26,6 +26,8 @@ function listenToLayoutChanges(layoutId) {
         
         const contents = await fetchContentsDetails(contentIds);
         renderLayoutList(contents);
+    }, (error) => {
+        console.error("Error listening to layout document:", error);
     });
 }
 
@@ -34,7 +36,8 @@ async function fetchContentsDetails(ids) {
     const db = getFirestoreDB();
 
     const contentPromises = ids.map(id => {
-        const collectionName = id.startsWith('page_') ? 'pages' : 'cards';
+        // <<< 여기가 핵심! 'cards' 대신 'ads'를 사용하도록 최종 수정
+        const collectionName = id.startsWith('page_') ? 'pages' : 'ads';
         const contentRef = doc(db, collectionName, id);
         return getDoc(contentRef);
     });
@@ -44,6 +47,8 @@ async function fetchContentsDetails(ids) {
 }
 
 function renderLayoutList(contents) {
+    if (!layoutListContainer) return;
+    
     if (contents.length === 0) {
         layoutListContainer.innerHTML = `<div class="text-center py-16">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-600 mb-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
@@ -59,14 +64,17 @@ function renderLayoutList(contents) {
         const isPage = content.id.startsWith('page_');
         const typeLabel = isPage ? '📄 페이지' : '🗂️ 카드';
         const typeColor = isPage ? 'bg-sky-500/20 text-sky-400' : 'bg-amber-500/20 text-amber-400';
-        const previewImage = content.mediaUrl || content.backgroundColor || 'https://via.placeholder.com/150';
+        const previewImage = content.mediaUrl || content.pageSettings?.bgImage || content.pageSettings?.bgColor || 'https://via.placeholder.com/150';
+        const previewStyle = content.mediaUrl || content.pageSettings?.bgImage 
+            ? `background-image: url('${previewImage}')`
+            : `background-color: ${previewImage}`;
 
         return `
             <div class="layout-item flex items-center bg-slate-800 rounded-lg p-3 gap-4 shadow-sm" data-id="${content.id}">
                 <div class="drag-handle cursor-move text-slate-600 hover:text-slate-400">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
                 </div>
-                <div class="w-24 h-14 bg-cover bg-center rounded-md" style="background-image: url('${previewImage}')"></div>
+                <div class="w-24 h-14 bg-cover bg-center rounded-md" style="${previewStyle}"></div>
                 <div class="flex-1">
                     <h4 class="font-bold text-slate-200">${content.title || content.name}</h4>
                     <span class="text-xs font-semibold px-2 py-1 rounded-full ${typeColor}">${typeLabel}</span>
@@ -85,7 +93,7 @@ function renderLayoutList(contents) {
 }
 
 function attachEventListeners() {
-    document.querySelectorAll('.layout-item .remove-btn').forEach(button => {
+    layoutListContainer.querySelectorAll('.layout-item .remove-btn').forEach(button => {
         button.addEventListener('click', async (e) => {
             const item = e.currentTarget.closest('.layout-item');
             const contentId = item.dataset.id;
@@ -124,14 +132,14 @@ function mapModalUI() {
 }
 
 function setupModalListeners() {
-    modalElements.closeButton.addEventListener('click', () => modalElements.modal.classList.remove('active'));
-    modalElements.finishButton.addEventListener('click', () => modalElements.modal.classList.remove('active'));
+    modalElements.closeButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
+    modalElements.finishButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
     
-    modalElements.tabs.forEach(tab => {
+    modalElements.tabs?.forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    modalElements.modal.addEventListener('click', (e) => {
+    modalElements.modal?.addEventListener('click', (e) => {
         if (e.target.classList.contains('add-button') && !e.target.disabled) {
             addItemToLayout(e.target.dataset.id);
         }
@@ -162,11 +170,13 @@ export function handleAddContentClick() {
     
     modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
         const isAdded = currentLayoutIds.includes(page.id);
-        const bgColor = page.backgroundColor || '#0f172a';
+        const bgColor = page.pageSettings?.bgColor || '#0f172a';
+        const bgImage = page.pageSettings?.bgImage || '';
+        const previewStyle = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''}`;
         return `
             <div class="add-content-item">
                 <div class="item-info">
-                    <div class="preview" style="background-color: ${bgColor};"></div>
+                    <div class="preview" style="${previewStyle}"></div>
                     <span class="title">${page.name}</span>
                 </div>
                 <button class="add-button" data-id="${page.id}" ${isAdded ? 'disabled' : ''}>
