@@ -11,6 +11,28 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/style.css"> 
+	
+	  <style>
+        /* =============================================================== */
+        /* 🎨 Dashboard Global Styles */
+        /* =============================================================== */
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        /* ... (다른 기존 스타일들) ... */
+
+
+        /* ✅✅✅ 이 부분을 추가하거나 기존 코드를 교체해주세요 ✅✅✅ */
+        .form-container-mobile {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-start;
+            overflow-y: auto; z-index: 50;
+            opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s;
+        }
+        .form-container-mobile.active { 
+            opacity: 1; visibility: visible; 
+        }
+
+    </style>
+
 </head>
 <body class="bg-slate-900 text-slate-300">
 
