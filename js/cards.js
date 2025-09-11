@@ -86,7 +86,8 @@ export const cards = {
     initSortable() {
         if (!this.ui.adListContainer) return;
         new Sortable(this.ui.adListContainer, {
-            handle: '.content-card', // 카드를 직접 드래그하도록 변경
+            // 🔴 드래그 핸들을 명확하게 지정해줍니다.
+            handle: '.content-card-drag-handle', 
             animation: 150,
             onEnd: async (evt) => {
                 if (evt.oldIndex === evt.newIndex) return;
@@ -111,7 +112,6 @@ export const cards = {
         return `<span class="status-badge bg-emerald-500 text-white">진행중</span>`;
     },
     
-    // 🔴🔴🔴 render 함수를 카드뷰에 맞게 전면 수정 🔴🔴🔴
     render() {
         if (!this.ui.adListContainer) return;
 
@@ -126,7 +126,7 @@ export const cards = {
             const isIframe = ad.adType === 'iframe';
             const clickCount = ad.clickCount || 0;
             const statusBadge = this.getAdStatus(ad);
-            const isChecked = ad.isActive !== false ? 'checked' : '';
+            const isChecked = ad.isActive !== false;
 
             let previewHTML = '';
             let typeIconHTML = '';
@@ -162,7 +162,7 @@ export const cards = {
                     <div class="content-card-actions">
                         <div class="publish-info">
                             <label class="toggle-switch">
-                                <input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked}>
+                                <input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked ? 'checked' : ''}>
                                 <span class="toggle-slider"></span>
                             </label>
                             <span class="text-sm font-medium ${isChecked ? 'text-emerald-400' : 'text-slate-400'}">${isChecked ? '게시 중' : '비공개'}</span>
@@ -177,77 +177,21 @@ export const cards = {
                         </div>
                     </div>
                 </div>
+                <div class="content-card-drag-handle" title="순서 변경">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                </div>
             </div>`;
         }).join('');
 
-        // 이벤트 리스너 다시 연결
         this.ui.adListContainer.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
         this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
         this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
     },
-
+    
     formatDateTime(dateTimeString) {
         if (!dateTimeString) return '...';
         const date = new Date(dateTimeString);
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-    },
-
-    render() {
-        if(!this.ui.adListContainer) return;
-        this.ui.adListContainer.innerHTML = '';
-        if (this.list.length === 0) {
-            this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8">등록된 카드가 없습니다.</p>`;
-            return;
-        }
-        this.list.forEach((ad) => {
-            const adElement = document.createElement('div');
-            adElement.className = `bg-slate-800 rounded-xl shadow-md transition-opacity ${ad.isActive === false ? 'opacity-40' : ''}`;
-            adElement.dataset.id = ad.id;
-            const isIframe = ad.adType === 'iframe';
-            const mediaIcon = isIframe 
-              ? `<div class="w-12 h-12 flex-shrink-0 bg-indigo-900 text-indigo-400 rounded-lg flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>` 
-              : (ad.mediaType === 'video' 
-                  ? `<div class="w-12 h-12 flex-shrink-0 bg-rose-900 text-rose-400 rounded-lg flex items-center justify-center text-2xl">🎬</div>` 
-                  : `<div class="w-12 h-12 flex-shrink-0 bg-sky-900 text-sky-400 rounded-lg flex items-center justify-center text-2xl">🖼️</div>`);
-            const clickCount = ad.clickCount || 0;
-            const statusBadge = this.getAdStatus(ad);
-            const periodText = (ad.startDate || ad.endDate) 
-              ? `${this.formatDateTime(ad.startDate)} ~ ${this.formatDateTime(ad.endDate)}`
-              : '항상 게시';
-            const isChecked = ad.isActive !== false ? 'checked' : '';
-            adElement.innerHTML = `
-              <div class="p-4 flex items-start gap-4">
-                  <div class="drag-handle text-slate-500 pt-3 hidden sm:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
-                  ${mediaIcon}
-                  <div class="flex-grow overflow-hidden">
-                      <p class="font-bold text-slate-100 truncate">${ad.title}</p>
-                      <div class="flex items-center text-sm text-slate-400 mt-1 gap-2">
-                          ${statusBadge}
-                          <span class="text-slate-600">|</span>
-                          <div class="flex items-center ${isIframe ? 'hidden' : ''}" title="클릭 수">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                              <span>${clickCount}</span>
-                          </div>
-                      </div>
-                      <div class="text-xs text-slate-500 mt-2">${periodText}</div>
-                  </div>
-                  <div class="flex-shrink-0">
-                      <label class="toggle-switch">
-                          <input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked}>
-                          <span class="toggle-slider"></span>
-                      </label>
-                  </div>
-              </div>
-              <div class="border-t border-slate-700 p-2 flex justify-end gap-2">
-                  <button class="edit-ad-button text-sm font-medium text-emerald-400 hover:bg-slate-700 px-4 py-2 rounded-md" data-id="${ad.id}">수정</button>
-                  <button class="delete-ad-button text-sm font-medium text-red-400 hover:bg-slate-700 px-4 py-2 rounded-md" data-id="${ad.id}">삭제</button>
-              </div>
-            `;
-            this.ui.adListContainer.appendChild(adElement);
-        });
-        this.ui.adListContainer.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
-        this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
-        this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
     },
 
     async handleToggleAdStatus(event) {
@@ -255,7 +199,7 @@ export const cards = {
         const isActive = event.target.checked;
         try {
             await updateDoc(doc(db, "ads", id), { isActive: isActive });
-            event.target.closest('[data-id]').classList.toggle('opacity-40', !isActive);
+            event.target.closest('.content-card').classList.toggle('opacity-40', !isActive);
         } catch (error) {
             alert("상태 변경에 실패했습니다.");
             event.target.checked = !isActive;
@@ -284,40 +228,53 @@ export const cards = {
 
     resetCardModalState() {
         const btn = this.ui.saveAdButton;
-        btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
-        this.ui.mediaUploadStatus.style.opacity = 0; this.ui.uploadProgress.textContent = '0%';
-        this.ui.progressBarFill.style.width = '0%'; this.ui.uploadLabel.textContent = '업로드 중...';
-        this.ui.adTitleInput.value = ''; this.ui.adDescriptionInput.value = ''; this.ui.adLinkInput.value = '';
-        this.ui.isPartnersCheckbox.checked = false; this.ui.adStartDateInput.value = '';
-        this.ui.adEndDateInput.value = ''; this.ui.adMediaFileInput.value = '';
-        this.ui.fileNameDisplay.textContent = '선택된 파일 없음'; this.ui.adPreview.innerHTML = '';
+        if(btn) {
+            btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
+        }
+        if(this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0; 
+        if(this.ui.uploadProgress) this.ui.uploadProgress.textContent = '0%';
+        if(this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%'; 
+        if(this.ui.uploadLabel) this.ui.uploadLabel.textContent = '업로드 중...';
+        if(this.ui.adTitleInput) this.ui.adTitleInput.value = ''; 
+        if(this.ui.adDescriptionInput) this.ui.adDescriptionInput.value = ''; 
+        if(this.ui.adLinkInput) this.ui.adLinkInput.value = '';
+        if(this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.checked = false; 
+        if(this.ui.adStartDateInput) this.ui.adStartDateInput.value = '';
+        if(this.ui.adEndDateInput) this.ui.adEndDateInput.value = ''; 
+        if(this.ui.adMediaFileInput) this.ui.adMediaFileInput.value = '';
+        if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음'; 
+        if(this.ui.adPreview) this.ui.adPreview.innerHTML = '';
         if (this.tempPreviewUrl) { URL.revokeObjectURL(this.tempPreviewUrl); this.tempPreviewUrl = null; }
     },
 
     handleAddNewAd() {
         this.editingId = null; this.selectedMediaFile = null; this.currentMediaUrl = ''; this.currentMediaType = 'image';
-        this.ui.modalTitle.textContent = "새 미디어 카드";
+        if(this.ui.modalTitle) this.ui.modalTitle.textContent = "새 미디어 카드";
         this.resetCardModalState(); this.updatePreview();
-        this.ui.adModal.classList.add('active');
+        if(this.ui.adModal) this.ui.adModal.classList.add('active');
     },
 
     resetIframeModalState() {
         const btn = this.ui.saveIframeAdButton;
-        this.ui.iframeAdTitleInput.value = ''; this.ui.iframeAdCodeInput.value = '';
-        this.ui.iframeIsPartnersCheckbox.checked = false; this.ui.iframeAdStartDateInput.value = '';
-        this.ui.iframeAdEndDateInput.value = '';
-        btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled');
+        if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = ''; 
+        if(this.ui.iframeAdCodeInput) this.ui.iframeAdCodeInput.value = '';
+        if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false; 
+        if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
+        if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
+        if(btn){
+            btn.disabled = false; btn.innerHTML = '저장하기'; btn.classList.remove('button-disabled');
+        }
     },
 
     handleAddNewIframeAd() {
         this.editingId = null;
-        this.ui.iframeModalTitle.textContent = "새 iframe 카드";
+        if(this.ui.iframeModalTitle) this.ui.iframeModalTitle.textContent = "새 iframe 카드";
         this.resetIframeModalState();
-        this.ui.iframeAdModal.classList.add('active');
+        if(this.ui.iframeAdModal) this.ui.iframeAdModal.classList.add('active');
     },
 
     handleEditAd(event) {
-        this.editingId = event.target.dataset.id;
+        this.editingId = event.currentTarget.dataset.id;
         const ad = this.list.find(ad => ad.id === this.editingId);
         if (!ad) return;
         if (ad.adType === 'iframe') {
@@ -344,14 +301,16 @@ export const cards = {
     },
 
     async handleDeleteAd(event) {
-        const idToDelete = event.target.dataset.id;
+        const idToDelete = event.currentTarget.dataset.id;
         const adToDelete = this.list.find(ad => ad.id === idToDelete);
         if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
             try {
                 if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
                 await deleteDoc(doc(db, "ads", idToDelete));
             } catch (error) {
-                console.warn("파일 삭제 실패:", error.message);
+                if (error.code !== 'storage/object-not-found') {
+                    console.error("파일 삭제 중 에러 발생:", error);
+                }
                 await deleteDoc(doc(db, "ads", idToDelete));
             }
         }
@@ -441,6 +400,7 @@ export const cards = {
     },
 
     updatePreview() {
+        if (!this.ui.adPreview) return;
         const title = this.ui.adTitleInput.value || "카드 제목";
         const description = this.ui.adDescriptionInput.value || "카드 설명이 여기에 표시됩니다.";
         const mediaSrc = this.tempPreviewUrl || this.currentMediaUrl;

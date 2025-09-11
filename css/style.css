@@ -336,3 +336,18 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .content-card-actions .action-buttons button:hover {
     background-color: #334155; /* bg-slate-700 */
 }
+
+/* css/style.css 파일 맨 아래에 추가 */
+
+.content-card-drag-handle {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    cursor: grab;
+    padding: 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+    transition: color 0.2s;
+}
+.content-card-drag-handle:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
