@@ -234,26 +234,25 @@ function navigateTo(viewName, pageId = null) {
         renderPages();
     } else if (viewName === 'editor' && pageId) {
         editor.init(pageId);
-    } else if (viewName === 'cards') {
-        // --- 🕵️‍♂️ 디버깅 코드 추가 ---
-        console.log("navigateTo: 'cards' 뷰 진입. 헤더 버튼 설정 시작.");
-        const newCardBtn = document.getElementById('add-new-card-button');
-        const newIframeCardBtn = document.getElementById('add-new-iframe-card-button');
-        
-        console.log("미디어 카드 버튼 찾기:", newCardBtn);
-        if(newCardBtn) {
-            newCardBtn.addEventListener('click', () => cards.handleAddNewAd());
-            console.log("-> 미디어 카드 버튼에 이벤트 리스너 연결 완료.");
-        }
+    // main.js 파일의 navigateTo 함수 내부, if (viewName === 'cards') 부분을 아래 코드로 교체해주세요.
 
-        console.log("iframe 카드 버튼 찾기:", newIframeCardBtn);
-        if(newIframeCardBtn) {
-            newIframeCardBtn.addEventListener('click', () => cards.handleAddNewIframeAd());
-            console.log("-> iframe 카드 버튼에 이벤트 리스너 연결 완료.");
-        }
-        // --- 여기까지 ---
-        cards.render();
-    }
+	} else if (viewName === 'cards') {
+		// 사용자가 'cards' 뷰에 들어왔을 때 UI를 준비하고 이벤트를 연결합니다.
+		cards.mapUI();
+		cards.addEventListeners();
+
+		const newCardBtn = document.getElementById('add-new-card-button');
+		const newIframeCardBtn = document.getElementById('add-new-iframe-card-button');
+		
+		if(newCardBtn) {
+			newCardBtn.addEventListener('click', () => cards.handleAddNewAd());
+		}
+		if(newIframeCardBtn) {
+			newIframeCardBtn.addEventListener('click', () => cards.handleAddNewIframeAd());
+		}
+		
+		cards.render();
+	}
 }
 
 // ===============================================================
@@ -559,15 +558,15 @@ const cards = {
   list: [], editingId: null, selectedMediaFile: null, currentMediaUrl: '', currentMediaType: 'image',
   currentUploadTask: null, tempPreviewUrl: null, ui: {}, isInitialized: false,
   
-  init() {
-      if (this.isInitialized) return;
-      this.collection = collection(db, "ads");
-      this.mapUI();
-      this.addEventListeners();
-      this.listen();
-      this.initSortable();
-      this.isInitialized = true;
-  },
+init() {
+    if (this.isInitialized) return;
+    this.collection = collection(db, "ads");
+    // mapUI와 addEventListeners는 여기서 더 이상 호출하지 않습니다.
+    this.listen();
+    this.initSortable();
+    this.isInitialized = true;
+},  
+  
   mapUI() {
       this.ui = {
           adListContainer: document.getElementById('ad-list-container'),
