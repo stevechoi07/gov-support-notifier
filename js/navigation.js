@@ -10,7 +10,7 @@ export async function navigateTo(viewName, pageId = null) {
         return;
     }
 
-    // ✨ [핵심 변경 1] 뷰 모듈을 불러오기 전에 Firebase가 준비될 때까지 기다립니다.
+    // ✨ [핵심 수정!] 뷰 모듈을 불러오기 전에 Firebase가 준비될 때까지 기다립니다.
     await firebaseReady;
     const db = getFirestoreDB();
     const storage = getFirebaseStorage();
@@ -43,7 +43,7 @@ export async function navigateTo(viewName, pageId = null) {
     if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
-    // ✨ [핵심 변경 2] 각 뷰 모듈에 필요한 의존성(db, storage)을 '주입'합니다.
+    // 각 뷰 모듈에 필요한 의존성(db, storage)을 '주입'합니다.
     if (viewName === 'layout') {
         const { initLayoutView, handleAddContentClick } = await import('./layout.js');
         initLayoutView({ db });
