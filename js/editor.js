@@ -1,4 +1,4 @@
-// js/editor.js v1.9 - 반복적인 Coloris 초기화 코드 제거
+// js/editor.js v1.10 - Coloris 실시간 미리보기 기능 추가
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getFirestoreDB } from './firebase.js';
@@ -86,10 +86,12 @@ export const editor = {
 
     setupEventListeners() {
         this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
+        
         this.elements.pageBgColorInput.addEventListener('change', (e) => {
             this.pageSettings.bgColor = e.target.value;
             this.saveAndRender(false, true);
         });
+
         this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(false, true); });
         this.elements.pageBackgroundVideoInput.addEventListener('input', (e) => { this.pageSettings.bgVideo = e.target.value; this.saveAndRender(false, true); });
         this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages'));
@@ -102,7 +104,42 @@ export const editor = {
                 }
             });
         }
+        
+        // ✨ [핵심 수정 1] Coloris의 'color' 이벤트를 감지하는 전역 리스너 추가
+        // .bind(this)를 통해 함수 안에서 this.renderPreview 등을 사용할 수 있게 합니다.
+        document.addEventListener('color', this.handleColorRealtimeUpdate.bind(this));
     },
+    
+    // ✨ [핵심 수정 2] 실시간 색상 변경을 처리하는 새로운 함수
+    handleColorRealtimeUpdate(event) {
+        const input = event.detail.input;
+        const color = event.detail.color;
+
+        // data-color-picker 속성이 없으면 반응하지 않음 (안전장치)
+        if (!input.hasAttribute('data-color-picker')) return;
+
+        // 1. 페이지 배경색인지 확인
+        if (input.id === 'page-bg-color') {
+            this.pageSettings.bgColor = color;
+        } 
+        // 2. 컴포넌트 내부의 색상인지 확인
+        else {
+            const panel = input.closest('.editor-panel');
+            if (!panel) return;
+
+            const id = Number(panel.dataset.id);
+            const styleProp = input.dataset.style;
+            const component = this.components.find(c => c.id === id);
+            
+            if (component && component.styles) {
+                component.styles[styleProp] = color;
+            }
+        }
+
+        // 3. 데이터베이스 저장은 하지 않고, 미리보기 화면만 새로고침
+        this.renderPreview();
+    },
+
     async handleTitleUpdate() {
         const db = getFirestoreDB();
         const newTitle = ui.viewTitle.textContent.trim();
@@ -125,7 +162,9 @@ export const editor = {
             ui.viewTitle.textContent = originalTitle;
         }
     },
+
     renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); this.initSortable(); },
+
     hexToRgba(hex, alpha = 1) { 
         if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
         let c = hex.substring(1).split(''); 
@@ -133,7 +172,9 @@ export const editor = {
         c = '0x' + c.join(''); 
         return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; 
     },
+
     renderPreview() {
+      if (!this.elements.contentArea) return; // 안전장치
       this.elements.contentArea.innerHTML = '';
       const { bgVideo, bgImage, bgColor, viewport } = this.pageSettings;
       if (bgVideo) { this.elements.backgroundVideo.src = bgVideo; this.elements.backgroundVideo.style.display = 'block'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = 'transparent'; this.elements.preview.classList.add('has-background'); } 
