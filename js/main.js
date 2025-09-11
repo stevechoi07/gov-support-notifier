@@ -1,4 +1,4 @@
-// js/main.js v1.9 - Coloris 전역 초기화
+// js/main.js v2.0 - export 문제 해결
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { firebaseReady, getFirebaseAuth } from './firebase.js';
@@ -14,7 +14,6 @@ async function initializeAppAndAuth() {
         mapInitialUI();
         setupLoginListeners();
 
-        // Coloris 라이브러리를 앱 시작 시 여기서 딱 한 번만 초기화합니다.
         if (typeof Coloris !== 'undefined') {
             Coloris({
                 el: '[data-color-picker]', 
@@ -64,4 +63,6 @@ function setupDashboardListeners() {
     }
 }
 
-initializeAppAndAuth();
+// ✨ [수정] 파일 맨 아래에서 함수를 직접 호출하는 대신, export 구문을 추가합니다.
+// initializeAppAndAuth(); // 이 줄을 삭제하거나 주석 처리
+export { initializeAppAndAuth }; // 이 줄을 추가
