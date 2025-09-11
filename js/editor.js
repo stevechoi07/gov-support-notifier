@@ -1,4 +1,4 @@
-// js/editor.js v1.7 - DOM 요소 선택 범위 문제 해결
+// js/editor.js v1.8 - Coloris 색상 선택기 이벤트 문제 해결
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getFirestoreDB } from './firebase.js';
@@ -120,10 +120,13 @@ export const editor = {
 
     setupEventListeners() {
         this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
-        this.elements.pageBgColorInput.addEventListener('input', (e) => {
+        
+        // ✨ [핵심 수정 1] 'input' 이벤트를 'change' 이벤트로 변경
+        this.elements.pageBgColorInput.addEventListener('change', (e) => {
             this.pageSettings.bgColor = e.target.value;
             this.saveAndRender(false, true);
         });
+
         this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(false, true); });
         this.elements.pageBackgroundVideoInput.addEventListener('input', (e) => { this.pageSettings.bgVideo = e.target.value; this.saveAndRender(false, true); });
         this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages'));
@@ -293,13 +296,19 @@ export const editor = {
           panel.querySelectorAll('[data-prop]').forEach(input => { 
               input.oninput = (e) => this.updateComponent(id, e.target.dataset.prop, e.target.value, false); 
           });
+
+          // ✨ [핵심 수정 2] 모든 [data-style] 요소에 대해 이벤트 리스너를 올바르게 설정
           panel.querySelectorAll('[data-style]').forEach(input => {
-              input.oninput = (e) => {
+              const eventType = input.hasAttribute('data-color-picker') ? 'change' : 'input';
+              input.addEventListener(eventType, (e) => {
                   let value = e.target.value;
-                  if (e.target.dataset.style === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) value += 'px';
+                  if (e.target.dataset.style === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) {
+                      value += 'px';
+                  }
                   this.updateComponent(id, `styles.${e.target.dataset.style}`, value, false);
-              };
+              });
           });
+
           panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => {
               checkbox.onchange = () => {
                   const fieldName = checkbox.dataset.fieldName;
