@@ -1,15 +1,14 @@
-// js/pages.js v1.8 - 순환 참조 해결
+// js/pages.js v2.0 - 자생력 강화 버전
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ui } from './ui.js';
-// 👎 import { navigateTo } from './navigation.js'; // 이 줄을 제거합니다.
+import { firebaseReady, getFirestoreDB } from './firebase.js'; // ✨ 직접 import
 
 export let pagesList = [];
 let isInitialized = false;
-let db;
 
-// ✨ renderPages 함수는 navigation.js에서 가져온 navigateTo 함수를 인자로 받도록 수정합니다.
-export function renderPages(navigateTo) {
+export async function renderPages() {
+    const navigate = (await import('./navigation.js')).navigateTo;
     if (!ui.pageListContainer) return;
     ui.pageListContainer.className = 'page-grid';
     ui.pageListContainer.innerHTML = pagesList.length === 0
@@ -49,13 +48,13 @@ export function renderPages(navigateTo) {
             </div>`;
         }).join('');
 
-    document.querySelectorAll('.publish-toggle').forEach(t => t.addEventListener('change', handlePublishToggleChange));
-    document.querySelectorAll('.edit-page-btn').forEach(b => b.addEventListener('click', (e) => navigateTo('editor', e.currentTarget.dataset.id)));
+    document.querySelectorAll('.edit-page-btn').forEach(b => b.addEventListener('click', (e) => navigate('editor', e.currentTarget.dataset.id)));
     document.querySelectorAll('.delete-page-btn').forEach(b => b.addEventListener('click', handleDeletePageClick));
+    document.querySelectorAll('.publish-toggle').forEach(t => t.addEventListener('change', handlePublishToggleChange));
 }
 
-
 async function handlePublishToggleChange(e) {
+	await firebaseReady; const db = getFirestoreDB(); // ✨ 안전장치
     const pageIdToChange = e.currentTarget.dataset.id;
     const isNowPublished = e.currentTarget.checked;
     try {
@@ -69,6 +68,7 @@ async function handlePublishToggleChange(e) {
 }
 
 async function handleDeletePageClick(e) {
+	await firebaseReady; const db = getFirestoreDB(); // ✨ 안전장치
     const { id, name } = e.currentTarget.dataset;
     if (confirm(`'${name}' 페이지를 정말 삭제하시겠습니까?`)) {
         try { await deleteDoc(doc(db, "pages", id)); } catch (error) { alert("페이지 삭제에 실패했습니다."); }
@@ -76,6 +76,7 @@ async function handleDeletePageClick(e) {
 }
 
 export async function handleNewPageClick() {
+	await firebaseReady; const db = getFirestoreDB(); // ✨ 안전장치
     const name = prompt("새 페이지의 이름을 입력하세요:");
     if (name && name.trim()) {
         try {
@@ -89,30 +90,26 @@ export async function handleNewPageClick() {
             return null;
         }
     }
-    return null;
+    return newPageRef.id;
 }
 
-function listenToPages(navigateTo) {
+async function listenToPages() {
+    await firebaseReady; const db = getFirestoreDB(); // ✨ 안전장치
     const q = query(collection(db, "pages"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const pagesView = document.getElementById('pages-view');
         if (ui.pageListContainer && pagesView && !pagesView.classList.contains('hidden')) {
-            renderPages(navigateTo);
+            renderPages();
         }
     });
 }
 
-export function init({ db: firestoreDB }, navigateTo) {
-    db = firestoreDB;
-    if (!db) {
-        console.error("Pages 모듈 초기화 실패: DB가 제공되지 않음");
-        return;
-    }
+export function init() {
     if (isInitialized) {
-        renderPages(navigateTo);
+        renderPages();
         return;
     };
-    listenToPages(navigateTo);
+    listenToPages();
     isInitialized = true;
 }

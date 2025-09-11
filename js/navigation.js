@@ -1,7 +1,6 @@
-/// js/navigation.js v2.3 - 의존성 명시적 초기화
+/// js/navigation.js v2.4 - 역할 축소 버전
 
 import { ui } from './ui.js';
-import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
 export async function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
@@ -10,9 +9,7 @@ export async function navigateTo(viewName, pageId = null) {
         return;
     }
 
-    await firebaseReady;
-    const db = getFirestoreDB();
-    const storage = getFirebaseStorage();
+    // DB 주입 및 선제적 초기화 로직 모두 제거
 
     if (ui.views) ui.views.forEach(view => view.classList.add('hidden'));
     if (ui.navLinks) ui.navLinks.forEach(link => {
@@ -42,34 +39,25 @@ export async function navigateTo(viewName, pageId = null) {
     if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
+// ✨ 각 모듈의 init 함수를 파라미터 없이 호출합니다.
     if (viewName === 'layout') {
-        // ✨ [핵심 수정!] layout을 초기화하기 전에, layout이 의존하는 모듈들을 먼저 초기화합니다.
-        const { init: initPages } = await import('./pages.js');
-        const { cards } = await import('./cards.js');
-        initPages({ db }, navigateTo);
-        cards.init({ db, storage });
-        
-        // ✨ 그리고 나서 layout을 초기화합니다.
         const { initLayoutView, handleAddContentClick } = await import('./layout.js');
-        initLayoutView({ db });
+        initLayoutView();
         document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
-
     } else if (viewName === 'pages') {
         const { init, handleNewPageClick } = await import('./pages.js');
-        init({ db }, navigateTo);
+        init();
         document.getElementById('new-page-btn')?.addEventListener('click', async () => {
             const newPageId = await handleNewPageClick();
-            if (newPageId) {
-                navigateTo('editor', newPageId);
-            }
+            if (newPageId) navigateTo('editor', newPageId);
         });
     } else if (viewName === 'cards') {
         const { cards } = await import('./cards.js');
-        cards.init({ db, storage });
+        cards.init();
         document.getElementById('add-new-card-button')?.addEventListener('click', () => cards.handleAddNewAd());
         document.getElementById('add-new-iframe-card-button')?.addEventListener('click', () => cards.handleAddNewIframeAd());
     } else if (viewName === 'editor' && pageId) {
         const { editor } = await import('./editor.js');
-        editor.init(pageId, { db });
+        editor.init(pageId);
     }
 }

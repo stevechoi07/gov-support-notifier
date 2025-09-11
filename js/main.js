@@ -1,4 +1,4 @@
-// js/main.js v2.2 - 단순화 버전 (선제적 초기화 제거)
+// js/main.js v2.3 - 최종 단순화 버전
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { firebaseReady, getFirebaseAuth } from './firebase.js';
@@ -6,7 +6,7 @@ import { ui, mapInitialUI, mapDashboardUI } from './ui.js';
 import { setupLoginListeners, handleLogout, showAuthMessage } from './auth.js';
 import { navigateTo } from './navigation.js';
 
-async function initializeAppAndAuth() {
+export async function initializeAppAndAuth() {
     try {
         await firebaseReady;
         const auth = getFirebaseAuth();
@@ -62,5 +62,3 @@ function setupDashboardListeners() {
         });
     }
 }
-
-initializeAppAndAuth();
