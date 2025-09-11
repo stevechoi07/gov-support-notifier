@@ -8,8 +8,6 @@ import { navigateTo } from './navigation.js';
 export let pagesList = [];
 let isInitialized = false;
 
-// ✨ [삭제] 파일 상단에서 db 객체를 미리 생성하지 않습니다.
-
 function renderPages() {
     if (!ui.pageListContainer) return;
     ui.pageListContainer.className = 'page-grid';
@@ -57,7 +55,7 @@ function renderPages() {
 
 
 async function handlePublishToggleChange(e) {
-    const db = getFirestoreDB(); // ✨ [수정]
+    const db = getFirestoreDB();
     const pageIdToChange = e.currentTarget.dataset.id;
     const isNowPublished = e.currentTarget.checked;
     try {
@@ -71,7 +69,7 @@ async function handlePublishToggleChange(e) {
 }
 
 async function handleDeletePageClick(e) {
-    const db = getFirestoreDB(); // ✨ [수정]
+    const db = getFirestoreDB();
     const { id, name } = e.currentTarget.dataset;
     if (confirm(`'${name}' 페이지를 정말 삭제하시겠습니까?`)) {
         try { await deleteDoc(doc(db, "pages", id)); } catch (error) { alert("페이지 삭제에 실패했습니다."); }
@@ -79,7 +77,7 @@ async function handleDeletePageClick(e) {
 }
 
 export async function handleNewPageClick() {
-    const db = getFirestoreDB(); // ✨ [수정]
+    const db = getFirestoreDB();
     const name = prompt("새 페이지의 이름을 입력하세요:");
     if (name && name.trim()) {
         try {
@@ -93,7 +91,7 @@ export async function handleNewPageClick() {
 }
 
 function listenToPages() {
-    const db = getFirestoreDB(); // ✨ [수정]
+    const db = getFirestoreDB();
     const q = query(collection(db, "pages"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -105,7 +103,7 @@ function listenToPages() {
 }
 
 export function init() {
-    if (!getFirestoreDB()) { // ✨ [수정]
+    if (!getFirestoreDB()) {
         console.error("Firestore is not available at initPages");
         return;
     }

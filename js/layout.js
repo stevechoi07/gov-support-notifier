@@ -1,4 +1,4 @@
-// js/layout.js v1.8 - cards.js v1.8 규격에 맞게 연동
+// js/layout.js v1.8 - cards.js v1.8 규격에 맞게 연동 및 타이밍 문제 해결
 
 import { getFirestoreDB } from './firebase.js'; 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
@@ -113,7 +113,7 @@ function mapModalUI() {
     modalElements.modal = document.getElementById('add-content-modal');
     modalElements.closeButton = document.getElementById('close-add-content-modal-button');
     modalElements.finishButton = document.getElementById('finish-adding-content-button');
-    modalElements.tabs = document.querySelectorAll('#add-content-tabs .button');
+    modalElements.tabs = document.querySelectorAll('#add-content-tabs .tab-button');
     modalElements.tabContents = document.querySelectorAll('#add-content-modal .tab-content');
     modalElements.pagesListContainer = document.getElementById('add-content-pages-list');
     modalElements.cardsListContainer = document.getElementById('add-content-cards-list');
