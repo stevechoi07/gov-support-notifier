@@ -1,13 +1,13 @@
-// js/editor.js v1.10 - Coloris 실시간 미리보기 기능 추가
+// js/editor.js v1.11 - 의존성 주입(DI) 적용
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-import { getFirestoreDB } from './firebase.js';
 import { ui } from './ui.js';
 import { pagesList } from './pages.js';
 import { navigateTo } from './navigation.js';
 
 export const editor = {
     currentPageId: null, 
+    db: null, // ✨ 주입받을 db를 저장할 공간
     components: [], 
     pageSettings: {}, 
     activeComponentId: null, 
@@ -27,9 +27,10 @@ export const editor = {
         { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } 
     ],
 
-    async init(pageId) {
-        if (!getFirestoreDB()) {
-            console.error("Firestore is not available at initEditor");
+    async init(pageId, { db }) {
+        this.db = db;
+        if (!this.db) {
+            console.error("Editor 모듈 초기화 실패: DB가 제공되지 않음");
             return;
         }
         this.currentPageId = pageId;
@@ -67,8 +68,7 @@ export const editor = {
     },
 
     async loadProject() {
-        const db = getFirestoreDB();
-        const docRef = doc(db, "pages", this.currentPageId);
+        const docRef = doc(this.db, "pages", this.currentPageId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
@@ -134,7 +134,6 @@ export const editor = {
     },
 
     async handleTitleUpdate() {
-        const db = getFirestoreDB();
         const newTitle = ui.viewTitle.textContent.trim();
         const originalTitle = ui.viewTitle.dataset.originalTitle;
         if (!newTitle) {
@@ -144,7 +143,7 @@ export const editor = {
         }
         if (newTitle === originalTitle) return;
         try {
-            const docRef = doc(db, "pages", this.currentPageId);
+            const docRef = doc(this.db, "pages", this.currentPageId);
             await updateDoc(docRef, { name: newTitle });
             ui.viewTitle.dataset.originalTitle = newTitle;
             const pageInList = pagesList.find(p => p.id === this.currentPageId);
@@ -346,7 +345,7 @@ export const editor = {
             if (!current[keys[i]]) current[keys[i]] = {};
             current = current[keys[i]];
         }
-        current[keys[keys.length - 1]] = value;
+        current[keys[keys.length - 1]]] = value;
         this.saveAndRender(rerenderControls, true);
     },
     deleteComponent(id) {
@@ -361,8 +360,7 @@ export const editor = {
             this.renderControls();
         }
         try {
-            const db = getFirestoreDB();
-            const docRef = doc(db, "pages", this.currentPageId);
+            const docRef = doc(this.db, "pages", this.currentPageId);
             await updateDoc(docRef, { components: this.components, pageSettings: this.pageSettings, updatedAt: serverTimestamp() });
         } catch (error) { console.error("자동 저장 실패:", error); }
     }

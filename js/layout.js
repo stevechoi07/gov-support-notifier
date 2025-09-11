@@ -1,18 +1,18 @@
-// js/layout.js v1.8 - cards.js v1.8 규격에 맞게 연동 및 타이밍 문제 해결
+// js/layout.js v1.9 - 의존성 주입(DI) 적용 및 안정화
 
-import { getFirestoreDB } from './firebase.js'; 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
 import { pagesList } from './pages.js';
 import { cards } from './cards.js';
 
+let db; // ✨ 모듈 스코프에 db 변수 선언
 const layoutListContainer = document.getElementById('layout-list-container');
 const modalElements = {};
 let sortableInstance = null;
 let currentLayoutIds = [];
+let isInitialized = false;
 
 function listenToLayoutChanges(layoutId) {
-    const db = getFirestoreDB();
     if (!db) return;
     const layoutRef = doc(db, "layouts", layoutId);
     onSnapshot(layoutRef, async (snapshot) => {
@@ -31,7 +31,6 @@ function listenToLayoutChanges(layoutId) {
 
 async function fetchContentsDetails(ids) {
     if (ids.length === 0) return [];
-    const db = getFirestoreDB();
     if (!db) return [];
     const contentPromises = ids.map(id => {
         const collectionName = id.startsWith('page_') ? 'pages' : 'ads';
@@ -89,7 +88,6 @@ function attachEventListeners() {
             const item = e.currentTarget.closest('.layout-item');
             const contentId = item.dataset.id;
             if (confirm(`'${item.querySelector('h4').textContent}' 콘텐츠를 레이아웃에서 제거하시겠습니까?`)) {
-                const db = getFirestoreDB();
                 if (!db) return;
                 const layoutRef = doc(db, "layouts", "mainLayout");
                 await updateDoc(layoutRef, { contentIds: arrayRemove(contentId) });
@@ -105,7 +103,6 @@ function initializeSortable() {
     sortableInstance = new Sortable(layoutListContainer, {
         handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost',
         onEnd: async (evt) => {
-            const db = getFirestoreDB();
             if (!db) return;
             const newOrder = Array.from(evt.to.children).map(item => item.dataset.id);
             const layoutRef = doc(db, "layouts", "mainLayout");
@@ -149,7 +146,6 @@ function switchTab(tabName) {
 
 async function addItemToLayout(contentId) {
     try {
-        const db = getFirestoreDB();
         if (!db) return;
         const layoutRef = doc(db, "layouts", "mainLayout");
         await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) });
@@ -193,11 +189,10 @@ export function handleAddContentClick() {
     modalElements.modal.classList.add('active');
 }
 
-let isInitialized = false;
-
-export function initLayoutView() {
-    if (!getFirestoreDB()) {
-        console.error("Firestore is not available at initLayoutView");
+export function initLayoutView({ db: firestoreDB }) {
+    db = firestoreDB;
+    if (!db) {
+        console.error("Layout View 초기화 실패: DB가 제공되지 않음");
         return;
     }
     if (isInitialized) return;
