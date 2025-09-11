@@ -1,4 +1,4 @@
-// js/editor.js v1.11 - 의존성 주입(DI) 적용
+// js/editor.js v1.12 - SyntaxError 버그 수정
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -7,7 +7,7 @@ import { navigateTo } from './navigation.js';
 
 export const editor = {
     currentPageId: null, 
-    db: null, // ✨ 주입받을 db를 저장할 공간
+    db: null,
     components: [], 
     pageSettings: {}, 
     activeComponentId: null, 
@@ -330,7 +330,15 @@ export const editor = {
             case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break;
             case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break;
             case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', backgroundColorOpacity: 1 }; break;
-            case 'lead-form': newComponent.googleScriptUrl = ''; newComponent.submitText = '문의 남기기'; newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' }; newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' }; break;
+            case 'lead-form':
+                newComponent.googleScriptUrl = '';
+                newComponent.submitText = '문의 남기기';
+                newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!';
+                newComponent.activeFields = ['name', 'email'];
+                // ✨ [버그 수정] 객체 정의 끝에 있던 잘못된 대괄호 ']' 제거
+                newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' };
+                newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' };
+                break;
         }
         this.components.push(newComponent);
         this.activeComponentId = newComponent.id;
