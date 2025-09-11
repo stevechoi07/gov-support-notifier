@@ -1,10 +1,31 @@
-// js/cards.js
+// js/cards.js v1.5 - Firebase Getter 적용
+
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
-import { db, storage } from './firebase.js';
+// ✨ [수정] db, storage 대신 게이트키퍼 함수를 import 합니다.
+import { getFirestoreDB, getFirebaseStorage } from './firebase.js';
+
+// ✨ [수정] 파일 상단에서 한 번만 호출하여 db와 storage 객체를 할당합니다.
+const db = getFirestoreDB();
+const storage = getFirebaseStorage();
+
+export let cardsList = []; // layout.js에서 참조할 수 있도록 export
+
+// onSnapshot 콜백에서 cardsList를 업데이트합니다.
+function updateCardsList(newList) {
+    cardsList.length = 0; // 배열을 비웁니다.
+    Array.prototype.push.apply(cardsList, newList); // 새 항목을 추가합니다.
+}
 
 export const cards = {
-    list: [],
+    // `list` 속성을 `cardsList` 참조로 변경합니다.
+    get list() {
+        return cardsList;
+    },
+    set list(value) {
+        updateCardsList(value);
+    },
+
     editingId: null,
     selectedMediaFile: null,
     currentMediaUrl: '',
@@ -15,6 +36,10 @@ export const cards = {
     isInitialized: false,
     
     init() {
+        if (!db || !storage) {
+            console.error("Firebase is not initialized yet!");
+            return;
+        }
         if (this.isInitialized) {
             this.render();
             return;
@@ -73,9 +98,11 @@ export const cards = {
     },
 
     listen() {
-        const q = query(this.collection, orderBy("order", "asc"));
+        const q = query(collection(db, "ads"), orderBy("order", "asc"));
         onSnapshot(q, (querySnapshot) => {
+            // Firestore에서 데이터가 변경될 때마다 this.list (실제로는 cardsList)를 업데이트합니다.
             this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
             const cardsView = document.getElementById('cards-view');
             if (cardsView && !cardsView.classList.contains('hidden')) {
                 this.render();
@@ -88,10 +115,16 @@ export const cards = {
         new Sortable(this.ui.adListContainer, {
             handle: '.content-card-drag-handle', 
             animation: 150,
+            ghostClass: 'sortable-ghost',
             onEnd: async (evt) => {
                 if (evt.oldIndex === evt.newIndex) return;
-                const movedItem = this.list.splice(evt.oldIndex, 1)[0];
-                this.list.splice(evt.newIndex, 0, movedItem);
+                
+                // 정렬된 DOM 요소 순서대로 새로운 ID 배열 생성
+                const newOrderIds = Array.from(evt.to.children).map(item => item.dataset.id);
+
+                // this.list 배열을 새로운 순서에 맞게 재정렬
+                this.list.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+
                 const batch = writeBatch(db);
                 this.list.forEach((ad, index) => {
                     batch.update(doc(db, "ads", ad.id), { order: index });
@@ -126,11 +159,10 @@ export const cards = {
             const clickCount = ad.clickCount || 0;
             const statusBadge = this.getAdStatus(ad);
             const isChecked = ad.isActive !== false;
+            const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
 
             let previewHTML = '';
             let typeIconHTML = '';
-            // 🔴 미디어 파일이 없는 경우를 위한 클래스 조건부 추가
-            const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
 
             if (isIframe) {
                 typeIconHTML = `<div class="content-card-type-icon" title="iframe 카드">🔗</div>`;
@@ -145,13 +177,12 @@ export const cards = {
                         previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
                     }
                 } else {
-                    // 미디어 URL이 없을 경우, typeIconHTML은 필요 없고 noMediaClass만 적용
                     previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
                 }
             }
 
             return `
-            <div class="content-card" data-id="${ad.id}">
+            <div class="content-card ${isChecked ? '' : 'opacity-40'}" data-id="${ad.id}">
                 ${previewHTML}
                 <div class="content-card-content">
                     <div class="content-card-header">
@@ -193,19 +224,12 @@ export const cards = {
         this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
         this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
     },
-    
-    formatDateTime(dateTimeString) {
-        if (!dateTimeString) return '...';
-        const date = new Date(dateTimeString);
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-    },
 
     async handleToggleAdStatus(event) {
         const id = event.target.dataset.id;
         const isActive = event.target.checked;
         try {
             await updateDoc(doc(db, "ads", id), { isActive: isActive });
-            event.target.closest('.content-card').classList.toggle('opacity-40', !isActive);
         } catch (error) {
             alert("상태 변경에 실패했습니다.");
             event.target.checked = !isActive;
@@ -369,7 +393,7 @@ export const cards = {
                 await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
-                await addDoc(this.collection, adData);
+                await addDoc(collection(db, "ads"), adData);
             }
             this.ui.adModal.classList.remove('active');
         } catch (error) {
@@ -396,7 +420,7 @@ export const cards = {
                 await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
-                await addDoc(this.collection, adData);
+                await addDoc(collection(db, "ads"), adData);
             }
             this.ui.iframeAdModal.classList.remove('active');
         } catch (error) {

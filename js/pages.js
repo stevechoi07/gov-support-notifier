@@ -1,16 +1,20 @@
-// js/pages.js
+// js/pages.js v1.4 - Firebase Getter 적용
+
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-import { db } from './firebase.js';
+// ✨ [수정] db 대신 getFirestoreDB 함수를 import 합니다.
+import { getFirestoreDB } from './firebase.js';
 import { ui } from './ui.js';
 import { navigateTo } from './navigation.js';
 
-export let pagesList = []; // editor.js에서 참조할 수 있도록 export
+export let pagesList = []; // editor.js 등 다른 모듈에서 참조할 수 있도록 export
 let isInitialized = false;
+
+// ✨ [수정] 파일 상단에서 한 번만 호출하여 db 객체를 변수에 할당합니다.
+const db = getFirestoreDB();
 
 function renderPages() {
     if (!ui.pageListContainer) return;
     
-    // 기존의 pageListContainer의 자식 클래스를 수정하여 grid 레이아웃을 적용합니다.
     ui.pageListContainer.className = 'page-grid';
 
     ui.pageListContainer.innerHTML = pagesList.length === 0
@@ -18,12 +22,8 @@ function renderPages() {
         : pagesList.map(page => {
             const lastUpdated = page.updatedAt ? new Date(page.updatedAt.seconds * 1000).toLocaleString() : '정보 없음';
             const isPublished = page.isPublished || false;
-            
-            // 페이지 배경 설정을 가져옵니다.
-            const bgColor = page.pageSettings?.bgColor || '#0f172a'; // 기본 배경색
+            const bgColor = page.pageSettings?.bgColor || '#0f172a';
             const bgImage = page.pageSettings?.bgImage || '';
-            
-            // 미리보기 영역의 인라인 스타일을 생성합니다.
             const previewStyle = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''}`;
 
             return `
@@ -54,7 +54,6 @@ function renderPages() {
             </div>`;
         }).join('');
 
-    // 이벤트 리스너를 다시 연결합니다.
     document.querySelectorAll('.publish-toggle').forEach(t => t.addEventListener('change', handlePublishToggleChange));
     document.querySelectorAll('.edit-page-btn').forEach(b => b.addEventListener('click', (e) => navigateTo('editor', e.currentTarget.dataset.id)));
     document.querySelectorAll('.delete-page-btn').forEach(b => b.addEventListener('click', handleDeletePageClick));
@@ -106,6 +105,10 @@ function listenToPages() {
 }
 
 export function init() {
+    if (!db) {
+        console.error("Firestore is not initialized yet!");
+        return;
+    }
     if (isInitialized) {
         renderPages();
         return;

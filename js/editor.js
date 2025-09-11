@@ -1,9 +1,14 @@
-// js/editor.js
+// js/editor.js v1.5 - Firebase Getter 적용
+
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-import { db } from './firebase.js';
+// ✨ [수정] db 대신 게이트키퍼 함수를 import 합니다.
+import { getFirestoreDB } from './firebase.js';
 import { ui } from './ui.js';
 import { pagesList } from './pages.js';
 import { navigateTo } from './navigation.js';
+
+// ✨ [수정] 파일 상단에서 한 번만 호출하여 db 객체를 할당합니다.
+const db = getFirestoreDB();
 
 export const editor = {
     currentPageId: null, 
@@ -27,6 +32,10 @@ export const editor = {
     ],
 
     async init(pageId) {
+        if (!db) {
+            console.error("Firestore is not initialized yet!");
+            return;
+        }
         this.currentPageId = pageId;
         const editorView = document.getElementById('editor-view');
         if (!editorView) return;
@@ -210,7 +219,10 @@ export const editor = {
                 const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
             }
         });
-        this.attachEventListenersToControls();
+        // Coloris를 다시 초기화해야 동적으로 추가된 색상 선택기도 작동합니다.
+        Coloris.init();
+        // 다시 바인딩하여 새 요소에도 적용합니다.
+        Coloris({ el: '[data-color-picker]' });
     },
 
     renderViewportControls() {
@@ -318,7 +330,7 @@ export const editor = {
     
     async saveAndRender(rerenderControls = true, rerenderPreview = true) {
         if (rerenderPreview) this.renderPreview();
-        if (rerenderControls) { this.renderControls(); this.renderViewportControls(); this.initSortable(); }
+        if (rerenderControls) { this.renderControls(); } // initSortable은 여기서 제외
         try {
             const docRef = doc(db, "pages", this.currentPageId);
             await updateDoc(docRef, { components: this.components, pageSettings: this.pageSettings, updatedAt: serverTimestamp() });

@@ -1,7 +1,9 @@
-// js/auth.js
-import { getAuth, signInWithCustomToken, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+// js/auth.js v1.4 - Firebase Getter 적용
+
+import { signInWithCustomToken, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { ui } from './ui.js';
-import { auth } from './firebase.js';
+// ✨ [수정] auth 대신 getFirebaseAuth 함수를 import 합니다.
+import { getFirebaseAuth } from './firebase.js';
 
 export function setupLoginListeners() {
     if (ui.loginButton) {
@@ -13,6 +15,13 @@ export function setupLoginListeners() {
 }
 
 async function handleLogin() {
+    // ✨ [수정] 함수가 호출될 때마다 최신 auth 객체를 가져옵니다.
+    const auth = getFirebaseAuth();
+    if (!auth) {
+        showAuthMessage("Firebase 인증 서비스를 사용할 수 없습니다.", true);
+        return;
+    }
+    
     ui.loginButton.disabled = true;
     ui.loginButton.innerHTML = `<div class="spinner"></div><span>로그인 중...</span>`;
 
@@ -41,6 +50,10 @@ async function handleLogin() {
 }
 
 export async function handleLogout() {
+    // ✨ [수정] 함수가 호출될 때마다 최신 auth 객체를 가져옵니다.
+    const auth = getFirebaseAuth();
+    if (!auth) return;
+
     if (confirm('로그아웃 하시겠습니까?')) {
         await signOut(auth);
     }
