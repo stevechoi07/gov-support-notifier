@@ -1,7 +1,4 @@
-// js/firebase.js v2.0 - 디버깅용 버전 확인 로그 추가
-
-// ✨ [디버깅 코드] 이 메시지가 콘솔에 보이는지 확인해주세요!
-console.log("🔥🔥🔥 Firebase.js v2.0 파일이 성공적으로 로드되었습니다! 🔥🔥🔥");
+// js/firebase.js v2.0 - 안정화 버전
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";

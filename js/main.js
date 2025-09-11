@@ -14,7 +14,7 @@ async function initializeAppAndAuth() {
         mapInitialUI();
         setupLoginListeners();
 
-        // ✨ [핵심 수정] Coloris 라이브러리를 앱 시작 시 여기서 딱 한 번만 초기화합니다.
+        // Coloris 라이브러리를 앱 시작 시 여기서 딱 한 번만 초기화합니다.
         if (typeof Coloris !== 'undefined') {
             Coloris({
                 el: '[data-color-picker]', 
@@ -64,4 +64,4 @@ function setupDashboardListeners() {
     }
 }
 
-export { initializeAppAndAuth };
+initializeAppAndAuth();
