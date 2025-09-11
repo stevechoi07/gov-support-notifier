@@ -3,7 +3,7 @@ import { ui } from './ui.js';
 import { init as initPages, handleNewPageClick } from './pages.js';
 import { cards } from './cards.js';
 import { editor } from './editor.js';
-import { init as initLayout } from './layout.js';
+import { init as initLayout, handleAddContentClick } from './layout.js';
 
 export function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
@@ -42,13 +42,12 @@ export function navigateTo(viewName, pageId = null) {
 
     if (viewName === 'layout') {
         initLayout();
-        // TODO: document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
+        document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
     } else if (viewName === 'pages') {
         initPages();
         document.getElementById('new-page-btn')?.addEventListener('click', handleNewPageClick);
     } else if (viewName === 'cards') {
         cards.init();
-        // 🔴 헤더 버튼 리스너를 다시 여기서 설정합니다.
         document.getElementById('add-new-card-button')?.addEventListener('click', () => cards.handleAddNewAd());
         document.getElementById('add-new-iframe-card-button')?.addEventListener('click', () => cards.handleAddNewIframeAd());
     } else if (viewName === 'editor' && pageId) {

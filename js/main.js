@@ -20,10 +20,10 @@ async function initializeAppAndAuth() {
                 ui.authContainer.classList.add('hidden');
                 ui.dashboardContainer.classList.remove('hidden');
                 
+                // 🔴 타이밍 문제 해결을 위해 setTimeout을 다시 적용합니다.
                 setTimeout(() => {
                     mapDashboardUI();
                     setupDashboardListeners();
-                    // 🔴 첫 화면을 '레이아웃 관리'로 설정
                     navigateTo('layout'); 
                 }, 0);
 
