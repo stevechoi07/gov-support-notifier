@@ -1,4 +1,4 @@
-// js/layout.js v2.0 - 자생력 강화 버전
+// js/layoutManager.js v2.0 - 자생력 강화 최종 버전
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';

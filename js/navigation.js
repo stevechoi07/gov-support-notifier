@@ -1,6 +1,7 @@
-/// js/navigation.js v2.4 - 역할 축소 버전
+// js/navigation.js v2.4 - 역할 축소 버전 (layoutManager.js 경로 수정)
 
 import { ui } from './ui.js';
+import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
 export async function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
@@ -8,8 +9,6 @@ export async function navigateTo(viewName, pageId = null) {
         console.error(`View not found: ${viewName}-view`);
         return;
     }
-
-    // DB 주입 및 선제적 초기화 로직 모두 제거
 
     if (ui.views) ui.views.forEach(view => view.classList.add('hidden'));
     if (ui.navLinks) ui.navLinks.forEach(link => {
@@ -39,9 +38,8 @@ export async function navigateTo(viewName, pageId = null) {
     if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
-// ✨ 각 모듈의 init 함수를 파라미터 없이 호출합니다.
     if (viewName === 'layout') {
-        const { initLayoutView, handleAddContentClick } = await import('./layout.js');
+        const { initLayoutView, handleAddContentClick } = await import('./layoutManager.js');
         initLayoutView();
         document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
     } else if (viewName === 'pages') {
