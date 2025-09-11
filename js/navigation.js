@@ -13,6 +13,7 @@ export async function navigateTo(viewName, pageId = null) {
     // ✨ [핵심 수정!] 뷰 모듈을 불러오기 전에 Firebase가 준비될 때까지 기다립니다.
     await firebaseReady;
     const db = getFirestoreDB();
+	console.log('🤔 [navigation.js] DB 상태:', db); // 👈 이 줄을 추가하세요.
     const storage = getFirebaseStorage();
 
     if (ui.views) ui.views.forEach(view => view.classList.add('hidden'));

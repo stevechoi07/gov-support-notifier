@@ -18,6 +18,8 @@ const initFirebase = async () => {
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+	
+	console.log('✅ [firebase.js] DB 준비 완료!', db); // 👈 이 줄을 추가하세요.
     
     console.log("Firebase initialized successfully!");
   } catch (error) {

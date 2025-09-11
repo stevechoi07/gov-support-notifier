@@ -35,6 +35,7 @@ async function initializeAppAndAuth() {
                 ui.dashboardContainer.classList.remove('hidden');
                 mapDashboardUI();
                 setupDashboardListeners();
+				console.log('➡️ [main.js] 로그인 성공! navigateTo("layout") 호출 직전.'); // 👈 이 줄을 추가하세요.
                 navigateTo('layout'); 
             } else {
                 ui.authContainer.classList.remove('hidden');
