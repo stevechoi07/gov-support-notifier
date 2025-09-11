@@ -1,4 +1,4 @@
-// js/editor.js v1.8 - Coloris 색상 선택기 이벤트 문제 해결
+// js/editor.js v1.9 - 반복적인 Coloris 초기화 코드 제거
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getFirestoreDB } from './firebase.js';
@@ -38,61 +38,27 @@ export const editor = {
         
         editorView.innerHTML = `
         <div class="editor-main-container">
-            <div id="editor-controls-wrapper">
-                <div class="editor-control-panel">
-                    <div class="control-group">
-                        <button id="back-to-list-btn" style="background-color: #475569; color: white;">← 목록으로 돌아가기</button>
-                    </div>
-                    <h3>- 콘텐츠 블록 추가 -</h3>
-                    <div class="control-group component-adders" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button data-type="heading">➕ 제목</button>
-                        <button data-type="paragraph">➕ 내용</button>
-                        <button data-type="button">➕ 버튼</button>
-                        <button data-type="lead-form">➕ 고객 정보</button>
-                    </div>
-                    <hr style="border-color: var(--border-color); margin: 20px 0;">
-                    <h3>- 페이지 배경 -</h3>
-                    <div class="control-group inline-group">
-                        <label for="page-bg-color">배경색</label>
-                        <input type="text" data-color-picker id="page-bg-color">
-                    </div>
-                    <div class="control-group">
-                        <label for="page-background-image">배경 이미지 URL</label>
-                        <input type="text" id="page-background-image">
-                    </div>
-                    <div class="control-group">
-                        <label for="page-background-video">배경 동영상 URL</label>
-                        <input type="text" id="page-background-video">
-                    </div>
-                    <hr style="border-color: var(--border-color); margin: 20px 0;">
-                    <div id="editors-container"></div>
-                </div>
-            </div>
-            <div id="editor-preview-container" class="bg-slate-800">
-                <div class="editor-control-panel" style="display: flex; flex-direction: column; height: 100%;">
-                    <div id="viewport-controls-left"></div>
-                    <div id="editor-preview-wrapper">
-                        <div id="editor-preview">
-                            <video class="background-video" autoplay loop muted playsinline></video>
-                            <div class="background-image-overlay"></div>
-                            <div class="content-area"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div id="editor-controls-wrapper"><div class="editor-control-panel">
+                <div class="control-group"><button id="back-to-list-btn" style="background-color: #475569; color: white;">← 목록으로 돌아가기</button></div>
+                <h3>- 콘텐츠 블록 추가 -</h3>
+                <div class="control-group component-adders" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button data-type="heading">➕ 제목</button><button data-type="paragraph">➕ 내용</button><button data-type="button">➕ 버튼</button><button data-type="lead-form">➕ 고객 정보</button></div><hr style="border-color: var(--border-color); margin: 20px 0;">
+                <h3>- 페이지 배경 -</h3>
+                <div class="control-group inline-group"><label for="page-bg-color">배경색</label><input type="text" data-color-picker id="page-bg-color"></div>
+                <div class="control-group"><label for="page-background-image">배경 이미지 URL</label><input type="text" id="page-background-image"></div>
+                <div class="control-group"><label for="page-background-video">배경 동영상 URL</label><input type="text" id="page-background-video"></div><hr style="border-color: var(--border-color); margin: 20px 0;">
+                <div id="editors-container"></div>
+            </div></div>
+            <div id="editor-preview-container" class="bg-slate-800"><div class="editor-control-panel" style="display: flex; flex-direction: column; height: 100%;">
+                <div id="viewport-controls-left"></div> <div id="editor-preview-wrapper"><div id="editor-preview"><video class="background-video" autoplay loop muted playsinline></video><div class="background-image-overlay"></div><div class="content-area"></div></div></div>
+            </div></div>
         </div>`;
 
         this.elements = {
-            preview: editorView.querySelector('#editor-preview'),
-            contentArea: editorView.querySelector('.content-area'),
-            backgroundImageOverlay: editorView.querySelector('.background-image-overlay'),
-            backgroundVideo: editorView.querySelector('.background-video'),
-            editorsContainer: editorView.querySelector('#editors-container'),
-            adders: editorView.querySelectorAll('.component-adders button'),
-            pageBgColorInput: editorView.querySelector('#page-bg-color'),
-            pageBackgroundImageInput: editorView.querySelector('#page-background-image'),
-            pageBackgroundVideoInput: editorView.querySelector('#page-background-video'),
-            viewportControlsLeft: editorView.querySelector('#viewport-controls-left'),
+            preview: editorView.querySelector('#editor-preview'), contentArea: editorView.querySelector('.content-area'),
+            backgroundImageOverlay: editorView.querySelector('.background-image-overlay'), backgroundVideo: editorView.querySelector('.background-video'),
+            editorsContainer: editorView.querySelector('#editors-container'), adders: editorView.querySelectorAll('.component-adders button'),
+            pageBgColorInput: editorView.querySelector('#page-bg-color'), pageBackgroundImageInput: editorView.querySelector('#page-background-image'),
+            pageBackgroundVideoInput: editorView.querySelector('#page-background-video'), viewportControlsLeft: editorView.querySelector('#viewport-controls-left'),
             backToListBtn: editorView.querySelector('#back-to-list-btn')
         };
 
@@ -120,13 +86,10 @@ export const editor = {
 
     setupEventListeners() {
         this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
-        
-        // ✨ [핵심 수정 1] 'input' 이벤트를 'change' 이벤트로 변경
         this.elements.pageBgColorInput.addEventListener('change', (e) => {
             this.pageSettings.bgColor = e.target.value;
             this.saveAndRender(false, true);
         });
-
         this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(false, true); });
         this.elements.pageBackgroundVideoInput.addEventListener('input', (e) => { this.pageSettings.bgVideo = e.target.value; this.saveAndRender(false, true); });
         this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages'));
@@ -140,7 +103,6 @@ export const editor = {
             });
         }
     },
-
     async handleTitleUpdate() {
         const db = getFirestoreDB();
         const newTitle = ui.viewTitle.textContent.trim();
@@ -163,9 +125,7 @@ export const editor = {
             ui.viewTitle.textContent = originalTitle;
         }
     },
-
     renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); this.initSortable(); },
-
     hexToRgba(hex, alpha = 1) { 
         if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
         let c = hex.substring(1).split(''); 
@@ -173,7 +133,6 @@ export const editor = {
         c = '0x' + c.join(''); 
         return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; 
     },
-
     renderPreview() {
       this.elements.contentArea.innerHTML = '';
       const { bgVideo, bgImage, bgColor, viewport } = this.pageSettings;
@@ -259,10 +218,7 @@ export const editor = {
                 const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
             }
         });
-        if (typeof Coloris !== 'undefined') {
-            Coloris.init();
-            Coloris({ el: '[data-color-picker]' });
-        }
+        
         this.attachEventListenersToControls();
     },
 
@@ -285,7 +241,6 @@ export const editor = {
         });
         this.elements.viewportControlsLeft.appendChild(btnGroup);
     },
-
     attachEventListenersToControls() {
       this.elements.editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
           const id = Number(panel.dataset.id);
@@ -296,8 +251,6 @@ export const editor = {
           panel.querySelectorAll('[data-prop]').forEach(input => { 
               input.oninput = (e) => this.updateComponent(id, e.target.dataset.prop, e.target.value, false); 
           });
-
-          // ✨ [핵심 수정 2] 모든 [data-style] 요소에 대해 이벤트 리스너를 올바르게 설정
           panel.querySelectorAll('[data-style]').forEach(input => {
               const eventType = input.hasAttribute('data-color-picker') ? 'change' : 'input';
               input.addEventListener(eventType, (e) => {
@@ -308,7 +261,6 @@ export const editor = {
                   this.updateComponent(id, `styles.${e.target.dataset.style}`, value, false);
               });
           });
-
           panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => {
               checkbox.onchange = () => {
                   const fieldName = checkbox.dataset.fieldName;
@@ -326,7 +278,6 @@ export const editor = {
           panel.querySelector('.delete-btn').onclick = () => this.deleteComponent(id);
       });
     },
-
     initSortable() {
         if (this.sortableInstance) this.sortableInstance.destroy();
         this.sortableInstance = new Sortable(this.elements.editorsContainer, {
@@ -339,9 +290,7 @@ export const editor = {
             },
         });
     },
-
     selectComponent(id) { this.activeComponentId = id; this.renderControls(); this.renderPreview(); },
-
     addComponent(type) {
         const newComponent = { id: Date.now(), type, styles: { fontFamily: "'Noto Sans KR', sans-serif" } };
         switch(type) {
@@ -354,7 +303,6 @@ export const editor = {
         this.activeComponentId = newComponent.id;
         this.saveAndRender(true, true);
     },
-
     updateComponent(id, keyPath, value, rerenderControls = false) {
         let component = this.components.find(c => c.id === id);
         if (!component) return;
@@ -367,14 +315,12 @@ export const editor = {
         current[keys[keys.length - 1]] = value;
         this.saveAndRender(rerenderControls, true);
     },
-
     deleteComponent(id) {
         if (!confirm('블록을 삭제하시겠습니까?')) return;
         this.components = this.components.filter(c => c.id !== id);
         if (this.activeComponentId === id) this.activeComponentId = null;
         this.saveAndRender(true, true);
     },
-    
     async saveAndRender(rerenderControls = true, rerenderPreview = true) {
         if (rerenderPreview) this.renderPreview();
         if (rerenderControls) { 
