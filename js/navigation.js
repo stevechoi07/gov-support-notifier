@@ -1,10 +1,10 @@
-// js/navigation.js v1.3 - 의존성 최종 수정
+// js/navigation.js v1.2 - 기존 구조 유지 및 의존성 수정
 
 import { ui } from './ui.js';
-// <<< 여기가 핵심 수정 포인트! initPagesView를 initPages라는 별명으로 사용
-import { initPagesView as initPages, handleNewPageClick } from './pages.js';
+import { init as initPages, handleNewPageClick } from './pages.js';
 import { cards } from './cards.js';
 import { editor } from './editor.js';
+// <<< 여기가 핵심 수정 포인트! initLayoutView를 initLayout이라는 별명으로 사용
 import { initLayoutView as initLayout, handleAddContentClick } from './layout.js';
 
 export function navigateTo(viewName, pageId = null) {
@@ -43,10 +43,10 @@ export function navigateTo(viewName, pageId = null) {
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
     if (viewName === 'layout') {
-        initLayout();
+        initLayout(); // 이제 이 함수는 실제로는 initLayoutView를 호출하게 됩니다.
         document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
     } else if (viewName === 'pages') {
-        initPages(); // 이제 이 함수는 실제로는 initPagesView를 호출하게 됩니다.
+        initPages();
         document.getElementById('new-page-btn')?.addEventListener('click', handleNewPageClick);
     } else if (viewName === 'cards') {
         cards.init();
