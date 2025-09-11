@@ -5,7 +5,7 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https:/
 import { getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
 export const cards = {
-    list: [],
+    list: [], // 카드 목록을 객체 내부에서 직접 관리합니다.
     editingId: null,
     selectedMediaFile: null,
     currentMediaUrl: '',

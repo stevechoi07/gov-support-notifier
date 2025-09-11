@@ -1,9 +1,7 @@
-// js/layout.js v1.8-debug2 - 결정적 증거 확보용
-
-console.log("🎨🎨🎨 Layout.js v1.8-debug2 파일이 로드되었습니다! 🎨🎨🎨");
+// js/layout.js v1.8 - cards.js v1.8 규격에 맞게 연동 및 타이밍 문제 해결
 
 import { getFirestoreDB } from './firebase.js'; 
-import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
 import { pagesList } from './pages.js';
 import { cards } from './cards.js';
@@ -15,15 +13,7 @@ let currentLayoutIds = [];
 
 function listenToLayoutChanges(layoutId) {
     const db = getFirestoreDB();
-
-    // ✨ [디버깅 코드] 에러가 발생하기 직전, db 객체의 상태를 확인합니다!
-    console.log("🕵️‍♂️ listenToLayoutChanges 함수 내부의 db 객체:", db);
-    
-    if (!db) {
-        console.error("💥 CRITICAL: listenToLayoutChanges가 호출되었지만 db 객체가 없습니다! 타이밍 문제가 여전히 존재합니다.");
-        return;
-    }
-
+    if (!db) return;
     const layoutRef = doc(db, "layouts", layoutId);
     onSnapshot(layoutRef, async (snapshot) => {
         if (!snapshot.exists() || !snapshot.data().contentIds) {
@@ -39,7 +29,6 @@ function listenToLayoutChanges(layoutId) {
     });
 }
 
-// ... 나머지 코드는 이전 v1.8-debug 버전과 동일합니다 ...
 async function fetchContentsDetails(ids) {
     if (ids.length === 0) return [];
     const db = getFirestoreDB();
@@ -49,9 +38,11 @@ async function fetchContentsDetails(ids) {
         const contentRef = doc(db, collectionName, id);
         return getDoc(contentRef);
     });
+
     const contentSnaps = await Promise.all(contentPromises);
     return contentSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter(Boolean);
 }
+
 function renderLayoutList(contents) {
     if (!layoutListContainer) return;
     if (contents.length === 0) {
@@ -63,12 +54,14 @@ function renderLayoutList(contents) {
         return;
     }
     const sortedContents = currentLayoutIds.map(id => contents.find(c => c.id === id)).filter(Boolean);
+
     layoutListContainer.innerHTML = sortedContents.map(content => {
         const isPage = !content.adType;
         const typeLabel = isPage ? '📄 페이지' : '🗂️ 카드';
         const typeColor = isPage ? 'bg-sky-500/20 text-sky-400' : 'bg-amber-500/20 text-amber-400';
         const previewImage = content.mediaUrl || content.pageSettings?.bgImage || '';
         const previewBgColor = isPage ? (content.pageSettings?.bgColor || '#1e293b') : '#1e293b';
+
         return `
             <div class="layout-item flex items-center bg-slate-800 rounded-lg p-3 gap-4 shadow-sm" data-id="${content.id}">
                 <div class="drag-handle cursor-move text-slate-600 hover:text-slate-400">
@@ -85,9 +78,11 @@ function renderLayoutList(contents) {
             </div>
         `;
     }).join('');
+
     attachEventListeners();
     initializeSortable();
 }
+
 function attachEventListeners() {
     document.querySelectorAll('.layout-item .remove-btn').forEach(button => {
         button.addEventListener('click', async (e) => {
@@ -103,6 +98,7 @@ function attachEventListeners() {
         });
     });
 }
+
 function initializeSortable() {
     if (!layoutListContainer) return;
     if (sortableInstance) sortableInstance.destroy();
@@ -118,6 +114,7 @@ function initializeSortable() {
         },
     });
 }
+
 function mapModalUI() {
     modalElements.modal = document.getElementById('add-content-modal');
     modalElements.closeButton = document.getElementById('close-add-content-modal-button');
@@ -127,6 +124,7 @@ function mapModalUI() {
     modalElements.pagesListContainer = document.getElementById('add-content-pages-list');
     modalElements.cardsListContainer = document.getElementById('add-content-cards-list');
 }
+
 function setupModalListeners() {
     modalElements.closeButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
     modalElements.finishButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
@@ -143,10 +141,12 @@ function setupModalListeners() {
         }
     });
 }
+
 function switchTab(tabName) {
     modalElements.tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabName));
     modalElements.tabContents.forEach(content => content.classList.toggle('active', content.id.includes(tabName)));
 }
+
 async function addItemToLayout(contentId) {
     try {
         const db = getFirestoreDB();
@@ -159,6 +159,7 @@ async function addItemToLayout(contentId) {
         showToast("아이템 추가에 실패했습니다.", "error");
     }
 }
+
 export function handleAddContentClick() {
     modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
         const isAdded = currentLayoutIds.includes(page.id);
@@ -173,6 +174,7 @@ export function handleAddContentClick() {
                 <button class="add-button" data-id="${page.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? '추가됨' : '추가'}</button>
             </div>`;
     }).join('') || `<p class="text-slate-500 text-center py-4">추가할 페이지가 없습니다.</p>`;
+
     modalElements.cardsListContainer.innerHTML = cards.list.map(card => {
         const isAdded = currentLayoutIds.includes(card.id);
         const previewImage = card.mediaUrl || '';
@@ -186,10 +188,13 @@ export function handleAddContentClick() {
                 <button class="add-button" data-id="${card.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? '추가됨' : '추가'}</button>
             </div>`;
     }).join('') || `<p class="text-slate-500 text-center py-4">추가할 카드가 없습니다.</p>`;
+
     switchTab('pages');
     modalElements.modal.classList.add('active');
 }
+
 let isInitialized = false;
+
 export function initLayoutView() {
     if (!getFirestoreDB()) {
         console.error("Firestore is not available at initLayoutView");
