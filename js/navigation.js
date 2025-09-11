@@ -3,8 +3,6 @@ import { ui } from './ui.js';
 import { init as initPages, handleNewPageClick } from './pages.js';
 import { cards } from './cards.js';
 import { editor } from './editor.js';
-// 🔴 handleAddContentClick 함수를 layout.js에서 가져옵니다.
-import { init as initLayout, handleAddContentClick } from './layout.js';
 
 export function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
@@ -15,7 +13,7 @@ export function navigateTo(viewName, pageId = null) {
 
     if (ui.views) ui.views.forEach(view => view.classList.add('hidden'));
     if (ui.navLinks) ui.navLinks.forEach(link => {
-        const isActive = (viewName === 'editor' && link.dataset.view === 'pages') || (viewName === link.dataset.view);
+        const isActive = (viewName === 'editor' && link.dataset.view === 'pages') || viewName === link.dataset.view;
         link.classList.toggle('active', isActive);
     });
 
@@ -27,7 +25,6 @@ export function navigateTo(viewName, pageId = null) {
     }
 
     const viewConfig = {
-        layout: { title: '🎨 레이아웃 관리', action: `<button id="add-content-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 콘텐츠 추가</button>` },
         pages: { title: '📄 페이지 관리', action: `<button id="new-page-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">✨ 새 페이지</button>` },
         cards: { title: '🗂️ 콘텐츠 카드 관리', action: `
             <div class="flex gap-2">
@@ -41,11 +38,7 @@ export function navigateTo(viewName, pageId = null) {
     if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
-    if (viewName === 'layout') {
-        initLayout();
-        // 🔴 '콘텐츠 추가' 버튼에 이벤트 리스너를 연결합니다.
-        document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
-    } else if (viewName === 'pages') {
+    if (viewName === 'pages') {
         initPages();
         document.getElementById('new-page-btn')?.addEventListener('click', handleNewPageClick);
     } else if (viewName === 'cards') {
