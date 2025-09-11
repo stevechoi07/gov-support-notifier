@@ -1,21 +1,11 @@
-// js/cards.js v1.6 - 타이밍 문제 해결 (Lazy Initialization)
+// js/cards.js v1.8 - 타이밍 문제 해결 및 데이터 관리 구조 개선
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 import { getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
-// ✨ [삭제] 파일 상단에서 db, storage 객체를 미리 생성하지 않습니다.
-
-export let cardsList = [];
-
-function updateCardsList(newList) {
-    cardsList.length = 0;
-    Array.prototype.push.apply(cardsList, newList);
-}
-
 export const cards = {
-    get list() { return cardsList; },
-    set list(value) { updateCardsList(value); },
+    list: [],
     editingId: null,
     selectedMediaFile: null,
     currentMediaUrl: '',
@@ -26,7 +16,7 @@ export const cards = {
     isInitialized: false,
     
     init() {
-        if (!getFirestoreDB() || !getFirebaseStorage()) { // ✨ [수정]
+        if (!getFirestoreDB() || !getFirebaseStorage()) {
             console.error("Firebase is not available at initCards");
             return;
         }
@@ -34,13 +24,15 @@ export const cards = {
             this.render();
             return;
         }
+        const db = getFirestoreDB();
+        this.collection = collection(db, "ads");
+
         this.mapUI();
         this.addEventListeners();
         this.listen();
         this.initSortable();
         this.isInitialized = true;
     },
-
 
     mapUI() {
         this.ui = {
@@ -88,7 +80,7 @@ export const cards = {
     },
 
     listen() {
-        const db = getFirestoreDB(); // ✨ [수정]
+        const db = getFirestoreDB();
         const q = query(collection(db, "ads"), orderBy("order", "asc"));
         onSnapshot(q, (querySnapshot) => {
             this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -99,20 +91,24 @@ export const cards = {
         });
     },
 
-      initSortable() {
+    initSortable() {
         if (!this.ui.adListContainer) return;
         new Sortable(this.ui.adListContainer, {
             handle: '.content-card-drag-handle', 
             animation: 150,
             ghostClass: 'sortable-ghost',
             onEnd: async (evt) => {
-                const db = getFirestoreDB(); // ✨ [수정]
+                const db = getFirestoreDB();
                 if (evt.oldIndex === evt.newIndex) return;
+
                 const newOrderIds = Array.from(evt.to.children).map(item => item.dataset.id);
-                this.list.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+                const reorderedList = newOrderIds.map(id => this.list.find(item => item.id === id));
+                
                 const batch = writeBatch(db);
-                this.list.forEach((ad, index) => {
-                    batch.update(doc(db, "ads", ad.id), { order: index });
+                reorderedList.forEach((ad, index) => {
+                    if (ad) {
+                        batch.update(doc(db, "ads", ad.id), { order: index });
+                    }
                 });
                 await batch.commit();
             },
@@ -131,7 +127,6 @@ export const cards = {
     
     render() {
         if (!this.ui.adListContainer) return;
-
         this.ui.adListContainer.className = 'card-grid';
 
         if (this.list.length === 0) {
@@ -145,22 +140,15 @@ export const cards = {
             const statusBadge = this.getAdStatus(ad);
             const isChecked = ad.isActive !== false;
             const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
-
-            let previewHTML = '';
-            let typeIconHTML = '';
+            let previewHTML = '', typeIconHTML = '';
 
             if (isIframe) {
                 typeIconHTML = `<div class="content-card-type-icon" title="iframe 카드">🔗</div>`;
                 previewHTML = `<div class="content-card-preview ${noMediaClass}">${typeIconHTML}</div>`;
             } else {
                 if (ad.mediaUrl) {
-                    if (ad.mediaType === 'video') {
-                        typeIconHTML = `<div class="content-card-type-icon" title="비디오 카드">🎬</div>`;
-                        previewHTML = `<div class="content-card-preview"><video muted playsinline src="${ad.mediaUrl}"></video>${typeIconHTML}</div>`;
-                    } else {
-                        typeIconHTML = `<div class="content-card-type-icon" title="이미지 카드">🖼️</div>`;
-                        previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
-                    }
+                    typeIconHTML = ad.mediaType === 'video' ? `<div class="content-card-type-icon" title="비디오 카드">🎬</div>` : `<div class="content-card-type-icon" title="이미지 카드">🖼️</div>`;
+                    previewHTML = ad.mediaType === 'video' ? `<div class="content-card-preview"><video muted playsinline src="${ad.mediaUrl}"></video>${typeIconHTML}</div>` : `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
                 } else {
                     previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
                 }
@@ -170,38 +158,23 @@ export const cards = {
             <div class="content-card ${isChecked ? '' : 'opacity-40'}" data-id="${ad.id}">
                 ${previewHTML}
                 <div class="content-card-content">
-                    <div class="content-card-header">
-                        <p class="title" title="${ad.title}">${ad.title}</p>
-                    </div>
+                    <div class="content-card-header"><p class="title" title="${ad.title}">${ad.title}</p></div>
                     <div class="content-card-info">
                         ${statusBadge}
-                        ${!isIframe ? `
-                        <span class="flex items-center" title="클릭 수">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                            ${clickCount}
-                        </span>` : ''}
+                        ${!isIframe ? `<span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${clickCount}</span>` : ''}
                     </div>
                     <div class="content-card-actions">
                         <div class="publish-info">
-                            <label class="toggle-switch">
-                                <input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked ? 'checked' : ''}>
-                                <span class="toggle-slider"></span>
-                            </label>
+                            <label class="toggle-switch"><input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked ? 'checked' : ''}><span class="toggle-slider"></span></label>
                             <span class="text-sm font-medium ${isChecked ? 'text-emerald-400' : 'text-slate-400'}">${isChecked ? '게시 중' : '비공개'}</span>
                         </div>
                         <div class="action-buttons">
-                             <button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                             </button>
-                             <button class="delete-ad-button text-red-400 hover:text-red-500" data-id="${ad.id}" title="삭제">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                             </button>
+                             <button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+                             <button class="delete-ad-button text-red-400 hover:text-red-500" data-id="${ad.id}" title="삭제"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                         </div>
                     </div>
                 </div>
-                <div class="content-card-drag-handle" title="순서 변경">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                </div>
+                <div class="content-card-drag-handle" title="순서 변경"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
             </div>`;
         }).join('');
 
@@ -211,12 +184,10 @@ export const cards = {
     },
 
     async handleToggleAdStatus(event) {
-        const db = getFirestoreDB(); // ✨ [수정]
+        const db = getFirestoreDB();
         const id = event.target.dataset.id;
         const isActive = event.target.checked;
-        try {
-            await updateDoc(doc(db, "ads", id), { isActive: isActive });
-        } catch (error) {
+        try { await updateDoc(doc(db, "ads", id), { isActive: isActive }); } catch (error) {
             alert("상태 변경에 실패했습니다.");
             event.target.checked = !isActive;
         }
@@ -316,9 +287,9 @@ export const cards = {
         }
     },
 
-   async handleDeleteAd(event) {
-        const db = getFirestoreDB(); // ✨ [수정]
-        const storage = getFirebaseStorage(); // ✨ [수정]
+    async handleDeleteAd(event) {
+        const db = getFirestoreDB();
+        const storage = getFirebaseStorage();
         const idToDelete = event.currentTarget.dataset.id;
         const adToDelete = this.list.find(ad => ad.id === idToDelete);
         if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
@@ -326,15 +297,14 @@ export const cards = {
                 if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
                 await deleteDoc(doc(db, "ads", idToDelete));
             } catch (error) {
-                if (error.code !== 'storage/object-not-found') {
-                    console.error("파일 삭제 중 에러 발생:", error);
-                }
+                if (error.code !== 'storage/object-not-found') { console.error("파일 삭제 중 에러 발생:", error); }
                 await deleteDoc(doc(db, "ads", idToDelete));
             }
         }
     },
 
     async uploadMediaFile() {
+        const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
             this.ui.mediaUploadStatus.style.opacity = 1;
             const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
@@ -357,6 +327,7 @@ export const cards = {
     },
 
     async handleSaveAd() {
+        const db = getFirestoreDB();
         if (!this.ui.adTitleInput.value.trim()) { alert('카드 제목을 입력해주세요!'); return; }
         const btn = this.ui.saveAdButton;
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
@@ -364,6 +335,7 @@ export const cards = {
             let mediaUrlToSave = this.currentMediaUrl;
             if (this.selectedMediaFile) {
                 if (this.editingId && this.currentMediaUrl) {
+                    const storage = getFirebaseStorage();
                     try { await deleteObject(ref(storage, this.currentMediaUrl)); } catch (e) { console.warn("Could not delete old file:", e.message); }
                 }
                 mediaUrlToSave = await this.uploadMediaFile();
@@ -391,6 +363,7 @@ export const cards = {
     },
 
     async handleSaveIframeAd() {
+        const db = getFirestoreDB();
         const title = this.ui.iframeAdTitleInput.value.trim();
         const code = this.ui.iframeAdCodeInput.value.trim();
         if (!title || !code) { alert('제목과 코드를 모두 입력해주세요!'); return; }

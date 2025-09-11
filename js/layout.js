@@ -1,12 +1,10 @@
-// js/layout.js v1.6 - 타이밍 문제 해결 (Lazy Initialization)
+// js/layout.js v1.8 - cards.js v1.8 규격에 맞게 연동
 
 import { getFirestoreDB } from './firebase.js'; 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
 import { pagesList } from './pages.js';
-import { cardsList } from './cards.js';
-
-// ✨ [삭제] 파일 상단에서 db 객체를 미리 생성하지 않습니다.
+import { cards } from './cards.js';
 
 const layoutListContainer = document.getElementById('layout-list-container');
 const modalElements = {};
@@ -14,7 +12,6 @@ let sortableInstance = null;
 let currentLayoutIds = [];
 
 function listenToLayoutChanges(layoutId) {
-    // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
     const db = getFirestoreDB();
     const layoutRef = doc(db, "layouts", layoutId);
     onSnapshot(layoutRef, async (snapshot) => {
@@ -33,7 +30,6 @@ function listenToLayoutChanges(layoutId) {
 
 async function fetchContentsDetails(ids) {
     if (ids.length === 0) return [];
-    // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
     const db = getFirestoreDB();
     const contentPromises = ids.map(id => {
         const collectionName = id.startsWith('page_') ? 'pages' : 'ads';
@@ -46,7 +42,6 @@ async function fetchContentsDetails(ids) {
 }
 
 function renderLayoutList(contents) {
-    // 이 함수는 db를 직접 사용하지 않으므로 수정이 필요 없습니다.
     if (contents.length === 0) {
         layoutListContainer.innerHTML = `<div class="text-center py-16">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-600 mb-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
@@ -91,7 +86,6 @@ function attachEventListeners() {
             const item = e.currentTarget.closest('.layout-item');
             const contentId = item.dataset.id;
             if (confirm(`'${item.querySelector('h4').textContent}' 콘텐츠를 레이아웃에서 제거하시겠습니까?`)) {
-                // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
                 const db = getFirestoreDB();
                 const layoutRef = doc(db, "layouts", "mainLayout");
                 await updateDoc(layoutRef, { contentIds: arrayRemove(contentId) });
@@ -106,7 +100,6 @@ function initializeSortable() {
     sortableInstance = new Sortable(layoutListContainer, {
         handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost',
         onEnd: async (evt) => {
-            // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
             const db = getFirestoreDB();
             const newOrder = Array.from(evt.to.children).map(item => item.dataset.id);
             const layoutRef = doc(db, "layouts", "mainLayout");
@@ -120,21 +113,21 @@ function mapModalUI() {
     modalElements.modal = document.getElementById('add-content-modal');
     modalElements.closeButton = document.getElementById('close-add-content-modal-button');
     modalElements.finishButton = document.getElementById('finish-adding-content-button');
-    modalElements.tabs = document.querySelectorAll('#add-content-tabs .tab-button');
+    modalElements.tabs = document.querySelectorAll('#add-content-tabs .button');
     modalElements.tabContents = document.querySelectorAll('#add-content-modal .tab-content');
     modalElements.pagesListContainer = document.getElementById('add-content-pages-list');
     modalElements.cardsListContainer = document.getElementById('add-content-cards-list');
 }
 
 function setupModalListeners() {
-    modalElements.closeButton.addEventListener('click', () => modalElements.modal.classList.remove('active'));
-    modalElements.finishButton.addEventListener('click', () => modalElements.modal.classList.remove('active'));
+    modalElements.closeButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
+    modalElements.finishButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
     
-    modalElements.tabs.forEach(tab => {
+    modalElements.tabs?.forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    modalElements.modal.addEventListener('click', (e) => {
+    modalElements.modal?.addEventListener('click', (e) => {
         if (e.target.classList.contains('add-button') && !e.target.disabled) {
             addItemToLayout(e.target.dataset.id);
             e.target.disabled = true;
@@ -150,7 +143,6 @@ function switchTab(tabName) {
 
 async function addItemToLayout(contentId) {
     try {
-        // ✨ [수정] 함수 실행 시점에 db 객체를 가져옵니다.
         const db = getFirestoreDB();
         const layoutRef = doc(db, "layouts", "mainLayout");
         await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) });
@@ -176,7 +168,7 @@ export function handleAddContentClick() {
             </div>`;
     }).join('') || `<p class="text-slate-500 text-center py-4">추가할 페이지가 없습니다.</p>`;
 
-    modalElements.cardsListContainer.innerHTML = cardsList.map(card => {
+    modalElements.cardsListContainer.innerHTML = cards.list.map(card => {
         const isAdded = currentLayoutIds.includes(card.id);
         const previewImage = card.mediaUrl || '';
         const previewBgColor = '#334155';
@@ -197,7 +189,6 @@ export function handleAddContentClick() {
 let isInitialized = false;
 
 export function initLayoutView() {
-    // ✨ [수정] 이 함수 자체는 db를 직접 쓰지 않지만, 호출하는 함수들이 쓰므로 여기서 db를 체크해주는 것이 좋습니다.
     if (!getFirestoreDB()) {
         console.error("Firestore is not available at initLayoutView");
         return;
