@@ -1,4 +1,4 @@
-// js/navigation.js v2.1 - 의존성 주입(DI) 패턴 적용 및 타이밍 문제 해결
+// js/navigation.js v2.2 - 순환 참조 해결
 
 import { ui } from './ui.js';
 import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
@@ -10,10 +10,8 @@ export async function navigateTo(viewName, pageId = null) {
         return;
     }
 
-    // ✨ [핵심 수정!] 뷰 모듈을 불러오기 전에 Firebase가 준비될 때까지 기다립니다.
     await firebaseReady;
     const db = getFirestoreDB();
-	console.log('🤔 [navigation.js] DB 상태:', db); // 👈 이 줄을 추가하세요.
     const storage = getFirebaseStorage();
 
     if (ui.views) ui.views.forEach(view => view.classList.add('hidden'));
@@ -44,15 +42,22 @@ export async function navigateTo(viewName, pageId = null) {
     if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
-    // 각 뷰 모듈에 필요한 의존성(db, storage)을 '주입'합니다.
     if (viewName === 'layout') {
         const { initLayoutView, handleAddContentClick } = await import('./layout.js');
         initLayoutView({ db });
         document.getElementById('add-content-btn')?.addEventListener('click', handleAddContentClick);
     } else if (viewName === 'pages') {
         const { init, handleNewPageClick } = await import('./pages.js');
-        init({ db });
-        document.getElementById('new-page-btn')?.addEventListener('click', handleNewPageClick);
+        // ✨ [핵심 수정] pages 모듈을 초기화할 때, navigateTo 함수 자체를 넘겨줍니다.
+        init({ db }, navigateTo);
+        
+        // ✨ [핵심 수정] '새 페이지' 버튼의 이벤트 핸들러를 재정의합니다.
+        document.getElementById('new-page-btn')?.addEventListener('click', async () => {
+            const newPageId = await handleNewPageClick(); // pages.js는 이제 페이지 ID를 반환합니다.
+            if (newPageId) {
+                navigateTo('editor', newPageId); // navigation.js가 직접 화면 이동을 처리합니다.
+            }
+        });
     } else if (viewName === 'cards') {
         const { cards } = await import('./cards.js');
         cards.init({ db, storage });

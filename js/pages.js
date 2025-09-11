@@ -1,14 +1,15 @@
-// js/pages.js v1.7 - 의존성 주입(DI) 적용
+// js/pages.js v1.8 - 순환 참조 해결
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { ui } from './ui.js';
-import { navigateTo } from './navigation.js';
+// 👎 import { navigateTo } from './navigation.js'; // 이 줄을 제거합니다.
 
 export let pagesList = [];
 let isInitialized = false;
-let db; // ✨ 모듈 스코프에 db 변수 선언
+let db;
 
-function renderPages() {
+// ✨ renderPages 함수는 navigation.js에서 가져온 navigateTo 함수를 인자로 받도록 수정합니다.
+export function renderPages(navigateTo) {
     if (!ui.pageListContainer) return;
     ui.pageListContainer.className = 'page-grid';
     ui.pageListContainer.innerHTML = pagesList.length === 0
@@ -82,32 +83,36 @@ export async function handleNewPageClick() {
                 name: name.trim(), isPublished: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), components: [],
                 pageSettings: { bgColor: '#1e293b', bgImage: '', bgVideo: '', viewport: '375px,667px' }
             });
-            navigateTo('editor', newPageRef.id);
-        } catch (error) { alert("새 페이지 생성에 실패했습니다."); }
+            return newPageRef.id;
+        } catch (error) {
+            alert("새 페이지 생성에 실패했습니다.");
+            return null;
+        }
     }
+    return null;
 }
 
-function listenToPages() {
+function listenToPages(navigateTo) {
     const q = query(collection(db, "pages"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const pagesView = document.getElementById('pages-view');
         if (ui.pageListContainer && pagesView && !pagesView.classList.contains('hidden')) {
-            renderPages();
+            renderPages(navigateTo);
         }
     });
 }
 
-export function init({ db: firestoreDB }) {
+export function init({ db: firestoreDB }, navigateTo) {
     db = firestoreDB;
     if (!db) {
         console.error("Pages 모듈 초기화 실패: DB가 제공되지 않음");
         return;
     }
     if (isInitialized) {
-        renderPages();
+        renderPages(navigateTo);
         return;
     };
-    listenToPages();
+    listenToPages(navigateTo);
     isInitialized = true;
 }
