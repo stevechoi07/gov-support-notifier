@@ -1,4 +1,4 @@
-// js/editor.js v2.3 - 장면(Scene) 내부 컴포넌트 편집 기능 추가
+// js/editor.js v2.4 - 장면 내부 편집 UI/UX 완성
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -46,10 +46,13 @@ export const editor = {
                     <button data-type="scene" style="grid-column: 1 / -1; background-color: #be185d;">✨ ➕ 장면 (스토리용)</button>
                 </div>
                 <hr style="border-color: var(--border-color); margin: 20px 0;">
-                <h3>- 페이지 배경 -</h3>
-                <div class="control-group inline-group"><label for="page-bg-color">배경색</label><input type="text" data-color-picker id="page-bg-color"></div>
-                <div class="control-group"><label for="page-background-image">배경 이미지 URL</label><input type="text" id="page-background-image"></div>
-                <div class="control-group"><label for="page-background-video">배경 동영상 URL</label><input type="text" id="page-background-video"></div><hr style="border-color: var(--border-color); margin: 20px 0;">
+                <div id="page-background-controls">
+                    <h3>- 페이지 배경 -</h3>
+                    <div class="control-group inline-group"><label for="page-bg-color">배경색</label><input type="text" data-color-picker id="page-bg-color"></div>
+                    <div class="control-group"><label for="page-background-image">배경 이미지 URL</label><input type="text" id="page-background-image"></div>
+                    <div class="control-group"><label for="page-background-video">배경 동영상 URL</label><input type="text" id="page-background-video"></div>
+                </div>
+                <hr style="border-color: var(--border-color); margin: 20px 0;">
                 <div id="editors-container"></div>
             </div></div>
             <div id="editor-preview-container" class="bg-slate-800"><div class="editor-control-panel" style="display: flex; flex-direction: column; height: 100%;">
@@ -63,7 +66,8 @@ export const editor = {
             editorsContainer: editorView.querySelector('#editors-container'), adders: editorView.querySelectorAll('.component-adders button'),
             pageBgColorInput: editorView.querySelector('#page-bg-color'), pageBackgroundImageInput: editorView.querySelector('#page-background-image'),
             pageBackgroundVideoInput: editorView.querySelector('#page-background-video'), viewportControlsLeft: editorView.querySelector('#viewport-controls-left'),
-            backToListBtn: editorView.querySelector('#back-to-list-btn')
+            backToListBtn: editorView.querySelector('#back-to-list-btn'),
+            pageBackgroundControls: editorView.querySelector('#page-background-controls') // ✨ 페이지 배경 그룹 element 추가
         };
 
         await this.loadProject();
@@ -117,10 +121,16 @@ export const editor = {
             const panel = input.closest('.editor-panel');
             if (!panel) return;
             const id = Number(panel.dataset.id);
-            const styleProp = input.dataset.style;
             const component = this.components.find(c => c.id === id);
-            if (component && component.styles) {
-                component.styles[styleProp] = color;
+            if(component) {
+                if (input.dataset.style) {
+                    if(component.styles) component.styles[input.dataset.style] = color;
+                } else if (input.dataset.sceneProp) {
+                    if(component.sceneSettings) component.sceneSettings[input.dataset.sceneProp] = color;
+                } else if (input.dataset.sceneInnerStyle) {
+                    const [index, key] = input.dataset.sceneInnerStyle.split('.');
+                    if(component.components?.[index]?.styles) component.components[index].styles[key] = color;
+                }
             }
         }
         this.renderPreview();
@@ -131,11 +141,7 @@ export const editor = {
         const db = getFirestoreDB();
         const newTitle = ui.viewTitle.textContent.trim();
         const originalTitle = ui.viewTitle.dataset.originalTitle;
-        if (!newTitle) {
-            alert('제목은 비워둘 수 없습니다.');
-            ui.viewTitle.textContent = originalTitle;
-            return;
-        }
+        if (!newTitle) { alert('제목은 비워둘 수 없습니다.'); ui.viewTitle.textContent = originalTitle; return; }
         if (newTitle === originalTitle) return;
         try {
             const docRef = doc(db, "pages", this.currentPageId);
@@ -143,11 +149,7 @@ export const editor = {
             ui.viewTitle.dataset.originalTitle = newTitle;
             const pageInList = pagesList.find(p => p.id === this.currentPageId);
             if(pageInList) pageInList.name = newTitle;
-        } catch (error) {
-            console.error("페이지 제목 업데이트 실패:", error);
-            alert("제목 업데이트에 실패했습니다.");
-            ui.viewTitle.textContent = originalTitle;
-        }
+        } catch (error) { console.error("페이지 제목 업데이트 실패:", error); alert("제목 업데이트에 실패했습니다."); ui.viewTitle.textContent = originalTitle; }
     },
 
     renderAll() {
@@ -168,28 +170,31 @@ export const editor = {
     renderPreview() {
         if (!this.elements.contentArea) return;
         this.elements.contentArea.innerHTML = '';
-        const { bgVideo, bgImage, bgColor, viewport } = this.pageSettings;
-        if (bgVideo) { this.elements.backgroundVideo.src = bgVideo; this.elements.backgroundVideo.style.display = 'block'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = 'transparent'; } 
-        else if (bgImage) { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.backgroundImage = `url('${bgImage}')`; this.elements.backgroundImageOverlay.style.display = 'block'; this.elements.preview.style.backgroundColor = 'transparent'; } 
-        else { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = bgColor; }
+        const { viewport } = this.pageSettings;
         const [width, height] = (viewport || '375px,667px').split(',');
         this.elements.preview.style.width = width;
         this.elements.preview.style.height = height;
-        
+
         const isStoryPage = this.components.some(c => c.type === 'scene');
         if (isStoryPage) {
             this.elements.contentArea.style.justifyContent = 'center';
-            const activeScene = this.components.find(c => c.id === this.activeComponentId) || this.components.find(c => c.type === 'scene');
+            this.elements.preview.style.backgroundColor = '#000'; // 스토리 미리보기는 배경 검정
+            const activeScene = this.components.find(c => c.id === this.activeComponentId && c.type === 'scene') || this.components.find(c => c.type === 'scene');
+            
             if (activeScene) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'preview-wrapper scene-preview-active';
-                wrapper.style.cssText = `background-color: ${activeScene.sceneSettings?.bgColor || '#000'}; background-image: url('${activeScene.sceneSettings?.bgImage || ''}'); background-size: cover; background-position: center;`;
+                const bgImage = activeScene.sceneSettings?.bgImage;
+                const bgColor = activeScene.sceneSettings?.bgColor || '#000';
+                wrapper.style.cssText = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''} background-size: cover; background-position: center;`;
+                
                 (activeScene.components || []).forEach(innerComp => {
                     let element;
                     switch(innerComp.type) {
                         case 'heading': element = document.createElement('h1'); break;
                         case 'paragraph': element = document.createElement('p'); break;
                         case 'button': element = document.createElement('button'); break;
+                        default: element = document.createElement('div');
                     }
                     element.textContent = innerComp.content;
                     Object.assign(element.style, innerComp.styles);
@@ -197,29 +202,64 @@ export const editor = {
                 });
                 this.elements.contentArea.appendChild(wrapper);
             }
+             this.elements.backgroundVideo.style.display = 'none';
+             this.elements.backgroundImageOverlay.style.display = 'none';
         } else {
+            const { bgVideo, bgImage, bgColor } = this.pageSettings;
+            if (bgVideo) { this.elements.backgroundVideo.src = bgVideo; this.elements.backgroundVideo.style.display = 'block'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = 'transparent'; } 
+            else if (bgImage) { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.backgroundImage = `url('${bgImage}')`; this.elements.backgroundImageOverlay.style.display = 'block'; this.elements.preview.style.backgroundColor = 'transparent'; } 
+            else { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = bgColor; }
+
             const hasBottomComponent = this.components.some(c => (c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom');
             this.elements.contentArea.style.justifyContent = hasBottomComponent ? 'flex-start' : 'center';
             this.components.forEach(c => {
-                const wrapper = document.createElement('div'); wrapper.className = 'preview-wrapper'; wrapper.dataset.id = c.id; if (c.id === this.activeComponentId) wrapper.classList.add('selected'); wrapper.onclick = (e) => { e.stopPropagation(); this.selectComponent(c.id); }; if (c.type !== 'lead-form') { wrapper.style.textAlign = c.styles?.textAlign || 'center'; } if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') { wrapper.style.marginTop = 'auto'; } let element; switch(c.type) { case 'heading': element = document.createElement('h1'); element.textContent = c.content; break; case 'paragraph': element = document.createElement('p'); element.textContent = c.content; break; case 'button': element = document.createElement('button'); element.textContent = c.content; break; case 'lead-form': element = document.createElement('form'); element.className = 'component-content'; let formHTML = (this.allPossibleFormFields.filter(field => c.activeFields?.includes(field.name)) || []).map(field => `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--input-bg); color: var(--text-color);"></div>`).join(''); if (c.privacy?.enabled) { formHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="privacy-preview-${c.id}" style="width: auto; height: 16px; margin: 0;"><label for="privacy-preview-${c.id}" style="font-size: 12px; color: #94a3b8; font-weight: normal; cursor: pointer;">${c.privacy.text}</label></div>`; } formHTML += `<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer;">${c.submitText || '제출'}</button>`; element.innerHTML = formHTML; element.onsubmit = (e) => e.preventDefault(); break; } if (c.type !== 'lead-form') element.className = 'component-content'; const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {}; Object.assign(element.style, otherStyles); if (c.type === 'button') { element.style.backgroundColor = this.hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity); } else if (c.type === 'lead-form' && backgroundColor) { element.style.backgroundColor = backgroundColor; } wrapper.appendChild(element); this.elements.contentArea.appendChild(wrapper);
+                 const wrapper = document.createElement('div'); wrapper.className = 'preview-wrapper'; wrapper.dataset.id = c.id; if (c.id === this.activeComponentId) wrapper.classList.add('selected'); wrapper.onclick = (e) => { e.stopPropagation(); this.selectComponent(c.id); }; if (c.type !== 'lead-form') { wrapper.style.textAlign = c.styles?.textAlign || 'center'; } if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') { wrapper.style.marginTop = 'auto'; } let element; switch(c.type) { case 'heading': element = document.createElement('h1'); element.textContent = c.content; break; case 'paragraph': element = document.createElement('p'); element.textContent = c.content; break; case 'button': element = document.createElement('button'); element.textContent = c.content; break; case 'lead-form': element = document.createElement('form'); element.className = 'component-content'; let formHTML = (this.allPossibleFormFields.filter(field => c.activeFields?.includes(field.name)) || []).map(field => `<div style="margin-bottom: 8px;"><input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--input-bg); color: var(--text-color);"></div>`).join(''); if (c.privacy?.enabled) { formHTML += `<div style="margin-top: 10px; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="privacy-preview-${c.id}" style="width: auto; height: 16px; margin: 0;"><label for="privacy-preview-${c.id}" style="font-size: 12px; color: #94a3b8; font-weight: normal; cursor: pointer;">${c.privacy.text}</label></div>`; } formHTML += `<button type="submit" style="width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: ${c.styles?.submitButtonColor || '#1877f2'}; color: white; font-size: 16px; cursor: pointer;">${c.submitText || '제출'}</button>`; element.innerHTML = formHTML; element.onsubmit = (e) => e.preventDefault(); break; } if (c.type !== 'lead-form') element.className = 'component-content'; const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {}; Object.assign(element.style, otherStyles); if (c.type === 'button') { element.style.backgroundColor = this.hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity); } else if (c.type === 'lead-form' && backgroundColor) { element.style.backgroundColor = backgroundColor; } wrapper.appendChild(element); this.elements.contentArea.appendChild(wrapper);
             });
         }
     },
 
     renderControls() {
+        const isStoryPage = this.components.some(c => c.type === 'scene');
+        
+        // ✨ [핵심] 스토리가 있으면 페이지 배경 컨트롤을 비활성화합니다.
+        if (this.elements.pageBackgroundControls) {
+            this.elements.pageBackgroundControls.classList.toggle('is-disabled', isStoryPage);
+            let notice = this.elements.pageBackgroundControls.querySelector('.disabled-notice');
+            if (isStoryPage && !notice) {
+                notice = document.createElement('p');
+                notice.className = 'disabled-notice text-xs text-amber-400 mt-2';
+                notice.textContent = '※ 스토리 페이지에서는 각 장면의 배경을 사용합니다.';
+                this.elements.pageBackgroundControls.appendChild(notice);
+            } else if (!isStoryPage && notice) {
+                notice.remove();
+            }
+        }
+
         this.elements.pageBgColorInput.value = this.pageSettings.bgColor || '#DCEAF7'; this.elements.pageBackgroundImageInput.value = this.pageSettings.bgImage || ''; this.elements.pageBackgroundVideoInput.value = this.pageSettings.bgVideo || ''; this.elements.editorsContainer.innerHTML = '';
-        this.components.forEach((c) => {
+        this.components.forEach((c, componentIndex) => {
             const panel = document.createElement('div'); panel.className = 'editor-panel'; panel.dataset.id = c.id; const handle = document.createElement('h4'); handle.innerHTML = `${{ heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보', scene: '🎬 장면' }[c.type]} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div>`; if (c.id === this.activeComponentId) panel.classList.add('selected');
             let panelContentHTML = '';
             if (c.type === 'scene') {
-                const headingComp = c.components?.find(ic => ic.type === 'heading') || {};
-                const paragraphComp = c.components?.find(ic => ic.type === 'paragraph') || {};
+                let innerControlsHTML = '';
+                (c.components || []).forEach((innerComp, innerIndex) => {
+                    innerControlsHTML += `
+                        <div class="control-group"><label>장면 ${innerComp.type === 'heading' ? '제목' : '내용'}</label><textarea data-scene-inner-prop="${innerIndex}.content">${innerComp.content || ''}</textarea></div>
+                        <div class="style-grid">
+                            <div class="control-group"><label>정렬</label><select data-scene-inner-style="${innerIndex}.textAlign">
+                                <option value="left" ${innerComp.styles?.textAlign === 'left' ? 'selected' : ''}>왼쪽</option>
+                                <option value="center" ${innerComp.styles?.textAlign === 'center' ? 'selected' : ''}>가운데</option>
+                                <option value="right" ${innerComp.styles?.textAlign === 'right' ? 'selected' : ''}>오른쪽</option>
+                            </select></div>
+                            <div class="control-group"><label>글자색</label><input type="text" data-color-picker data-scene-inner-style="${innerIndex}.color" value="${innerComp.styles?.color || '#FFFFFF'}"></div>
+                            <div class="control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>
+                        </div>
+                    `;
+                });
                 panelContentHTML = `
                     <div class="control-group inline-group"><label>장면 배경색</label><input type="text" data-color-picker data-scene-prop="bgColor" value="${c.sceneSettings?.bgColor || '#333333'}"></div>
                     <div class="control-group"><label>장면 배경 이미지 URL</label><input type="text" data-scene-prop="bgImage" value="${c.sceneSettings?.bgImage || ''}"></div>
                     <hr style="border-color: #475569; margin: 15px 0;">
-                    <div class="control-group"><label>장면 제목</label><textarea data-scene-inner-prop="0.content">${headingComp.content || ''}</textarea></div>
-                    <div class="control-group"><label>장면 내용</label><textarea data-scene-inner-prop="1.content">${paragraphComp.content || ''}</textarea></div>
+                    ${innerControlsHTML}
                 `;
             } else if (c.type === 'lead-form') {
                 let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #334155; padding: 10px; border-radius: 6px;">'; this.allPossibleFormFields.forEach(field => { const isChecked = c.activeFields?.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; }); checklistHTML += '</div></div>'; const privacy = c.privacy || { enabled: false, text: '' }; const privacySettingsHTML = `<div class="control-group" style="background-color: #334155; padding: 10px; border-radius: 6px;"><div class="inline-group"><label for="privacy-enabled-${c.id}" style="cursor: pointer;">🔒 개인정보 수집 동의</label><input type="checkbox" id="privacy-enabled-${c.id}" data-control-type="privacy-toggle" ${privacy.enabled ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>${privacy.enabled ? `<div class="control-group" style="margin-top: 10px; margin-bottom: 0;"><label>동의 문구</label><textarea data-prop="privacy.text" style="height: 60px;">${privacy.text}</textarea></div>` : ''}</div>`; panelContentHTML = `${checklistHTML}<div class="control-group"><label>📝 구글 스크립트 URL</label><textarea data-prop="googleScriptUrl" placeholder="배포된 구글 웹 앱 URL" style="height: 80px;">${c.googleScriptUrl || ''}</textarea></div><div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group"><label>🎉 성공 메시지</label><input type="text" data-prop="successMessage" value="${c.successMessage || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="text" data-color-picker data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>${privacySettingsHTML}`;
@@ -237,22 +277,8 @@ export const editor = {
 
     renderViewportControls() {
         this.elements.viewportControlsLeft.innerHTML = '';
-        const btnGroup = document.createElement('div');
-        btnGroup.className = 'viewport-controls';
-        this.viewportOptions.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'viewport-btn';
-            btn.dataset.value = opt.value;
-            btn.title = opt.title;
-            btn.innerHTML = opt.label;
-            if (this.pageSettings.viewport === opt.value) btn.classList.add('active');
-            btn.onclick = () => {
-                this.pageSettings.viewport = opt.value;
-                this.saveAndRender(false, true);
-                this.renderViewportControls();
-            };
-            btnGroup.appendChild(btn);
-        });
+        const btnGroup = document.createElement('div'); btnGroup.className = 'viewport-controls';
+        this.viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (this.pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { this.pageSettings.viewport = opt.value; this.saveAndRender(false, true); this.renderViewportControls(); }; btnGroup.appendChild(btn); });
         this.elements.viewportControlsLeft.appendChild(btnGroup);
     },
 
@@ -264,6 +290,17 @@ export const editor = {
             panel.querySelectorAll('[data-style]').forEach(input => { const eventType = input.hasAttribute('data-color-picker') ? 'change' : 'input'; input.addEventListener(eventType, (e) => { let value = e.target.value; if (e.target.dataset.style === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) { value += 'px'; } this.updateComponent(id, `styles.${e.target.dataset.style}`, value, false); }); });
             panel.querySelectorAll('[data-scene-prop]').forEach(input => { const eventType = input.hasAttribute('data-color-picker') ? 'change' : 'input'; input.addEventListener(eventType, (e) => { this.updateComponent(id, `sceneSettings.${e.target.dataset.sceneProp}`, e.target.value, false); }); });
             panel.querySelectorAll('[data-scene-inner-prop]').forEach(input => { input.oninput = (e) => { this.updateComponent(id, `components.${e.target.dataset.sceneInnerProp}`, e.target.value, false); }; });
+            panel.querySelectorAll('[data-scene-inner-style]').forEach(input => {
+                const eventType = input.hasAttribute('data-color-picker') ? 'change' : 'input';
+                input.addEventListener(eventType, (e) => {
+                    let value = e.target.value;
+                    const [index, key] = e.target.dataset.sceneInnerStyle.split('.');
+                    if (key === 'fontSize' && value.trim() !== '' && !isNaN(value.trim())) {
+                        value += 'px';
+                    }
+                    this.updateComponent(id, `components.${index}.styles.${key}`, value, false);
+                });
+            });
             panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => { checkbox.onchange = () => { const fieldName = checkbox.dataset.fieldName; const component = this.components.find(c => c.id === id); if (!component) return; if (!component.activeFields) component.activeFields = []; if (checkbox.checked) { if (!component.activeFields.includes(fieldName)) component.activeFields.push(fieldName); } else { component.activeFields = component.activeFields.filter(name => name !== fieldName); } this.saveAndRender(true, true); }; }); panel.querySelector('[data-control-type="privacy-toggle"]')?.addEventListener('change', (e) => { this.updateComponent(id, 'privacy.enabled', e.target.checked, true); });
             panel.querySelector('.delete-btn').onclick = () => this.deleteComponent(id);
         });
@@ -271,17 +308,7 @@ export const editor = {
 
     initSortable() {
         if (this.sortableInstance) this.sortableInstance.destroy();
-        this.sortableInstance = new Sortable(this.elements.editorsContainer, {
-            handle: 'h4',
-            animation: 150,
-            ghostClass: 'sortable-ghost',
-            onEnd: (evt) => {
-                if (evt.oldIndex === evt.newIndex) return;
-                const item = this.components.splice(evt.oldIndex, 1)[0];
-                this.components.splice(evt.newIndex, 0, item);
-                this.saveAndRender(false, true);
-            },
-        });
+        this.sortableInstance = new Sortable(this.elements.editorsContainer, { handle: 'h4', animation: 150, ghostClass: 'sortable-ghost', onEnd: (evt) => { if (evt.oldIndex === evt.newIndex) return; const item = this.components.splice(evt.oldIndex, 1)[0]; this.components.splice(evt.newIndex, 0, item); this.saveAndRender(false, true); }, });
     },
 
     selectComponent(id) {
