@@ -3,14 +3,14 @@
 /* ✨ [핵심 1] 프리텐다드 웹폰트를 불러옵니다. */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
+/* 추천 색상: 차콜 그레이 테마 */
 :root {
-    --chzzk-bg: #0F0F12;
-    /* ✨ [핵심 2] 컨테이너 배경을 전체 배경과 동일하게 맞춰 평평한 느낌을 강조합니다. */
-    --chzzk-container-bg: #0F0F12; 
+    --chzzk-bg: #121212;             /* ✨ 페이지 전체 배경 (차콜) */
+    --chzzk-container-bg: #1E1E1E;   /* ✨ 콘텐츠 배경 (살짝 밝은 차콜) */
     --chzzk-accent: #00FFA3;
     --chzzk-text-primary: #FFFFFF;
-    --chzzk-text-secondary: #A7A7AD;
-    --chzzk-border: #35353A;
+    --chzzk-text-secondary: #b3b3b3;
+    --chzzk-border: #282828;
 }
 
 body {
