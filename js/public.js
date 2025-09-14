@@ -1,35 +1,34 @@
-// js/public.js v1.1 - 콘텐츠 렌더링 기능 추가
+// js/public.js v1.2 - 페이지 컴포넌트 및 비디오 렌더링 완전 지원
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
 
-// ✨ ID 배열을 받아, 각 문서의 상세 데이터를 Firestore에서 가져오는 함수
+// ✨ [추가] 자바스크립트 스타일 객체를 인라인 스타일 문자열로 변환하는 헬퍼 함수
+function stylesToString(styles = {}) {
+    return Object.entries(styles)
+        .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
+        .join(' ');
+}
+
 async function fetchContentDetails(ids) {
     const db = getFirestoreDB();
     if (!ids || ids.length === 0) return [];
 
     const contentPromises = ids.map(async (id) => {
         if (!id) return null;
-
-        // pages 컬렉션에서 먼저 찾아봅니다.
         let contentRef = doc(db, 'pages', id);
         let contentSnap = await getDoc(contentRef);
-
-        // pages에 없으면 ads 컬렉션에서 다시 찾아봅니다.
         if (!contentSnap.exists()) {
             contentRef = doc(db, 'ads', id);
             contentSnap = await getDoc(contentRef);
         }
-        
-        // 찾은 문서가 존재하면 데이터와 함께 id를 반환합니다.
         return contentSnap.exists() ? { id: contentSnap.id, ...contentSnap.data() } : null;
     });
 
     const contents = await Promise.all(contentPromises);
-    return contents.filter(Boolean); // null 값을 제거하고 반환합니다.
+    return contents.filter(Boolean);
 }
 
-// ✨ 콘텐츠 데이터 배열을 받아 HTML을 생성하고 화면에 렌더링하는 함수
 function renderAllContent(contents) {
     const container = document.getElementById('content-container');
     if (!container) {
@@ -42,14 +41,21 @@ function renderAllContent(contents) {
         return;
     }
 
-    // 각 콘텐츠 유형에 맞는 HTML을 생성합니다.
     const contentHtml = contents.map(content => {
-        // adType 속성이 있으면 '카드', 없으면 '페이지'로 간주합니다.
-        if (content.adType) { 
+        if (content.adType) {
             // === 카드(Card) 렌더링 ===
+            // ✨ [수정] mediaType을 확인하여 비디오와 이미지를 다르게 처리합니다.
+            let mediaHtml = '';
+            if (content.mediaUrl) {
+                if (content.mediaType === 'video') {
+                    mediaHtml = `<video src="${content.mediaUrl}" autoplay loop muted playsinline class="w-full h-auto"></video>`;
+                } else {
+                    mediaHtml = `<img src="${content.mediaUrl}" alt="${content.title}" class="w-full h-auto">`;
+                }
+            }
             return `
-                <div class="card bg-white shadow-lg rounded-lg overflow-hidden my-8">
-                    ${content.mediaUrl ? `<img src="${content.mediaUrl}" alt="${content.title}" class="w-full h-auto">` : ''}
+                <div class="card">
+                    ${mediaHtml}
                     <div class="p-6">
                         <h2 class="text-2xl font-bold mb-2">${content.title}</h2>
                         <p class="text-gray-700">${content.description || ''}</p>
@@ -58,11 +64,30 @@ function renderAllContent(contents) {
             `;
         } else {
             // === 페이지(Page) 렌더링 ===
-            // 페이지는 간단하게 이름만 표시하도록 설정 (향후 컴포넌트 렌더링으로 확장 가능)
+            // ✨ [수정] 페이지 설정(배경 등)과 컴포넌트 배열을 읽어서 전체 페이지를 구성합니다.
+            const pageSettings = content.pageSettings || {};
+            const pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'}; ${pageSettings.bgImage ? `background-image: url('${pageSettings.bgImage}');` : ''}`;
+
+            const componentsHtml = (content.components || []).map(component => {
+                const componentStyle = stylesToString(component.styles);
+                switch (component.type) {
+                    case 'heading':
+                        return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
+                    case 'paragraph':
+                        return `<p class="page-component" style="${componentStyle}">${component.content}</p>`;
+                    case 'button':
+                        return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
+                    // 향후 다른 컴포넌트 유형도 여기에 추가할 수 있습니다.
+                    default:
+                        return '';
+                }
+            }).join('');
+
             return `
-                <div class="page-section my-8 p-6 bg-gray-200 rounded-lg">
-                    <h1 class="text-3xl font-bold">${content.name}</h1>
-                    <p class="text-gray-600 mt-2">이곳에 '${content.name}' 페이지의 상세 컴포넌트가 렌더링됩니다.</p>
+                <div class="page-section" style="${pageStyle}">
+                    <div class="page-content-wrapper">
+                        ${componentsHtml}
+                    </div>
                 </div>
             `;
         }
@@ -71,8 +96,6 @@ function renderAllContent(contents) {
     container.innerHTML = contentHtml;
 }
 
-
-// ✨ 사용자 페이지를 렌더링하는 메인 함수
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
     console.log("🚀 Public page script loaded. Waiting for Firebase...");
@@ -89,7 +112,6 @@ async function renderPublicPage() {
             const contentIds = layoutSnap.data().contentIds;
             console.log("🎉 Layout IDs to render:", contentIds);
 
-            // ✨ [핵심] ID로 상세 데이터를 가져온 후, HTML로 렌더링합니다.
             const contents = await fetchContentDetails(contentIds);
             console.log("📦 Fetched content details:", contents);
             renderAllContent(contents);
@@ -105,5 +127,4 @@ async function renderPublicPage() {
     }
 }
 
-// ✨ 메인 함수를 실행합니다.
 renderPublicPage();
