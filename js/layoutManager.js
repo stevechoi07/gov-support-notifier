@@ -1,8 +1,7 @@
-// js/layoutManager.js v2.2 - Promise 기반 데이터 로딩 안정화
+// js/layoutManager.js v2.3 - fetchContentsDetails 안정성 강화
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
-// ✨ [수정] pagesList 대신 pagesReady를, cards 대신 cardsReady와 cards 객체 둘 다 import합니다.
 import { pagesList, pagesReady } from './pages.js';
 import { cards, cardsReady } from './cards.js';
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -35,17 +34,25 @@ async function listenToLayoutChanges(layoutId) {
     });
 }
 
+// ✨ [수정] Firestore에 직접 확인하는 방식으로 안정성을 강화한 함수
 async function fetchContentsDetails(ids) {
     await firebaseReady;
     const db = getFirestoreDB();
     if (ids.length === 0) return [];
     if (!db) return [];
 
-    const contentPromises = ids.map(id => {
-        // 'page_' 접두사로 페이지와 카드를 구분합니다. (향후 ID 규칙 변경 시 수정 필요)
-        const collectionName = pagesList.some(p => p.id === id) ? 'pages' : 'ads';
-        const contentRef = doc(db, collectionName, id);
-        return getDoc(contentRef);
+    const contentPromises = ids.map(async (id) => {
+        // 1. pages 컬렉션에서 먼저 찾아봅니다.
+        let contentRef = doc(db, 'pages', id);
+        let contentSnap = await getDoc(contentRef);
+
+        // 2. pages에 없으면 ads 컬렉션에서 다시 찾아봅니다.
+        if (!contentSnap.exists()) {
+            contentRef = doc(db, 'ads', id);
+            contentSnap = await getDoc(contentRef);
+        }
+
+        return contentSnap; // 찾은 결과를 반환합니다.
     });
 
     const contentSnaps = await Promise.all(contentPromises);
@@ -184,7 +191,6 @@ async function addItemToLayout(contentId) {
 }
 
 export async function handleAddContentClick() {
-    // ✨ [수정] 페이지와 카드 데이터가 완전히 로드될 때까지 기다립니다.
     await Promise.all([pagesReady, cardsReady]);
 
     modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
