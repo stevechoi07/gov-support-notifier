@@ -1,4 +1,4 @@
-// js/public.js v1.4 - 페이지 뷰포트 크기 동적 적용
+// js/public.js v1.5 - 페이지 래퍼(wrapper)를 추가하여 폭 통일
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -42,7 +42,7 @@ function renderAllContent(contents) {
 
     const contentHtml = contents.map(content => {
         if (content.adType) {
-            // === 카드(Card) 렌더링 ===
+            // === 카드(Card) 렌더링 (변경 없음) ===
             let mediaHtml = '';
             if (content.mediaUrl) {
                 if (content.mediaType === 'video') {
@@ -64,18 +64,13 @@ function renderAllContent(contents) {
             `;
         } else {
             // === 페이지(Page) 렌더링 ===
+            // ✨ [핵심 수정] 페이지를 외부 래퍼(.page-wrapper)로 감싸는 구조로 변경합니다.
             const pageSettings = content.pageSettings || {};
             
-            // ✨ [핵심] 뷰포트 설정을 읽어와 스타일 문자열에 추가합니다.
-            let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
+            let viewportStyle = '';
             if (pageSettings.viewport) {
                 const [width, height] = pageSettings.viewport.split(',');
-                // 뷰포트가 '100%'가 아닌 고정값일 때만 가운데 정렬을 위한 margin: auto를 추가합니다.
-                if (width.trim() !== '100%') {
-                    pageStyle += ` width: ${width}; height: ${height}; margin-left: auto; margin-right: auto;`;
-                } else {
-                    pageStyle += ` width: ${width}; height: ${height};`;
-                }
+                viewportStyle = `width: ${width}; height: ${height};`;
             }
 
             const bgImageHtml = pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
@@ -94,11 +89,14 @@ function renderAllContent(contents) {
                 }
             }).join('');
 
+            // 외부 래퍼는 배경색을 담당하고, 내부 page-section은 크기를 담당합니다.
             return `
-                <div class="page-section" style="${pageStyle}">
-                    ${bgImageHtml}
-                    <div class="page-content-wrapper">
-                        ${componentsHtml}
+                <div class="page-wrapper" style="background-color: ${pageSettings.bgColor || '#ffffff'};">
+                    <div class="page-section" style="${viewportStyle}">
+                        ${bgImageHtml}
+                        <div class="page-content-wrapper">
+                            ${componentsHtml}
+                        </div>
                     </div>
                 </div>
             `;
@@ -107,6 +105,7 @@ function renderAllContent(contents) {
 
     container.innerHTML = contentHtml;
 }
+
 
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
