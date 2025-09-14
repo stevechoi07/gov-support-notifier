@@ -1,4 +1,4 @@
-/* css/public_style.css v1.3 - 페이지 래퍼 스타일 추가 및 간격 통일 */
+/* css/public_style.css v1.4 - 반응형 폰트 및 종횡비 레이아웃 적용 */
 
 body {
     font-family: 'Noto Sans KR', sans-serif;
@@ -13,9 +13,9 @@ body {
     padding: 2rem 1rem;
 }
 
-/* ✨ [추가] 카드와 페이지 래퍼에 공통으로 적용될 스타일 */
 .card,
-.page-wrapper {
+.page-wrapper,
+.page-section { /* ✨ [수정] page-section도 공통 스타일 그룹에 포함 */
     background-color: #ffffff;
     border-radius: 12px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -24,31 +24,21 @@ body {
 }
 
 .card:hover,
-.page-wrapper:hover {
+.page-wrapper:hover,
+.page-section:hover {
     transform: translateY(-5px);
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 /* --- 페이지 스타일 --- */
-/* ✨ [추가] 외부 래퍼 스타일 */
-.page-wrapper {
-    /* 공통 스타일에서 대부분 상속받음 */
-    padding: 1rem; /* 내부 페이지와의 여백 */
-}
-
-/* ✨ [수정] 내부 페이지 섹션 스타일 */
 .page-section {
     position: relative;
     overflow: hidden;
-    /* ✨ [수정] 외부 래퍼 안에서 가운데 정렬 */
-    margin-left: auto;
-    margin-right: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 그림자 효과를 주어 입체감 부여 */
-    box-shadow: 0 0 20px rgba(0,0,0,0.1); 
-    border-radius: 8px;
+    width: 100%; /* ✨ [핵심] 너비를 100%로 설정 */
+    height: auto; /* ✨ [핵심] 높이는 자동으로 설정 (aspect-ratio가 제어) */
 }
 
 .page-background-image {
@@ -71,19 +61,31 @@ body {
     position: relative;
     z-index: 2;
     width: 100%;
-    max-width: 650px;
+    max-width: 90%; /* 내부 콘텐츠가 너무 가장자리에 붙지 않도록 */
     padding: 2rem;
-    text-align: center;
+    display: flex; /* ✨ [추가] 내부 컴포넌트 정렬을 위해 flex 사용 */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .page-component {
     margin-bottom: 1.5rem;
     word-break: keep-all;
+    max-width: 100%;
 }
 .page-component:last-child {
     margin-bottom: 0;
 }
 
+/* ✨ [핵심] 반응형 폰트 크기 설정 */
+.page-component[style*="font-size"] {
+    /* clamp(최소값, 추천값, 최대값) */
+    /* 800px 너비일 때, 1vw = 8px. 5vw = 40px */
+    font-size: clamp(16px, 5vw, 48px) !important;
+}
+.page-component[style*="font-size"][style*="text-align: left"] { text-align: left !important; }
+.page-component[style*="font-size"][style*="text-align: right"] { text-align: right !important; }
 
 .page-button {
     display: inline-block;
@@ -92,13 +94,14 @@ body {
     text-decoration: none;
     font-weight: 700;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* ✨ [추가] 버튼 폰트도 반응형으로 */
+    font-size: clamp(14px, 2.5vw, 20px) !important;
 }
 
 .page-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-
 
 /* --- 카드 스타일 --- */
 .card {

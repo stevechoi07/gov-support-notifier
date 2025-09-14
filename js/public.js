@@ -1,4 +1,4 @@
-// js/public.js v1.5 - 페이지 래퍼(wrapper)를 추가하여 폭 통일
+// js/public.js v1.6 - 종횡비(aspect-ratio)를 이용한 동적 스케일링
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -64,39 +64,41 @@ function renderAllContent(contents) {
             `;
         } else {
             // === 페이지(Page) 렌더링 ===
-            // ✨ [핵심 수정] 페이지를 외부 래퍼(.page-wrapper)로 감싸는 구조로 변경합니다.
             const pageSettings = content.pageSettings || {};
             
-            let viewportStyle = '';
+            // ✨ [핵심 수정] 뷰포트 설정에서 width, height 대신 aspect-ratio를 계산하여 적용합니다.
+            let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
             if (pageSettings.viewport) {
-                const [width, height] = pageSettings.viewport.split(',');
-                viewportStyle = `width: ${width}; height: ${height};`;
+                const [widthStr, heightStr] = pageSettings.viewport.split(',');
+                const width = parseFloat(widthStr);
+                const height = parseFloat(heightStr);
+                if (height > 0) { // 0으로 나누는 것을 방지
+                    pageStyle += ` aspect-ratio: ${width} / ${height};`;
+                }
             }
 
             const bgImageHtml = pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
 
             const componentsHtml = (content.components || []).map(component => {
                 const componentStyle = stylesToString(component.styles);
+                // ✨ [수정] 버튼 래퍼 div 제거, 버튼 자체에 정렬 스타일 적용되도록 CSS 수정 예정
                 switch (component.type) {
                     case 'heading':
                         return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
                     case 'paragraph':
                         return `<p class="page-component" style="${componentStyle}">${component.content}</p>`;
                     case 'button':
-                        return `<div class="page-component" style="text-align: ${component.styles?.textAlign || 'center'}"><a href="${component.link || '#'}" class="page-button" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a></div>`;
+                        return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
                     default:
                         return '';
                 }
             }).join('');
 
-            // 외부 래퍼는 배경색을 담당하고, 내부 page-section은 크기를 담당합니다.
             return `
-                <div class="page-wrapper" style="background-color: ${pageSettings.bgColor || '#ffffff'};">
-                    <div class="page-section" style="${viewportStyle}">
-                        ${bgImageHtml}
-                        <div class="page-content-wrapper">
-                            ${componentsHtml}
-                        </div>
+                <div class="page-section" style="${pageStyle}">
+                    ${bgImageHtml}
+                    <div class="page-content-wrapper">
+                        ${componentsHtml}
                     </div>
                 </div>
             `;
@@ -108,6 +110,7 @@ function renderAllContent(contents) {
 
 
 async function renderPublicPage() {
+    // ... (이하 동일)
     const container = document.getElementById('content-container');
     console.log("🚀 Public page script loaded. Waiting for Firebase...");
 
