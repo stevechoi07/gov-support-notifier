@@ -1,4 +1,4 @@
-// js/pages.js v2.1 - SDK 버전 통일 및 Promise 기반 초기화
+// js/pages.js v2.2 - 새 페이지 생성 시 통계 필드 추가
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -7,7 +7,6 @@ import { firebaseReady, getFirestoreDB } from './firebase.js';
 export let pagesList = [];
 let isInitialized = false;
 
-// ✨ [추가] 첫 데이터 로딩 완료 신호를 보내기 위한 Promise와 resolve 함수
 let resolvePagesReady;
 export const pagesReady = new Promise(resolve => {
     resolvePagesReady = resolve;
@@ -92,10 +91,18 @@ export async function handleNewPageClick() {
     const name = prompt("새 페이지의 이름을 입력하세요:");
     if (name && name.trim()) {
         try {
-            const newPageRef = await addDoc(collection(db, "pages"), {
-                name: name.trim(), isPublished: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), components: [],
-                pageSettings: { bgColor: '#1e293b', bgImage: '', bgVideo: '', viewport: '375px,667px' }
-            });
+            // 새 페이지 데이터에 viewCount와 clickCount를 추가합니다.
+            const newPageData = {
+                name: name.trim(),
+                isPublished: false,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                components: [],
+                pageSettings: { bgColor: '#1e293b', bgImage: '', bgVideo: '', viewport: '375px,667px' },
+                viewCount: 0,
+                clickCount: 0
+            };
+            const newPageRef = await addDoc(collection(db, "pages"), newPageData);
             return newPageRef.id;
         } catch (error) {
             alert("새 페이지 생성에 실패했습니다.");
@@ -115,10 +122,9 @@ async function listenToPages() {
         if (ui.pageListContainer && pagesView && !pagesView.classList.contains('hidden')) {
             renderPages();
         }
-        // ✨ [추가] 첫 데이터 수신 후, 준비 완료 신호를 보냅니다.
         if (resolvePagesReady) {
             resolvePagesReady();
-            resolvePagesReady = null; // 한번만 실행되도록 null로 설정
+            resolvePagesReady = null;
         }
     });
 }

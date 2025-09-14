@@ -1,4 +1,4 @@
-// js/public.js v2.2 - 클릭/노출 트래킹 로직 수정
+// js/public.js v2.3 - 페이지 행동 추적 기능 추가
 
 import { doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -28,13 +28,18 @@ async function fetchContentDetails(ids) {
     return contents.filter(Boolean);
 }
 
+
 function renderAllContent(contents) {
     const container = document.getElementById('content-container');
     if (!container) { console.error("Content container not found!"); return; }
     if (contents.length === 0) { container.innerHTML = `<p class="text-center text-gray-500">표시할 콘텐츠가 없습니다.</p>`; return; }
 
     const contentHtml = contents.map(content => {
-        if (content.adType) {
+        // 렌더링 시점에 콘텐츠 유형과 ID를 data 속성에 명시합니다.
+        const contentType = content.adType ? 'card' : 'page';
+        const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
+
+        if (contentType === 'card') {
             let mediaHtml = '';
             if (content.mediaUrl) {
                 if (content.mediaType === 'video') {
@@ -44,13 +49,13 @@ function renderAllContent(contents) {
                 }
             }
             const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
-            const cardInnerHtml = `<div class="card" data-observe-target data-id="${content.id}">${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`;
+            const cardInnerHtml = `<div class="card" ${commonAttributes}>${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`;
             if (content.link) {
                 return `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`;
             } else {
                 return cardInnerHtml;
             }
-        } else {
+        } else { // contentType === 'page'
             const pageSettings = content.pageSettings || {};
             let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
             if (pageSettings.viewport) {
@@ -75,41 +80,30 @@ function renderAllContent(contents) {
                         return '';
                 }
             }).join('');
-            return `<div class="page-section" data-observe-target data-id="${content.id}" style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
+            return `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
         }
     }).join('');
+
     container.innerHTML = contentHtml;
     setupIntersectionObserver();
 }
 
-async function trackImpression(contentId) {
-    if (!contentId) return;
-    try {
-        const db = getFirestoreDB();
-        const contentRef = doc(db, 'ads', contentId);
-        await updateDoc(contentRef, {
-            viewCount: increment(1)
-        });
-        console.log(`Impression tracked for: ${contentId}`);
-    } catch (error) {
-        if (error.code !== 'not-found') {
-            console.error("Error tracking impression:", error);
-        }
-    }
-}
+// 콘텐츠 유형(type)을 받아 알맞은 컬렉션을 업데이트하는 통합 함수
+async function track(contentId, contentType, fieldToIncrement) {
+    if (!contentId || !contentType || !fieldToIncrement) return;
 
-async function trackClick(contentId) {
-    if (!contentId) return;
+    const collectionName = contentType === 'page' ? 'pages' : 'ads';
+    
     try {
         const db = getFirestoreDB();
-        const contentRef = doc(db, 'ads', contentId);
+        const contentRef = doc(db, collectionName, contentId);
         await updateDoc(contentRef, {
-            clickCount: increment(1)
+            [fieldToIncrement]: increment(1)
         });
-        console.log(`Click tracked for: ${contentId}`);
+        console.log(`${fieldToIncrement} tracked for ${contentType}: ${contentId}`);
     } catch (error) {
         if (error.code !== 'not-found') {
-            console.error("Error tracking click:", error);
+            console.error(`Error tracking ${fieldToIncrement} for ${contentType}:`, error);
         }
     }
 }
@@ -136,28 +130,24 @@ function setupIntersectionObserver() {
             currentActive = mostVisibleElement;
         }
     };
-
+    
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 visibleElements.set(entry.target, entry);
-                const contentId = entry.target.dataset.id;
-                if (contentId && !trackedImpressions.has(contentId)) {
-                    trackImpression(contentId);
-                    trackedImpressions.add(contentId);
+                const { id, type } = entry.target.dataset;
+                if (id && !trackedImpressions.has(id)) {
+                    track(id, type, 'viewCount');
+                    trackedImpressions.add(id);
                 }
             } else {
                 visibleElements.delete(entry.target);
                 entry.target.classList.remove('is-visible');
-                if (entry.target === currentActive) currentActive = null;
+                if(entry.target === currentActive) currentActive = null;
             }
         });
         updateActive();
-    }, {
-        threshold: Array.from({
-            length: 101
-        }, (_, i) => i / 100)
-    });
+    }, { threshold: Array.from({ length: 101 }, (_, i) => i / 100) });
 
     const targets = document.querySelectorAll('[data-observe-target]');
     targets.forEach(target => observer.observe(target));
@@ -189,11 +179,12 @@ async function renderPublicPage() {
     }
 }
 
+// 페이지 전체에 클릭 리스너를 추가합니다.
 document.addEventListener('click', (event) => {
-    const targetElement = event.target.closest('[data-id]');
+    const targetElement = event.target.closest('[data-id][data-type]');
     if (targetElement) {
-        const contentId = targetElement.dataset.id;
-        trackClick(contentId);
+        const { id, type } = targetElement.dataset;
+        track(id, type, 'clickCount');
     }
 });
 
