@@ -1,4 +1,4 @@
-// js/layoutManager.js v2.7 - 레이아웃 목록에 통계(노출/클릭 수) 표시
+// js/layoutManager.js v2.8 - 페이지에도 통계(노출/클릭 수) 표시
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
@@ -29,13 +29,13 @@ async function listenToLayoutChanges(layoutId) {
         }
         const contentIds = snapshot.data().contentIds;
         currentLayoutIds = contentIds;
-        
+
         const contents = await fetchContentsDetails(contentIds);
         renderLayoutList(contents);
     });
 }
 
-async function fetchContentsDetails(ids) {
+async function fetchContentDetails(ids) {
     await firebaseReady;
     const db = getFirestoreDB();
     if (ids.length === 0) return [];
@@ -59,7 +59,7 @@ async function fetchContentsDetails(ids) {
 
 function renderLayoutList(contents) {
     if (!layoutListContainer) return;
-    
+
     layoutListContainer.className = 'grid gap-4';
 
     if (contents.length === 0) {
@@ -76,10 +76,10 @@ function renderLayoutList(contents) {
         const typeLabel = isPage ? '📄 페이지' : '🗂️ 카드';
         const typeColor = isPage ? 'bg-sky-500/20 text-sky-400' : 'bg-amber-500/20 text-amber-400';
         const previewImage = content.mediaUrl || content.pageSettings?.bgImage || '';
-        const previewBgColor = isPage ? (content.pageSettings?.bgColor || '#1e293b') : '#1e293b';
+        const previewBgColor = isPage ? (content.pageSettings?.bgColor || '#1e2d3b') : '#1e2d3b';
 
-        // 카드인 경우에만 통계 정보를 표시하는 HTML을 생성합니다.
-        const statsHtml = isPage ? '' : `
+        // 페이지와 카드 모두에 통계 정보를 표시합니다.
+        const statsHtml = `
             <div class="flex items-center gap-4 text-xs text-slate-400 mt-2">
                 <span class="flex items-center" title="노출 수">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -244,7 +244,11 @@ async function handleAddContentClick() {
 }
 
 export function initLayoutView() {
-    if (isInitialized) return;
+    if (isInitialized) {
+        // 뷰가 다시 활성화될 때 대시보드 데이터를 새로고침합니다.
+        initHomeDashboard();
+        return;
+    }
     initHomeDashboard();
     mapModalUI();
     setupModalListeners();
