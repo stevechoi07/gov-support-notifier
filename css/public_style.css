@@ -100,3 +100,44 @@ body {
 .story-nav.prev { left: 0; }
 .story-nav.next { right: 0; }
 .swiper-slide { background-size: cover; background-position: center; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px 30px; }
+
+/* --- ✨ [핵심 추가] 스켈레톤 UI 스타일 --- */
+.skeleton-card {
+    background-color: var(--chzzk-container-bg);
+    border-radius: 12px;
+    margin-bottom: 2.5rem;
+    border: 1px solid var(--chzzk-border);
+    padding: 1.5rem;
+}
+
+.skeleton-image {
+    width: 100%;
+    height: 200px;
+    background-color: #2a2a2f; /* 스켈레톤 색상 */
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-text {
+    height: 20px;
+    width: 90%;
+    background-color: #2a2a2f;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-text.short {
+    width: 60%;
+}
+
+/* 반짝이는 애니메이션 효과 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
