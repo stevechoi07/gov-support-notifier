@@ -34,7 +34,7 @@ async function listenToLayoutChanges(layoutId) {
     });
 }
 
-// ✨ [수정] Firestore에 직접 확인하는 방식으로 안정성을 강화한 함수
+// ✨ [수정] 데이터 유효성 검사를 추가하여 안정성을 더욱 강화한 함수
 async function fetchContentsDetails(ids) {
     await firebaseReady;
     const db = getFirestoreDB();
@@ -42,6 +42,9 @@ async function fetchContentsDetails(ids) {
     if (!db) return [];
 
     const contentPromises = ids.map(async (id) => {
+        // ✨ [핵심] id가 유효하지 않으면(null, undefined 등) 건너뛰어 에러를 방지합니다.
+        if (!id) return null;
+
         // 1. pages 컬렉션에서 먼저 찾아봅니다.
         let contentRef = doc(db, 'pages', id);
         let contentSnap = await getDoc(contentRef);
@@ -52,13 +55,12 @@ async function fetchContentsDetails(ids) {
             contentSnap = await getDoc(contentRef);
         }
 
-        return contentSnap; // 찾은 결과를 반환합니다.
+        return contentSnap;
     });
 
     const contentSnaps = await Promise.all(contentPromises);
     return contentSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter(Boolean);
 }
-
 
 function renderLayoutList(contents) {
     if (!layoutListContainer) return;
