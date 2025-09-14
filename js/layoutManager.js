@@ -1,4 +1,4 @@
-// js/layoutManager.js v2.9 - initLayoutView 함수 중복 실행 방지
+// js/layoutManager.js v2.10 - SVG 아이콘 경로 오류 수정
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
@@ -30,13 +30,11 @@ async function listenToLayoutChanges(layoutId) {
         const contentIds = snapshot.data().contentIds;
         currentLayoutIds = contentIds;
         
-        // ✨ 이 함수가 없어서 에러가 발생했습니다.
         const contents = await fetchContentsDetails(contentIds);
         renderLayoutList(contents);
     });
 }
 
-// ✨ 에러의 원인이었던, 삭제되었던 함수입니다.
 async function fetchContentsDetails(ids) {
     await firebaseReady;
     const db = getFirestoreDB();
@@ -87,7 +85,7 @@ function renderLayoutList(contents) {
                     ${(content.viewCount ?? 0).toLocaleString()}
                 </span>
                 <span class="flex items-center" title="클릭 수">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M22 14a2 2 S0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.7a2 2 0 0 1 1.4.6l5.8 5.8a2 2 0 0 1 .6 1.4V14Z"/><path d="m14 14-4-4"/><path d="M10 14h4v-4"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M22 14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.7a2 2 0 0 1 1.4.6l5.8 5.8a2 2 0 0 1 .6 1.4V14Z"/><path d="m14 14-4-4"/><path d="M10 14h4v-4"/></svg>
                     ${(content.clickCount ?? 0).toLocaleString()}
                 </span>
             </div>
@@ -244,18 +242,13 @@ async function handleAddContentClick() {
 }
 
 export function initLayoutView() {
-    // 뷰가 다시 활성화될 때 대시보드 데이터는 새로고침합니다.
     initHomeDashboard();
-
-    // 초기화 코드는 최초 한 번만 실행합니다.
     if (isInitialized) {
         return;
     }
-    
     mapModalUI();
     setupModalListeners();
     listenToLayoutChanges('mainLayout');
-    
     isInitialized = true;
     console.log("Layout View Initialized.");
 }
