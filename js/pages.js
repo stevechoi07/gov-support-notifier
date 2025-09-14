@@ -1,11 +1,17 @@
-// js/pages.js v2.0 - 자생력 강화 버전
+// js/pages.js v2.1 - SDK 버전 통일 및 Promise 기반 초기화
 
-import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
 import { firebaseReady, getFirestoreDB } from './firebase.js';
 
 export let pagesList = [];
 let isInitialized = false;
+
+// ✨ [추가] 첫 데이터 로딩 완료 신호를 보내기 위한 Promise와 resolve 함수
+let resolvePagesReady;
+export const pagesReady = new Promise(resolve => {
+    resolvePagesReady = resolve;
+});
 
 export async function renderPages() {
     // 순환 참조를 피하기 위해 필요할 때만 동적으로 import 합니다.
@@ -108,6 +114,11 @@ async function listenToPages() {
         const pagesView = document.getElementById('pages-view');
         if (ui.pageListContainer && pagesView && !pagesView.classList.contains('hidden')) {
             renderPages();
+        }
+        // ✨ [추가] 첫 데이터 수신 후, 준비 완료 신호를 보냅니다.
+        if (resolvePagesReady) {
+            resolvePagesReady();
+            resolvePagesReady = null; // 한번만 실행되도록 null로 설정
         }
     });
 }

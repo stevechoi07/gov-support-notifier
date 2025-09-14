@@ -1,8 +1,14 @@
-// js/cards.js v2.0 - 자생력 강화 버전
+// js/cards.js v2.1 - SDK 버전 통일 및 Promise 기반 초기화
 
-import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
+
+// ✨ [추가] 첫 데이터 로딩 완료 신호를 보내기 위한 Promise와 resolve 함수
+let resolveCardsReady;
+export const cardsReady = new Promise(resolve => {
+    resolveCardsReady = resolve;
+});
 
 export const cards = {
     list: [],
@@ -81,6 +87,11 @@ export const cards = {
             const cardsView = document.getElementById('cards-view');
             if (cardsView && !cardsView.classList.contains('hidden')) {
                 this.render();
+            }
+            // ✨ [추가] 첫 데이터 수신 후, 준비 완료 신호를 보냅니다.
+            if (resolveCardsReady) {
+                resolveCardsReady();
+                resolveCardsReady = null; // 한번만 실행되도록 null로 설정
             }
         });
     },

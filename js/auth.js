@@ -1,8 +1,7 @@
-// js/auth.js v1.4 - Firebase Getter 적용
+// js/auth.js v1.5 - SDK 버전 통일
 
-import { signInWithCustomToken, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+import { signInWithCustomToken, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { ui } from './ui.js';
-// ✨ [수정] auth 대신 getFirebaseAuth 함수를 import 합니다.
 import { getFirebaseAuth } from './firebase.js';
 
 export function setupLoginListeners() {
@@ -15,7 +14,6 @@ export function setupLoginListeners() {
 }
 
 async function handleLogin() {
-    // ✨ [수정] 함수가 호출될 때마다 최신 auth 객체를 가져옵니다.
     const auth = getFirebaseAuth();
     if (!auth) {
         showAuthMessage("Firebase 인증 서비스를 사용할 수 없습니다.", true);
@@ -50,7 +48,6 @@ async function handleLogin() {
 }
 
 export async function handleLogout() {
-    // ✨ [수정] 함수가 호출될 때마다 최신 auth 객체를 가져옵니다.
     const auth = getFirebaseAuth();
     if (!auth) return;
 

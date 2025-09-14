@@ -1,10 +1,10 @@
-// js/layoutManager.js v2.1 - 코드 안정성 강화 버전
+// js/layoutManager.js v2.2 - Promise 기반 데이터 로딩 안정화
 
-// collection 함수를 임포트 목록에 추가하여 일관성을 유지합니다.
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
-import { pagesList } from './pages.js';
-import { cards } from './cards.js';
+// ✨ [수정] pagesList 대신 pagesReady를, cards 대신 cardsReady와 cards 객체 둘 다 import합니다.
+import { pagesList, pagesReady } from './pages.js';
+import { cards, cardsReady } from './cards.js';
 import { firebaseReady, getFirestoreDB } from './firebase.js';
 
 const layoutListContainer = document.getElementById('layout-list-container');
@@ -20,7 +20,6 @@ async function listenToLayoutChanges(layoutId) {
         console.error("Firestore DB가 초기화되지 않았습니다.");
         return;
     }
-    // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
     const layoutRef = doc(db, "layouts", layoutId);
     onSnapshot(layoutRef, async (snapshot) => {
         if (!snapshot.exists() || !snapshot.data().contentIds) {
@@ -43,8 +42,8 @@ async function fetchContentsDetails(ids) {
     if (!db) return [];
 
     const contentPromises = ids.map(id => {
-        const collectionName = id.startsWith('page_') ? 'pages' : 'ads';
-        // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
+        // 'page_' 접두사로 페이지와 카드를 구분합니다. (향후 ID 규칙 변경 시 수정 필요)
+        const collectionName = pagesList.some(p => p.id === id) ? 'pages' : 'ads';
         const contentRef = doc(db, collectionName, id);
         return getDoc(contentRef);
     });
@@ -52,6 +51,7 @@ async function fetchContentsDetails(ids) {
     const contentSnaps = await Promise.all(contentPromises);
     return contentSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter(Boolean);
 }
+
 
 function renderLayoutList(contents) {
     if (!layoutListContainer) return;
@@ -102,7 +102,6 @@ function attachEventListeners() {
             const item = e.currentTarget.closest('.layout-item');
             const contentId = item.dataset.id;
             if (confirm(`'${item.querySelector('h4').textContent}' 콘텐츠를 레이아웃에서 제거하시겠습니까?`)) {
-                // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
                 const layoutRef = doc(db, "layouts", "mainLayout");
                 await updateDoc(layoutRef, { contentIds: arrayRemove(contentId) });
                 showToast('콘텐츠가 레이아웃에서 제거되었습니다.');
@@ -122,7 +121,6 @@ function initializeSortable() {
             if (!db) return;
 
             const newOrder = Array.from(evt.to.children).map(item => item.dataset.id);
-            // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
             const layoutRef = doc(db, "layouts", "mainLayout");
             await updateDoc(layoutRef, { contentIds: newOrder });
             showToast('레이아웃 순서가 저장되었습니다.', 'success');
@@ -171,14 +169,12 @@ async function addItemToLayout(contentId) {
     }
 
     try {
-        // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
         const layoutRef = doc(db, "layouts", "mainLayout");
         await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) });
         showToast('콘텐츠가 레이아웃에 추가되었습니다.');
     } catch (error) {
         console.error("레이아웃에 아이템 추가 실패:", error);
         showToast("아이템 추가에 실패했습니다.", "error");
-        // 에러 발생 시, 버튼을 다시 활성화시켜서 사용자가 재시도할 수 있도록 합니다.
         const button = document.querySelector(`.add-button[data-id="${contentId}"]`);
         if(button) {
             button.disabled = false;
@@ -187,7 +183,10 @@ async function addItemToLayout(contentId) {
     }
 }
 
-export function handleAddContentClick() {
+export async function handleAddContentClick() {
+    // ✨ [수정] 페이지와 카드 데이터가 완전히 로드될 때까지 기다립니다.
+    await Promise.all([pagesReady, cardsReady]);
+
     modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
         const isAdded = currentLayoutIds.includes(page.id);
         const previewImage = page.pageSettings?.bgImage || '';

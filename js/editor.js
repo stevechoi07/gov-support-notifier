@@ -1,6 +1,6 @@
-// js/editor.js v2.0 - 자생력 강화 버전
+// js/editor.js v2.1 - SDK 버전 통일
 
-import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
 import { pagesList } from './pages.js';
 import { navigateTo } from './navigation.js';

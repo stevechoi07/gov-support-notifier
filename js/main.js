@@ -1,6 +1,6 @@
-// js/main.js v2.3 - 선제적 초기화 최종 적용
+// js/main.js v2.4 - SDK 버전 통일
 
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { firebaseReady, getFirebaseAuth, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 import { ui, mapInitialUI, mapDashboardUI } from './ui.js';
 import { setupLoginListeners, handleLogout, showAuthMessage } from './auth.js';
@@ -14,8 +14,6 @@ export async function initializeAppAndAuth() {
         const auth = getFirebaseAuth();
 
         // [핵심] Firebase 준비 직후, 핵심 데이터 모듈들을 먼저 초기화합니다.
-        const db = getFirestoreDB();
-        const storage = getFirebaseStorage();
         initPages();
         cards.init();
         console.log('✅ [main.js] Pages와 Cards 모듈 선제적 초기화 완료!');
