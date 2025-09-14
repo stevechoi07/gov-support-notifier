@@ -1,4 +1,4 @@
-// js/public.js v2.4 - 스토리 뷰어 실행 로직 구현
+// js/public.js v2.5 - 스토리 썸네일 하이라이트 버그 수정
 
 import { doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -87,13 +87,15 @@ function setupStoryPlayback(swiper, progressBars) {
             progressFills[i].style.transition = 'none';
             progressFills[i].style.width = '100%';
         }
-        progressFills[index].style.transition = 'none';
-        progressFills[index].style.width = '0%';
+        if (progressFills[index]) {
+            progressFills[index].style.transition = 'none';
+            progressFills[index].style.width = '0%';
         
-        setTimeout(() => {
-            progressFills[index].style.transition = `width ${DURATION}ms linear`;
-            progressFills[index].style.width = '100%';
-        }, 50);
+            setTimeout(() => {
+                progressFills[index].style.transition = `width ${DURATION}ms linear`;
+                progressFills[index].style.width = '100%';
+            }, 50);
+        }
 
         storyTimer = setTimeout(() => {
             if (index < slidesCount - 1) {
@@ -129,7 +131,7 @@ function renderAllContent(contents) {
             const sceneSettings = firstScene.sceneSettings || {};
             const previewStyle = `background-color: ${sceneSettings.bgColor || '#000'}; background-image: url('${sceneSettings.bgImage || ''}'); cursor: pointer;`;
             return `
-                <div class="page-section story-launcher" style="${previewStyle}" data-story-page-id="${content.id}">
+                <div class="page-section story-launcher" style="${previewStyle}" data-story-page-id="${content.id}" data-observe-target>
                     <div class="page-content-wrapper">
                         <h1 class="page-component" style="color:white; font-size: 2rem;">${content.name}</h1>
                         <p style="color: white; opacity: 0.8;">클릭하여 스토리 보기</p>
@@ -137,9 +139,16 @@ function renderAllContent(contents) {
                 </div>
             `;
         } else if (content.adType) {
-            let mediaHtml = ''; if (content.mediaUrl) { if (content.mediaType === 'video') { mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`; } else { mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" alt="${content.title || '카드 이미지'}"></div>`; } } const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : ''; const cardInnerHtml = `<div class="card" data-observe-target data-id="${content.id}" data-type="card">${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`; if (content.link) { return `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`; } else { return cardInnerHtml; }
+            const contentType = 'card';
+            const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
+            let mediaHtml = ''; if (content.mediaUrl) { if (content.mediaType === 'video') { mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`; } else { mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" alt="${content.title || '카드 이미지'}"></div>`; } } const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
+            const cardInnerHtml = `<div class="card" ${commonAttributes}>${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`;
+            if (content.link) { return `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`; } else { return cardInnerHtml; }
         } else {
-            const pageSettings = content.pageSettings || {}; let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`; if (pageSettings.viewport) { const [widthStr, heightStr] = pageSettings.viewport.split(','); const width = parseFloat(widthStr); const height = parseFloat(heightStr); if (height > 0) { pageStyle += ` aspect-ratio: ${width} / ${height};`; } } const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : ''; const componentsHtml = (content.components || []).map(component => { const componentStyle = stylesToString(component.styles); switch (component.type) { case 'heading': return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`; case 'paragraph': return `<p class="page-component" style="${componentStyle}">${component.content}</p>`; case 'button': return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`; default: return ''; } }).join(''); return `<div class="page-section" data-observe-target data-id="${content.id}" data-type="page" style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
+            const contentType = 'page';
+            const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
+            const pageSettings = content.pageSettings || {}; let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`; if (pageSettings.viewport) { const [widthStr, heightStr] = pageSettings.viewport.split(','); const width = parseFloat(widthStr); const height = parseFloat(heightStr); if (height > 0) { pageStyle += ` aspect-ratio: ${width} / ${height};`; } } const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : ''; const componentsHtml = (content.components || []).map(component => { const componentStyle = stylesToString(component.styles); switch (component.type) { case 'heading': return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`; case 'paragraph': return `<p class="page-component" style="${componentStyle}">${component.content}</p>`; case 'button': return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`; default: return ''; } }).join('');
+            return `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
         }
     }).join('');
 
