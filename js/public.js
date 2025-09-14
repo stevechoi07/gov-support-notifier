@@ -1,4 +1,4 @@
-// js/public.js v2.5 - 스토리 썸네일 하이라이트 버그 수정
+// js/public.js v2.6 - 패럴랙스 스크롤 효과 추가
 
 import { doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -129,9 +129,10 @@ function renderAllContent(contents) {
         if (isStory) {
             const firstScene = content.components[0] || {};
             const sceneSettings = firstScene.sceneSettings || {};
-            const previewStyle = `background-color: ${sceneSettings.bgColor || '#000'}; background-image: url('${sceneSettings.bgImage || ''}'); cursor: pointer;`;
+            const bgHtml = `<div class="story-launcher-bg" style="background-image: url('${sceneSettings.bgImage || ''}');"></div>`;
             return `
-                <div class="page-section story-launcher" style="${previewStyle}" data-story-page-id="${content.id}" data-observe-target>
+                <div class="page-section story-launcher" style="background-color: ${sceneSettings.bgColor || '#000'}; cursor: pointer;" data-story-page-id="${content.id}" data-observe-target>
+                    ${bgHtml}
                     <div class="page-content-wrapper">
                         <h1 class="page-component" style="color:white; font-size: 2rem;">${content.name}</h1>
                         <p style="color: white; opacity: 0.8;">클릭하여 스토리 보기</p>
@@ -154,6 +155,25 @@ function renderAllContent(contents) {
 
     container.innerHTML = contentHtml;
     setupIntersectionObserver();
+}
+
+function handleParallaxScroll() {
+    const parallaxElements = document.querySelectorAll('.story-launcher-bg');
+    const windowHeight = window.innerHeight;
+
+    parallaxElements.forEach(el => {
+        const rect = el.parentElement.getBoundingClientRect();
+        if (rect.top < windowHeight && rect.bottom > 0) {
+            const elementCenter = rect.top + rect.height / 2;
+            const screenCenter = windowHeight / 2;
+            const distance = screenCenter - elementCenter;
+            
+            const intensity = 0.1;
+            const yOffset = distance * intensity;
+
+            el.style.transform = `translateY(${yOffset}px)`;
+        }
+    });
 }
 
 async function track(contentId, contentType, fieldToIncrement) {
@@ -263,3 +283,5 @@ const storyCloseButton = document.querySelector('.story-viewer .story-close-butt
 if(storyCloseButton) storyCloseButton.addEventListener('click', closeStoryViewer);
 
 renderPublicPage();
+
+window.addEventListener('scroll', handleParallaxScroll);

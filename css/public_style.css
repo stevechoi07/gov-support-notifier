@@ -1,4 +1,4 @@
-/* css/public_style.css v2.0 - 반응형 그리드 레이아웃 적용 */
+/* css/public_style.css v2.1 - 패럴랙스 효과를 위한 스타일 추가 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -24,14 +24,12 @@ body {
     padding: 2rem 1rem;
 }
 
-/* ✨ 화면이 넓어졌을 때를 위한 반응형 스타일 */
 @media (min-width: 768px) {
     #content-container {
-        max-width: 1200px; /* PC에서는 더 넓게 표시 */
+        max-width: 1200px;
         display: grid;
-        /* 각 아이템의 최소 넓이는 360px로 하되, 공간이 남으면 꽉 채우도록 설정 */
         grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-        gap: 1.5rem; /* 아이템 사이의 간격 */
+        gap: 1.5rem;
     }
 }
 
@@ -62,6 +60,18 @@ body {
     justify-content: center;
     width: 100%;
     height: auto;
+}
+
+.story-launcher-bg {
+    position: absolute;
+    top: -20%;
+    left: 0;
+    width: 100%;
+    height: 140%;
+    background-size: cover;
+    background-position: center center;
+    z-index: 1;
+    transition: transform 0.1s linear;
 }
 
 .page-background-image,
@@ -105,20 +115,25 @@ body {
     justify-content: center;
     align-items: center;
 }
+
 .page-component {
     margin-bottom: 1.5rem;
     word-break: keep-all;
     max-width: 100%;
 }
+
 .page-component:last-child {
     margin-bottom: 0;
 }
+
 .page-component[style*="font-size"] {
     font-size: clamp(16px, 5vw, 48px) !important;
 }
+
 .page-component[style*="font-size"][style*="text-align: left"] {
     text-align: left !important;
 }
+
 .page-component[style*="font-size"][style*="text-align: right"] {
     text-align: right !important;
 }
@@ -134,6 +149,7 @@ body {
     background-color: var(--chzzk-accent) !important;
     color: var(--chzzk-bg) !important;
 }
+
 .page-button:hover {
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 6px 12px rgba(0, 255, 163, 0.2);
