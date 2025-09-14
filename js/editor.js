@@ -1,4 +1,4 @@
-// js/editor.js v2.4 - 장면 내부 편집 UI/UX 완성
+// js/editor.js v2.5 - 스토리 편집 시 미리보기 화면 크기 조정
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -67,7 +67,7 @@ export const editor = {
             pageBgColorInput: editorView.querySelector('#page-bg-color'), pageBackgroundImageInput: editorView.querySelector('#page-background-image'),
             pageBackgroundVideoInput: editorView.querySelector('#page-background-video'), viewportControlsLeft: editorView.querySelector('#viewport-controls-left'),
             backToListBtn: editorView.querySelector('#back-to-list-btn'),
-            pageBackgroundControls: editorView.querySelector('#page-background-controls') // ✨ 페이지 배경 그룹 element 추가
+            pageBackgroundControls: editorView.querySelector('#page-background-controls')
         };
 
         await this.loadProject();
@@ -102,10 +102,7 @@ export const editor = {
         if (ui.viewTitle) {
             ui.viewTitle.addEventListener('blur', () => this.handleTitleUpdate());
             ui.viewTitle.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    ui.viewTitle.blur();
-                }
+                if (e.key === 'Enter') { e.preventDefault(); ui.viewTitle.blur(); }
             });
         }
         document.addEventListener('color', this.handleColorRealtimeUpdate.bind(this));
@@ -123,11 +120,9 @@ export const editor = {
             const id = Number(panel.dataset.id);
             const component = this.components.find(c => c.id === id);
             if(component) {
-                if (input.dataset.style) {
-                    if(component.styles) component.styles[input.dataset.style] = color;
-                } else if (input.dataset.sceneProp) {
-                    if(component.sceneSettings) component.sceneSettings[input.dataset.sceneProp] = color;
-                } else if (input.dataset.sceneInnerStyle) {
+                if (input.dataset.style) { if(component.styles) component.styles[input.dataset.style] = color; } 
+                else if (input.dataset.sceneProp) { if(component.sceneSettings) component.sceneSettings[input.dataset.sceneProp] = color; } 
+                else if (input.dataset.sceneInnerStyle) {
                     const [index, key] = input.dataset.sceneInnerStyle.split('.');
                     if(component.components?.[index]?.styles) component.components[index].styles[key] = color;
                 }
@@ -152,35 +147,26 @@ export const editor = {
         } catch (error) { console.error("페이지 제목 업데이트 실패:", error); alert("제목 업데이트에 실패했습니다."); ui.viewTitle.textContent = originalTitle; }
     },
 
-    renderAll() {
-        this.renderPreview();
-        this.renderControls();
-        this.renderViewportControls();
-        this.initSortable();
-    },
+    renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); this.initSortable(); },
 
-    hexToRgba(hex, alpha = 1) {
-        if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex;
-        let c = hex.substring(1).split('');
-        if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; }
-        c = '0x' + c.join('');
-        return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`;
-    },
+    hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; },
 
     renderPreview() {
         if (!this.elements.contentArea) return;
         this.elements.contentArea.innerHTML = '';
-        const { viewport } = this.pageSettings;
-        const [width, height] = (viewport || '375px,667px').split(',');
-        this.elements.preview.style.width = width;
-        this.elements.preview.style.height = height;
-
+        
         const isStoryPage = this.components.some(c => c.type === 'scene');
+
+        // ✨ [핵심 수정] 스토리 페이지 여부에 따라 미리보기 컨테이너 크기를 다르게 설정
         if (isStoryPage) {
+            this.elements.preview.style.width = '100%';
+            this.elements.preview.style.height = '100%';
+            this.elements.preview.style.backgroundColor = '#000';
+            this.elements.backgroundVideo.style.display = 'none';
+            this.elements.backgroundImageOverlay.style.display = 'none';
             this.elements.contentArea.style.justifyContent = 'center';
-            this.elements.preview.style.backgroundColor = '#000'; // 스토리 미리보기는 배경 검정
+
             const activeScene = this.components.find(c => c.id === this.activeComponentId && c.type === 'scene') || this.components.find(c => c.type === 'scene');
-            
             if (activeScene) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'preview-wrapper scene-preview-active';
@@ -202,10 +188,12 @@ export const editor = {
                 });
                 this.elements.contentArea.appendChild(wrapper);
             }
-             this.elements.backgroundVideo.style.display = 'none';
-             this.elements.backgroundImageOverlay.style.display = 'none';
         } else {
-            const { bgVideo, bgImage, bgColor } = this.pageSettings;
+            const { bgVideo, bgImage, bgColor, viewport } = this.pageSettings;
+            const [width, height] = (viewport || '375px,667px').split(',');
+            this.elements.preview.style.width = width;
+            this.elements.preview.style.height = height;
+
             if (bgVideo) { this.elements.backgroundVideo.src = bgVideo; this.elements.backgroundVideo.style.display = 'block'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = 'transparent'; } 
             else if (bgImage) { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.backgroundImage = `url('${bgImage}')`; this.elements.backgroundImageOverlay.style.display = 'block'; this.elements.preview.style.backgroundColor = 'transparent'; } 
             else { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = bgColor; }
@@ -220,8 +208,6 @@ export const editor = {
 
     renderControls() {
         const isStoryPage = this.components.some(c => c.type === 'scene');
-        
-        // ✨ [핵심] 스토리가 있으면 페이지 배경 컨트롤을 비활성화합니다.
         if (this.elements.pageBackgroundControls) {
             this.elements.pageBackgroundControls.classList.toggle('is-disabled', isStoryPage);
             let notice = this.elements.pageBackgroundControls.querySelector('.disabled-notice');
@@ -251,7 +237,7 @@ export const editor = {
                                 <option value="right" ${innerComp.styles?.textAlign === 'right' ? 'selected' : ''}>오른쪽</option>
                             </select></div>
                             <div class="control-group"><label>글자색</label><input type="text" data-color-picker data-scene-inner-style="${innerIndex}.color" value="${innerComp.styles?.color || '#FFFFFF'}"></div>
-                            <div class="control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>
+                            <div class.control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>
                         </div>
                     `;
                 });
@@ -273,13 +259,6 @@ export const editor = {
             }
         });
         this.attachEventListenersToControls();
-    },
-
-    renderViewportControls() {
-        this.elements.viewportControlsLeft.innerHTML = '';
-        const btnGroup = document.createElement('div'); btnGroup.className = 'viewport-controls';
-        this.viewportOptions.forEach(opt => { const btn = document.createElement('button'); btn.className = 'viewport-btn'; btn.dataset.value = opt.value; btn.title = opt.title; btn.innerHTML = opt.label; if (this.pageSettings.viewport === opt.value) btn.classList.add('active'); btn.onclick = () => { this.pageSettings.viewport = opt.value; this.saveAndRender(false, true); this.renderViewportControls(); }; btnGroup.appendChild(btn); });
-        this.elements.viewportControlsLeft.appendChild(btnGroup);
     },
 
     attachEventListenersToControls() {
