@@ -1,40 +1,107 @@
-// js/public.js v1.0 - 레이아웃 데이터 로딩 테스트
+// js/public.js v1.1 - 콘텐츠 렌더링 기능 추가
 
-// ✨ 필요한 Firebase 함수들과, 우리가 만든 firebase.js의 헬퍼 함수들을 가져옵니다.
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
 
+// ✨ ID 배열을 받아, 각 문서의 상세 데이터를 Firestore에서 가져오는 함수
+async function fetchContentDetails(ids) {
+    const db = getFirestoreDB();
+    if (!ids || ids.length === 0) return [];
+
+    const contentPromises = ids.map(async (id) => {
+        if (!id) return null;
+
+        // pages 컬렉션에서 먼저 찾아봅니다.
+        let contentRef = doc(db, 'pages', id);
+        let contentSnap = await getDoc(contentRef);
+
+        // pages에 없으면 ads 컬렉션에서 다시 찾아봅니다.
+        if (!contentSnap.exists()) {
+            contentRef = doc(db, 'ads', id);
+            contentSnap = await getDoc(contentRef);
+        }
+        
+        // 찾은 문서가 존재하면 데이터와 함께 id를 반환합니다.
+        return contentSnap.exists() ? { id: contentSnap.id, ...contentSnap.data() } : null;
+    });
+
+    const contents = await Promise.all(contentPromises);
+    return contents.filter(Boolean); // null 값을 제거하고 반환합니다.
+}
+
+// ✨ 콘텐츠 데이터 배열을 받아 HTML을 생성하고 화면에 렌더링하는 함수
+function renderAllContent(contents) {
+    const container = document.getElementById('content-container');
+    if (!container) {
+        console.error("Content container not found!");
+        return;
+    }
+
+    if (contents.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500">표시할 콘텐츠가 없습니다.</p>`;
+        return;
+    }
+
+    // 각 콘텐츠 유형에 맞는 HTML을 생성합니다.
+    const contentHtml = contents.map(content => {
+        // adType 속성이 있으면 '카드', 없으면 '페이지'로 간주합니다.
+        if (content.adType) { 
+            // === 카드(Card) 렌더링 ===
+            return `
+                <div class="card bg-white shadow-lg rounded-lg overflow-hidden my-8">
+                    ${content.mediaUrl ? `<img src="${content.mediaUrl}" alt="${content.title}" class="w-full h-auto">` : ''}
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">${content.title}</h2>
+                        <p class="text-gray-700">${content.description || ''}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            // === 페이지(Page) 렌더링 ===
+            // 페이지는 간단하게 이름만 표시하도록 설정 (향후 컴포넌트 렌더링으로 확장 가능)
+            return `
+                <div class="page-section my-8 p-6 bg-gray-200 rounded-lg">
+                    <h1 class="text-3xl font-bold">${content.name}</h1>
+                    <p class="text-gray-600 mt-2">이곳에 '${content.name}' 페이지의 상세 컴포넌트가 렌더링됩니다.</p>
+                </div>
+            `;
+        }
+    }).join('');
+
+    container.innerHTML = contentHtml;
+}
+
+
 // ✨ 사용자 페이지를 렌더링하는 메인 함수
 async function renderPublicPage() {
+    const container = document.getElementById('content-container');
     console.log("🚀 Public page script loaded. Waiting for Firebase...");
 
     try {
-        // Firebase가 준비될 때까지 기다립니다.
         await firebaseReady;
         const db = getFirestoreDB();
         console.log("✅ Firebase is ready. Fetching layout data...");
 
-        // 'layouts' 컬렉션의 'mainLayout' 문서를 가리킵니다.
         const layoutRef = doc(db, 'layouts', 'mainLayout');
-        // 해당 문서를 가져옵니다.
         const layoutSnap = await getDoc(layoutRef);
 
         if (layoutSnap.exists()) {
-            // 문서가 존재하면, contentIds 배열을 가져옵니다.
             const contentIds = layoutSnap.data().contentIds;
-            
-            // ✨ [핵심 테스트] 브라우저 콘솔에 ID 목록을 출력해봅니다.
             console.log("🎉 Layout IDs to render:", contentIds);
 
-            // TODO: 다음 단계에서 이 ID들을 가지고 실제 콘텐츠를 가져와서 HTML로 그릴 예정입니다.
+            // ✨ [핵심] ID로 상세 데이터를 가져온 후, HTML로 렌더링합니다.
+            const contents = await fetchContentDetails(contentIds);
+            console.log("📦 Fetched content details:", contents);
+            renderAllContent(contents);
 
         } else {
             console.error("🔥 Error: 'mainLayout' document not found!");
-            // TODO: 레이아웃 문서가 없을 때 사용자에게 보여줄 메시지를 처리합니다.
+            if (container) container.innerHTML = `<p class="text-center text-red-500">레이아웃 정보를 찾을 수 없습니다.</p>`;
         }
 
     } catch (error) {
         console.error("🔥 An error occurred:", error);
+        if (container) container.innerHTML = `<p class="text-center text-red-500">페이지를 불러오는 중 오류가 발생했습니다.</p>`;
     }
 }
 
