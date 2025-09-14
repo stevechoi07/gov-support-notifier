@@ -1,10 +1,14 @@
-// js/public.js v2.8 - 이미지 지연 로딩(Lazy Loading) 적용
+// js/public.js v2.9 - 중요 콘텐츠 우선 로딩
 
 import { doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
 
 let swiperInstance = null;
 let storyTimer = null;
+// 전체 콘텐츠 ID와 현재 로드된 인덱스를 관리할 변수
+let allContentIds = [];
+let loadedContentIndex = 0;
+const INITIAL_LOAD_COUNT = 3; // 처음에 로드할 콘텐츠 개수
 
 function stylesToString(styles = {}) {
     return Object.entries(styles)
@@ -108,10 +112,13 @@ function closeStoryViewer() {
     viewer.classList.remove('is-active');
 }
 
-function renderAllContent(contents) {
+function renderAllContent(contents, append = false) {
     const container = document.getElementById('content-container');
     if (!container) { console.error("Content container not found!"); return; }
-    if (contents.length === 0) { container.innerHTML = `<p class="text-center text-gray-500">표시할 콘텐츠가 없습니다.</p>`; return; }
+
+    if (!append) {
+        container.innerHTML = '';
+    }
 
     const contentHtml = contents.map(content => {
         const isStory = content.components && content.components.some(c => c.type === 'scene');
@@ -128,7 +135,6 @@ function renderAllContent(contents) {
                 if (content.mediaType === 'video') {
                     mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`;
                 } else {
-                    // ✨ [핵심 수정] img 태그에 loading="lazy" 속성을 추가합니다.
                     mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" loading="lazy" alt="${content.title || '카드 이미지'}"></div>`;
                 }
             }
@@ -164,9 +170,25 @@ function renderAllContent(contents) {
         }
     }).join('');
 
-    container.innerHTML = contentHtml;
+    if (append) {
+        container.insertAdjacentHTML('beforeend', contentHtml);
+    } else {
+        container.innerHTML = contentHtml;
+    }
+
     setupIntersectionObserver();
     setupTiltEffect();
+}
+
+async function loadMoreContent() {
+    if (loadedContentIndex >= allContentIds.length) {
+        console.log("All content loaded.");
+        return;
+    }
+    const nextIdsToLoad = allContentIds.slice(loadedContentIndex, loadedContentIndex + INITIAL_LOAD_COUNT);
+    const contents = await fetchContentDetails(nextIdsToLoad);
+    renderAllContent(contents, true);
+    loadedContentIndex += INITIAL_LOAD_COUNT;
 }
 
 function handleParallaxScroll() {
@@ -227,10 +249,7 @@ function setupIntersectionObserver() {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 visibleElements.set(entry.target, entry);
-                const {
-                    id,
-                    type
-                } = entry.target.dataset;
+                const { id, type } = entry.target.dataset;
                 if (id && !trackedImpressions.has(id)) {
                     track(id, type, 'viewCount');
                     trackedImpressions.add(id);
@@ -256,16 +275,12 @@ function setupIntersectionObserver() {
 function setupTiltEffect() {
     const tiltElements = document.querySelectorAll('.card, .page-section');
     const MAX_ROTATION = 8;
-
     tiltElements.forEach(el => {
         el.addEventListener('mousemove', (e) => {
             const rect = el.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            const {
-                width,
-                height
-            } = rect;
+            const { width, height } = rect;
             const rotateX = MAX_ROTATION * ((y / height) - 0.5) * -2;
             const rotateY = MAX_ROTATION * ((x / width) - 0.5) * 2;
             el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
@@ -286,19 +301,51 @@ async function renderPublicPage() {
         const layoutRef = doc(db, 'layouts', 'mainLayout');
         const layoutSnap = await getDoc(layoutRef);
         if (layoutSnap.exists()) {
-            const contentIds = layoutSnap.data().contentIds;
-            console.log("🎉 Layout IDs to render:", contentIds);
-            const contents = await fetchContentDetails(contentIds);
-            console.log("📦 Fetched content details:", contents);
+            allContentIds = layoutSnap.data().contentIds;
+            console.log("🎉 Total Layout IDs found:", allContentIds);
+
+            const initialIds = allContentIds.slice(0, INITIAL_LOAD_COUNT);
+            const contents = await fetchContentDetails(initialIds);
             renderAllContent(contents);
+            loadedContentIndex = INITIAL_LOAD_COUNT;
+            
+            if (allContentIds.length > INITIAL_LOAD_COUNT) {
+                setupLoadMoreTrigger();
+            }
+
         } else {
             console.error("🔥 Error: 'mainLayout' document not found!");
-            if (container) container.innerHTML = `<p class="text-center text-red-500">레이아웃 정보를 찾을 수 없습니다.</p>`;
+            if (container) {
+                container.innerHTML = `<p class="text-center text-red-500">레이아웃 정보를 찾을 수 없습니다.</p>`;
+            }
         }
     } catch (error) {
         console.error("🔥 An error occurred:", error);
-        if (container) container.innerHTML = `<p class="text-center text-red-500">페이지를 불러오는 중 오류가 발생했습니다.</p>`;
+        if (container) {
+            container.innerHTML = `<p class="text-center text-red-500">페이지를 불러오는 중 오류가 발생했습니다.</p>`;
+        }
     }
+}
+
+function setupLoadMoreTrigger() {
+    const existingTrigger = document.getElementById('load-more-trigger');
+    if (existingTrigger) existingTrigger.remove();
+
+    const trigger = document.createElement('div');
+    trigger.id = 'load-more-trigger';
+    document.getElementById('content-container').appendChild(trigger);
+
+    const observer = new IntersectionObserver(async (entries) => {
+        if (entries[0].isIntersecting) {
+            await loadMoreContent();
+            if (loadedContentIndex >= allContentIds.length) {
+                observer.unobserve(trigger);
+                trigger.remove();
+            }
+        }
+    }, { threshold: 1.0 });
+
+    observer.observe(trigger);
 }
 
 document.addEventListener('click', async (event) => {
@@ -309,19 +356,13 @@ document.addEventListener('click', async (event) => {
         const docRef = doc(db, 'pages', pageId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            launchStoryViewer({
-                id: docSnap.id,
-                ...docSnap.data()
-            });
+            launchStoryViewer({ id: docSnap.id, ...docSnap.data() });
         }
         return;
     }
     const trackableElement = event.target.closest('[data-id][data-type]');
     if (trackableElement) {
-        const {
-            id,
-            type
-        } = trackableElement.dataset;
+        const { id, type } = trackableElement.dataset;
         track(id, type, 'clickCount');
     }
 });
