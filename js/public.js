@@ -1,4 +1,4 @@
-// js/public.js v2.7 - 3D 틸트 호버 효과 추가 (전체 코드)
+// js/public.js v2.8 - 이미지 지연 로딩(Lazy Loading) 적용
 
 import { doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -128,7 +128,8 @@ function renderAllContent(contents) {
                 if (content.mediaType === 'video') {
                     mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`;
                 } else {
-                    mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" alt="${content.title || '카드 이미지'}"></div>`;
+                    // ✨ [핵심 수정] img 태그에 loading="lazy" 속성을 추가합니다.
+                    mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" loading="lazy" alt="${content.title || '카드 이미지'}"></div>`;
                 }
             }
             const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
@@ -261,7 +262,10 @@ function setupTiltEffect() {
             const rect = el.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            const { width, height } = rect;
+            const {
+                width,
+                height
+            } = rect;
             const rotateX = MAX_ROTATION * ((y / height) - 0.5) * -2;
             const rotateY = MAX_ROTATION * ((x / width) - 0.5) * 2;
             el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
