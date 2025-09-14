@@ -1,4 +1,4 @@
-// js/layoutManager.js v2.10 - SVG 아이콘 경로 오류 수정
+// js/layoutManager.js v2.11 - handleAddContentClick 함수 export 누락 수정
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
@@ -209,7 +209,8 @@ async function addItemToLayout(contentId) {
     }
 }
 
-async function handleAddContentClick() {
+// ✨ [핵심 수정] export 키워드를 추가하여 이 함수를 외부(navigation.js)에서 사용할 수 있도록 합니다.
+export async function handleAddContentClick() {
     await Promise.all([pagesReady, cardsReady]);
     modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
         const isAdded = currentLayoutIds.includes(page.id);
