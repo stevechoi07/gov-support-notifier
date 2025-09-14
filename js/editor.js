@@ -1,4 +1,4 @@
-// js/editor.js v2.6 - 스토리 미리보기 뷰포트 연동
+// js/editor.js v2.8 - 색상 변경 로직 버그 수정
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -112,19 +112,29 @@ export const editor = {
         const input = event.detail.input;
         const color = event.detail.color;
         if (!input.hasAttribute('data-color-picker')) return;
+
         if (input.id === 'page-bg-color') {
             this.pageSettings.bgColor = color;
         } else {
             const panel = input.closest('.editor-panel');
             if (!panel) return;
+
             const id = Number(panel.dataset.id);
             const component = this.components.find(c => c.id === id);
-            if(component) {
-                if (input.dataset.style) { if(component.styles) component.styles[input.dataset.style] = color; } 
-                else if (input.dataset.sceneProp) { if(component.sceneSettings) component.sceneSettings[input.dataset.sceneProp] = color; } 
-                else if (input.dataset.sceneInnerStyle) {
+            if (component) {
+                if (input.dataset.style) {
+                    if (component.styles) {
+                        component.styles[input.dataset.style] = color;
+                    }
+                } else if (input.dataset.sceneProp) {
+                    if (component.sceneSettings) {
+                        component.sceneSettings[input.dataset.sceneProp] = color;
+                    }
+                } else if (input.dataset.sceneInnerStyle) {
                     const [index, key] = input.dataset.sceneInnerStyle.split('.');
-                    if(component.components?.[index]?.styles) component.components[index].styles[key] = color;
+                    if (component.components?.[index]?.styles) {
+                        component.components[index].styles[key] = color;
+                    }
                 }
             }
         }
@@ -155,8 +165,6 @@ export const editor = {
         if (!this.elements.contentArea) return;
         this.elements.contentArea.innerHTML = '';
         const { viewport } = this.pageSettings;
-        
-        // ✨ [핵심 수정] 뷰포트 크기 설정을 항상 최상단에서 적용합니다.
         const [width, height] = (viewport || '375px,667px').split(',');
         this.elements.preview.style.width = width;
         this.elements.preview.style.height = height;
@@ -170,7 +178,6 @@ export const editor = {
             this.elements.contentArea.style.justifyContent = 'center';
 
             const activeScene = this.components.find(c => c.id === this.activeComponentId && c.type === 'scene') || this.components.find(c => c.type === 'scene');
-            
             if (activeScene) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'preview-wrapper scene-preview-active';
