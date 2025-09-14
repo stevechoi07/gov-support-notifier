@@ -1,11 +1,7 @@
-// js/public.js v2.1 - 사용자 행동(노출/클릭) 추적 기능 추가
+// js/public.js v2.2 - 클릭/노출 트래킹 로직 수정
 
 import { doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
-// ✨ pages.js와 cards.js에서 데이터 목록을 가져옵니다. (트래킹 대상 확인용)
-import { pagesList } from './pages.js';
-import { cards } from './cards.js';
-
 
 function stylesToString(styles = {}) {
     return Object.entries(styles)
@@ -32,7 +28,6 @@ async function fetchContentDetails(ids) {
     return contents.filter(Boolean);
 }
 
-
 function renderAllContent(contents) {
     const container = document.getElementById('content-container');
     if (!container) { console.error("Content container not found!"); return; }
@@ -40,7 +35,6 @@ function renderAllContent(contents) {
 
     const contentHtml = contents.map(content => {
         if (content.adType) {
-            // === 카드(Card) 렌더링 ===
             let mediaHtml = '';
             if (content.mediaUrl) {
                 if (content.mediaType === 'video') {
@@ -49,27 +43,14 @@ function renderAllContent(contents) {
                     mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" alt="${content.title || '카드 이미지'}"></div>`;
                 }
             }
-            const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트-너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
-            
-            // ✨ [핵심] 식별을 위해 data-id 속성을 추가합니다.
-            const cardInnerHtml = `
-                <div class="card" data-observe-target data-id="${content.id}">
-                    ${mediaHtml}
-                    <div class="card-content">
-                        <h2>${content.title || '제목 없음'}</h2>
-                        <p>${content.description || ' '}</p>
-                        ${partnersText}
-                    </div>
-                </div>
-            `;
-            
+            const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
+            const cardInnerHtml = `<div class="card" data-observe-target data-id="${content.id}">${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`;
             if (content.link) {
                 return `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`;
             } else {
                 return cardInnerHtml;
             }
         } else {
-            // === 페이지(Page) 렌더링 ===
             const pageSettings = content.pageSettings || {};
             let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
             if (pageSettings.viewport) {
@@ -94,29 +75,15 @@ function renderAllContent(contents) {
                         return '';
                 }
             }).join('');
-
-            // ✨ [핵심] 식별을 위해 data-id 속성을 추가합니다.
-            return `
-                <div class="page-section" data-observe-target data-id="${content.id}" style="${pageStyle}">
-                    ${bgMediaHtml}
-                    <div class="page-content-wrapper">
-                        ${componentsHtml}
-                    </div>
-                </div>
-            `;
+            return `<div class="page-section" data-observe-target data-id="${content.id}" style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
         }
     }).join('');
-
     container.innerHTML = contentHtml;
     setupIntersectionObserver();
 }
 
-// ✨ 노출(Impression)을 기록하는 함수
 async function trackImpression(contentId) {
     if (!contentId) return;
-    // cards.list에 해당 ID가 없으면 카드 콘텐츠가 아니므로 함수를 종료합니다.
-    if (!cards.list.some(card => card.id === contentId)) return;
-    
     try {
         const db = getFirestoreDB();
         const contentRef = doc(db, 'ads', contentId);
@@ -125,16 +92,14 @@ async function trackImpression(contentId) {
         });
         console.log(`Impression tracked for: ${contentId}`);
     } catch (error) {
-        console.error("Error tracking impression:", error);
+        if (error.code !== 'not-found') {
+            console.error("Error tracking impression:", error);
+        }
     }
 }
 
-// ✨ 클릭(Click)을 기록하는 함수
 async function trackClick(contentId) {
     if (!contentId) return;
-    // cards.list에 해당 ID가 없으면 카드 콘텐츠가 아니므로 함수를 종료합니다.
-    if (!cards.list.some(card => card.id === contentId)) return;
-
     try {
         const db = getFirestoreDB();
         const contentRef = doc(db, 'ads', contentId);
@@ -143,11 +108,12 @@ async function trackClick(contentId) {
         });
         console.log(`Click tracked for: ${contentId}`);
     } catch (error) {
-        console.error("Error tracking click:", error);
+        if (error.code !== 'not-found') {
+            console.error("Error tracking click:", error);
+        }
     }
 }
 
-// ✨ Intersection Observer가 노출을 기록하도록 수정된 함수
 function setupIntersectionObserver() {
     let visibleElements = new Map();
     let currentActive = null;
@@ -163,7 +129,9 @@ function setupIntersectionObserver() {
             }
         });
         if (mostVisibleElement && mostVisibleElement !== currentActive) {
-            if (currentActive) { currentActive.classList.remove('is-visible'); }
+            if (currentActive) {
+                currentActive.classList.remove('is-visible');
+            }
             mostVisibleElement.classList.add('is-visible');
             currentActive = mostVisibleElement;
         }
@@ -174,7 +142,6 @@ function setupIntersectionObserver() {
             if (entry.isIntersecting) {
                 visibleElements.set(entry.target, entry);
                 const contentId = entry.target.dataset.id;
-                
                 if (contentId && !trackedImpressions.has(contentId)) {
                     trackImpression(contentId);
                     trackedImpressions.add(contentId);
@@ -182,11 +149,15 @@ function setupIntersectionObserver() {
             } else {
                 visibleElements.delete(entry.target);
                 entry.target.classList.remove('is-visible');
-                if(entry.target === currentActive) currentActive = null;
+                if (entry.target === currentActive) currentActive = null;
             }
         });
         updateActive();
-    }, { threshold: Array.from({ length: 101 }, (_, i) => i / 100) });
+    }, {
+        threshold: Array.from({
+            length: 101
+        }, (_, i) => i / 100)
+    });
 
     const targets = document.querySelectorAll('[data-observe-target]');
     targets.forEach(target => observer.observe(target));
@@ -218,7 +189,6 @@ async function renderPublicPage() {
     }
 }
 
-// ✨ 페이지 전체에 클릭 리스너를 추가합니다.
 document.addEventListener('click', (event) => {
     const targetElement = event.target.closest('[data-id]');
     if (targetElement) {
