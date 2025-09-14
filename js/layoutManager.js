@@ -1,4 +1,4 @@
-// js/layoutManager.js v2.3 - fetchContentsDetails 안정성 강화
+// js/layoutManager.js v2.5 - 목록 아이템 간격 추가
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
@@ -34,7 +34,6 @@ async function listenToLayoutChanges(layoutId) {
     });
 }
 
-// ✨ [수정] 데이터 유효성 검사를 추가하여 안정성을 더욱 강화한 함수
 async function fetchContentsDetails(ids) {
     await firebaseReady;
     const db = getFirestoreDB();
@@ -42,14 +41,11 @@ async function fetchContentsDetails(ids) {
     if (!db) return [];
 
     const contentPromises = ids.map(async (id) => {
-        // ✨ [핵심] id가 유효하지 않으면(null, undefined 등) 건너뛰어 에러를 방지합니다.
         if (!id) return null;
 
-        // 1. pages 컬렉션에서 먼저 찾아봅니다.
         let contentRef = doc(db, 'pages', id);
         let contentSnap = await getDoc(contentRef);
 
-        // 2. pages에 없으면 ads 컬렉션에서 다시 찾아봅니다.
         if (!contentSnap.exists()) {
             contentRef = doc(db, 'ads', id);
             contentSnap = await getDoc(contentRef);
@@ -62,8 +58,13 @@ async function fetchContentsDetails(ids) {
     return contentSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter(Boolean);
 }
 
+
 function renderLayoutList(contents) {
     if (!layoutListContainer) return;
+    
+    // ✨ [핵심] 컨테이너에 TailwindCSS 클래스를 적용하여 grid와 gap을 설정합니다.
+    layoutListContainer.className = 'grid gap-4';
+
     if (contents.length === 0) {
         layoutListContainer.innerHTML = `<div class="text-center py-16">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-600 mb-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
