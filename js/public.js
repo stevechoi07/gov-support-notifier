@@ -1,4 +1,4 @@
-// js/public.js v1.6 - 종횡비(aspect-ratio)를 이용한 동적 스케일링
+// js/public.js v1.7 - 페이지 배경 비디오 렌더링 지원
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -42,7 +42,7 @@ function renderAllContent(contents) {
 
     const contentHtml = contents.map(content => {
         if (content.adType) {
-            // === 카드(Card) 렌더링 (변경 없음) ===
+            // === 카드(Card) 렌더링 ===
             let mediaHtml = '';
             if (content.mediaUrl) {
                 if (content.mediaType === 'video') {
@@ -66,22 +66,26 @@ function renderAllContent(contents) {
             // === 페이지(Page) 렌더링 ===
             const pageSettings = content.pageSettings || {};
             
-            // ✨ [핵심 수정] 뷰포트 설정에서 width, height 대신 aspect-ratio를 계산하여 적용합니다.
             let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
             if (pageSettings.viewport) {
                 const [widthStr, heightStr] = pageSettings.viewport.split(',');
                 const width = parseFloat(widthStr);
                 const height = parseFloat(heightStr);
-                if (height > 0) { // 0으로 나누는 것을 방지
+                if (height > 0) {
                     pageStyle += ` aspect-ratio: ${width} / ${height};`;
                 }
             }
 
-            const bgImageHtml = pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
+            // ✨ [핵심 수정] 배경 비디오와 이미지를 모두 처리하는 로직
+            let bgMediaHtml = '';
+            if (pageSettings.bgVideo) {
+                bgMediaHtml = `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>`;
+            } else if (pageSettings.bgImage) {
+                bgMediaHtml = `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>`;
+            }
 
             const componentsHtml = (content.components || []).map(component => {
                 const componentStyle = stylesToString(component.styles);
-                // ✨ [수정] 버튼 래퍼 div 제거, 버튼 자체에 정렬 스타일 적용되도록 CSS 수정 예정
                 switch (component.type) {
                     case 'heading':
                         return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
@@ -96,7 +100,7 @@ function renderAllContent(contents) {
 
             return `
                 <div class="page-section" style="${pageStyle}">
-                    ${bgImageHtml}
+                    ${bgMediaHtml}
                     <div class="page-content-wrapper">
                         ${componentsHtml}
                     </div>
@@ -110,7 +114,6 @@ function renderAllContent(contents) {
 
 
 async function renderPublicPage() {
-    // ... (이하 동일)
     const container = document.getElementById('content-container');
     console.log("🚀 Public page script loaded. Waiting for Firebase...");
 

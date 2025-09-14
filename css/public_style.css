@@ -1,21 +1,16 @@
-/* css/public_style.css v1.7 - '치직' 스타일 최종: 폰트 및 배경색 최종 조정 */
+/* css/public_style.css v1.5 (수정본) - '치직' 스타일 1단계 + 페이지 배경 비디오 스타일 포함 */
 
-/* ✨ [핵심 1] 프리텐다드 웹폰트를 불러옵니다. */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
-
-/* 추천 색상: 차콜 그레이 테마 */
 :root {
-    --chzzk-bg: #121212;             /* ✨ 페이지 전체 배경 (차콜) */
-    --chzzk-container-bg: #1E1E1E;   /* ✨ 콘텐츠 배경 (살짝 밝은 차콜) */
+    --chzzk-bg: #0F0F12;
+    --chzzk-container-bg: #1C1C1F;
     --chzzk-accent: #00FFA3;
     --chzzk-text-primary: #FFFFFF;
-    --chzzk-text-secondary: #b3b3b3;
-    --chzzk-border: #282828;
+    --chzzk-text-secondary: #A7A7AD;
+    --chzzk-border: #35353A;
 }
 
 body {
-    /* ✨ [핵심 3] 기본 폰트를 프리텐다드로 변경합니다. */
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    font-family: 'Noto Sans KR', sans-serif;
     background-color: var(--chzzk-bg);
     color: var(--chzzk-text-secondary);
     line-height: 1.6;
@@ -27,27 +22,21 @@ body {
     padding: 2rem 1rem;
 }
 
-/* --- 공통 컨테이너 스타일 --- */
-.card,
+/* --- 페이지 스타일 --- */
 .page-wrapper,
 .page-section {
     background-color: var(--chzzk-container-bg);
-    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin-bottom: 2.5rem;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border: 1px solid var(--chzzk-border);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
 }
 
-.card:hover,
 .page-wrapper:hover,
 .page-section:hover {
     transform: translateY(-5px);
-    box-shadow: 0 0 20px 0 rgba(0, 255, 163, 0.25);
-    border-color: rgba(0, 255, 163, 0.5);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
-/* --- 페이지 스타일 --- */
 .page-section {
     position: relative;
     overflow: hidden;
@@ -57,24 +46,46 @@ body {
     width: 100%;
     height: auto;
 }
-.page-wrapper {
-    background-color: transparent;
-    padding: 0;
-}
 
+/* ✨ [핵심 추가] 페이지 배경 이미지와 비디오를 위한 공통 스타일 */
+.page-background-image,
+.page-background-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
 
 .page-background-image {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background-size: cover; background-position: center; z-index: 1;
+    background-size: cover;
+    background-position: center;
 }
-.page-background-image::after {
-    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+
+.page-background-video {
+    object-fit: cover; /* 비디오가 컨테이너를 꽉 채우도록 설정 */
+}
+
+.page-section::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background-color: rgba(0,0,0,0.5);
+    z-index: 2;
 }
+
 .page-content-wrapper {
-    position: relative; z-index: 2; width: 100%; max-width: 90%;
-    padding: 2rem; display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 90%;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 .page-component {
     margin-bottom: 1.5rem; word-break: keep-all; max-width: 100%;
@@ -83,32 +94,35 @@ body {
 .page-component[style*="font-size"] { font-size: clamp(16px, 5vw, 48px) !important; }
 .page-component[style*="font-size"][style*="text-align: left"] { text-align: left !important; }
 .page-component[style*="font-size"][style*="text-align: right"] { text-align: right !important; }
-
 .page-button {
     display: inline-block; padding: 0.75rem 1.5rem; border-radius: 8px;
-    text-decoration: none; font-weight: 700; transition: all 0.2s ease;
+    text-decoration: none; font-weight: 700; transition: transform 0.2s ease, box-shadow 0.2s ease;
     font-size: clamp(14px, 2.5vw, 20px) !important;
-    background-color: var(--chzzk-accent) !important;
-    color: var(--chzzk-bg) !important;
 }
-
-.page-button:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 12px rgba(0, 255, 163, 0.2);
-}
+.page-button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
 
 /* --- 카드 스타일 --- */
 .card {
+    background-color: var(--chzzk-container-bg);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2.5rem;
+    border-radius: 12px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
 }
 
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
 .card-media-wrapper {
-    flex-shrink: 0; border-top-left-radius: 11px; border-top-right-radius: 11px;
+    flex-shrink: 0; border-top-left-radius: 12px; border-top-right-radius: 12px;
     overflow: hidden;
 }
-.card img, .card video {
+.card img, .card video { /* 카드 비디오 스타일은 여기에 이미 포함되어 있습니다. */
     width: 100%; height: auto; display: block;
 }
 .card-content { padding: 1.5rem; flex-grow: 1; }
