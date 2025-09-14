@@ -1,11 +1,10 @@
-// js/layoutManager.js v2.6 - 미니 대시보드 연동
+// js/layoutManager.js v2.7 - 레이아웃 목록에 통계(노출/클릭 수) 표시
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
 import { pagesList, pagesReady } from './pages.js';
 import { cards, cardsReady } from './cards.js';
 import { firebaseReady, getFirestoreDB } from './firebase.js';
-// ✨ [추가] home.js에서 대시보드 초기화 함수를 가져옵니다.
 import { initHomeDashboard } from './home.js';
 
 const layoutListContainer = document.getElementById('layout-list-container');
@@ -44,20 +43,17 @@ async function fetchContentsDetails(ids) {
 
     const contentPromises = ids.map(async (id) => {
         if (!id) return null;
-
         let contentRef = doc(db, 'pages', id);
         let contentSnap = await getDoc(contentRef);
-
         if (!contentSnap.exists()) {
             contentRef = doc(db, 'ads', id);
             contentSnap = await getDoc(contentRef);
         }
-
-        return contentSnap;
+        return contentSnap.exists() ? { id: contentSnap.id, ...contentSnap.data() } : null;
     });
 
-    const contentSnaps = await Promise.all(contentPromises);
-    return contentSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter(Boolean);
+    const contents = await Promise.all(contentPromises);
+    return contents.filter(Boolean);
 }
 
 
@@ -67,7 +63,6 @@ function renderLayoutList(contents) {
     layoutListContainer.className = 'grid gap-4';
 
     if (contents.length === 0) {
-        // ✨ [수정] 대시보드 아래 목록이 비어있을 때를 위한 메시지로 변경
         layoutListContainer.innerHTML = `<div class="text-center py-10 rounded-lg bg-slate-800">
             <h3 class="text-lg font-semibold text-slate-400">레이아웃에 표시할 콘텐츠가 없습니다.</h3>
             <p class="text-slate-500 mt-1">상단의 '콘텐츠 추가' 버튼을 눌러 페이지나 카드를 추가해보세요.</p>
@@ -83,6 +78,20 @@ function renderLayoutList(contents) {
         const previewImage = content.mediaUrl || content.pageSettings?.bgImage || '';
         const previewBgColor = isPage ? (content.pageSettings?.bgColor || '#1e293b') : '#1e293b';
 
+        // 카드인 경우에만 통계 정보를 표시하는 HTML을 생성합니다.
+        const statsHtml = isPage ? '' : `
+            <div class="flex items-center gap-4 text-xs text-slate-400 mt-2">
+                <span class="flex items-center" title="노출 수">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    ${(content.viewCount ?? 0).toLocaleString()}
+                </span>
+                <span class="flex items-center" title="클릭 수">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M22 14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.7a2 2 0 0 1 1.4.6l5.8 5.8a2 2 0 0 1 .6 1.4V14Z"/><path d="m14 14-4-4"/><path d="M10 14h4v-4"/></svg>
+                    ${(content.clickCount ?? 0).toLocaleString()}
+                </span>
+            </div>
+        `;
+
         return `
             <div class="layout-item flex items-center bg-slate-800 rounded-lg p-3 gap-4 shadow-sm" data-id="${content.id}">
                 <div class="drag-handle cursor-move text-slate-600 hover:text-slate-400">
@@ -90,8 +99,11 @@ function renderLayoutList(contents) {
                 </div>
                 <div class="w-24 h-14 bg-cover bg-center rounded-md" style="background-color: ${previewBgColor}; ${previewImage ? `background-image: url('${previewImage}')` : ''}"></div>
                 <div class="flex-1 overflow-hidden">
-                    <h4 class="font-bold text-slate-200 truncate" title="${content.title || content.name}">${content.title || content.name}</h4>
-                    <span class="text-xs font-semibold px-2 py-1 rounded-full ${typeColor}">${typeLabel}</span>
+                    <div class="flex justify-between items-start">
+                        <h4 class="font-bold text-slate-200 truncate" title="${content.title || content.name}">${content.title || content.name}</h4>
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full ${typeColor} flex-shrink-0">${typeLabel}</span>
+                    </div>
+                    ${statsHtml}
                 </div>
                 <button class="remove-btn text-slate-500 hover:text-red-500 transition-colors" title="레이아웃에서 제거">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -114,7 +126,9 @@ function attachEventListeners() {
             const contentId = item.dataset.id;
             if (confirm(`'${item.querySelector('h4').textContent}' 콘텐츠를 레이아웃에서 제거하시겠습니까?`)) {
                 const layoutRef = doc(db, "layouts", "mainLayout");
-                await updateDoc(layoutRef, { contentIds: arrayRemove(contentId) });
+                await updateDoc(layoutRef, {
+                    contentIds: arrayRemove(contentId)
+                });
                 showToast('콘텐츠가 레이아웃에서 제거되었습니다.');
             }
         });
@@ -125,7 +139,9 @@ function initializeSortable() {
     if (!layoutListContainer) return;
     if (sortableInstance) sortableInstance.destroy();
     sortableInstance = new Sortable(layoutListContainer, {
-        handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost',
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
         onEnd: async (evt) => {
             await firebaseReady;
             const db = getFirestoreDB();
@@ -133,7 +149,9 @@ function initializeSortable() {
 
             const newOrder = Array.from(evt.to.children).map(item => item.dataset.id);
             const layoutRef = doc(db, "layouts", "mainLayout");
-            await updateDoc(layoutRef, { contentIds: newOrder });
+            await updateDoc(layoutRef, {
+                contentIds: newOrder
+            });
             showToast('레이아웃 순서가 저장되었습니다.', 'success');
         },
     });
@@ -152,11 +170,9 @@ function mapModalUI() {
 function setupModalListeners() {
     modalElements.closeButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
     modalElements.finishButton?.addEventListener('click', () => modalElements.modal.classList.remove('active'));
-    
     modalElements.tabs?.forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
-
     modalElements.modal?.addEventListener('click', (e) => {
         if (e.target.classList.contains('add-button') && !e.target.disabled) {
             addItemToLayout(e.target.dataset.id);
@@ -178,25 +194,25 @@ async function addItemToLayout(contentId) {
         showToast("데이터베이스 연결에 실패했습니다.", "error");
         return;
     }
-
     try {
         const layoutRef = doc(db, "layouts", "mainLayout");
-        await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) });
+        await updateDoc(layoutRef, {
+            contentIds: arrayUnion(contentId)
+        });
         showToast('콘텐츠가 레이아웃에 추가되었습니다.');
     } catch (error) {
         console.error("레이아웃에 아이템 추가 실패:", error);
         showToast("아이템 추가에 실패했습니다.", "error");
         const button = document.querySelector(`.add-button[data-id="${contentId}"]`);
-        if(button) {
+        if (button) {
             button.disabled = false;
             button.textContent = '추가';
         }
     }
 }
 
-export async function handleAddContentClick() {
+async function handleAddContentClick() {
     await Promise.all([pagesReady, cardsReady]);
-
     modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
         const isAdded = currentLayoutIds.includes(page.id);
         const previewImage = page.pageSettings?.bgImage || '';
@@ -210,7 +226,6 @@ export async function handleAddContentClick() {
                 <button class="add-button" data-id="${page.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? '추가됨' : '추가'}</button>
             </div>`;
     }).join('') || `<p class="text-slate-500 text-center py-4">추가할 페이지가 없습니다.</p>`;
-
     modalElements.cardsListContainer.innerHTML = cards.list.map(card => {
         const isAdded = currentLayoutIds.includes(card.id);
         const previewImage = card.mediaUrl || '';
@@ -224,21 +239,16 @@ export async function handleAddContentClick() {
                 <button class="add-button" data-id="${card.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? '추가됨' : '추가'}</button>
             </div>`;
     }).join('') || `<p class="text-slate-500 text-center py-4">추가할 카드가 없습니다.</p>`;
-
     switchTab('pages');
     modalElements.modal.classList.add('active');
 }
 
 export function initLayoutView() {
     if (isInitialized) return;
-    
-    // ✨ [핵심] 레이아웃 뷰가 초기화될 때, 미니 대시보드를 먼저 그립니다.
     initHomeDashboard();
-    
     mapModalUI();
     setupModalListeners();
     listenToLayoutChanges('mainLayout');
-    
     isInitialized = true;
     console.log("Layout View Initialized.");
 }
