@@ -1,6 +1,7 @@
-// js/layoutManager.js v2.0 - 자생력 강화 최종 버전
+// js/layoutManager.js v2.1 - 코드 안정성 강화 버전
 
-import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+// collection 함수를 임포트 목록에 추가하여 일관성을 유지합니다.
+import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
 import { pagesList } from './pages.js';
 import { cards } from './cards.js';
@@ -15,7 +16,11 @@ let isInitialized = false;
 async function listenToLayoutChanges(layoutId) {
     await firebaseReady;
     const db = getFirestoreDB();
-    if (!db) return;
+    if (!db) {
+        console.error("Firestore DB가 초기화되지 않았습니다.");
+        return;
+    }
+    // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
     const layoutRef = doc(db, "layouts", layoutId);
     onSnapshot(layoutRef, async (snapshot) => {
         if (!snapshot.exists() || !snapshot.data().contentIds) {
@@ -36,8 +41,10 @@ async function fetchContentsDetails(ids) {
     const db = getFirestoreDB();
     if (ids.length === 0) return [];
     if (!db) return [];
+
     const contentPromises = ids.map(id => {
         const collectionName = id.startsWith('page_') ? 'pages' : 'ads';
+        // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
         const contentRef = doc(db, collectionName, id);
         return getDoc(contentRef);
     });
@@ -91,10 +98,11 @@ function attachEventListeners() {
         button.addEventListener('click', async (e) => {
             await firebaseReady;
             const db = getFirestoreDB();
+            if (!db) return;
             const item = e.currentTarget.closest('.layout-item');
             const contentId = item.dataset.id;
             if (confirm(`'${item.querySelector('h4').textContent}' 콘텐츠를 레이아웃에서 제거하시겠습니까?`)) {
-                if (!db) return;
+                // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
                 const layoutRef = doc(db, "layouts", "mainLayout");
                 await updateDoc(layoutRef, { contentIds: arrayRemove(contentId) });
                 showToast('콘텐츠가 레이아웃에서 제거되었습니다.');
@@ -112,7 +120,9 @@ function initializeSortable() {
             await firebaseReady;
             const db = getFirestoreDB();
             if (!db) return;
+
             const newOrder = Array.from(evt.to.children).map(item => item.dataset.id);
+            // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
             const layoutRef = doc(db, "layouts", "mainLayout");
             await updateDoc(layoutRef, { contentIds: newOrder });
             showToast('레이아웃 순서가 저장되었습니다.', 'success');
@@ -155,14 +165,25 @@ function switchTab(tabName) {
 async function addItemToLayout(contentId) {
     await firebaseReady;
     const db = getFirestoreDB();
+    if (!db) {
+        showToast("데이터베이스 연결에 실패했습니다.", "error");
+        return;
+    }
+
     try {
-        if (!db) return;
+        // ✅ OK: doc 함수에 db 객체를 올바르게 전달하고 있습니다.
         const layoutRef = doc(db, "layouts", "mainLayout");
         await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) });
         showToast('콘텐츠가 레이아웃에 추가되었습니다.');
     } catch (error) {
         console.error("레이아웃에 아이템 추가 실패:", error);
         showToast("아이템 추가에 실패했습니다.", "error");
+        // 에러 발생 시, 버튼을 다시 활성화시켜서 사용자가 재시도할 수 있도록 합니다.
+        const button = document.querySelector(`.add-button[data-id="${contentId}"]`);
+        if(button) {
+            button.disabled = false;
+            button.textContent = '추가';
+        }
     }
 }
 
