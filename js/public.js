@@ -1,4 +1,4 @@
-// js/public.js v1.3 - 카드 및 페이지 렌더링 로직 강화
+// js/public.js v1.4 - 페이지 뷰포트 크기 동적 적용
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -51,7 +51,6 @@ function renderAllContent(contents) {
                     mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" alt="${content.title || '카드 이미지'}"></div>`;
                 }
             }
-            // ✨ [수정] 제목/설명이 없는 경우를 대비하고, 파트너스 문구를 추가합니다.
             const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
             return `
                 <div class="card">
@@ -66,9 +65,19 @@ function renderAllContent(contents) {
         } else {
             // === 페이지(Page) 렌더링 ===
             const pageSettings = content.pageSettings || {};
-            const pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
             
-            // ✨ [수정] 배경 이미지가 있을 경우, 별도의 배경 div를 생성합니다.
+            // ✨ [핵심] 뷰포트 설정을 읽어와 스타일 문자열에 추가합니다.
+            let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
+            if (pageSettings.viewport) {
+                const [width, height] = pageSettings.viewport.split(',');
+                // 뷰포트가 '100%'가 아닌 고정값일 때만 가운데 정렬을 위한 margin: auto를 추가합니다.
+                if (width.trim() !== '100%') {
+                    pageStyle += ` width: ${width}; height: ${height}; margin-left: auto; margin-right: auto;`;
+                } else {
+                    pageStyle += ` width: ${width}; height: ${height};`;
+                }
+            }
+
             const bgImageHtml = pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
 
             const componentsHtml = (content.components || []).map(component => {
@@ -100,7 +109,6 @@ function renderAllContent(contents) {
 }
 
 async function renderPublicPage() {
-    // ... (이하 동일)
     const container = document.getElementById('content-container');
     console.log("🚀 Public page script loaded. Waiting for Firebase...");
 
