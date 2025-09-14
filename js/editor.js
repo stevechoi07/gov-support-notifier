@@ -1,6 +1,6 @@
 // js/editor.js v2.6 - 스토리 미리보기 뷰포트 연동
 
-import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.O/firebase-firestore.js";
+import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
 import { pagesList } from './pages.js';
 import { navigateTo } from './navigation.js';
