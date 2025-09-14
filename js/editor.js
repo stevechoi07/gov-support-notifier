@@ -1,4 +1,4 @@
-// js/editor.js v2.1 - SDK 버전 통일
+// js/editor.js v2.2 - '장면(Scene)' 컴포넌트 기능 추가
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -38,7 +38,14 @@ export const editor = {
             <div id="editor-controls-wrapper"><div class="editor-control-panel">
                 <div class="control-group"><button id="back-to-list-btn" style="background-color: #475569; color: white;">← 목록으로 돌아가기</button></div>
                 <h3>- 콘텐츠 블록 추가 -</h3>
-                <div class="control-group component-adders" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button data-type="heading">➕ 제목</button><button data-type="paragraph">➕ 내용</button><button data-type="button">➕ 버튼</button><button data-type="lead-form">➕ 고객 정보</button></div><hr style="border-color: var(--border-color); margin: 20px 0;">
+                <div class="control-group component-adders" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button data-type="heading">➕ 제목</button>
+                    <button data-type="paragraph">➕ 내용</button>
+                    <button data-type="button">➕ 버튼</button>
+                    <button data-type="lead-form">➕ 고객 정보</button>
+                    <button data-type="scene" style="grid-column: 1 / -1; background-color: #be185d;">✨ ➕ 장면 (스토리용)</button>
+                </div>
+                <hr style="border-color: var(--border-color); margin: 20px 0;">
                 <h3>- 페이지 배경 -</h3>
                 <div class="control-group inline-group"><label for="page-bg-color">배경색</label><input type="text" data-color-picker id="page-bg-color"></div>
                 <div class="control-group"><label for="page-background-image">배경 이미지 URL</label><input type="text" id="page-background-image"></div>
@@ -181,13 +188,19 @@ export const editor = {
           wrapper.className = 'preview-wrapper'; wrapper.dataset.id = c.id;
           if (c.id === this.activeComponentId) wrapper.classList.add('selected');
           wrapper.onclick = (e) => { e.stopPropagation(); this.selectComponent(c.id); };
-          if (c.type !== 'lead-form') { wrapper.style.textAlign = c.styles?.textAlign || 'center'; }
+          if (c.type !== 'lead-form' && c.type !== 'scene') { wrapper.style.textAlign = c.styles?.textAlign || 'center'; }
           if ((c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom') { wrapper.style.marginTop = 'auto'; }
           let element;
           switch(c.type) {
               case 'heading': element = document.createElement('h1'); element.textContent = c.content; break;
               case 'paragraph': element = document.createElement('p'); element.textContent = c.content; break;
               case 'button': element = document.createElement('button'); element.textContent = c.content; break;
+              case 'scene': 
+                  element = document.createElement('div'); 
+                  element.className = 'scene-preview';
+                  element.textContent = `🎬 장면 #${c.id}`;
+                  element.style.cssText = `background-color: ${c.sceneSettings?.bgColor || '#333'}; background-image: url('${c.sceneSettings?.bgImage || ''}'); color: white; border: 2px dashed #666; padding: 20px; text-align: center;`;
+                  break;
               case 'lead-form':
                   element = document.createElement('form'); element.className = 'component-content';
                   let formHTML = (this.allPossibleFormFields.filter(field => c.activeFields?.includes(field.name)) || [])
@@ -197,7 +210,7 @@ export const editor = {
                   element.innerHTML = formHTML; element.onsubmit = (e) => e.preventDefault();
                   break;
           }
-          if (c.type !== 'lead-form') element.className = 'component-content';
+          if (c.type !== 'lead-form' && c.type !== 'scene') element.className = 'component-content';
           const { textAlign, verticalAlign, backgroundColor, backgroundColorOpacity, ...otherStyles } = c.styles || {};
           Object.assign(element.style, otherStyles);
           if (c.type === 'button') { element.style.backgroundColor = this.hexToRgba(backgroundColor || '#1877f2', backgroundColorOpacity); } 
@@ -216,10 +229,23 @@ export const editor = {
             const panel = document.createElement('div');
             panel.className = 'editor-panel'; panel.dataset.id = c.id;
             const handle = document.createElement('h4');
-            handle.innerHTML = `${{ heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보' }[c.type]} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div>`;
+            handle.innerHTML = `${{ heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보', scene: '🎬 장면' }[c.type]} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div>`;
             if (c.id === this.activeComponentId) panel.classList.add('selected');
             let panelContentHTML = '';
-            if (c.type === 'lead-form') {
+            
+            if (c.type === 'scene') {
+                panelContentHTML = `
+                    <div class="control-group inline-group">
+                        <label>장면 배경색</label>
+                        <input type="text" data-color-picker data-scene-prop="bgColor" value="${c.sceneSettings?.bgColor || '#333333'}">
+                    </div>
+                    <div class="control-group">
+                        <label>장면 배경 이미지 URL</label>
+                        <input type="text" data-scene-prop="bgImage" value="${c.sceneSettings?.bgImage || ''}">
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">※ 장면 내부의 텍스트/버튼 편집은 다음 단계에서 추가될 예정입니다.</p>
+                `;
+            } else if (c.type === 'lead-form') {
                 let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #334155; padding: 10px; border-radius: 6px;">';
                 this.allPossibleFormFields.forEach(field => { const isChecked = c.activeFields?.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; });
                 checklistHTML += '</div></div>';
@@ -246,7 +272,7 @@ export const editor = {
             panel.appendChild(handle);
             panel.appendChild(contentDiv);
             this.elements.editorsContainer.appendChild(panel);
-            if (c.type !== 'lead-form') {
+            if (c.type !== 'lead-form' && c.type !== 'scene') {
                 const textAlignSelect = panel.querySelector('[data-style="textAlign"]'); if(textAlignSelect) textAlignSelect.value = c.styles?.textAlign || 'center';
                 const fontFamilySelect = panel.querySelector('[data-style="fontFamily"]'); if(fontFamilySelect) fontFamilySelect.value = c.styles?.fontFamily || "'Noto Sans KR', sans-serif";
             }
@@ -274,6 +300,7 @@ export const editor = {
         });
         this.elements.viewportControlsLeft.appendChild(btnGroup);
     },
+
     attachEventListenersToControls() {
       this.elements.editorsContainer.querySelectorAll('.editor-panel').forEach(panel => {
           const id = Number(panel.dataset.id);
@@ -294,6 +321,12 @@ export const editor = {
                   this.updateComponent(id, `styles.${e.target.dataset.style}`, value, false);
               });
           });
+          panel.querySelectorAll('[data-scene-prop]').forEach(input => {
+              const eventType = input.hasAttribute('data-color-picker') ? 'change' : 'input';
+              input.addEventListener(eventType, (e) => {
+                  this.updateComponent(id, `sceneSettings.${e.target.dataset.sceneProp}`, e.target.value, false);
+              });
+          });
           panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => {
               checkbox.onchange = () => {
                   const fieldName = checkbox.dataset.fieldName;
@@ -311,6 +344,7 @@ export const editor = {
           panel.querySelector('.delete-btn').onclick = () => this.deleteComponent(id);
       });
     },
+    
     initSortable() {
         if (this.sortableInstance) this.sortableInstance.destroy();
         this.sortableInstance = new Sortable(this.elements.editorsContainer, {
@@ -323,7 +357,9 @@ export const editor = {
             },
         });
     },
+
     selectComponent(id) { this.activeComponentId = id; this.renderControls(); this.renderPreview(); },
+    
     addComponent(type) {
         const newComponent = { id: Date.now(), type, styles: { fontFamily: "'Noto Sans KR', sans-serif" } };
         switch(type) {
@@ -331,11 +367,20 @@ export const editor = {
             case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = {...newComponent.styles, textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break;
             case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = {...newComponent.styles, backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', backgroundColorOpacity: 1 }; break;
             case 'lead-form': newComponent.googleScriptUrl = ''; newComponent.submitText = '문의 남기기'; newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' }; newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' }; break;
+            case 'scene':
+                newComponent.sceneSettings = { bgColor: '#1e293b', bgImage: '' };
+                newComponent.components = [
+                    { type: 'heading', content: '새로운 장면의 제목', styles: { color: '#ffffff', fontSize: '36px' } },
+                    { type: 'paragraph', content: '장면에 대한 설명을 입력하세요.', styles: { color: '#e2e8f0', fontSize: '18px' } }
+                ];
+                delete newComponent.styles;
+                break;
         }
         this.components.push(newComponent);
         this.activeComponentId = newComponent.id;
         this.saveAndRender(true, true);
     },
+
     updateComponent(id, keyPath, value, rerenderControls = false) {
         let component = this.components.find(c => c.id === id);
         if (!component) return;
@@ -348,6 +393,7 @@ export const editor = {
         current[keys[keys.length - 1]] = value;
         this.saveAndRender(rerenderControls, true);
     },
+
     deleteComponent(id) {
         if (!confirm('블록을 삭제하시겠습니까?')) return;
         this.components = this.components.filter(c => c.id !== id);
