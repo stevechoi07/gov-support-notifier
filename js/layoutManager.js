@@ -1,10 +1,12 @@
-// js/layoutManager.js v2.5 - 목록 아이템 간격 추가
+// js/layoutManager.js v2.6 - 미니 대시보드 연동
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
 import { pagesList, pagesReady } from './pages.js';
 import { cards, cardsReady } from './cards.js';
 import { firebaseReady, getFirestoreDB } from './firebase.js';
+// ✨ [추가] home.js에서 대시보드 초기화 함수를 가져옵니다.
+import { initHomeDashboard } from './home.js';
 
 const layoutListContainer = document.getElementById('layout-list-container');
 const modalElements = {};
@@ -62,13 +64,12 @@ async function fetchContentsDetails(ids) {
 function renderLayoutList(contents) {
     if (!layoutListContainer) return;
     
-    // ✨ [핵심] 컨테이너에 TailwindCSS 클래스를 적용하여 grid와 gap을 설정합니다.
     layoutListContainer.className = 'grid gap-4';
 
     if (contents.length === 0) {
-        layoutListContainer.innerHTML = `<div class="text-center py-16">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-600 mb-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-            <h3 class="text-lg font-semibold text-slate-400">레이아웃이 비어있습니다.</h3>
+        // ✨ [수정] 대시보드 아래 목록이 비어있을 때를 위한 메시지로 변경
+        layoutListContainer.innerHTML = `<div class="text-center py-10 rounded-lg bg-slate-800">
+            <h3 class="text-lg font-semibold text-slate-400">레이아웃에 표시할 콘텐츠가 없습니다.</h3>
             <p class="text-slate-500 mt-1">상단의 '콘텐츠 추가' 버튼을 눌러 페이지나 카드를 추가해보세요.</p>
         </div>`;
         return;
@@ -230,6 +231,9 @@ export async function handleAddContentClick() {
 
 export function initLayoutView() {
     if (isInitialized) return;
+    
+    // ✨ [핵심] 레이아웃 뷰가 초기화될 때, 미니 대시보드를 먼저 그립니다.
+    initHomeDashboard();
     
     mapModalUI();
     setupModalListeners();

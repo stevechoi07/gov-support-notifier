@@ -40,7 +40,10 @@
                     <div id="header-actions"></div>
                 </header>
                 <div class="flex-1 overflow-y-auto" id="main-content">
-                    <div id="layout-view" class="view hidden p-6"><div id="layout-list-container"></div></div>
+                    <div id="layout-view" class="view hidden p-6">
+                        <div id="home-dashboard-container" class="mb-8"></div>
+                        <div id="layout-list-container"></div>
+                    </div>
                     <div id="pages-view" class="view hidden p-6"><div id="page-list-container"></div></div>
                     <div id="cards-view" class="view hidden p-6"><div id="ad-list-container"></div></div>
                     <div id="editor-view" class="view hidden h-full"></div>
@@ -176,9 +179,9 @@
     </div>
 
     <script type="module">
-  import { initializeAppAndAuth } from './js/main.js';
-  initializeAppAndAuth();
-	</script>
+        import { initializeAppAndAuth } from './js/main.js';
+        initializeAppAndAuth();
+    </script>
 
 </body>
 </html>
