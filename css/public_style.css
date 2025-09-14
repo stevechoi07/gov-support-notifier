@@ -1,16 +1,18 @@
-/* css/public_style.css v1.6 - '치직' 스타일 2단계: 디테일 및 호버 효과 적용 */
+/* css/public_style.css v1.8 - Intersection Observer를 위한 스타일 추가 */
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 :root {
-    --chzzk-bg: #0F0F12;
-    --chzzk-container-bg: #1C1C1F;
+    --chzzk-bg: #121212;
+    --chzzk-container-bg: #1E1E1E;
     --chzzk-accent: #00FFA3;
     --chzzk-text-primary: #FFFFFF;
-    --chzzk-text-secondary: #A7A7AD;
-    --chzzk-border: #35353A;
+    --chzzk-text-secondary: #b3b3b3;
+    --chzzk-border: #282828;
 }
 
 body {
-    font-family: 'Noto Sans KR', sans-serif;
+    font-family: 'Pretendard', sans-serif;
     background-color: var(--chzzk-bg);
     color: var(--chzzk-text-secondary);
     line-height: 1.6;
@@ -24,19 +26,20 @@ body {
 
 /* --- 공통 컨테이너 스타일 --- */
 .card,
-.page-wrapper,
 .page-section {
     background-color: var(--chzzk-container-bg);
     border-radius: 12px;
     margin-bottom: 2.5rem;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border: 1px solid var(--chzzk-border); /* ✨ 은은한 테두리 */
+    /* ✨ [핵심 수정] border-color와 box-shadow에 transition 효과 추가 */
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    border: 1px solid var(--chzzk-border);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* ✨ 마우스 호버 시 민트색 번짐 효과 */
+/* ✨ [핵심 수정] :hover 뿐만 아니라 .is-visible 클래스가 붙었을 때도 효과 적용 */
+.card.is-visible,
+.page-section.is-visible,
 .card:hover,
-.page-wrapper:hover,
 .page-section:hover {
     transform: translateY(-5px);
     box-shadow: 0 0 20px 0 rgba(0, 255, 163, 0.25);
@@ -53,55 +56,81 @@ body {
     width: 100%;
     height: auto;
 }
-.page-wrapper {
-    background-color: transparent;
-    padding: 0;
-}
-
 
 .page-background-image,
 .page-background-video {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 1;
 }
+
 .page-background-image {
-    background-size: cover; background-position: center;
+    background-size: cover;
+    background-position: center;
 }
+
 .page-background-video {
     object-fit: cover;
 }
+
 .page-section::after {
-    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0,0,0,0.5);
     z-index: 2;
 }
+
 .page-content-wrapper {
-    position: relative; z-index: 3; width: 100%; max-width: 90%;
-    padding: 2rem; display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 90%;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 .page-component {
-    margin-bottom: 1.5rem; word-break: keep-all; max-width: 100%;
+    margin-bottom: 1.5rem;
+    word-break: keep-all;
+    max-width: 100%;
 }
-.page-component:last-child { margin-bottom: 0; }
-.page-component[style*="font-size"] { font-size: clamp(16px, 5vw, 48px) !important; }
-.page-component[style*="font-size"][style*="text-align: left"] { text-align: left !important; }
-.page-component[style*="font-size"][style*="text-align: right"] { text-align: right !important; }
+.page-component:last-child {
+    margin-bottom: 0;
+}
+.page-component[style*="font-size"] {
+    font-size: clamp(16px, 5vw, 48px) !important;
+}
+.page-component[style*="font-size"][style*="text-align: left"] {
+    text-align: left !important;
+}
+.page-component[style*="font-size"][style*="text-align: right"] {
+    text-align: right !important;
+}
 
 .page-button {
-    display: inline-block; padding: 0.75rem 1.5rem; border-radius: 8px;
-    text-decoration: none; font-weight: 700; transition: all 0.2s ease;
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.2s ease;
     font-size: clamp(14px, 2.5vw, 20px) !important;
-    /* ✨ 버튼에 포인트 색상 적용 */
     background-color: var(--chzzk-accent) !important;
     color: var(--chzzk-bg) !important;
 }
-
 .page-button:hover {
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 6px 12px rgba(0, 255, 163, 0.2);
 }
-
 
 /* --- 카드 스타일 --- */
 .card {
@@ -110,25 +139,30 @@ body {
 }
 
 .card-media-wrapper {
-    flex-shrink: 0; border-top-left-radius: 11px; border-top-right-radius: 11px;
+    flex-shrink: 0;
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
     overflow: hidden;
 }
 .card img, .card video {
-    width: 100%; height: auto; display: block;
+    width: 100%;
+    height: auto;
+    display: block;
 }
-.card-content { padding: 1.5rem; flex-grow: 1; }
-
+.card-content {
+    padding: 1.5rem;
+    flex-grow: 1;
+}
 .card-content h2 {
-    font-size: 1.5rem; font-weight: 700;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--chzzk-text-primary);
     margin-bottom: 0.5rem;
 }
-
 .card-content p {
     font-size: 1rem;
     color: var(--chzzk-text-secondary);
 }
-
 .partners-text {
     font-size: 0.75rem;
     color: #6c6c72;
