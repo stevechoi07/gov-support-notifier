@@ -1,19 +1,18 @@
-/* css/public_style.css v1.5 - '치직' 스타일 1단계: 기본 색상 적용 */
+/* css/public_style.css v1.6 - '치직' 스타일 2단계: 디테일 및 호버 효과 적용 */
 
-/* ✨ [추가] 치직 스타일의 핵심 색상을 변수로 정의합니다. */
 :root {
-    --chzzk-bg: #0F0F12; /* 매우 어두운 배경 */
-    --chzzk-container-bg: #1C1C1F; /* 카드/페이지 배경 */
-    --chzzk-accent: #00FFA3; /* 민트색 포인트 */
-    --chzzk-text-primary: #FFFFFF; /* 기본 흰색 텍스트 */
-    --chzzk-text-secondary: #A7A7AD; /* 연한 회색 텍스트 */
-    --chzzk-border: #35353A; /* 은은한 테두리 색 */
+    --chzzk-bg: #0F0F12;
+    --chzzk-container-bg: #1C1C1F;
+    --chzzk-accent: #00FFA3;
+    --chzzk-text-primary: #FFFFFF;
+    --chzzk-text-secondary: #A7A7AD;
+    --chzzk-border: #35353A;
 }
 
 body {
     font-family: 'Noto Sans KR', sans-serif;
-    background-color: var(--chzzk-bg); /* ✨ 변경 */
-    color: var(--chzzk-text-secondary); /* ✨ 변경 */
+    background-color: var(--chzzk-bg);
+    color: var(--chzzk-text-secondary);
     line-height: 1.6;
 }
 
@@ -23,22 +22,28 @@ body {
     padding: 2rem 1rem;
 }
 
-/* --- 페이지 스타일 (색상만 우선 적용) --- */
+/* --- 공통 컨테이너 스타일 --- */
+.card,
 .page-wrapper,
 .page-section {
-    background-color: var(--chzzk-container-bg); /* ✨ 변경 */
-    /* 그림자는 잠시 기본값으로 변경, 나중에 다듬을 예정 */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2.5rem;
+    background-color: var(--chzzk-container-bg);
     border-radius: 12px;
+    margin-bottom: 2.5rem;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid var(--chzzk-border); /* ✨ [추가] 은은한 테두리 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* 기본 그림자 살짝 조정 */
 }
 
+/* ✨ [핵심 수정] 마우스 호버 시 민트색 번짐 효과 */
+.card:hover,
 .page-wrapper:hover,
 .page-section:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 20px 0 rgba(0, 255, 163, 0.25);
+    border-color: rgba(0, 255, 163, 0.5);
 }
 
+/* --- 페이지 스타일 --- */
 .page-section {
     position: relative;
     overflow: hidden;
@@ -48,8 +53,13 @@ body {
     width: 100%;
     height: auto;
 }
+/* 페이지 래퍼는 테두리만 있고 배경색은 투명하게 하여 내부 페이지 배경색을 따르도록 함 */
+.page-wrapper {
+    background-color: transparent;
+    padding: 0;
+}
 
-/* ... (나머지 페이지 스타일은 일단 유지) ... */
+
 .page-background-image {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background-size: cover; background-position: center; z-index: 1;
@@ -70,32 +80,30 @@ body {
 .page-component[style*="font-size"] { font-size: clamp(16px, 5vw, 48px) !important; }
 .page-component[style*="font-size"][style*="text-align: left"] { text-align: left !important; }
 .page-component[style*="font-size"][style*="text-align: right"] { text-align: right !important; }
+
 .page-button {
     display: inline-block; padding: 0.75rem 1.5rem; border-radius: 8px;
-    text-decoration: none; font-weight: 700; transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none; font-weight: 700; transition: all 0.2s ease;
     font-size: clamp(14px, 2.5vw, 20px) !important;
+    /* ✨ [추가] 버튼에 포인트 색상 적용 */
+    background-color: var(--chzzk-accent) !important;
+    color: var(--chzzk-bg) !important;
 }
-.page-button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+.page-button:hover {
+    transform: translateY(-2px) scale(1.05); /* 살짝 커지는 효과 추가 */
+    box-shadow: 0 6px 12px rgba(0, 255, 163, 0.2);
+}
 
 
-/* --- 카드 스타일 (색상만 우선 적용) --- */
+/* --- 카드 스타일 --- */
 .card {
-    background-color: var(--chzzk-container-bg); /* ✨ 변경 */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2.5rem;
-    border-radius: 12px;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
 }
 
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-}
-
 .card-media-wrapper {
-    flex-shrink: 0; border-top-left-radius: 12px; border-top-right-radius: 12px;
+    flex-shrink: 0; border-top-left-radius: 11px; border-top-right-radius: 11px; /* 테두리 안쪽으로 보이도록 조정 */
     overflow: hidden;
 }
 .card img, .card video {
@@ -105,19 +113,19 @@ body {
 
 .card-content h2 {
     font-size: 1.5rem; font-weight: 700;
-    color: var(--chzzk-text-primary); /* ✨ 변경 */
+    color: var(--chzzk-text-primary);
     margin-bottom: 0.5rem;
 }
 
 .card-content p {
     font-size: 1rem;
-    color: var(--chzzk-text-secondary); /* ✨ 변경 */
+    color: var(--chzzk-text-secondary);
 }
 
 .partners-text {
     font-size: 0.75rem;
-    color: #6c6c72; /* ✨ 변경 (치직 보조 텍스트 색상과 유사하게) */
+    color: #6c6c72;
     margin-top: 1rem;
-    border-top: 1px solid var(--chzzk-border); /* ✨ 변경 */
+    border-top: 1px solid var(--chzzk-border);
     padding-top: 1rem;
 }
