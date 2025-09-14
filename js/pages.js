@@ -1,4 +1,4 @@
-// js/pages.js v2.2 - 새 페이지 생성 시 통계 필드 추가
+// js/pages.js v2.3 - 페이지 목록에 '스토리' 뱃지 추가
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -13,7 +13,6 @@ export const pagesReady = new Promise(resolve => {
 });
 
 export async function renderPages() {
-    // 순환 참조를 피하기 위해 필요할 때만 동적으로 import 합니다.
     const { navigateTo } = await import('./navigation.js');
 
     if (!ui.pageListContainer) return;
@@ -27,10 +26,17 @@ export async function renderPages() {
             const bgImage = page.pageSettings?.bgImage || '';
             const previewStyle = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''}`;
 
+            // ✨ [핵심 추가] 페이지가 스토리 유형인지 확인합니다.
+            const isStory = page.components?.some(c => c.type === 'scene');
+            const storyBadge = isStory ? `<span class="story-badge">✨ 스토리</span>` : '';
+
             return `
             <div class="page-card">
                 <div class="page-card-preview" style="${previewStyle}">
-                    <h4>${page.name}</h4>
+                    <div class="title-wrapper">
+                        <h4>${page.name}</h4>
+                        ${storyBadge}
+                    </div>
                 </div>
                 <div class="page-card-content">
                     <p class="page-card-info">최근 수정: ${lastUpdated}</p>
@@ -61,29 +67,8 @@ export async function renderPages() {
 }
 
 
-async function handlePublishToggleChange(e) {
-    await firebaseReady;
-    const db = getFirestoreDB();
-    const pageIdToChange = e.currentTarget.dataset.id;
-    const isNowPublished = e.currentTarget.checked;
-    try {
-        const docRef = doc(db, "pages", pageIdToChange);
-        await updateDoc(docRef, { isPublished: isNowPublished });
-    } catch (error) {
-        console.error("게시 상태 변경 실패:", error);
-        alert("게시 상태 변경에 실패했습니다.");
-        e.currentTarget.checked = !isNowPublished;
-    }
-}
-
-async function handleDeletePageClick(e) {
-    await firebaseReady;
-    const db = getFirestoreDB();
-    const { id, name } = e.currentTarget.dataset;
-    if (confirm(`'${name}' 페이지를 정말 삭제하시겠습니까?`)) {
-        try { await deleteDoc(doc(db, "pages", id)); } catch (error) { alert("페이지 삭제에 실패했습니다."); }
-    }
-}
+async function handlePublishToggleChange(e) { await firebaseReady; const db = getFirestoreDB(); const pageIdToChange = e.currentTarget.dataset.id; const isNowPublished = e.currentTarget.checked; try { const docRef = doc(db, "pages", pageIdToChange); await updateDoc(docRef, { isPublished: isNowPublished }); } catch (error) { console.error("게시 상태 변경 실패:", error); alert("게시 상태 변경에 실패했습니다."); e.currentTarget.checked = !isNowPublished; } }
+async function handleDeletePageClick(e) { await firebaseReady; const db = getFirestoreDB(); const { id, name } = e.currentTarget.dataset; if (confirm(`'${name}' 페이지를 정말 삭제하시겠습니까?`)) { try { await deleteDoc(doc(db, "pages", id)); } catch (error) { alert("페이지 삭제에 실패했습니다."); } } }
 
 export async function handleNewPageClick() {
     await firebaseReady;
@@ -91,7 +76,6 @@ export async function handleNewPageClick() {
     const name = prompt("새 페이지의 이름을 입력하세요:");
     if (name && name.trim()) {
         try {
-            // 새 페이지 데이터에 viewCount와 clickCount를 추가합니다.
             const newPageData = {
                 name: name.trim(),
                 isPublished: false,
@@ -112,28 +96,13 @@ export async function handleNewPageClick() {
     return null;
 }
 
-async function listenToPages() {
-    await firebaseReady;
-    const db = getFirestoreDB();
-    const q = query(collection(db, "pages"), orderBy("createdAt", "desc"));
-    onSnapshot(q, (snapshot) => {
-        pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const pagesView = document.getElementById('pages-view');
-        if (ui.pageListContainer && pagesView && !pagesView.classList.contains('hidden')) {
-            renderPages();
-        }
-        if (resolvePagesReady) {
-            resolvePagesReady();
-            resolvePagesReady = null;
-        }
-    });
-}
-
-export function init() {
-    if (isInitialized) {
-        renderPages();
-        return;
-    };
-    listenToPages();
-    isInitialized = true;
-}
+async function listenToPages() { 
+	await firebaseReady; 
+	const db = getFirestoreDB(); 
+	const q = query(collection(db, "pages"), orderBy("createdAt", "desc")); onSnapshot(q, (snapshot) => { pagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
+	const pagesView = document.getElementById('pages-view'); 
+	if (ui.pageListContainer && pagesView && !pagesView.classList.contains('hidden')) { renderPages(); } 
+	if (resolvePagesReady) { resolvePagesReady(); resolvePagesReady = null; } }); 
+	}
+export function init() { 
+	if (isInitialized) { renderPages(); return; }; listenToPages(); isInitialized = true; }
