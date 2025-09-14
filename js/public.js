@@ -1,4 +1,4 @@
-// js/public.js v1.9 - Intersection Observer로 스크롤 애니메이션 추가
+// js/public.js v2.0 - '가장 주목받는 콘텐츠' 하이라이트 기능
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -41,110 +41,82 @@ function renderAllContent(contents) {
     }
 
     const contentHtml = contents.map(content => {
+        // ✨ [핵심] 각 콘텐츠 최상위 요소에 'data-observe-target' 속성을 추가하여 감시 대상을 명확히 합니다.
         if (content.adType) {
-            // === 카드(Card) 렌더링 ===
-            let mediaHtml = '';
-            if (content.mediaUrl) {
-                if (content.mediaType === 'video') {
-                    mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`;
-                } else {
-                    mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" alt="${content.title || '카드 이미지'}"></div>`;
-                }
-            }
-            const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
-            
-            const cardInnerHtml = `
-                <div class="card">
-                    ${mediaHtml}
-                    <div class="card-content">
-                        <h2>${content.title || '제목 없음'}</h2>
-                        <p>${content.description || ' '}</p>
-                        ${partnersText}
-                    </div>
-                </div>
-            `;
-
-            if (content.link) {
-                return `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`;
-            } else {
-                return cardInnerHtml;
-            }
+            // Card rendering
+            let mediaHtml = ''; if (content.mediaUrl) { if (content.mediaType === 'video') { mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`; } else { mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" alt="${content.title || '카드 이미지'}"></div>`; } } const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
+            const cardInnerHtml = `<div class="card" data-observe-target>${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`;
+            if (content.link) { return `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`; } else { return cardInnerHtml; }
         } else {
-            // === 페이지(Page) 렌더링 ===
-            const pageSettings = content.pageSettings || {};
-            
-            let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
-            if (pageSettings.viewport) {
-                const [widthStr, heightStr] = pageSettings.viewport.split(',');
-                const width = parseFloat(widthStr);
-                const height = parseFloat(heightStr);
-                if (height > 0) {
-                    pageStyle += ` aspect-ratio: ${width} / ${height};`;
-                }
-            }
-
-            const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
-
-            const componentsHtml = (content.components || []).map(component => {
-                const componentStyle = stylesToString(component.styles);
-                switch (component.type) {
-                    case 'heading':
-                        return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
-                    case 'paragraph':
-                        return `<p class="page-component" style="${componentStyle}">${component.content}</p>`;
-                    case 'button':
-                        return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
-                    default:
-                        return '';
-                }
-            }).join('');
-
-            return `
-                <div class="page-section" style="${pageStyle}">
-                    ${bgMediaHtml}
-                    <div class="page-content-wrapper">
-                        ${componentsHtml}
-                    </div>
-                </div>
-            `;
+            // Page rendering
+            const pageSettings = content.pageSettings || {}; let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`; if (pageSettings.viewport) { const [widthStr, heightStr] = pageSettings.viewport.split(','); const width = parseFloat(widthStr); const height = parseFloat(heightStr); if (height > 0) { pageStyle += ` aspect-ratio: ${width} / ${height};`; } } const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : ''; const componentsHtml = (content.components || []).map(component => { const componentStyle = stylesToString(component.styles); switch (component.type) { case 'heading': return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`; case 'paragraph': return `<p class="page-component" style="${componentStyle}">${component.content}</p>`; case 'button': return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`; default: return ''; } }).join('');
+            return `<div class="page-section" style="${pageStyle}" data-observe-target>${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
         }
     }).join('');
 
     container.innerHTML = contentHtml;
     
-    // 콘텐츠 렌더링 후, Intersection Observer를 설정합니다.
     setupIntersectionObserver();
 }
 
-// Intersection Observer 설정 및 실행 함수
+// ✨ [핵심 수정] '가장 주목받는 콘텐츠'를 찾아내는 Intersection Observer 로직
 function setupIntersectionObserver() {
+    let visibleElements = new Map(); // 화면에 보이는 요소들을 추적하기 위한 Map
+    let currentActive = null; // 현재 활성화된(테두리가 보이는) 요소
+
+    // 화면에 보이는 요소들 중 가장 주목받는 요소를 찾아 활성화하는 함수
+    const updateActive = () => {
+        let maxRatio = 0;
+        let mostVisibleElement = null;
+
+        visibleElements.forEach((entry, element) => {
+            if (entry.intersectionRatio > maxRatio) {
+                maxRatio = entry.intersectionRatio;
+                mostVisibleElement = element;
+            }
+        });
+
+        if (mostVisibleElement && mostVisibleElement !== currentActive) {
+            // 기존 활성 요소 비활성화
+            if (currentActive) {
+                currentActive.classList.remove('is-visible');
+            }
+            // 새 요소 활성화
+            mostVisibleElement.classList.add('is-visible');
+            currentActive = mostVisibleElement;
+        }
+    };
+
     const options = {
         root: null,
         rootMargin: '0px',
-        threshold: 0.2
+        // threshold를 여러 개 두어, 스크롤 중 더 자주 감지하도록 설정
+        threshold: Array.from({ length: 101 }, (_, i) => i / 100)
     };
 
-    const observer = new IntersectionObserver((entries, observer) => {
+    const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('is-visible');
-                observer.unobserve(entry.target);
+                // 화면에 보이면 Map에 추가/업데이트
+                visibleElements.set(entry.target, entry);
+            } else {
+                // 화면에서 사라지면 Map에서 제거
+                visibleElements.delete(entry.target);
+                entry.target.classList.remove('is-visible'); // 즉시 비활성화
+                if(entry.target === currentActive) currentActive = null;
             }
         });
+        // 변경이 있을 때마다 '주인공'을 다시 계산
+        updateActive();
     }, options);
 
-    // 감시할 대상을 모두 선택합니다. 
-    // .card-link가 있는 경우 그 부모를, 아니면 .card 자체를 감시해야 합니다.
-    const targets = document.querySelectorAll('.card, .page-section');
-    targets.forEach(target => {
-        // card-link의 부모는 <a> 태그이므로, 실제 감시 대상은 그 안의 .card 입니다.
-        // 이 코드에서는 .card와 .page-section을 직접 감시하면 되므로 복잡한 로직이 필요 없습니다.
-        observer.observe(target);
-    });
+    const targets = document.querySelectorAll('[data-observe-target]');
+    targets.forEach(target => observer.observe(target));
 }
 
 
 async function renderPublicPage() {
+    // ... (이하 동일)
     const container = document.getElementById('content-container');
     console.log("🚀 Public page script loaded. Waiting for Firebase...");
     try {
@@ -161,7 +133,7 @@ async function renderPublicPage() {
             renderAllContent(contents);
         } else {
             console.error("🔥 Error: 'mainLayout' document not found!");
-            if (container) container.innerHTML = `<p class="text-center text-red-500">레이웃 정보를 찾을 수 없습니다.</p>`;
+            if (container) container.innerHTML = `<p class="text-center text-red-500">레이아웃 정보를 찾을 수 없습니다.</p>`;
         }
     } catch (error) {
         console.error("🔥 An error occurred:", error);
