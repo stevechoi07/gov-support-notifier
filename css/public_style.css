@@ -1,8 +1,12 @@
-/* css/public_style.css v1.6 - '치직' 스타일 2단계: 디테일 및 호버 효과 적용 */
+/* css/public_style.css v1.7 - '치직' 스타일 최종: 폰트 및 배경색 최종 조정 */
+
+/* ✨ [핵심 1] 프리텐다드 웹폰트를 불러옵니다. */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 :root {
     --chzzk-bg: #0F0F12;
-    --chzzk-container-bg: #1C1C1F;
+    /* ✨ [핵심 2] 컨테이너 배경을 전체 배경과 동일하게 맞춰 평평한 느낌을 강조합니다. */
+    --chzzk-container-bg: #0F0F12; 
     --chzzk-accent: #00FFA3;
     --chzzk-text-primary: #FFFFFF;
     --chzzk-text-secondary: #A7A7AD;
@@ -10,7 +14,8 @@
 }
 
 body {
-    font-family: 'Noto Sans KR', sans-serif;
+    /* ✨ [핵심 3] 기본 폰트를 프리텐다드로 변경합니다. */
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
     background-color: var(--chzzk-bg);
     color: var(--chzzk-text-secondary);
     line-height: 1.6;
@@ -30,11 +35,10 @@ body {
     border-radius: 12px;
     margin-bottom: 2.5rem;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border: 1px solid var(--chzzk-border); /* ✨ [추가] 은은한 테두리 */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* 기본 그림자 살짝 조정 */
+    border: 1px solid var(--chzzk-border);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* ✨ [핵심 수정] 마우스 호버 시 민트색 번짐 효과 */
 .card:hover,
 .page-wrapper:hover,
 .page-section:hover {
@@ -53,7 +57,6 @@ body {
     width: 100%;
     height: auto;
 }
-/* 페이지 래퍼는 테두리만 있고 배경색은 투명하게 하여 내부 페이지 배경색을 따르도록 함 */
 .page-wrapper {
     background-color: transparent;
     padding: 0;
@@ -85,13 +88,12 @@ body {
     display: inline-block; padding: 0.75rem 1.5rem; border-radius: 8px;
     text-decoration: none; font-weight: 700; transition: all 0.2s ease;
     font-size: clamp(14px, 2.5vw, 20px) !important;
-    /* ✨ [추가] 버튼에 포인트 색상 적용 */
     background-color: var(--chzzk-accent) !important;
     color: var(--chzzk-bg) !important;
 }
 
 .page-button:hover {
-    transform: translateY(-2px) scale(1.05); /* 살짝 커지는 효과 추가 */
+    transform: translateY(-2px) scale(1.05);
     box-shadow: 0 6px 12px rgba(0, 255, 163, 0.2);
 }
 
@@ -103,7 +105,7 @@ body {
 }
 
 .card-media-wrapper {
-    flex-shrink: 0; border-top-left-radius: 11px; border-top-right-radius: 11px; /* 테두리 안쪽으로 보이도록 조정 */
+    flex-shrink: 0; border-top-left-radius: 11px; border-top-right-radius: 11px;
     overflow: hidden;
 }
 .card img, .card video {
