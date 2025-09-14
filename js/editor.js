@@ -1,6 +1,6 @@
-// js/editor.js v2.5 - 스토리 편집 시 미리보기 화면 크기 조정
+// js/editor.js v2.6 - 스토리 미리보기 뷰포트 연동
 
-import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.O/firebase-firestore.js";
 import { ui } from './ui.js';
 import { pagesList } from './pages.js';
 import { navigateTo } from './navigation.js';
@@ -154,19 +154,23 @@ export const editor = {
     renderPreview() {
         if (!this.elements.contentArea) return;
         this.elements.contentArea.innerHTML = '';
+        const { viewport } = this.pageSettings;
         
-        const isStoryPage = this.components.some(c => c.type === 'scene');
+        // ✨ [핵심 수정] 뷰포트 크기 설정을 항상 최상단에서 적용합니다.
+        const [width, height] = (viewport || '375px,667px').split(',');
+        this.elements.preview.style.width = width;
+        this.elements.preview.style.height = height;
 
-        // ✨ [핵심 수정] 스토리 페이지 여부에 따라 미리보기 컨테이너 크기를 다르게 설정
+        const isStoryPage = this.components.some(c => c.type === 'scene');
+        
         if (isStoryPage) {
-            this.elements.preview.style.width = '100%';
-            this.elements.preview.style.height = '100%';
             this.elements.preview.style.backgroundColor = '#000';
             this.elements.backgroundVideo.style.display = 'none';
             this.elements.backgroundImageOverlay.style.display = 'none';
             this.elements.contentArea.style.justifyContent = 'center';
 
             const activeScene = this.components.find(c => c.id === this.activeComponentId && c.type === 'scene') || this.components.find(c => c.type === 'scene');
+            
             if (activeScene) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'preview-wrapper scene-preview-active';
@@ -189,11 +193,7 @@ export const editor = {
                 this.elements.contentArea.appendChild(wrapper);
             }
         } else {
-            const { bgVideo, bgImage, bgColor, viewport } = this.pageSettings;
-            const [width, height] = (viewport || '375px,667px').split(',');
-            this.elements.preview.style.width = width;
-            this.elements.preview.style.height = height;
-
+            const { bgVideo, bgImage, bgColor } = this.pageSettings;
             if (bgVideo) { this.elements.backgroundVideo.src = bgVideo; this.elements.backgroundVideo.style.display = 'block'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = 'transparent'; } 
             else if (bgImage) { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.backgroundImage = `url('${bgImage}')`; this.elements.backgroundImageOverlay.style.display = 'block'; this.elements.preview.style.backgroundColor = 'transparent'; } 
             else { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = bgColor; }
@@ -237,7 +237,7 @@ export const editor = {
                                 <option value="right" ${innerComp.styles?.textAlign === 'right' ? 'selected' : ''}>오른쪽</option>
                             </select></div>
                             <div class="control-group"><label>글자색</label><input type="text" data-color-picker data-scene-inner-style="${innerIndex}.color" value="${innerComp.styles?.color || '#FFFFFF'}"></div>
-                            <div class.control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>
+                            <div class="control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>
                         </div>
                     `;
                 });
