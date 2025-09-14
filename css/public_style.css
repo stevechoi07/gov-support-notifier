@@ -1,0 +1,76 @@
+/* css/public_style.css v1.0 - 기본 스타일링 */
+
+/* ✨ 페이지 전체의 기본 글꼴과 배경색을 설정합니다. */
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: #f1f5f9; /* 밝은 회색 배경 */
+    color: #334155; /* 어두운 회색 글씨 */
+    line-height: 1.6;
+}
+
+/* ✨ 콘텐츠가 표시될 메인 컨테이너의 스타일입니다. */
+#content-container {
+    max-width: 800px; /* 너무 넓지 않게 최대 너비 설정 */
+    margin: 2rem auto; /* 위아래 여백 및 가운데 정렬 */
+    padding: 1rem;
+}
+
+/* ✨ '페이지' 유형 콘텐츠를 위한 스타일입니다. */
+.page-section {
+    background-color: #ffffff; /* 흰색 배경 */
+    padding: 3rem 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2.5rem; /* 다른 콘텐츠와의 간격 */
+}
+
+.page-section h1 {
+    font-size: 2.5rem; /* 40px */
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.page-section p {
+    font-size: 1.125rem; /* 18px */
+    color: #64748b;
+}
+
+
+/* ✨ '카드' 유형 콘텐츠를 위한 스타일입니다. */
+.card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2.5rem; /* 다른 콘텐츠와의 간격 */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* 카드에 마우스를 올리면 살짝 떠오르는 효과 */
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.card img {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    width: 100%;
+    height: auto;
+}
+
+.card .p-6 {
+    padding: 1.5rem;
+}
+
+.card h2 {
+    font-size: 1.75rem; /* 28px */
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.card p {
+    font-size: 1rem; /* 16px */
+    color: #475569;
+}
