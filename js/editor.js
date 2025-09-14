@@ -1,4 +1,4 @@
-// js/editor.js v2.8 - 색상 변경 로직 버그 수정
+// js/editor.js v2.9 - 최종 안정화 버전
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -157,7 +157,12 @@ export const editor = {
         } catch (error) { console.error("페이지 제목 업데이트 실패:", error); alert("제목 업데이트에 실패했습니다."); ui.viewTitle.textContent = originalTitle; }
     },
 
-    renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); this.initSortable(); },
+    renderAll() {
+        this.renderPreview();
+        this.renderControls();
+        this.renderViewportControls();
+        this.initSortable();
+    },
 
     hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; },
 
@@ -178,6 +183,7 @@ export const editor = {
             this.elements.contentArea.style.justifyContent = 'center';
 
             const activeScene = this.components.find(c => c.id === this.activeComponentId && c.type === 'scene') || this.components.find(c => c.type === 'scene');
+            
             if (activeScene) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'preview-wrapper scene-preview-active';
@@ -219,41 +225,17 @@ export const editor = {
             this.elements.pageBackgroundControls.classList.toggle('is-disabled', isStoryPage);
             let notice = this.elements.pageBackgroundControls.querySelector('.disabled-notice');
             if (isStoryPage && !notice) {
-                notice = document.createElement('p');
-                notice.className = 'disabled-notice text-xs text-amber-400 mt-2';
-                notice.textContent = '※ 스토리 페이지에서는 각 장면의 배경을 사용합니다.';
-                this.elements.pageBackgroundControls.appendChild(notice);
-            } else if (!isStoryPage && notice) {
-                notice.remove();
-            }
+                notice = document.createElement('p'); notice.className = 'disabled-notice text-xs text-amber-400 mt-2'; notice.textContent = '※ 스토리 페이지에서는 각 장면의 배경을 사용합니다.'; this.elements.pageBackgroundControls.appendChild(notice);
+            } else if (!isStoryPage && notice) { notice.remove(); }
         }
-
         this.elements.pageBgColorInput.value = this.pageSettings.bgColor || '#DCEAF7'; this.elements.pageBackgroundImageInput.value = this.pageSettings.bgImage || ''; this.elements.pageBackgroundVideoInput.value = this.pageSettings.bgVideo || ''; this.elements.editorsContainer.innerHTML = '';
         this.components.forEach((c, componentIndex) => {
             const panel = document.createElement('div'); panel.className = 'editor-panel'; panel.dataset.id = c.id; const handle = document.createElement('h4'); handle.innerHTML = `${{ heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보', scene: '🎬 장면' }[c.type]} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div>`; if (c.id === this.activeComponentId) panel.classList.add('selected');
             let panelContentHTML = '';
             if (c.type === 'scene') {
                 let innerControlsHTML = '';
-                (c.components || []).forEach((innerComp, innerIndex) => {
-                    innerControlsHTML += `
-                        <div class="control-group"><label>장면 ${innerComp.type === 'heading' ? '제목' : '내용'}</label><textarea data-scene-inner-prop="${innerIndex}.content">${innerComp.content || ''}</textarea></div>
-                        <div class="style-grid">
-                            <div class="control-group"><label>정렬</label><select data-scene-inner-style="${innerIndex}.textAlign">
-                                <option value="left" ${innerComp.styles?.textAlign === 'left' ? 'selected' : ''}>왼쪽</option>
-                                <option value="center" ${innerComp.styles?.textAlign === 'center' ? 'selected' : ''}>가운데</option>
-                                <option value="right" ${innerComp.styles?.textAlign === 'right' ? 'selected' : ''}>오른쪽</option>
-                            </select></div>
-                            <div class="control-group"><label>글자색</label><input type="text" data-color-picker data-scene-inner-style="${innerIndex}.color" value="${innerComp.styles?.color || '#FFFFFF'}"></div>
-                            <div class="control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div>
-                        </div>
-                    `;
-                });
-                panelContentHTML = `
-                    <div class="control-group inline-group"><label>장면 배경색</label><input type="text" data-color-picker data-scene-prop="bgColor" value="${c.sceneSettings?.bgColor || '#333333'}"></div>
-                    <div class="control-group"><label>장면 배경 이미지 URL</label><input type="text" data-scene-prop="bgImage" value="${c.sceneSettings?.bgImage || ''}"></div>
-                    <hr style="border-color: #475569; margin: 15px 0;">
-                    ${innerControlsHTML}
-                `;
+                (c.components || []).forEach((innerComp, innerIndex) => { innerControlsHTML += ` <div class="control-group"><label>장면 ${innerComp.type === 'heading' ? '제목' : '내용'}</label><textarea data-scene-inner-prop="${innerIndex}.content">${innerComp.content || ''}</textarea></div> <div class="style-grid"> <div class="control-group"><label>정렬</label><select data-scene-inner-style="${innerIndex}.textAlign"> <option value="left" ${innerComp.styles?.textAlign === 'left' ? 'selected' : ''}>왼쪽</option> <option value="center" ${innerComp.styles?.textAlign === 'center' ? 'selected' : ''}>가운데</option> <option value="right" ${innerComp.styles?.textAlign === 'right' ? 'selected' : ''}>오른쪽</option> </select></div> <div class="control-group"><label>글자색</label><input type="text" data-color-picker data-scene-inner-style="${innerIndex}.color" value="${innerComp.styles?.color || '#FFFFFF'}"></div> <div class="control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div> </div> `; });
+                panelContentHTML = ` <div class="control-group inline-group"><label>장면 배경색</label><input type="text" data-color-picker data-scene-prop="bgColor" value="${c.sceneSettings?.bgColor || '#333333'}"></div> <div class="control-group"><label>장면 배경 이미지 URL</label><input type="text" data-scene-prop="bgImage" value="${c.sceneSettings?.bgImage || ''}"></div> <hr style="border-color: #475569; margin: 15px 0;"> ${innerControlsHTML} `;
             } else if (c.type === 'lead-form') {
                 let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #334155; padding: 10px; border-radius: 6px;">'; this.allPossibleFormFields.forEach(field => { const isChecked = c.activeFields?.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; }); checklistHTML += '</div></div>'; const privacy = c.privacy || { enabled: false, text: '' }; const privacySettingsHTML = `<div class="control-group" style="background-color: #334155; padding: 10px; border-radius: 6px;"><div class="inline-group"><label for="privacy-enabled-${c.id}" style="cursor: pointer;">🔒 개인정보 수집 동의</label><input type="checkbox" id="privacy-enabled-${c.id}" data-control-type="privacy-toggle" ${privacy.enabled ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>${privacy.enabled ? `<div class="control-group" style="margin-top: 10px; margin-bottom: 0;"><label>동의 문구</label><textarea data-prop="privacy.text" style="height: 60px;">${privacy.text}</textarea></div>` : ''}</div>`; panelContentHTML = `${checklistHTML}<div class="control-group"><label>📝 구글 스크립트 URL</label><textarea data-prop="googleScriptUrl" placeholder="배포된 구글 웹 앱 URL" style="height: 80px;">${c.googleScriptUrl || ''}</textarea></div><div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group"><label>🎉 성공 메시지</label><input type="text" data-prop="successMessage" value="${c.successMessage || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="text" data-color-picker data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>${privacySettingsHTML}`;
             } else {
