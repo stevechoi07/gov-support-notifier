@@ -1,4 +1,4 @@
-// js/editor.js v2.9 - 최종 안정화 버전
+// js/editor.js v2.9 - 최종 안정화 버전 (누락 함수 모두 포함)
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -173,35 +173,16 @@ export const editor = {
         const [width, height] = (viewport || '375px,667px').split(',');
         this.elements.preview.style.width = width;
         this.elements.preview.style.height = height;
-
         const isStoryPage = this.components.some(c => c.type === 'scene');
-        
         if (isStoryPage) {
-            this.elements.preview.style.backgroundColor = '#000';
-            this.elements.backgroundVideo.style.display = 'none';
-            this.elements.backgroundImageOverlay.style.display = 'none';
-            this.elements.contentArea.style.justifyContent = 'center';
-
+            this.elements.preview.style.backgroundColor = '#000'; this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.contentArea.style.justifyContent = 'center';
             const activeScene = this.components.find(c => c.id === this.activeComponentId && c.type === 'scene') || this.components.find(c => c.type === 'scene');
-            
             if (activeScene) {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'preview-wrapper scene-preview-active';
-                const bgImage = activeScene.sceneSettings?.bgImage;
-                const bgColor = activeScene.sceneSettings?.bgColor || '#000';
-                wrapper.style.cssText = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''} background-size: cover; background-position: center;`;
-                
+                const wrapper = document.createElement('div'); wrapper.className = 'preview-wrapper scene-preview-active'; const bgImage = activeScene.sceneSettings?.bgImage; const bgColor = activeScene.sceneSettings?.bgColor || '#000'; wrapper.style.cssText = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''} background-size: cover; background-position: center;`;
                 (activeScene.components || []).forEach(innerComp => {
                     let element;
-                    switch(innerComp.type) {
-                        case 'heading': element = document.createElement('h1'); break;
-                        case 'paragraph': element = document.createElement('p'); break;
-                        case 'button': element = document.createElement('button'); break;
-                        default: element = document.createElement('div');
-                    }
-                    element.textContent = innerComp.content;
-                    Object.assign(element.style, innerComp.styles);
-                    wrapper.appendChild(element);
+                    switch(innerComp.type) { case 'heading': element = document.createElement('h1'); break; case 'paragraph': element = document.createElement('p'); break; case 'button': element = document.createElement('button'); break; default: element = document.createElement('div'); }
+                    element.textContent = innerComp.content; Object.assign(element.style, innerComp.styles); wrapper.appendChild(element);
                 });
                 this.elements.contentArea.appendChild(wrapper);
             }
@@ -210,7 +191,6 @@ export const editor = {
             if (bgVideo) { this.elements.backgroundVideo.src = bgVideo; this.elements.backgroundVideo.style.display = 'block'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = 'transparent'; } 
             else if (bgImage) { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.backgroundImage = `url('${bgImage}')`; this.elements.backgroundImageOverlay.style.display = 'block'; this.elements.preview.style.backgroundColor = 'transparent'; } 
             else { this.elements.backgroundVideo.style.display = 'none'; this.elements.backgroundImageOverlay.style.display = 'none'; this.elements.preview.style.backgroundColor = bgColor; }
-
             const hasBottomComponent = this.components.some(c => (c.type === 'button' || c.type === 'lead-form') && c.styles?.verticalAlign === 'bottom');
             this.elements.contentArea.style.justifyContent = hasBottomComponent ? 'flex-start' : 'center';
             this.components.forEach(c => {
@@ -274,6 +254,27 @@ export const editor = {
         });
     },
 
+    renderViewportControls() {
+        this.elements.viewportControlsLeft.innerHTML = '';
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'viewport-controls';
+        this.viewportOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'viewport-btn';
+            btn.dataset.value = opt.value;
+            btn.title = opt.title;
+            btn.innerHTML = opt.label;
+            if (this.pageSettings.viewport === opt.value) btn.classList.add('active');
+            btn.onclick = () => {
+                this.pageSettings.viewport = opt.value;
+                this.saveAndRender(false, true);
+                this.renderViewportControls();
+            };
+            btnGroup.appendChild(btn);
+        });
+        this.elements.viewportControlsLeft.appendChild(btnGroup);
+    },
+    
     initSortable() {
         if (this.sortableInstance) this.sortableInstance.destroy();
         this.sortableInstance = new Sortable(this.elements.editorsContainer, { handle: 'h4', animation: 150, ghostClass: 'sortable-ghost', onEnd: (evt) => { if (evt.oldIndex === evt.newIndex) return; const item = this.components.splice(evt.oldIndex, 1)[0]; this.components.splice(evt.newIndex, 0, item); this.saveAndRender(false, true); }, });
