@@ -1,9 +1,8 @@
-// js/public.js v1.2 - 페이지 컴포넌트 및 비디오 렌더링 완전 지원
+// js/public.js v1.3 - 카드 및 페이지 렌더링 로직 강화
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
 
-// ✨ [추가] 자바스크립트 스타일 객체를 인라인 스타일 문자열로 변환하는 헬퍼 함수
 function stylesToString(styles = {}) {
     return Object.entries(styles)
         .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
@@ -44,29 +43,33 @@ function renderAllContent(contents) {
     const contentHtml = contents.map(content => {
         if (content.adType) {
             // === 카드(Card) 렌더링 ===
-            // ✨ [수정] mediaType을 확인하여 비디오와 이미지를 다르게 처리합니다.
             let mediaHtml = '';
             if (content.mediaUrl) {
                 if (content.mediaType === 'video') {
-                    mediaHtml = `<video src="${content.mediaUrl}" autoplay loop muted playsinline class="w-full h-auto"></video>`;
+                    mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`;
                 } else {
-                    mediaHtml = `<img src="${content.mediaUrl}" alt="${content.title}" class="w-full h-auto">`;
+                    mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" alt="${content.title || '카드 이미지'}"></div>`;
                 }
             }
+            // ✨ [수정] 제목/설명이 없는 경우를 대비하고, 파트너스 문구를 추가합니다.
+            const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
             return `
                 <div class="card">
                     ${mediaHtml}
-                    <div class="p-6">
-                        <h2 class="text-2xl font-bold mb-2">${content.title}</h2>
-                        <p class="text-gray-700">${content.description || ''}</p>
+                    <div class="card-content">
+                        <h2>${content.title || '제목 없음'}</h2>
+                        <p>${content.description || ' '}</p>
+                        ${partnersText}
                     </div>
                 </div>
             `;
         } else {
             // === 페이지(Page) 렌더링 ===
-            // ✨ [수정] 페이지 설정(배경 등)과 컴포넌트 배열을 읽어서 전체 페이지를 구성합니다.
             const pageSettings = content.pageSettings || {};
-            const pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'}; ${pageSettings.bgImage ? `background-image: url('${pageSettings.bgImage}');` : ''}`;
+            const pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
+            
+            // ✨ [수정] 배경 이미지가 있을 경우, 별도의 배경 div를 생성합니다.
+            const bgImageHtml = pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
 
             const componentsHtml = (content.components || []).map(component => {
                 const componentStyle = stylesToString(component.styles);
@@ -76,8 +79,7 @@ function renderAllContent(contents) {
                     case 'paragraph':
                         return `<p class="page-component" style="${componentStyle}">${component.content}</p>`;
                     case 'button':
-                        return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
-                    // 향후 다른 컴포넌트 유형도 여기에 추가할 수 있습니다.
+                        return `<div class="page-component" style="text-align: ${component.styles?.textAlign || 'center'}"><a href="${component.link || '#'}" class="page-button" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a></div>`;
                     default:
                         return '';
                 }
@@ -85,6 +87,7 @@ function renderAllContent(contents) {
 
             return `
                 <div class="page-section" style="${pageStyle}">
+                    ${bgImageHtml}
                     <div class="page-content-wrapper">
                         ${componentsHtml}
                     </div>
@@ -97,6 +100,7 @@ function renderAllContent(contents) {
 }
 
 async function renderPublicPage() {
+    // ... (이하 동일)
     const container = document.getElementById('content-container');
     console.log("🚀 Public page script loaded. Waiting for Firebase...");
 

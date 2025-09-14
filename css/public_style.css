@@ -1,4 +1,4 @@
-/* css/public_style.css v1.1 - 페이지 컴포넌트 및 비디오 스타일 추가 */
+/* css/public_style.css v1.2 - 카드 콘텐츠 및 페이지 배경 스타일 개선 */
 
 body {
     font-family: 'Noto Sans KR', sans-serif;
@@ -9,41 +9,67 @@ body {
 
 #content-container {
     max-width: 800px;
-    margin: 2rem auto;
-    padding: 1rem;
+    margin: 0 auto; /* 위쪽 여백 제거, 카드 자체 여백으로 제어 */
+    padding: 2rem 1rem;
 }
 
 /* --- 페이지 스타일 --- */
 .page-section {
-    background-color: #ffffff;
-    padding: 3rem 2rem;
+    position: relative; /* 자식 요소를 위한 기준점 */
+    overflow: hidden; /* 배경 이미지가 삐져나가지 않도록 */
+    padding: 5rem 2rem;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     margin-bottom: 2.5rem;
-    /* ✨ [추가] 배경 이미지를 위한 스타일 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh; /* 페이지 섹션의 최소 높이 지정 */
+}
+
+/* ✨ [추가] 페이지 배경 이미지 스타일 */
+.page-background-image {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background-size: cover;
     background-position: center;
+    z-index: 1; /* 콘텐츠보다 뒤에 있도록 */
+}
+/* ✨ [추가] 배경 이미지 위에 텍스트가 잘 보이도록 반투명 오버레이 추가 */
+.page-background-image::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5); /* 어두운 오버레이 */
 }
 
-/* ✨ [추가] 페이지 내부 컴포넌트를 감싸는 래퍼 */
+
 .page-content-wrapper {
-    max-width: 650px; /* 가독성을 위해 콘텐츠 최대 너비 제한 */
+    position: relative; /* 오버레이보다 위에 있도록 */
+    z-index: 2;
+    width: 100%;
+    max-width: 650px;
     margin: 0 auto;
-    text-align: center; /* 기본 정렬을 가운데로 */
+    text-align: center;
 }
 
-/* ✨ [추가] 페이지 내부 모든 컴포넌트의 기본 여백 */
 .page-component {
     margin-bottom: 1.5rem;
-    word-break: keep-all; /* 단어 단위 줄바꿈으로 가독성 향상 */
+    word-break: keep-all;
+}
+/* ✨ [수정] 마지막 컴포넌트의 아래 여백은 제거 */
+.page-component:last-child {
+    margin-bottom: 0;
 }
 
-/* ✨ [추가] 페이지 내부 버튼 스타일 */
+
 .page-button {
-    display: inline-block; /* 인라인 블록 요소로 만듦 */
+    display: inline-block;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
-    text-decoration: none; /* 밑줄 제거 */
+    text-decoration: none;
     font-weight: 700;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -61,6 +87,9 @@ body {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     margin-bottom: 2.5rem;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    /* ✨ [추가] 내부 콘텐츠를 위해 flexbox 사용 */
+    display: flex;
+    flex-direction: column;
 }
 
 .card:hover {
@@ -68,27 +97,43 @@ body {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* ✨ [수정] 이미지와 비디오 모두에 적용될 스타일 */
-.card img, .card video {
+/* ✨ [추가] 미디어를 감싸는 래퍼, 미디어 유형에 따라 비율 유지 가능 */
+.card-media-wrapper {
+    flex-shrink: 0;
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
+    overflow: hidden; /* 내부 미디어가 둥근 모서리를 넘지 않도록 */
+}
+
+.card img, .card video {
     width: 100%;
     height: auto;
-    display: block; /* 아래쪽 작은 여백 제거 */
+    display: block;
 }
 
-.card .p-6 {
+/* ✨ [수정] 클래스 이름 변경 및 스타일 추가 */
+.card-content {
     padding: 1.5rem;
+    flex-grow: 1; /* 남은 공간을 모두 차지하도록 */
 }
 
-.card h2 {
-    font-size: 1.75rem;
+.card-content h2 {
+    font-size: 1.5rem; /* 24px */
     font-weight: 700;
     color: #1e293b;
     margin-bottom: 0.5rem;
 }
 
-.card p {
+.card-content p {
     font-size: 1rem;
     color: #475569;
+}
+
+/* ✨ [추가] 파트너스 문구 스타일 */
+.partners-text {
+    font-size: 0.75rem; /* 12px */
+    color: #94a3b8; /* 밝은 회색 */
+    margin-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1rem;
 }
