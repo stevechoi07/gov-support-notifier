@@ -1,4 +1,4 @@
-/* css/public_style.css v1.5 (수정본) - '치직' 스타일 1단계 + 페이지 배경 비디오 스타일 포함 */
+/* css/public_style.css v1.6 - '치직' 스타일 2단계: 디테일 및 호버 효과 적용 */
 
 :root {
     --chzzk-bg: #0F0F12;
@@ -22,21 +22,28 @@ body {
     padding: 2rem 1rem;
 }
 
-/* --- 페이지 스타일 --- */
+/* --- 공통 컨테이너 스타일 --- */
+.card,
 .page-wrapper,
 .page-section {
     background-color: var(--chzzk-container-bg);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2.5rem;
     border-radius: 12px;
+    margin-bottom: 2.5rem;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid var(--chzzk-border); /* ✨ 은은한 테두리 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
+/* ✨ 마우스 호버 시 민트색 번짐 효과 */
+.card:hover,
 .page-wrapper:hover,
 .page-section:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 20px 0 rgba(0, 255, 163, 0.25);
+    border-color: rgba(0, 255, 163, 0.5);
 }
 
+/* --- 페이지 스타일 --- */
 .page-section {
     position: relative;
     overflow: hidden;
@@ -46,46 +53,32 @@ body {
     width: 100%;
     height: auto;
 }
+.page-wrapper {
+    background-color: transparent;
+    padding: 0;
+}
 
-/* ✨ [핵심 추가] 페이지 배경 이미지와 비디오를 위한 공통 스타일 */
+
 .page-background-image,
 .page-background-video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     z-index: 1;
 }
-
 .page-background-image {
-    background-size: cover;
-    background-position: center;
+    background-size: cover; background-position: center;
 }
-
 .page-background-video {
-    object-fit: cover; /* 비디오가 컨테이너를 꽉 채우도록 설정 */
+    object-fit: cover;
 }
-
 .page-section::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0,0,0,0.5);
     z-index: 2;
 }
-
 .page-content-wrapper {
-    position: relative;
-    z-index: 3;
-    width: 100%;
-    max-width: 90%;
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    position: relative; z-index: 3; width: 100%; max-width: 90%;
+    padding: 2rem; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
 }
 .page-component {
     margin-bottom: 1.5rem; word-break: keep-all; max-width: 100%;
@@ -94,35 +87,33 @@ body {
 .page-component[style*="font-size"] { font-size: clamp(16px, 5vw, 48px) !important; }
 .page-component[style*="font-size"][style*="text-align: left"] { text-align: left !important; }
 .page-component[style*="font-size"][style*="text-align: right"] { text-align: right !important; }
+
 .page-button {
     display: inline-block; padding: 0.75rem 1.5rem; border-radius: 8px;
-    text-decoration: none; font-weight: 700; transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none; font-weight: 700; transition: all 0.2s ease;
     font-size: clamp(14px, 2.5vw, 20px) !important;
+    /* ✨ 버튼에 포인트 색상 적용 */
+    background-color: var(--chzzk-accent) !important;
+    color: var(--chzzk-bg) !important;
 }
-.page-button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+.page-button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 12px rgba(0, 255, 163, 0.2);
+}
 
 
 /* --- 카드 스타일 --- */
 .card {
-    background-color: var(--chzzk-container-bg);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2.5rem;
-    border-radius: 12px;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
 }
 
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-}
-
 .card-media-wrapper {
-    flex-shrink: 0; border-top-left-radius: 12px; border-top-right-radius: 12px;
+    flex-shrink: 0; border-top-left-radius: 11px; border-top-right-radius: 11px;
     overflow: hidden;
 }
-.card img, .card video { /* 카드 비디오 스타일은 여기에 이미 포함되어 있습니다. */
+.card img, .card video {
     width: 100%; height: auto; display: block;
 }
 .card-content { padding: 1.5rem; flex-grow: 1; }
