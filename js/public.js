@@ -1,4 +1,4 @@
-// js/public.js (v3.3) - VIP 패스 제시하기
+// js/public.js(v3.3) - VIP 패스 제시하기
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';

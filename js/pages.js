@@ -1,4 +1,4 @@
-// js/pages.js v2.3 - 페이지 목록에 '스토리' 뱃지 추가
+// js/pages.js v2.4 - 새 페이지 생성 시 isMembersOnly: false 자동 추가
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -84,7 +84,8 @@ export async function handleNewPageClick() {
                 components: [],
                 pageSettings: { bgColor: '#1e293b', bgImage: '', bgVideo: '', viewport: '375px,667px' },
                 viewCount: 0,
-                clickCount: 0
+                clickCount: 0,
+                isMembersOnly: false // ✨ 바로 이 한 줄이 추가되었습니다!
             };
             const newPageRef = await addDoc(collection(db, "pages"), newPageData);
             return newPageRef.id;
