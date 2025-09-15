@@ -1,9 +1,9 @@
-// netlify/functions/get-content.js v1.0
+// netlify/functions/get-content.js v2.0 - JWT를 이용한 VIP 패스 검사 기능 추가
 
 const admin = require('firebase-admin');
+const jwt = require('jsonwebtoken'); // VIP 패스 검증을 위해 제작기를 불러옵니다.
 
 // --- Firebase Admin SDK 초기화 ---
-// subscribe.js에서 사용한 방식을 그대로 가져와서 일관성을 유지해요!
 try {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
   if (!admin.apps.length) {
@@ -17,16 +17,35 @@ try {
 const db = admin.firestore();
 
 // --- 메인 핸들러 함수 ---
-// 이 함수가 우리 경비원의 모든 행동을 정의합니다.
 exports.handler = async (event, context) => {
-  // 경비원은 손님이 'GET' 방식으로 요청할 때만 일해요.
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const JWT_SECRET = process.env.JWT_SECRET;
+  if (!JWT_SECRET) {
+      return { statusCode: 500, body: JSON.stringify({ message: '서버 설정 오류입니다.' }) };
+  }
+
+  let isVip = false; // 기본적으로는 VIP가 아니라고 가정합니다.
+
+  // --- 1. 손님이 VIP 패스를 보여줬는지 확인 ---
+  const authHeader = event.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1]; // 'Bearer ' 뒷부분의 토큰만 추출
+    try {
+      // --- 2. VIP 패스가 진짜인지 비밀 도장으로 검증 ---
+      jwt.verify(token, JWT_SECRET);
+      isVip = true; // 검증 성공! 이 손님은 VIP입니다.
+      console.log('VIP user access granted.');
+    } catch (error) {
+      // 토큰이 위조되었거나, 만료되었을 경우
+      console.log('Invalid or expired token:', error.message);
+      isVip = false;
+    }
+  }
+
   try {
-    // --- 1. 레이아웃 순서 정보 가져오기 ---
-    // 마치 요리사가 레시피(mainLayout)를 먼저 확인하는 것과 같아요.
     const layoutRef = db.collection('layouts').doc('mainLayout');
     const layoutDoc = await layoutRef.get();
     
@@ -35,24 +54,27 @@ exports.handler = async (event, context) => {
     }
     const contentIds = layoutDoc.data().contentIds || [];
 
-    // --- 2. 모든 콘텐츠(재료) 한 번에 가져오기 ---
-    const pagesPromise = db.collection('pages').get();
-    const adsPromise = db.collection('ads').get();
-    
-    // 두 가지 재료를 동시에 준비해서 시간을 절약해요!
-    const [pagesSnapshot, adsSnapshot] = await Promise.all([pagesPromise, adsPromise]);
+    // --- 3. VIP 여부에 따라 다른 종류의 콘텐츠를 준비 ---
+    let pagesQuery, adsQuery;
 
-    // --- 3. 가져온 콘텐츠를 찾기 쉽게 정리하기 ---
-    // 모든 재료에 이름표를 붙여서(id 기준) 바로 찾을 수 있게 준비해요.
+    if (isVip) {
+      // VIP 손님에게는 모든 콘텐츠를 보여줍니다.
+      pagesQuery = db.collection('pages').get();
+      adsQuery = db.collection('ads').get();
+    } else {
+      // 일반 손님에게는 공개 콘텐츠('isMembersOnly'가 true가 아닌 것)만 보여줍니다.
+      pagesQuery = db.collection('pages').where('isMembersOnly', '!=', true).get();
+      adsQuery = db.collection('ads').where('isMembersOnly', '!=', true).get();
+    }
+    
+    const [pagesSnapshot, adsSnapshot] = await Promise.all([pagesQuery, adsQuery]);
+
     const allContentMap = new Map();
     pagesSnapshot.forEach(doc => allContentMap.set(doc.id, { ...doc.data(), id: doc.id }));
     adsSnapshot.forEach(doc => allContentMap.set(doc.id, { ...doc.data(), id: doc.id }));
     
-    // --- 4. 레시피 순서대로 콘텐츠 최종 조립하기 ---
-    // 이름표를 보고 레시피 순서대로 재료를 접시에 담습니다.
     const orderedContent = contentIds.map(id => allContentMap.get(id)).filter(Boolean);
 
-    // --- 5. 완성된 요리(데이터)를 손님에게 전달! ---
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
