@@ -1,4 +1,4 @@
-// js/public.js v3.6 - 멤버 전용 콘텐츠에 블러 미리보기 효과 추가
+// js/public.js v3.7 - 구독 성공 시 실시간으로 콘텐츠 잠금 해제
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -371,7 +371,6 @@ document.addEventListener('submit', async (event) => {
     if (event.target.classList.contains('subscription-form')) {
         event.preventDefault();
         const form = event.target;
-        const card = form.closest('.subscription-card'); // form의 부모 카드를 찾습니다.
         const input = form.querySelector('input[type="email"]');
         const button = form.querySelector('button');
         const email = input.value;
@@ -391,21 +390,17 @@ document.addEventListener('submit', async (event) => {
                 throw new Error(result.message || '오류가 발생했습니다.');
             }
             
-            // 토스트 메시지를 먼저 보여줍니다!
             showToast(result.message, 'success');
             
             if (result.token) {
                 localStorage.setItem('vip-pass', result.token);
-                isSubscribed = true;
+                isSubscribed = true; // 상태를 즉시 업데이트
             }
             
-            // ✨ [핵심 변경] 폼을 성공 메시지로 교체합니다.
-            if (card) {
-                card.innerHTML = `
-                    <h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">구독이 완료되었습니다!</h2>
-                    <p style="color: #9ca3af; margin-bottom: 0;"><strong>${email}</strong> (으)로 최신 소식을 보내드릴게요.</p>
-                `;
-            }
+            // ✨ [핵심 변경] 페이지 전체를 다시 렌더링해서 모든 잠금을 해제합니다.
+            // 이렇게 하면 새로고침 없이도 "이미 구독 중입니다" 메시지와 함께
+            // 멤버 전용 콘텐츠가 모두 나타나게 됩니다.
+            await renderPublicPage();
 
         } catch (error) {
             showToast(error.message, 'error');
