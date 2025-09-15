@@ -1,7 +1,6 @@
-// js/navigation.js v2.4 - 역할 재조정
+// js/navigation.js v2.5 - '구독 폼 추가' 버튼 이벤트 리스너 추가
 
 import { ui } from './ui.js';
-// ✨ firebase 관련 import는 더 이상 필요 없습니다. 각 모듈이 직접 처리합니다.
 
 export async function navigateTo(viewName, pageId = null) {
     const targetView = document.getElementById(`${viewName}-view`);
@@ -28,9 +27,9 @@ export async function navigateTo(viewName, pageId = null) {
         pages: { title: '📄 페이지 관리', action: `<button id="new-page-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">✨ 새 페이지</button>` },
         cards: { title: '🗂️ 콘텐츠 카드 관리', action: `
             <div class="flex gap-2">
-				<button id="add-new-subscription-card-button" class="bg-teal-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-teal-600">📧 구독 폼 추가</button>
+                <button id="add-new-subscription-card-button" class="bg-teal-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-teal-600">📧 구독 폼 추가</button>
                 <button id="add-new-iframe-card-button" class="bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-600">➕ iframe 카드</button>
-                <button id="add-new-card-button" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 미디어 카드</button>				
+                <button id="add-new-card-button" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 미디어 카드</button>
             </div>`
         },
         editor: { title: '📝 페이지 편집 중...', action: '' }
@@ -39,7 +38,6 @@ export async function navigateTo(viewName, pageId = null) {
     if (ui.viewTitle) ui.viewTitle.textContent = viewConfig[viewName]?.title || 'Dashboard';
     if (ui.headerActions) ui.headerActions.innerHTML = viewConfig[viewName]?.action || '';
 
-    // ✨ 각 모듈의 init 함수를 파라미터 없이 호출합니다.
     if (viewName === 'layout') {
         const { initLayoutView, handleAddContentClick } = await import('./layoutManager.js');
         initLayoutView();
@@ -56,6 +54,8 @@ export async function navigateTo(viewName, pageId = null) {
         cards.init();
         document.getElementById('add-new-card-button')?.addEventListener('click', () => cards.handleAddNewAd());
         document.getElementById('add-new-iframe-card-button')?.addEventListener('click', () => cards.handleAddNewIframeAd());
+        // ✨ [핵심 수정] '구독 폼 추가' 버튼에 이벤트 리스너를 추가합니다.
+        document.getElementById('add-new-subscription-card-button')?.addEventListener('click', () => cards.handleAddNewSubscriptionCard());
     } else if (viewName === 'editor' && pageId) {
         const { editor } = await import('./editor.js');
         editor.init(pageId);
