@@ -166,7 +166,6 @@ function renderAllContent(contents, append = false) {
     }
 
     setupIntersectionObserver();
-    setupTiltEffect();
 }
 
 // ✨ [v3.1 변경] 더 이상 서버에 요청하지 않고, 미리 받아온 전체 데이터에서 다음 부분을 잘라 씁니다.
@@ -260,25 +259,6 @@ function setupIntersectionObserver() {
     });
     const targets = document.querySelectorAll('[data-observe-target]');
     targets.forEach(target => observer.observe(target));
-}
-
-function setupTiltEffect() {
-    const tiltElements = document.querySelectorAll('.card, .page-section');
-    const MAX_ROTATION = 8;
-    tiltElements.forEach(el => {
-        el.addEventListener('mousemove', (e) => {
-            const rect = el.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const { width, height } = rect;
-            const rotateX = MAX_ROTATION * ((y / height) - 0.5) * -2;
-            const rotateY = MAX_ROTATION * ((x / width) - 0.5) * 2;
-            el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-        });
-        el.addEventListener('mouseleave', () => {
-            el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
-        });
-    });
 }
 
 // ✨ [v3.3 핵심 변경] VIP 패스가 있으면 요청 헤더에 담아 보내도록 수정
