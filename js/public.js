@@ -1,4 +1,4 @@
-// js/public.js (v3.5) "뉴스레터 구독" 체크 
+// js/public.js v3.6 - 멤버 전용 콘텐츠에 블러 미리보기 효과 추가
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -107,36 +107,20 @@ function renderAllContent(contents, append = false) {
     }
 
     const contentHtml = contents.map(content => {
-        if (content.isMembersOnly && !isSubscribed) {
-            return `<div class="card members-only-lock"><h2>✨ 구독자 전용 콘텐츠</h2><p>뉴스레터를 구독하고 더 많은 인사이트를 확인해보세요!</p></div>`;
-        } else if (content.adType === 'subscription-form') {
-			// ✨ [v3.5 핵심 변경] 구독 여부에 따라 다른 화면을 보여줍니다.
-			if (isSubscribed) {
-				// 이미 구독한 사용자일 경우
-				return `
-					<div class="card subscription-card">
-						<h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2>
-						<p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p>
-					</div>
-				`;
-			} else {
-				// 아직 구독하지 않은 사용자일 경우 (기존 코드와 동일)
-				return `
-					<div class="card subscription-card">
-						<h2>${content.title}</h2>
-						<p>${content.description}</p>
-						<form class="subscription-form">
-							<input type="email" placeholder="이메일 주소를 입력하세요" required>
-							<button type="submit">구독하기</button>
-						</form>
-					</div>
-				`;
-			}
-		}  else if (content.components && content.components.some(c => c.type === 'scene')) {
+        let cardHtml = ''; // 각 카드의 HTML을 임시 저장할 변수
+
+        // --- 1. 먼저 모든 종류의 카드 HTML을 생성합니다. ---
+        if (content.adType === 'subscription-form') {
+            if (isSubscribed) {
+                cardHtml = `<div class="card subscription-card"><h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2><p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p></div>`;
+            } else {
+                cardHtml = `<div class="card subscription-card"><h2>${content.title}</h2><p>${content.description}</p><form class="subscription-form"><input type="email" placeholder="이메일 주소를 입력하세요" required><button type="submit">구독하기</button></form></div>`;
+            }
+        } else if (content.components && content.components.some(c => c.type === 'scene')) {
             const firstScene = content.components[0] || {};
             const sceneSettings = firstScene.sceneSettings || {};
             const bgHtml = `<div class="story-launcher-bg" style="background-image: url('${sceneSettings.bgImage || ''}');"></div>`;
-            return ` <div class="page-section story-launcher" style="background-color: ${sceneSettings.bgColor || '#000'}; cursor: pointer;" data-story-page-id="${content.id}" data-observe-target> ${bgHtml} <div class="page-content-wrapper"> <h1 class="page-component" style="color:white; font-size: 2rem;">${content.name}</h1> <p style="color: white; opacity: 0.8;">클릭하여 스토리 보기</p> </div> </div> `;
+            cardHtml = `<div class="page-section story-launcher" style="background-color: ${sceneSettings.bgColor || '#000'}; cursor: pointer;" data-story-page-id="${content.id}" data-observe-target>${bgHtml}<div class="page-content-wrapper"><h1 class="page-component" style="color:white; font-size: 2rem;">${content.name}</h1><p style="color: white; opacity: 0.8;">클릭하여 스토리 보기</p></div></div>`;
         } else if (content.adType) {
             const contentType = 'card';
             const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
@@ -151,11 +135,12 @@ function renderAllContent(contents, append = false) {
             const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
             const cardInnerHtml = `<div class="card" ${commonAttributes}>${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`;
             if (content.link) {
-                return `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`;
+                cardHtml = `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`;
             } else {
-                return cardInnerHtml;
+                cardHtml = cardInnerHtml;
             }
         } else {
+            // ... (페이지 섹션 렌더링 로직은 기존과 동일)
             const contentType = 'page';
             const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
             const pageSettings = content.pageSettings || {};
@@ -176,8 +161,27 @@ function renderAllContent(contents, append = false) {
                     default: return '';
                 }
             }).join('');
-            return `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
+            cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
         }
+
+        // --- 2. ✨ [핵심] 생성된 HTML에 잠금 효과를 적용할지 결정합니다. ---
+        if (content.isMembersOnly && !isSubscribed) {
+            // 멤버 전용 콘텐츠인데 구독하지 않았다면, 블러 효과와 오버레이로 감쌉니다.
+            return `
+                <div class="locked-content-wrapper">
+                    <div class="is-blurred">${cardHtml}</div>
+                    <div class="locked-overlay">
+                        <h3>✨ 구독자 전용 콘텐츠</h3>
+                        <p>구독하고 바로 확인해보세요!</p>
+                        <button class="subscribe-button-overlay">구독하기</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 잠글 필요가 없다면 원래 HTML을 그대로 반환합니다.
+        return cardHtml;
+
     }).join('');
 
     if (append) {
@@ -187,6 +191,8 @@ function renderAllContent(contents, append = false) {
     }
 
     setupIntersectionObserver();
+    // 3D Tilt 효과는 잠금 화면과 충돌할 수 있으므로, 원하시면 다시 추가하거나 그대로 두세요.
+    // setupTiltEffect();
 }
 
 // ✨ [v3.1 변경] 더 이상 서버에 요청하지 않고, 미리 받아온 전체 데이터에서 다음 부분을 잘라 씁니다.
