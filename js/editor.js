@@ -1,4 +1,4 @@
-// js/editor.js v2.10 - 스토리 편집 시 배경 미리보기 버그 수정
+// js/editor.js v2.12 - 버튼 블록 기본 위치 하단으로 변경
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -7,18 +7,163 @@ import { navigateTo } from './navigation.js';
 import { firebaseReady, getFirestoreDB } from './firebase.js';
 
 export const editor = {
-    // ... (속성 생략)
-    currentPageId: null, components: [], pageSettings: {}, activeComponentId: null, sortableInstance: null, elements: {},
-    viewportOptions: [ { id: 'mobile', label: '🤳', value: '375px,667px', title: '모바일' }, { id: 'tablet', label: '📱', value: '768px,1024px', title: '태블릿' }, { id: 'desktop', label: '🖥️', value: '1280px,800px', title: '데스크탑' }, { id: 'full', label: '전체', value: '100%,100%', title: '전체 화면' } ],
-    allPossibleFormFields: [ { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' }, { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' }, { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } ],
+    currentPageId: null, 
+    components: [], 
+    pageSettings: {}, 
+    activeComponentId: null, 
+    sortableInstance: null, 
+    elements: {},
+    viewportOptions: [
+        { id: 'mobile',  label: '🤳', value: '375px,667px',  title: '모바일' },
+        { id: 'tablet',  label: '📱', value: '768px,1024px', title: '태블릿' },
+        { id: 'desktop', label: '🖥️', value: '1280px,800px', title: '데스크탑' },
+        { id: 'full',    label: '전체', value: '100%,100%',   title: '전체 화면' }
+    ],
+    allPossibleFormFields: [ 
+        { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, 
+        { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, 
+        { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' }, 
+        { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' }, 
+        { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } 
+    ],
 
-    // ... (init, loadProject, setupEventListeners, handleColorRealtimeUpdate, handleTitleUpdate, renderAll, hexToRgba 함수는 변경 없음)
-    async init(pageId) { await firebaseReady; this.currentPageId = pageId; const editorView = document.getElementById('editor-view'); if (!editorView) return; editorView.innerHTML = ` <div class="editor-main-container"> <div id="editor-controls-wrapper"><div class="editor-control-panel"> <div class="control-group"><button id="back-to-list-btn" style="background-color: #475569; color: white;">← 목록으로 돌아가기</button></div> <h3>- 콘텐츠 블록 추가 -</h3> <div class="control-group component-adders" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"> <button data-type="heading">➕ 제목</button> <button data-type="paragraph">➕ 내용</button> <button data-type="button">➕ 버튼</button> <button data-type="lead-form">➕ 고객 정보</button> <button data-type="scene" style="grid-column: 1 / -1; background-color: #be185d;">✨ ➕ 장면 (스토리용)</button> </div> <hr style="border-color: var(--border-color); margin: 20px 0;"> <div id="page-background-controls"> <h3>- 페이지 배경 -</h3> <div class="control-group inline-group"><label for="page-bg-color">배경색</label><input type="text" data-color-picker id="page-bg-color"></div> <div class="control-group"><label for="page-background-image">배경 이미지 URL</label><input type="text" id="page-background-image"></div> <div class="control-group"><label for="page-background-video">배경 동영상 URL</label><input type="text" id="page-background-video"></div> </div> <hr style="border-color: var(--border-color); margin: 20px 0;"> <div id="editors-container"></div> </div></div> <div id="editor-preview-container" class="bg-slate-800"><div class="editor-control-panel" style="display: flex; flex-direction: column; height: 100%;"> <div id="viewport-controls-left"></div> <div id="editor-preview-wrapper"><div id="editor-preview"><video class="background-video" autoplay loop muted playsinline></video><div class="background-image-overlay"></div><div class="content-area"></div></div></div> </div></div> </div>`; this.elements = { preview: editorView.querySelector('#editor-preview'), contentArea: editorView.querySelector('.content-area'), backgroundImageOverlay: editorView.querySelector('.background-image-overlay'), backgroundVideo: editorView.querySelector('.background-video'), editorsContainer: editorView.querySelector('#editors-container'), adders: editorView.querySelectorAll('.component-adders button'), pageBgColorInput: editorView.querySelector('#page-bg-color'), pageBackgroundImageInput: editorView.querySelector('#page-background-image'), pageBackgroundVideoInput: editorView.querySelector('#page-background-video'), viewportControlsLeft: editorView.querySelector('#viewport-controls-left'), backToListBtn: editorView.querySelector('#back-to-list-btn'), pageBackgroundControls: editorView.querySelector('#page-background-controls') }; await this.loadProject(); this.setupEventListeners(); },
-    async loadProject() { await firebaseReady; const db = getFirestoreDB(); const docRef = doc(db, "pages", this.currentPageId); const docSnap = await getDoc(docRef); if (docSnap.exists()) { const data = docSnap.data(); this.components = data.components || []; this.pageSettings = data.pageSettings || { viewport: '375px,667px' }; const pageTitle = data.name || '페이지'; if (ui.viewTitle) { ui.viewTitle.textContent = pageTitle; ui.viewTitle.setAttribute('contenteditable', 'true'); ui.viewTitle.setAttribute('data-original-title', pageTitle); } } else { navigateTo('pages'); } this.renderAll(); },
-    setupEventListeners() { this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type))); this.elements.pageBgColorInput.addEventListener('change', (e) => { this.pageSettings.bgColor = e.target.value; this.saveAndRender(false, true); }); this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(false, true); }); this.elements.pageBackgroundVideoInput.addEventListener('input', (e) => { this.pageSettings.bgVideo = e.target.value; this.saveAndRender(false, true); }); this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages')); if (ui.viewTitle) { ui.viewTitle.addEventListener('blur', () => this.handleTitleUpdate()); ui.viewTitle.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ui.viewTitle.blur(); } }); } document.addEventListener('color', this.handleColorRealtimeUpdate.bind(this)); },
-    handleColorRealtimeUpdate(event) { const input = event.detail.input; const color = event.detail.color; if (!input.hasAttribute('data-color-picker')) return; if (input.id === 'page-bg-color') { this.pageSettings.bgColor = color; } else { const panel = input.closest('.editor-panel'); if (!panel) return; const id = Number(panel.dataset.id); const component = this.components.find(c => c.id === id); if (component) { if (input.dataset.style) { if (component.styles) { component.styles[input.dataset.style] = color; } } else if (input.dataset.sceneProp) { if (component.sceneSettings) { component.sceneSettings[input.dataset.sceneProp] = color; } } else if (input.dataset.sceneInnerStyle) { const [index, key] = input.dataset.sceneInnerStyle.split('.'); if (component.components?.[index]?.styles) { component.components[index].styles[key] = color; } } } } this.renderPreview(); },
-    async handleTitleUpdate() { await firebaseReady; const db = getFirestoreDB(); const newTitle = ui.viewTitle.textContent.trim(); const originalTitle = ui.viewTitle.dataset.originalTitle; if (!newTitle) { alert('제목은 비워둘 수 없습니다.'); ui.viewTitle.textContent = originalTitle; return; } if (newTitle === originalTitle) return; try { const docRef = doc(db, "pages", this.currentPageId); await updateDoc(docRef, { name: newTitle }); ui.viewTitle.dataset.originalTitle = newTitle; const pageInList = pagesList.find(p => p.id === this.currentPageId); if(pageInList) pageInList.name = newTitle; } catch (error) { console.error("페이지 제목 업데이트 실패:", error); alert("제목 업데이트에 실패했습니다."); ui.viewTitle.textContent = originalTitle; } },
-    renderAll() { this.renderPreview(); this.renderControls(); this.renderViewportControls(); this.initSortable(); },
+    async init(pageId) {
+        await firebaseReady;
+        this.currentPageId = pageId;
+        const editorView = document.getElementById('editor-view');
+        if (!editorView) return;
+        
+        editorView.innerHTML = `
+        <div class="editor-main-container">
+            <div id="editor-controls-wrapper"><div class="editor-control-panel">
+                <div class="control-group"><button id="back-to-list-btn" style="background-color: #475569; color: white;">← 목록으로 돌아가기</button></div>
+                <h3>- 콘텐츠 블록 추가 -</h3>
+                <div class="control-group component-adders" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button data-type="heading">➕ 제목</button>
+                    <button data-type="paragraph">➕ 내용</button>
+                    <button data-type="button">➕ 버튼</button>
+                    <button data-type="lead-form">➕ 고객 정보</button>
+                    <button data-type="scene" style="grid-column: 1 / -1; background-color: #be185d;">✨ ➕ 장면 (스토리용)</button>
+                </div>
+                <hr style="border-color: var(--border-color); margin: 20px 0;">
+                <div id="page-background-controls">
+                    <h3>- 페이지 배경 -</h3>
+                    <div class="control-group inline-group"><label for="page-bg-color">배경색</label><input type="text" data-color-picker id="page-bg-color"></div>
+                    <div class="control-group"><label for="page-background-image">배경 이미지 URL</label><input type="text" id="page-background-image"></div>
+                    <div class="control-group"><label for="page-background-video">배경 동영상 URL</label><input type="text" id="page-background-video"></div>
+                </div>
+                <hr style="border-color: var(--border-color); margin: 20px 0;">
+                <div id="editors-container"></div>
+            </div></div>
+            <div id="editor-preview-container" class="bg-slate-800"><div class="editor-control-panel" style="display: flex; flex-direction: column; height: 100%;">
+                <div id="viewport-controls-left"></div> <div id="editor-preview-wrapper"><div id="editor-preview"><video class="background-video" autoplay loop muted playsinline></video><div class="background-image-overlay"></div><div class="content-area"></div></div></div>
+            </div></div>
+        </div>`;
+
+        this.elements = {
+            preview: editorView.querySelector('#editor-preview'), contentArea: editorView.querySelector('.content-area'),
+            backgroundImageOverlay: editorView.querySelector('.background-image-overlay'), backgroundVideo: editorView.querySelector('.background-video'),
+            editorsContainer: editorView.querySelector('#editors-container'), adders: editorView.querySelectorAll('.component-adders button'),
+            pageBgColorInput: editorView.querySelector('#page-bg-color'), pageBackgroundImageInput: editorView.querySelector('#page-background-image'),
+            pageBackgroundVideoInput: editorView.querySelector('#page-background-video'), viewportControlsLeft: editorView.querySelector('#viewport-controls-left'),
+            backToListBtn: editorView.querySelector('#back-to-list-btn'),
+            pageBackgroundControls: editorView.querySelector('#page-background-controls')
+        };
+
+        await this.loadProject();
+        this.setupEventListeners();
+    },
+
+    async loadProject() {
+        await firebaseReady;
+        const db = getFirestoreDB();
+        const docRef = doc(db, "pages", this.currentPageId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            this.components = data.components || [];
+            this.pageSettings = data.pageSettings || { viewport: '375px,667px' };
+            const pageTitle = data.name || '페이지';
+            if (ui.viewTitle) {
+                ui.viewTitle.textContent = pageTitle;
+                ui.viewTitle.setAttribute('contenteditable', 'true');
+                ui.viewTitle.setAttribute('data-original-title', pageTitle);
+            }
+        } else { navigateTo('pages'); }
+        this.renderAll();
+    },
+
+    setupEventListeners() {
+        this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
+        this.elements.pageBgColorInput.addEventListener('change', (e) => { this.pageSettings.bgColor = e.target.value; this.saveAndRender(false, true); });
+        this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(false, true); });
+        this.elements.pageBackgroundVideoInput.addEventListener('input', (e) => { this.pageSettings.bgVideo = e.target.value; this.saveAndRender(false, true); });
+        this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages'));
+        if (ui.viewTitle) {
+            ui.viewTitle.addEventListener('blur', () => this.handleTitleUpdate());
+            ui.viewTitle.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); ui.viewTitle.blur(); }
+            });
+        }
+        document.addEventListener('color', this.handleColorRealtimeUpdate.bind(this));
+    },
+
+    handleColorRealtimeUpdate(event) {
+        const input = event.detail.input;
+        const color = event.detail.color;
+        if (!input.hasAttribute('data-color-picker')) return;
+
+        if (input.id === 'page-bg-color') {
+            this.pageSettings.bgColor = color;
+        } else {
+            const panel = input.closest('.editor-panel');
+            if (!panel) return;
+
+            const id = Number(panel.dataset.id);
+            const component = this.components.find(c => c.id === id);
+            if (component) {
+                if (input.dataset.style) {
+                    if (component.styles) {
+                        component.styles[input.dataset.style] = color;
+                    }
+                } else if (input.dataset.sceneProp) {
+                    if (component.sceneSettings) {
+                        component.sceneSettings[input.dataset.sceneProp] = color;
+                    }
+                } else if (input.dataset.sceneInnerStyle) {
+                    const [index, key] = input.dataset.sceneInnerStyle.split('.');
+                    if (component.components?.[index]?.styles) {
+                        component.components[index].styles[key] = color;
+                    }
+                }
+            }
+        }
+        this.renderPreview();
+    },
+
+    async handleTitleUpdate() {
+        await firebaseReady;
+        const db = getFirestoreDB();
+        const newTitle = ui.viewTitle.textContent.trim();
+        const originalTitle = ui.viewTitle.dataset.originalTitle;
+        if (!newTitle) { alert('제목은 비워둘 수 없습니다.'); ui.viewTitle.textContent = originalTitle; return; }
+        if (newTitle === originalTitle) return;
+        try {
+            const docRef = doc(db, "pages", this.currentPageId);
+            await updateDoc(docRef, { name: newTitle });
+            ui.viewTitle.dataset.originalTitle = newTitle;
+            const pageInList = pagesList.find(p => p.id === this.currentPageId);
+            if(pageInList) pageInList.name = newTitle;
+        } catch (error) { console.error("페이지 제목 업데이트 실패:", error); alert("제목 업데이트에 실패했습니다."); ui.viewTitle.textContent = originalTitle; }
+    },
+
+    renderAll() {
+        this.renderPreview();
+        this.renderControls();
+        this.renderViewportControls();
+        this.initSortable();
+    },
+
     hexToRgba(hex, alpha = 1) { if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return hex; let c = hex.substring(1).split(''); if (c.length === 3) { c = [c[0], c[0], c[1], c[1], c[2], c[2]]; } c = '0x' + c.join(''); return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`; },
 
     renderPreview() {
@@ -29,7 +174,6 @@ export const editor = {
         this.elements.preview.style.width = width;
         this.elements.preview.style.height = height;
 
-        // ✨ [핵심 수정] 페이지 배경 관련 로직을 위로 올리고, 스토리 여부와 관계없이 먼저 처리합니다.
         if (bgVideo) {
             this.elements.backgroundVideo.src = bgVideo;
             this.elements.backgroundVideo.style.display = 'block';
@@ -166,7 +310,7 @@ export const editor = {
         switch(type) {
             case 'heading': newComponent.content = 'Welcome to My Page'; newComponent.styles = { fontFamily: "'Noto Sans KR', sans-serif", textAlign: 'center', color: '#FFFFFF', fontSize: '48px'}; break;
             case 'paragraph': newComponent.content = 'This is a beautiful landing page.'; newComponent.styles = { fontFamily: "'Noto Sans KR', sans-serif", textAlign: 'center', color: '#FFFFFF', fontSize: '20px'}; break;
-            case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = { fontFamily: "'Noto Sans KR', sans-serif", backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', backgroundColorOpacity: 1 }; break;
+            case 'button': newComponent.content = 'Explore'; newComponent.link = ''; newComponent.styles = { fontFamily: "'Noto Sans KR', sans-serif", backgroundColor: '#1877f2', color: '#ffffff', padding: '12px 25px', border: 'none', borderRadius: '8px', backgroundColorOpacity: 1, verticalAlign: 'bottom' }; break;
             case 'lead-form': newComponent.googleScriptUrl = ''; newComponent.submitText = '문의 남기기'; newComponent.successMessage = '성공적으로 제출되었습니다. 감사합니다!'; newComponent.activeFields = ['name', 'email']; newComponent.styles = { padding: '25px', borderRadius: '8px', backgroundColor: 'transparent', submitButtonColor: '#1877f2' }; newComponent.privacy = { enabled: true, text: '(필수) 개인정보 수집 및 이용에 동의합니다.' }; break;
             case 'scene':
                 newComponent.sceneSettings = { bgColor: '#1e293b', bgImage: '' };
