@@ -1,4 +1,4 @@
-/* css/public_style.css v2.5 - 구독 폼 및 멤버 전용 스타일 추가 */
+/* css/public_style.css v2.6 스레터 구독 폼 반응형 스타일 추가 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -153,4 +153,77 @@ body {
 .members-only-lock p {
     color: var(--chzzk-text-secondary);
     margin-top: 0.5rem;
+}
+/* =============================================== */
+/* ✨ [v1.1] 뉴스레터 구독 폼 반응형 스타일 추가 ✨ */
+/* =============================================== */
+
+/* 구독 카드 전체 스타일 */
+.subscription-card {
+    background-color: #1e293b; /* 어두운 배경색 */
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    border: 1px solid #334155;
+}
+
+.subscription-card h2 {
+    font-size: 22px;
+    font-weight: bold;
+    color: #f1f5f9;
+    margin-bottom: 8px;
+}
+
+.subscription-card p {
+    color: #94a3b8;
+    margin-bottom: 20px;
+}
+
+/* 폼 기본 스타일 (모바일 우선: 세로 쌓기) */
+.subscription-form {
+    display: flex;
+    flex-direction: column; /* 아이템을 세로로 쌓음 */
+    gap: 12px; /* 아이템 사이의 간격 */
+}
+
+.subscription-form input[type="email"],
+.subscription-form button {
+    width: 100%; /* 너비를 100%로 설정 */
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #475569;
+}
+
+.subscription-form input[type="email"] {
+    background-color: #334155;
+    color: #f1f5f9;
+}
+
+.subscription-form button {
+    background-color: #10b981; /* 에메랄드 색상 */
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.subscription-form button:hover {
+    background-color: #059669;
+}
+
+/* 데스크탑 화면에서는 가로로 배치 (화면 너비 640px 이상) */
+@media (min-width: 640px) {
+    .subscription-form {
+        flex-direction: row; /* 아이템을 가로로 배열 */
+    }
+
+    .subscription-form input[type="email"] {
+        flex-grow: 1; /* 입력창이 남는 공간을 모두 차지 */
+    }
+
+    .subscription-form button {
+        width: auto; /* 버튼 너비는 내용에 맞게 자동 조절 */
+        flex-shrink: 0; /* 버튼이 줄어들지 않도록 설정 */
+    }
 }
