@@ -252,6 +252,10 @@ body {
     opacity: 1;
     transition: opacity 0.5s ease, transform 0.5s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+	white-space: nowrap; /* 1. 절대로 줄바꿈하지 않도록 설정 */
+    max-width: 90vw;     /* 2. 너비가 화면의 90%를 넘지 않도록 제한 */
+    box-sizing: border-box; /* 3. 패딩을 포함해서 너비를 계산하도록 설정 */
+    text-align: center;  /* 4. 텍스트를 중앙 정렬 */
 }
 
 .toast-notification.success {

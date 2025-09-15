@@ -1,4 +1,4 @@
-// js/public.js(v3.4) - 3D 효과 제거
+// js/public.js (v3.5) "뉴스레터 구독" 체크 
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -110,8 +110,29 @@ function renderAllContent(contents, append = false) {
         if (content.isMembersOnly && !isSubscribed) {
             return `<div class="card members-only-lock"><h2>✨ 구독자 전용 콘텐츠</h2><p>뉴스레터를 구독하고 더 많은 인사이트를 확인해보세요!</p></div>`;
         } else if (content.adType === 'subscription-form') {
-            return `<div class="card subscription-card"><h2>${content.title}</h2><p>${content.description}</p><form class="subscription-form"><input type="email" placeholder="이메일 주소를 입력하세요" required><button type="submit">구독하기</button></form></div>`;
-        } else if (content.components && content.components.some(c => c.type === 'scene')) {
+			// ✨ [v3.5 핵심 변경] 구독 여부에 따라 다른 화면을 보여줍니다.
+			if (isSubscribed) {
+				// 이미 구독한 사용자일 경우
+				return `
+					<div class="card subscription-card">
+						<h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2>
+						<p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p>
+					</div>
+				`;
+			} else {
+				// 아직 구독하지 않은 사용자일 경우 (기존 코드와 동일)
+				return `
+					<div class="card subscription-card">
+						<h2>${content.title}</h2>
+						<p>${content.description}</p>
+						<form class="subscription-form">
+							<input type="email" placeholder="이메일 주소를 입력하세요" required>
+							<button type="submit">구독하기</button>
+						</form>
+					</div>
+				`;
+			}
+		}  else if (content.components && content.components.some(c => c.type === 'scene')) {
             const firstScene = content.components[0] || {};
             const sceneSettings = firstScene.sceneSettings || {};
             const bgHtml = `<div class="story-launcher-bg" style="background-image: url('${sceneSettings.bgImage || ''}');"></div>`;
