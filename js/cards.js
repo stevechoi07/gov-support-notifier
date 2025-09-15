@@ -1,8 +1,9 @@
-// js/cards.js v2.2 - '멤버 전용' 기능 추가
+// js/cards.js v2.3 - '구독 폼' 카드 유형 추가
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
+import { showToast } from "./ui.js";
 
 let resolveCardsReady;
 export const cardsReady = new Promise(resolve => {
@@ -62,6 +63,7 @@ export const cards = {
             iframeAdStartDateInput: document.getElementById('iframe-ad-start-date'),
             iframeAdEndDateInput: document.getElementById('iframe-ad-end-date'),
             saveIframeAdButton: document.getElementById('save-iframe-ad-button'),
+            addNewSubscriptionCardButton: document.getElementById('add-new-subscription-card-button'),
         };
     },
 
@@ -76,6 +78,7 @@ export const cards = {
         this.ui.adMediaFileInput?.addEventListener('change', this.handleFileUpload.bind(this));
         this.ui.closeIframeModalButton?.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
+        this.ui.addNewSubscriptionCardButton?.addEventListener('click', this.handleAddNewSubscriptionCard.bind(this));
     },
 
     async listen() {
@@ -139,14 +142,18 @@ export const cards = {
         
         this.ui.adListContainer.innerHTML = this.list.map(ad => {
             const isIframe = ad.adType === 'iframe';
+            const isSubscriptionForm = ad.adType === 'subscription-form';
             const clickCount = ad.clickCount || 0;
             const statusBadge = this.getAdStatus(ad);
             const isChecked = ad.isActive !== false;
-            const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
+            const noMediaClass = (!isIframe && !isSubscriptionForm && !ad.mediaUrl) ? 'no-media' : '';
             let previewHTML = '', typeIconHTML = '';
             const membersOnlyBadge = ad.isMembersOnly ? `<div class="content-card-members-badge" title="멤버 전용 콘텐츠">✨</div>` : '';
 
-            if (isIframe) {
+            if (isSubscriptionForm) {
+                typeIconHTML = `<div class="content-card-type-icon" title="구독 폼 카드">📧</div>`;
+                previewHTML = `<div class="content-card-preview no-media">${typeIconHTML}</div>`;
+            } else if (isIframe) {
                 typeIconHTML = `<div class="content-card-type-icon" title="iframe 카드">🔗</div>`;
                 previewHTML = `<div class="content-card-preview ${noMediaClass}">${typeIconHTML}${membersOnlyBadge}</div>`;
             } else {
@@ -165,7 +172,7 @@ export const cards = {
                     <div class="content-card-header"><p class="title" title="${ad.title}">${ad.title}</p></div>
                     <div class="content-card-info">
                         ${statusBadge}
-                        ${!isIframe ? `<span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${clickCount}</span>` : ''}
+                        ${!isIframe && !isSubscriptionForm ? `<span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${clickCount}</span>` : ''}
                     </div>
                     <div class="content-card-actions">
                         <div class="publish-info">
@@ -173,7 +180,7 @@ export const cards = {
                             <span class="text-sm font-medium ${isChecked ? 'text-emerald-400' : 'text-slate-400'}">${isChecked ? '게시 중' : '비공개'}</span>
                         </div>
                         <div class="action-buttons">
-                             <button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+                             ${!isSubscriptionForm ? `<button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>` : ''}
                              <button class="delete-ad-button text-red-400 hover:text-red-500" data-id="${ad.id}" title="삭제"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                         </div>
                     </div>
@@ -220,9 +227,7 @@ export const cards = {
 
     resetCardModalState() {
         const btn = this.ui.saveAdButton;
-        if(btn) {
-            btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled');
-        }
+        if(btn) { btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled'); }
         if(this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0; 
         if(this.ui.uploadProgress) this.ui.uploadProgress.textContent = '0%';
         if(this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%'; 
@@ -245,6 +250,29 @@ export const cards = {
         if(this.ui.modalTitle) this.ui.modalTitle.textContent = "새 미디어 카드";
         this.resetCardModalState(); this.updatePreview();
         if(this.ui.adModal) this.ui.adModal.classList.add('active');
+    },
+    
+    async handleAddNewSubscriptionCard() {
+        if (confirm("레이아웃에 추가할 수 있는 '뉴스레터 구독' 카드를 생성하시겠습니까?")) {
+            await firebaseReady;
+            const db = getFirestoreDB();
+            try {
+                const adData = {
+                    adType: 'subscription-form',
+                    title: '뉴스레터 구독',
+                    description: '최신 소식을 가장 먼저 받아보세요!',
+                    order: this.list.length,
+                    isActive: true,
+                    clickCount: 0, 
+                    viewCount: 0,
+                };
+                await addDoc(collection(db, "ads"), adData);
+                showToast("'뉴스레터 구독' 카드가 생성되었습니다.", "success");
+            } catch (error) {
+                console.error("구독 폼 카드 생성 실패:", error);
+                showToast("작업에 실패했습니다.", "error");
+            }
+        }
     },
 
     resetIframeModalState() {

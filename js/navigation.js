@@ -28,8 +28,9 @@ export async function navigateTo(viewName, pageId = null) {
         pages: { title: '📄 페이지 관리', action: `<button id="new-page-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">✨ 새 페이지</button>` },
         cards: { title: '🗂️ 콘텐츠 카드 관리', action: `
             <div class="flex gap-2">
+				<button id="add-new-subscription-card-button" class="bg-teal-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-teal-600">📧 구독 폼 추가</button>
                 <button id="add-new-iframe-card-button" class="bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-600">➕ iframe 카드</button>
-                <button id="add-new-card-button" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 미디어 카드</button>
+                <button id="add-new-card-button" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 미디어 카드</button>				
             </div>`
         },
         editor: { title: '📝 페이지 편집 중...', action: '' }
