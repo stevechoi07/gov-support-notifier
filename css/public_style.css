@@ -1,4 +1,4 @@
-/* css/public_style.css v2.2 - 3D 틸트 효과를 위한 스타일 추가 */
+/* css/public_style.css v2.3 - 단일 열 레이아웃으로 복귀 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -22,15 +22,6 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem 1rem;
-}
-
-@media (min-width: 768px) {
-    #content-container {
-        max-width: 1200px;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-        gap: 1.5rem;
-    }
 }
 
 .card,
