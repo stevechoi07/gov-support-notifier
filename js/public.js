@@ -1,4 +1,4 @@
-// js/public.js v3.2 - VIP 패스 발급 시스템
+// js/public.js (v3.3) - VIP 패스 제시하기
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -281,12 +281,25 @@ function setupTiltEffect() {
     });
 }
 
-// ✨ [v3.1 핵심 변경] Netlify Function을 호출하는 방식으로 완전히 변경되었습니다.
+// ✨ [v3.3 핵심 변경] VIP 패스가 있으면 요청 헤더에 담아 보내도록 수정
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
-    console.log("🚀 Public page v3.1 script loaded. Fetching from Netlify Function...");
+    console.log("🚀 Public page v3.3 script loaded. Fetching from Netlify Function...");
+
+    // 1. 주머니(localStorage)에서 VIP 패스를 꺼냅니다.
+    const token = localStorage.getItem('vip-pass');
+
+    // 2. 요청에 포함할 헤더를 준비합니다.
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+        // 3. VIP 패스가 있으면, 'Authorization'란에 붙여서 보냅니다.
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('VIP 패스를 장착하고 요청합니다.');
+    }
+
     try {
-        const response = await fetch('/.netlify/functions/get-content');
+        // 4. 헤더를 포함하여 경비원에게 콘텐츠를 요청합니다.
+        const response = await fetch('/.netlify/functions/get-content', { headers });
         if (!response.ok) {
             throw new Error(`콘텐츠 로딩 실패! (상태: ${response.status})`);
         }
