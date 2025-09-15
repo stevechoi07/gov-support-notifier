@@ -1,14 +1,18 @@
-// js/public.js v2.9 - 중요 콘텐츠 우선 로딩
+// js/public.js v3.0 - 뉴스레터/멤버십 기능 완성
 
 import { doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
+// ✨ [v3.0 변경] ui.js에서 showToast 함수를 가져옵니다.
+import { showToast } from './ui.js';
 
 let swiperInstance = null;
 let storyTimer = null;
-// 전체 콘텐츠 ID와 현재 로드된 인덱스를 관리할 변수
 let allContentIds = [];
 let loadedContentIndex = 0;
-const INITIAL_LOAD_COUNT = 3; // 처음에 로드할 콘텐츠 개수
+const INITIAL_LOAD_COUNT = 3;
+
+// ✨ [v3.0 추가] 사용자의 구독 상태를 로컬 스토리지에서 가져와 관리합니다.
+let isSubscribed = localStorage.getItem('isSubscribed') === 'true';
 
 function stylesToString(styles = {}) {
     return Object.entries(styles)
@@ -121,8 +125,28 @@ function renderAllContent(contents, append = false) {
     }
 
     const contentHtml = contents.map(content => {
-        const isStory = content.components && content.components.some(c => c.type === 'scene');
-        if (isStory) {
+        // ✨ [v3.0 변경] 렌더링 로직에 멤버십 관련 분기문 추가
+        if (content.isMembersOnly && !isSubscribed) {
+            // === 멤버 전용 콘텐츠 잠금 렌더링 ===
+            return `
+                <div class="card members-only-lock">
+                    <h2>✨ 구독자 전용 콘텐츠</h2>
+                    <p>뉴스레터를 구독하고 더 많은 인사이트를 확인해보세요!</p>
+                </div>
+            `;
+        } else if (content.adType === 'subscription-form') {
+            // === 구독 폼 카드 렌더링 ===
+            return `
+                <div class="card subscription-card">
+                    <h2>${content.title}</h2>
+                    <p>${content.description}</p>
+                    <form class="subscription-form">
+                        <input type="email" placeholder="이메일 주소를 입력하세요" required>
+                        <button type="submit">구독하기</button>
+                    </form>
+                </div>
+            `;
+        } else if (content.components && content.components.some(c => c.type === 'scene')) {
             const firstScene = content.components[0] || {};
             const sceneSettings = firstScene.sceneSettings || {};
             const bgHtml = `<div class="story-launcher-bg" style="background-image: url('${sceneSettings.bgImage || ''}');"></div>`;
@@ -366,6 +390,43 @@ document.addEventListener('click', async (event) => {
         track(id, type, 'clickCount');
     }
 });
+
+// ✨ [v3.0 추가] 구독 폼 제출 처리 이벤트 리스너
+document.addEventListener('submit', async (event) => {
+    if (event.target.classList.contains('subscription-form')) {
+        event.preventDefault();
+        const form = event.target;
+        const input = form.querySelector('input[type="email"]');
+        const button = form.querySelector('button');
+        const email = input.value;
+
+        button.disabled = true;
+        button.textContent = '처리 중...';
+
+        try {
+            const response = await fetch('/.netlify/functions/subscribe', {
+                method: 'POST',
+                body: JSON.stringify({ email: email }),
+            });
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.message || '오류가 발생했습니다.');
+            }
+            
+            showToast(result.message, 'success');
+            localStorage.setItem('isSubscribed', 'true');
+            isSubscribed = true;
+            setTimeout(() => window.location.reload(), 1500);
+
+        } catch (error) {
+            showToast(error.message, 'error');
+            button.disabled = false;
+            button.textContent = '구독하기';
+        }
+    }
+});
+
 
 const storyCloseButton = document.querySelector('.story-viewer .story-close-button');
 if (storyCloseButton) storyCloseButton.addEventListener('click', closeStoryViewer);

@@ -147,3 +147,55 @@ body {
     opacity: .5;
   }
 }
+
+/* --- 구독 폼 카드 스타일 --- */
+.subscription-card {
+    background: #2a2a2f; /* 약간 다른 배경색으로 강조 */
+    padding: 2rem;
+    text-align: center;
+}
+
+.subscription-card h2 {
+    color: var(--chzzk-text-primary);
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.subscription-card p {
+    color: var(--chzzk-text-secondary);
+    margin: 0.5rem 0 1.5rem 0;
+}
+
+.subscription-form {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.subscription-form input {
+    flex-grow: 1;
+    border: 1px solid var(--chzzk-border);
+    background-color: var(--chzzk-bg);
+    color: var(--chzzk-text-primary);
+    padding: 0.75rem;
+    border-radius: 8px;
+    outline: none;
+}
+.subscription-form input:focus {
+    border-color: var(--chzzk-accent);
+}
+
+.subscription-form button {
+    background-color: var(--chzzk-accent);
+    color: var(--chzzk-bg);
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.subscription-form button:hover {
+    background-color: #00e090;
+}

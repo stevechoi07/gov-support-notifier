@@ -70,11 +70,7 @@ export const cards = {
     addEventListeners() {
         this.ui.closeModalButton?.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
         this.ui.saveAdButton?.addEventListener('click', this.handleSaveAd.bind(this));
-        
-        [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => {
-            if(input) input.addEventListener('input', () => this.updatePreview());
-        });
-        
+        [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => { if(input) input.addEventListener('input', () => this.updatePreview()); });
         this.ui.adMediaFileInput?.addEventListener('change', this.handleFileUpload.bind(this));
         this.ui.closeIframeModalButton?.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
@@ -134,12 +130,10 @@ export const cards = {
     render() {
         if (!this.ui.adListContainer) return;
         this.ui.adListContainer.className = 'card-grid';
-
         if (this.list.length === 0) {
             this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8 col-span-full">등록된 카드가 없습니다.</p>`;
             return;
         }
-        
         this.ui.adListContainer.innerHTML = this.list.map(ad => {
             const isIframe = ad.adType === 'iframe';
             const isSubscriptionForm = ad.adType === 'subscription-form';
@@ -149,7 +143,7 @@ export const cards = {
             const noMediaClass = (!isIframe && !isSubscriptionForm && !ad.mediaUrl) ? 'no-media' : '';
             let previewHTML = '', typeIconHTML = '';
             const membersOnlyBadge = ad.isMembersOnly ? `<div class="content-card-members-badge" title="멤버 전용 콘텐츠">✨</div>` : '';
-
+            
             if (isSubscriptionForm) {
                 typeIconHTML = `<div class="content-card-type-icon" title="구독 폼 카드">📧</div>`;
                 previewHTML = `<div class="content-card-preview no-media">${typeIconHTML}</div>`;
@@ -180,8 +174,8 @@ export const cards = {
                             <span class="text-sm font-medium ${isChecked ? 'text-emerald-400' : 'text-slate-400'}">${isChecked ? '게시 중' : '비공개'}</span>
                         </div>
                         <div class="action-buttons">
-                             ${!isSubscriptionForm ? `<button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>` : ''}
-                             <button class="delete-ad-button text-red-400 hover:text-red-500" data-id="${ad.id}" title="삭제"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                            ${!isSubscriptionForm ? `<button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>` : ''}
+                            <button class="delete-ad-button text-red-400 hover:text-red-500" data-id="${ad.id}" title="삭제"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                         </div>
                     </div>
                 </div>
@@ -193,7 +187,7 @@ export const cards = {
         this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
         this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
     },
-
+    
     async handleToggleAdStatus(event) {
         await firebaseReady;
         const db = getFirestoreDB();
@@ -204,7 +198,7 @@ export const cards = {
             event.target.checked = !isActive;
         }
     },
-
+    
     handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) {
@@ -224,7 +218,7 @@ export const cards = {
         this.tempPreviewUrl = URL.createObjectURL(file);
         this.updatePreview();
     },
-
+    
     resetCardModalState() {
         const btn = this.ui.saveAdButton;
         if(btn) { btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled'); }
@@ -251,7 +245,7 @@ export const cards = {
         this.resetCardModalState(); this.updatePreview();
         if(this.ui.adModal) this.ui.adModal.classList.add('active');
     },
-    
+
     async handleAddNewSubscriptionCard() {
         if (confirm("레이아웃에 추가할 수 있는 '뉴스레터 구독' 카드를 생성하시겠습니까?")) {
             await firebaseReady;
@@ -274,7 +268,7 @@ export const cards = {
             }
         }
     },
-
+    
     resetIframeModalState() {
         const btn = this.ui.saveIframeAdButton;
         if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = ''; 
