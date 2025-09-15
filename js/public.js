@@ -1,4 +1,4 @@
-// js/public.js(v3.3) - VIP 패스 제시하기
+// js/public.js(v3.4) - 3D 효과 제거
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -344,6 +344,7 @@ document.addEventListener('submit', async (event) => {
     if (event.target.classList.contains('subscription-form')) {
         event.preventDefault();
         const form = event.target;
+        const card = form.closest('.subscription-card'); // form의 부모 카드를 찾습니다.
         const input = form.querySelector('input[type="email"]');
         const button = form.querySelector('button');
         const email = input.value;
@@ -363,18 +364,21 @@ document.addEventListener('submit', async (event) => {
                 throw new Error(result.message || '오류가 발생했습니다.');
             }
             
-            // 1. 서버가 보내준 VIP 패스(토큰)를 꺼냅니다.
+            // 토스트 메시지를 먼저 보여줍니다!
+            showToast(result.message, 'success');
+            
             if (result.token) {
-                // 2. localStorage에 'isSubscribed' 대신 진짜 VIP 패스를 저장합니다!
                 localStorage.setItem('vip-pass', result.token);
-                // isSubscribed 변수도 즉시 업데이트합니다.
-                isSubscribed = true; 
-                console.log('VIP 패스를 성공적으로 저장했습니다.');
+                isSubscribed = true;
             }
             
-            showToast(result.message, 'success');
-            // 3. 페이지를 새로고침해서 잠긴 콘텐츠를 즉시 해제합니다.
-            setTimeout(() => window.location.reload(), 1500);
+            // ✨ [핵심 변경] 폼을 성공 메시지로 교체합니다.
+            if (card) {
+                card.innerHTML = `
+                    <h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">구독이 완료되었습니다!</h2>
+                    <p style="color: #9ca3af; margin-bottom: 0;"><strong>${email}</strong> (으)로 최신 소식을 보내드릴게요.</p>
+                `;
+            }
 
         } catch (error) {
             showToast(error.message, 'error');

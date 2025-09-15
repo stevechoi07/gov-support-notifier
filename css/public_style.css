@@ -1,4 +1,4 @@
-/* css/public_style.css v2.7 뉴스레터 look&feel 맞춤 */
+/* css/public_style.css v2.8 토스트 알림 메시지 스타일 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -234,4 +234,35 @@ body {
         width: auto;
         flex-shrink: 0;
     }
+}
+
+/* ================================== */
+/* ✨ [v1.3] 토스트 알림 메시지 스타일 ✨ */
+/* ================================== */
+.toast-notification {
+    position: fixed; /* 화면에 고정 */
+    bottom: 20px; /* 아래쪽에서 20px */
+    left: 50%;
+    transform: translateX(-50%); /* 가운데 정렬 */
+    padding: 12px 24px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000; /* 다른 요소들 위에 표시 */
+    opacity: 1;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.toast-notification.success {
+    background-color: #10b981; /* 성공 (초록색) */
+}
+
+.toast-notification.error {
+    background-color: #ef4444; /* 에러 (빨간색) */
+}
+
+.toast-notification.fade-out {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px); /* 아래로 사라지는 효과 */
 }
