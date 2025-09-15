@@ -162,7 +162,7 @@ body {
 
 /* 구독 카드 전체 스타일 (이미지 톤에 맞춤) */
 .subscription-card {
-    background-color: #1f2937; /* 더 깊은 어두운 배경색 */
+    background-color: #1E1E1E; /* 더 깊은 어두운 배경색 */
     border-radius: 12px;
     padding: 24px;
     text-align: center;
