@@ -1,10 +1,9 @@
-// js/cards.js v2.1 - SDK 버전 통일 및 Promise 기반 초기화
+// js/cards.js v2.2 - '멤버 전용' 기능 추가
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
-// ✨ [추가] 첫 데이터 로딩 완료 신호를 보내기 위한 Promise와 resolve 함수
 let resolveCardsReady;
 export const cardsReady = new Promise(resolve => {
     resolveCardsReady = resolve;
@@ -42,6 +41,7 @@ export const cards = {
             adTitleInput: document.getElementById('ad-title'),
             adDescriptionInput: document.getElementById('ad-description'),
             isPartnersCheckbox: document.getElementById('is-partners-checkbox'),
+            isMembersOnlyCheckbox: document.getElementById('is-members-only-checkbox'),
             adLinkInput: document.getElementById('ad-link'),
             adStartDateInput: document.getElementById('ad-start-date'),
             adEndDateInput: document.getElementById('ad-end-date'),
@@ -88,10 +88,9 @@ export const cards = {
             if (cardsView && !cardsView.classList.contains('hidden')) {
                 this.render();
             }
-            // ✨ [추가] 첫 데이터 수신 후, 준비 완료 신호를 보냅니다.
             if (resolveCardsReady) {
                 resolveCardsReady();
-                resolveCardsReady = null; // 한번만 실행되도록 null로 설정
+                resolveCardsReady = null;
             }
         });
     },
@@ -106,10 +105,8 @@ export const cards = {
                 await firebaseReady;
                 const db = getFirestoreDB();
                 if (evt.oldIndex === evt.newIndex) return;
-
                 const newOrderIds = Array.from(evt.to.children).map(item => item.dataset.id);
                 const reorderedList = newOrderIds.map(id => this.list.find(item => item.id === id));
-                
                 const batch = writeBatch(db);
                 reorderedList.forEach((ad, index) => {
                     if (ad) {
@@ -147,16 +144,17 @@ export const cards = {
             const isChecked = ad.isActive !== false;
             const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
             let previewHTML = '', typeIconHTML = '';
+            const membersOnlyBadge = ad.isMembersOnly ? `<div class="content-card-members-badge" title="멤버 전용 콘텐츠">✨</div>` : '';
 
             if (isIframe) {
                 typeIconHTML = `<div class="content-card-type-icon" title="iframe 카드">🔗</div>`;
-                previewHTML = `<div class="content-card-preview ${noMediaClass}">${typeIconHTML}</div>`;
+                previewHTML = `<div class="content-card-preview ${noMediaClass}">${typeIconHTML}${membersOnlyBadge}</div>`;
             } else {
                 if (ad.mediaUrl) {
                     typeIconHTML = ad.mediaType === 'video' ? `<div class="content-card-type-icon" title="비디오 카드">🎬</div>` : `<div class="content-card-type-icon" title="이미지 카드">🖼️</div>`;
-                    previewHTML = ad.mediaType === 'video' ? `<div class="content-card-preview"><video muted playsinline src="${ad.mediaUrl}"></video>${typeIconHTML}</div>` : `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
+                    previewHTML = ad.mediaType === 'video' ? `<div class="content-card-preview"><video muted playsinline src="${ad.mediaUrl}"></video>${typeIconHTML}${membersOnlyBadge}</div>` : `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}${membersOnlyBadge}</div>`;
                 } else {
-                    previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
+                    previewHTML = `<div class="content-card-preview ${noMediaClass}">${membersOnlyBadge}</div>`;
                 }
             }
 
@@ -233,6 +231,7 @@ export const cards = {
         if(this.ui.adDescriptionInput) this.ui.adDescriptionInput.value = ''; 
         if(this.ui.adLinkInput) this.ui.adLinkInput.value = '';
         if(this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.checked = false; 
+        if(this.ui.isMembersOnlyCheckbox) this.ui.isMembersOnlyCheckbox.checked = false;
         if(this.ui.adStartDateInput) this.ui.adStartDateInput.value = '';
         if(this.ui.adEndDateInput) this.ui.adEndDateInput.value = ''; 
         if(this.ui.adMediaFileInput) this.ui.adMediaFileInput.value = '';
@@ -288,6 +287,7 @@ export const cards = {
             this.ui.adTitleInput.value = ad.title;
             this.ui.adDescriptionInput.value = ad.description || ''; this.ui.adLinkInput.value = ad.link || '';
             this.ui.isPartnersCheckbox.checked = ad.isPartners || false;
+            this.ui.isMembersOnlyCheckbox.checked = ad.isMembersOnly || false;
             this.ui.adStartDateInput.value = ad.startDate || ''; this.ui.adEndDateInput.value = ad.endDate || '';
             this.ui.fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
             this.updatePreview(); this.ui.adModal.classList.add('active');
@@ -352,23 +352,31 @@ export const cards = {
                 this.ui.uploadLabel.textContent = '업로드 완료!';
             }
             const adData = {
-                adType: 'card', title: this.ui.adTitleInput.value, description: this.ui.adDescriptionInput.value,
-                link: this.ui.adLinkInput.value, isPartners: this.ui.isPartnersCheckbox.checked,
-                mediaUrl: mediaUrlToSave, mediaType: this.currentMediaType,
-                startDate: this.ui.adStartDateInput.value, endDate: this.ui.adEndDateInput.value,
+                adType: 'card',
+                title: this.ui.adTitleInput.value,
+                description: this.ui.adDescriptionInput.value,
+                link: this.ui.adLinkInput.value,
+                isPartners: this.ui.isPartnersCheckbox.checked,
+                isMembersOnly: this.ui.isMembersOnlyCheckbox.checked,
+                mediaUrl: mediaUrlToSave,
+                mediaType: this.currentMediaType,
+                startDate: this.ui.adStartDateInput.value,
+                endDate: this.ui.adEndDateInput.value,
             };
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
-                Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, isActive: ad.isActive !== false });
+                Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
                 await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
-                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
+                Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true });
                 await addDoc(collection(db, "ads"), adData);
             }
             this.ui.adModal.classList.remove('active');
         } catch (error) {
-            console.error("저장 중 오류 발생:", error); alert("작업에 실패했습니다.");
-            btn.disabled = false; btn.innerHTML = `저장하기`;
+            console.error("저장 중 오류 발생:", error);
+            alert("작업에 실패했습니다.");
+            btn.disabled = false;
+            btn.innerHTML = `저장하기`;
         }
     },
 
@@ -382,9 +390,12 @@ export const cards = {
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
         try {
             const adData = {
-                adType: 'iframe', title: title, iframeCode: code,
+                adType: 'iframe',
+                title: title,
+                iframeCode: code,
                 isPartners: this.ui.iframeIsPartnersCheckbox.checked,
-                startDate: this.ui.iframeAdStartDateInput.value, endDate: this.ui.iframeAdEndDateInput.value,
+                startDate: this.ui.iframeAdStartDateInput.value,
+                endDate: this.ui.iframeAdEndDateInput.value,
             };
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
@@ -396,8 +407,10 @@ export const cards = {
             }
             this.ui.iframeAdModal.classList.remove('active');
         } catch (error) {
-            console.error("iframe 카드 저장 중 오류:", error); alert("작업에 실패했습니다.");
-            btn.disabled = false; btn.innerHTML = '저장하기';
+            console.error("iframe 카드 저장 중 오류:", error);
+            alert("작업에 실패했습니다.");
+            btn.disabled = false;
+            btn.innerHTML = '저장하기';
         }
     },
 
