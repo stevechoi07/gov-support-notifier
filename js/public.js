@@ -1,17 +1,15 @@
-// js/public.js v3.0 - 뉴스레터/멤버십 기능 완성
+// js/public.js v3.1 - Netlify Function을 사용하도록 데이터 로드 로직 변경
 
-import { doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
-// ✨ [v3.0 변경] ui.js에서 showToast 함수를 가져옵니다.
 import { showToast } from './ui.js';
 
 let swiperInstance = null;
 let storyTimer = null;
-let allContentIds = [];
+let allContent = []; // 모든 콘텐츠를 여기에 한번에 저장합니다.
 let loadedContentIndex = 0;
 const INITIAL_LOAD_COUNT = 3;
 
-// ✨ [v3.0 추가] 사용자의 구독 상태를 로컬 스토리지에서 가져와 관리합니다.
 let isSubscribed = localStorage.getItem('isSubscribed') === 'true';
 
 function stylesToString(styles = {}) {
@@ -20,24 +18,8 @@ function stylesToString(styles = {}) {
         .join(' ');
 }
 
-async function fetchContentDetails(ids) {
-    const db = getFirestoreDB();
-    if (!ids || ids.length === 0) return [];
-
-    const contentPromises = ids.map(async (id) => {
-        if (!id) return null;
-        let contentRef = doc(db, 'pages', id);
-        let contentSnap = await getDoc(contentRef);
-        if (!contentSnap.exists()) {
-            contentRef = doc(db, 'ads', id);
-            contentSnap = await getDoc(contentRef);
-        }
-        return contentSnap.exists() ? { id: contentSnap.id, ...contentSnap.data() } : null;
-    });
-
-    const contents = await Promise.all(contentPromises);
-    return contents.filter(Boolean);
-}
+// ✨ [v3.1 변경] 이 함수는 이제 서버에서 모든 데이터를 가져왔으므로 필요 없어졌습니다.
+// async function fetchContentDetails(ids) { ... } // <- 삭제!
 
 function launchStoryViewer(pageContent) {
     const viewer = document.querySelector('.story-viewer');
@@ -125,27 +107,10 @@ function renderAllContent(contents, append = false) {
     }
 
     const contentHtml = contents.map(content => {
-        // ✨ [v3.0 변경] 렌더링 로직에 멤버십 관련 분기문 추가
         if (content.isMembersOnly && !isSubscribed) {
-            // === 멤버 전용 콘텐츠 잠금 렌더링 ===
-            return `
-                <div class="card members-only-lock">
-                    <h2>✨ 구독자 전용 콘텐츠</h2>
-                    <p>뉴스레터를 구독하고 더 많은 인사이트를 확인해보세요!</p>
-                </div>
-            `;
+            return `<div class="card members-only-lock"><h2>✨ 구독자 전용 콘텐츠</h2><p>뉴스레터를 구독하고 더 많은 인사이트를 확인해보세요!</p></div>`;
         } else if (content.adType === 'subscription-form') {
-            // === 구독 폼 카드 렌더링 ===
-            return `
-                <div class="card subscription-card">
-                    <h2>${content.title}</h2>
-                    <p>${content.description}</p>
-                    <form class="subscription-form">
-                        <input type="email" placeholder="이메일 주소를 입력하세요" required>
-                        <button type="submit">구독하기</button>
-                    </form>
-                </div>
-            `;
+            return `<div class="card subscription-card"><h2>${content.title}</h2><p>${content.description}</p><form class="subscription-form"><input type="email" placeholder="이메일 주소를 입력하세요" required><button type="submit">구독하기</button></form></div>`;
         } else if (content.components && content.components.some(c => c.type === 'scene')) {
             const firstScene = content.components[0] || {};
             const sceneSettings = firstScene.sceneSettings || {};
@@ -204,14 +169,14 @@ function renderAllContent(contents, append = false) {
     setupTiltEffect();
 }
 
-async function loadMoreContent() {
-    if (loadedContentIndex >= allContentIds.length) {
+// ✨ [v3.1 변경] 더 이상 서버에 요청하지 않고, 미리 받아온 전체 데이터에서 다음 부분을 잘라 씁니다.
+function loadMoreContent() {
+    if (loadedContentIndex >= allContent.length) {
         console.log("All content loaded.");
         return;
     }
-    const nextIdsToLoad = allContentIds.slice(loadedContentIndex, loadedContentIndex + INITIAL_LOAD_COUNT);
-    const contents = await fetchContentDetails(nextIdsToLoad);
-    renderAllContent(contents, true);
+    const nextContentsToRender = allContent.slice(loadedContentIndex, loadedContentIndex + INITIAL_LOAD_COUNT);
+    renderAllContent(nextContentsToRender, true);
     loadedContentIndex += INITIAL_LOAD_COUNT;
 }
 
@@ -235,6 +200,7 @@ async function track(contentId, contentType, fieldToIncrement) {
     if (!contentId || !contentType || !fieldToIncrement) return;
     const collectionName = contentType === 'page' ? 'pages' : 'ads';
     try {
+        await firebaseReady; // 트래킹을 위해 Firebase 연결은 여전히 필요합니다.
         const db = getFirestoreDB();
         const contentRef = doc(db, collectionName, contentId);
         await updateDoc(contentRef, {
@@ -315,33 +281,24 @@ function setupTiltEffect() {
     });
 }
 
+// ✨ [v3.1 핵심 변경] Netlify Function을 호출하는 방식으로 완전히 변경되었습니다.
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
-    console.log("🚀 Public page script loaded. Waiting for Firebase...");
+    console.log("🚀 Public page v3.1 script loaded. Fetching from Netlify Function...");
     try {
-        await firebaseReady;
-        const db = getFirestoreDB();
-        console.log("✅ Firebase is ready. Fetching layout data...");
-        const layoutRef = doc(db, 'layouts', 'mainLayout');
-        const layoutSnap = await getDoc(layoutRef);
-        if (layoutSnap.exists()) {
-            allContentIds = layoutSnap.data().contentIds;
-            console.log("🎉 Total Layout IDs found:", allContentIds);
+        const response = await fetch('/.netlify/functions/get-content');
+        if (!response.ok) {
+            throw new Error(`콘텐츠 로딩 실패! (상태: ${response.status})`);
+        }
+        allContent = await response.json();
+        console.log("🎉 Total content received:", allContent.length);
 
-            const initialIds = allContentIds.slice(0, INITIAL_LOAD_COUNT);
-            const contents = await fetchContentDetails(initialIds);
-            renderAllContent(contents);
-            loadedContentIndex = INITIAL_LOAD_COUNT;
-            
-            if (allContentIds.length > INITIAL_LOAD_COUNT) {
-                setupLoadMoreTrigger();
-            }
-
-        } else {
-            console.error("🔥 Error: 'mainLayout' document not found!");
-            if (container) {
-                container.innerHTML = `<p class="text-center text-red-500">레이아웃 정보를 찾을 수 없습니다.</p>`;
-            }
+        const initialContents = allContent.slice(0, INITIAL_LOAD_COUNT);
+        renderAllContent(initialContents);
+        loadedContentIndex = INITIAL_LOAD_COUNT;
+        
+        if (allContent.length > INITIAL_LOAD_COUNT) {
+            setupLoadMoreTrigger();
         }
     } catch (error) {
         console.error("🔥 An error occurred:", error);
@@ -361,8 +318,8 @@ function setupLoadMoreTrigger() {
 
     const observer = new IntersectionObserver(async (entries) => {
         if (entries[0].isIntersecting) {
-            await loadMoreContent();
-            if (loadedContentIndex >= allContentIds.length) {
+            loadMoreContent(); // 이제 이 함수는 네트워크 요청을 하지 않습니다.
+            if (loadedContentIndex >= allContent.length) {
                 observer.unobserve(trigger);
                 trigger.remove();
             }
@@ -376,11 +333,9 @@ document.addEventListener('click', async (event) => {
     const storyLauncher = event.target.closest('.story-launcher');
     if (storyLauncher) {
         const pageId = storyLauncher.dataset.storyPageId;
-        const db = getFirestoreDB();
-        const docRef = doc(db, 'pages', pageId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            launchStoryViewer({ id: docSnap.id, ...docSnap.data() });
+        const pageData = allContent.find(p => p.id === pageId);
+        if(pageData) {
+            launchStoryViewer(pageData);
         }
         return;
     }
@@ -391,7 +346,6 @@ document.addEventListener('click', async (event) => {
     }
 });
 
-// ✨ [v3.0 추가] 구독 폼 제출 처리 이벤트 리스너
 document.addEventListener('submit', async (event) => {
     if (event.target.classList.contains('subscription-form')) {
         event.preventDefault();
