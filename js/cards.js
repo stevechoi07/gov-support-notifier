@@ -1,4 +1,4 @@
-// js/cards.js v2.3 - '구독 폼' 카드 유형 추가
+// js/cards.js v2.4 - 'isMembersOnly: false 추가
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -246,7 +246,7 @@ export const cards = {
         if(this.ui.adModal) this.ui.adModal.classList.add('active');
     },
 
-    async handleAddNewSubscriptionCard() {
+     async handleAddNewSubscriptionCard() {
         if (confirm("레이아웃에 추가할 수 있는 '뉴스레터 구독' 카드를 생성하시겠습니까?")) {
             await firebaseReady;
             const db = getFirestoreDB();
@@ -259,6 +259,7 @@ export const cards = {
                     isActive: true,
                     clickCount: 0, 
                     viewCount: 0,
+                    isMembersOnly: false, // ✨ '공개' 도장을 자동으로 추가합니다!
                 };
                 await addDoc(collection(db, "ads"), adData);
                 showToast("'뉴스레터 구독' 카드가 생성되었습니다.", "success");
@@ -424,7 +425,8 @@ export const cards = {
                 Object.assign(adData, { order: ad.order, clickCount: 0, isActive: ad.isActive !== false });
                 await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
-                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true });
+                // ✨ 새 iframe 카드를 만들 때만 '공개' 도장을 추가합니다.
+                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true, isMembersOnly: false });
                 await addDoc(collection(db, "ads"), adData);
             }
             this.ui.iframeAdModal.classList.remove('active');
