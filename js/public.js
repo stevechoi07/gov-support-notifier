@@ -1,4 +1,4 @@
-// js/public.js v3.1 - Netlify Function을 사용하도록 데이터 로드 로직 변경
+// js/public.js v3.2 - VIP 패스 발급 시스템
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -10,7 +10,7 @@ let allContent = []; // 모든 콘텐츠를 여기에 한번에 저장합니다.
 let loadedContentIndex = 0;
 const INITIAL_LOAD_COUNT = 3;
 
-let isSubscribed = localStorage.getItem('isSubscribed') === 'true';
+let isSubscribed = !!localStorage.getItem('vip-pass');
 
 function stylesToString(styles = {}) {
     return Object.entries(styles)
@@ -346,6 +346,7 @@ document.addEventListener('click', async (event) => {
     }
 });
 
+// ✨ [v3.2 핵심 변경] VIP 패스(JWT)를 받아 안전하게 저장하도록 로직 업그레이드
 document.addEventListener('submit', async (event) => {
     if (event.target.classList.contains('subscription-form')) {
         event.preventDefault();
@@ -360,17 +361,26 @@ document.addEventListener('submit', async (event) => {
         try {
             const response = await fetch('/.netlify/functions/subscribe', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email }),
             });
             const result = await response.json();
             
-            if (!response.ok) {
+            if (!response.ok || !result.success) {
                 throw new Error(result.message || '오류가 발생했습니다.');
             }
             
+            // 1. 서버가 보내준 VIP 패스(토큰)를 꺼냅니다.
+            if (result.token) {
+                // 2. localStorage에 'isSubscribed' 대신 진짜 VIP 패스를 저장합니다!
+                localStorage.setItem('vip-pass', result.token);
+                // isSubscribed 변수도 즉시 업데이트합니다.
+                isSubscribed = true; 
+                console.log('VIP 패스를 성공적으로 저장했습니다.');
+            }
+            
             showToast(result.message, 'success');
-            localStorage.setItem('isSubscribed', 'true');
-            isSubscribed = true;
+            // 3. 페이지를 새로고침해서 잠긴 콘텐츠를 즉시 해제합니다.
             setTimeout(() => window.location.reload(), 1500);
 
         } catch (error) {
@@ -380,7 +390,6 @@ document.addEventListener('submit', async (event) => {
         }
     }
 });
-
 
 const storyCloseButton = document.querySelector('.story-viewer .story-close-button');
 if (storyCloseButton) storyCloseButton.addEventListener('click', closeStoryViewer);
