@@ -1,4 +1,4 @@
-// js/public.js v3.9 - 클라이언트 측에서만 렌더링을 결정
+// js/public.js v4.0 - 블러 오버레이의 구독 버튼에 스크롤 기능 추가
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -6,7 +6,7 @@ import { showToast } from './ui.js';
 
 let swiperInstance = null;
 let storyTimer = null;
-let allContent = []; // 모든 콘텐츠를 여기에 한번에 저장합니다.
+let allContent = [];
 let loadedContentIndex = 0;
 const INITIAL_LOAD_COUNT = 3;
 
@@ -17,9 +17,6 @@ function stylesToString(styles = {}) {
         .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
         .join(' ');
 }
-
-// ✨ [v3.1 변경] 이 함수는 이제 서버에서 모든 데이터를 가져왔으므로 필요 없어졌습니다.
-// async function fetchContentDetails(ids) { ... } // <- 삭제!
 
 function launchStoryViewer(pageContent) {
     const viewer = document.querySelector('.story-viewer');
@@ -107,14 +104,14 @@ function renderAllContent(contents, append = false) {
     }
 
     const contentHtml = contents.map(content => {
-        let cardHtml = ''; // 각 카드의 HTML을 임시 저장할 변수
+        let cardHtml = '';
 
-        // --- 1. 먼저 모든 종류의 카드 HTML을 생성합니다. ---
         if (content.adType === 'subscription-form') {
             if (isSubscribed) {
                 cardHtml = `<div class="card subscription-card"><h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2><p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p></div>`;
             } else {
-                cardHtml = `<div class="card subscription-card"><h2>${content.title}</h2><p>${content.description}</p><form class="subscription-form"><input type="email" placeholder="이메일 주소를 입력하세요" required><button type="submit">구독하기</button></form></div>`;
+                // ✨ [v4.0 변경] 스크롤 대상으로 삼기 위해 id를 추가합니다.
+                cardHtml = `<div class="card subscription-card" id="subscription-form-card"><h2>${content.title}</h2><p>${content.description}</p><form class="subscription-form"><input type="email" placeholder="이메일 주소를 입력하세요" required><button type="submit">구독하기</button></form></div>`;
             }
         } else if (content.components && content.components.some(c => c.type === 'scene')) {
             const firstScene = content.components[0] || {};
@@ -140,7 +137,6 @@ function renderAllContent(contents, append = false) {
                 cardHtml = cardInnerHtml;
             }
         } else {
-            // ... (페이지 섹션 렌더링 로직은 기존과 동일)
             const contentType = 'page';
             const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
             const pageSettings = content.pageSettings || {};
@@ -151,7 +147,7 @@ function renderAllContent(contents, append = false) {
                 const height = parseFloat(heightStr);
                 if (height > 0) { pageStyle += ` aspect-ratio: ${width} / ${height};`; }
             }
-            const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
+            const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${content.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
             const componentsHtml = (content.components || []).map(component => {
                 const componentStyle = stylesToString(component.styles);
                 switch (component.type) {
@@ -164,9 +160,7 @@ function renderAllContent(contents, append = false) {
             cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
         }
 
-        // --- 2. ✨ [핵심] 생성된 HTML에 잠금 효과를 적용할지 결정합니다. ---
         if (content.isMembersOnly && !isSubscribed) {
-            // 멤버 전용 콘텐츠인데 구독하지 않았다면, 블러 효과와 오버레이로 감쌉니다.
             return `
                 <div class="locked-content-wrapper">
                     <div class="is-blurred">${cardHtml}</div>
@@ -179,7 +173,6 @@ function renderAllContent(contents, append = false) {
             `;
         }
         
-        // 잠글 필요가 없다면 원래 HTML을 그대로 반환합니다.
         return cardHtml;
 
     }).join('');
@@ -191,11 +184,8 @@ function renderAllContent(contents, append = false) {
     }
 
     setupIntersectionObserver();
-    // 3D Tilt 효과는 잠금 화면과 충돌할 수 있으므로, 원하시면 다시 추가하거나 그대로 두세요.
-    // setupTiltEffect();
 }
 
-// ✨ [v3.1 변경] 더 이상 서버에 요청하지 않고, 미리 받아온 전체 데이터에서 다음 부분을 잘라 씁니다.
 function loadMoreContent() {
     if (loadedContentIndex >= allContent.length) {
         console.log("All content loaded.");
@@ -226,7 +216,7 @@ async function track(contentId, contentType, fieldToIncrement) {
     if (!contentId || !contentType || !fieldToIncrement) return;
     const collectionName = contentType === 'page' ? 'pages' : 'ads';
     try {
-        await firebaseReady; // 트래킹을 위해 Firebase 연결은 여전히 필요합니다.
+        await firebaseReady;
         const db = getFirestoreDB();
         const contentRef = doc(db, collectionName, contentId);
         await updateDoc(contentRef, {
@@ -288,13 +278,12 @@ function setupIntersectionObserver() {
     targets.forEach(target => observer.observe(target));
 }
 
-// ✨ [v3.9] 클라이언트 측에서만 렌더링을 결정하므로 Authorization 헤더 제거
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
-    console.log("🚀 Public page v3.9 script loaded. Fetching all content...");
+    console.log("🚀 Public page v4.0 script loaded. Fetching all content...");
 
     try {
-        const response = await fetch('/.netlify/functions/get-content'); // 헤더 없이 깔끔하게 요청
+        const response = await fetch('/.netlify/functions/get-content');
         if (!response.ok) {
             throw new Error(`콘텐츠 로딩 실패! (상태: ${response.status})`);
         }
@@ -326,7 +315,7 @@ function setupLoadMoreTrigger() {
 
     const observer = new IntersectionObserver(async (entries) => {
         if (entries[0].isIntersecting) {
-            loadMoreContent(); // 이제 이 함수는 네트워크 요청을 하지 않습니다.
+            loadMoreContent();
             if (loadedContentIndex >= allContent.length) {
                 observer.unobserve(trigger);
                 trigger.remove();
@@ -338,6 +327,7 @@ function setupLoadMoreTrigger() {
 }
 
 document.addEventListener('click', async (event) => {
+    // 1. 스토리 실행 버튼인지 확인
     const storyLauncher = event.target.closest('.story-launcher');
     if (storyLauncher) {
         const pageId = storyLauncher.dataset.storyPageId;
@@ -347,6 +337,19 @@ document.addEventListener('click', async (event) => {
         }
         return;
     }
+
+    // 2. ✨ [v4.0 변경] 블러 오버레이의 '구독하기' 버튼인지 확인
+    const overlayButton = event.target.closest('.subscribe-button-overlay');
+    if (overlayButton) {
+        const subscriptionForm = document.getElementById('subscription-form-card');
+        if (subscriptionForm) {
+            // 구독 폼 위치로 부드럽게 스크롤합니다.
+            subscriptionForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return; // 다른 클릭 이벤트는 무시
+    }
+
+    // 3. 클릭 수 추적 대상인지 확인
     const trackableElement = event.target.closest('[data-id][data-type]');
     if (trackableElement) {
         const { id, type } = trackableElement.dataset;
@@ -354,7 +357,6 @@ document.addEventListener('click', async (event) => {
     }
 });
 
-// ✨ [v3.2 핵심 변경] VIP 패스(JWT)를 받아 안전하게 저장하도록 로직 업그레이드
 document.addEventListener('submit', async (event) => {
     if (event.target.classList.contains('subscription-form')) {
         event.preventDefault();
@@ -385,23 +387,9 @@ document.addEventListener('submit', async (event) => {
                 isSubscribed = true;
             }
             
-            // ✨ [핵심 해결책]
-            // 1. VIP 패스를 장착하고 서버에서 '전체 콘텐츠 목록'을 새로 받아옵니다.
-            const token = localStorage.getItem('vip-pass');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            const contentResponse = await fetch('/.netlify/functions/get-content', { headers });
-            allContent = await contentResponse.json(); // 전역 콘텐츠 목록을 업데이트합니다.
-
-            // 2. 받아온 '전체 콘텐츠'를 한 번에 화면에 모두 그려줍니다.
-            renderAllContent(allContent);
-
-            // 3. 모든 콘텐츠가 로드되었으므로 '더 보기' 트리거는 제거합니다.
-            loadedContentIndex = allContent.length;
-            const trigger = document.getElementById('load-more-trigger');
-            if (trigger) trigger.remove();
+            await renderPublicPage();
+            const currentlyLoadedContent = allContent.slice(0, loadedContentIndex);
+            renderAllContent(currentlyLoadedContent);
 
 
         } catch (error) {
