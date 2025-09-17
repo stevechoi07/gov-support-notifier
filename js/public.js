@@ -95,6 +95,7 @@ function closeStoryViewer() {
     viewer.classList.remove('is-active');
 }
 
+// js/public.js v4.2 - 페이지 콘텐츠의 배경 동영상 경로 오류 수정
 function renderAllContent(contents, append = false) {
     const container = document.getElementById('content-container');
     if (!container) { console.error("Content container not found!"); return; }
@@ -110,7 +111,6 @@ function renderAllContent(contents, append = false) {
             if (isSubscribed) {
                 cardHtml = `<div class="card subscription-card"><h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2><p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p></div>`;
             } else {
-                // ✨ [v4.0 변경] 스크롤 대상으로 삼기 위해 id를 추가합니다.
                 cardHtml = `<div class="card subscription-card" id="subscription-form-card"><h2>${content.title}</h2><p>${content.description}</p><form class="subscription-form"><input type="email" placeholder="이메일 주소를 입력하세요" required><button type="submit">구독하기</button></form></div>`;
             }
         } else if (content.components && content.components.some(c => c.type === 'scene')) {
@@ -137,6 +137,7 @@ function renderAllContent(contents, append = false) {
                 cardHtml = cardInnerHtml;
             }
         } else {
+            // "페이지" 타입 콘텐츠를 그리는 부분
             const contentType = 'page';
             const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
             const pageSettings = content.pageSettings || {};
@@ -147,7 +148,10 @@ function renderAllContent(contents, append = false) {
                 const height = parseFloat(heightStr);
                 if (height > 0) { pageStyle += ` aspect-ratio: ${width} / ${height};`; }
             }
-            const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${content.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
+            
+            // ✨ [핵심 수정] content.bgVideo -> pageSettings.bgVideo 로 올바르게 수정
+            const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
+
             const componentsHtml = (content.components || []).map(component => {
                 const componentStyle = stylesToString(component.styles);
                 switch (component.type) {
