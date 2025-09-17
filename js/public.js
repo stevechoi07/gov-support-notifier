@@ -1,4 +1,4 @@
-// js/public.js v3.8 - 구독 성공 시 모든 콘텐츠를 즉시 렌더링 
+// js/public.js v3.9 - 클라이언트 측에서만 렌더링을 결정
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -288,25 +288,13 @@ function setupIntersectionObserver() {
     targets.forEach(target => observer.observe(target));
 }
 
-// ✨ [v3.3 핵심 변경] VIP 패스가 있으면 요청 헤더에 담아 보내도록 수정
+// ✨ [v3.9] 클라이언트 측에서만 렌더링을 결정하므로 Authorization 헤더 제거
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
-    console.log("🚀 Public page v3.3 script loaded. Fetching from Netlify Function...");
-
-    // 1. 주머니(localStorage)에서 VIP 패스를 꺼냅니다.
-    const token = localStorage.getItem('vip-pass');
-
-    // 2. 요청에 포함할 헤더를 준비합니다.
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) {
-        // 3. VIP 패스가 있으면, 'Authorization'란에 붙여서 보냅니다.
-        headers['Authorization'] = `Bearer ${token}`;
-        console.log('VIP 패스를 장착하고 요청합니다.');
-    }
+    console.log("🚀 Public page v3.9 script loaded. Fetching all content...");
 
     try {
-        // 4. 헤더를 포함하여 경비원에게 콘텐츠를 요청합니다.
-        const response = await fetch('/.netlify/functions/get-content', { headers });
+        const response = await fetch('/.netlify/functions/get-content'); // 헤더 없이 깔끔하게 요청
         if (!response.ok) {
             throw new Error(`콘텐츠 로딩 실패! (상태: ${response.status})`);
         }

@@ -1,7 +1,6 @@
-// netlify/functions/get-content.js v2.0 - JWT를 이용한 VIP 패스 검사 기능 추가
+// netlify/functions/get-content.js v2.1 - 모든 사용자에게 모든 콘텐츠를 반환하도록 변경
 
 const admin = require('firebase-admin');
-const jwt = require('jsonwebtoken'); // VIP 패스 검증을 위해 제작기를 불러옵니다.
 
 // --- Firebase Admin SDK 초기화 ---
 try {
@@ -22,30 +21,8 @@ exports.handler = async (event, context) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const JWT_SECRET = process.env.JWT_SECRET;
-  if (!JWT_SECRET) {
-      return { statusCode: 500, body: JSON.stringify({ message: '서버 설정 오류입니다.' }) };
-  }
-
-  let isVip = false; // 기본적으로는 VIP가 아니라고 가정합니다.
-
-  // --- 1. 손님이 VIP 패스를 보여줬는지 확인 ---
-  const authHeader = event.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1]; // 'Bearer ' 뒷부분의 토큰만 추출
-    try {
-      // --- 2. VIP 패스가 진짜인지 비밀 도장으로 검증 ---
-      jwt.verify(token, JWT_SECRET);
-      isVip = true; // 검증 성공! 이 손님은 VIP입니다.
-      console.log('VIP user access granted.');
-    } catch (error) {
-      // 토큰이 위조되었거나, 만료되었을 경우
-      console.log('Invalid or expired token:', error.message);
-      isVip = false;
-    }
-  }
-
   try {
+    // --- VIP 여부와 관계없이 모든 데이터를 가져옵니다. ---
     const layoutRef = db.collection('layouts').doc('mainLayout');
     const layoutDoc = await layoutRef.get();
     
@@ -53,21 +30,12 @@ exports.handler = async (event, context) => {
       throw new Error('mainLayout 문서를 찾을 수 없습니다.');
     }
     const contentIds = layoutDoc.data().contentIds || [];
-
-    // --- 3. VIP 여부에 따라 다른 종류의 콘텐츠를 준비 ---
-    let pagesQuery, adsQuery;
-
-    if (isVip) {
-      // VIP 손님에게는 모든 콘텐츠를 보여줍니다.
-      pagesQuery = db.collection('pages').get();
-      adsQuery = db.collection('ads').get();
-    } else {
-      // 일반 손님에게는 공개 콘텐츠('isMembersOnly'가 true가 아닌 것)만 보여줍니다.
-      pagesQuery = db.collection('pages').where('isMembersOnly', '!=', true).get();
-      adsQuery = db.collection('ads').where('isMembersOnly', '!=', true).get();
-    }
     
-    const [pagesSnapshot, adsSnapshot] = await Promise.all([pagesQuery, adsQuery]);
+    // 필터링 없이 모든 페이지와 카드를 가져옵니다.
+    const pagesPromise = db.collection('pages').get();
+    const adsPromise = db.collection('ads').get();
+    
+    const [pagesSnapshot, adsSnapshot] = await Promise.all([pagesPromise, adsPromise]);
 
     const allContentMap = new Map();
     pagesSnapshot.forEach(doc => allContentMap.set(doc.id, { ...doc.data(), id: doc.id }));
