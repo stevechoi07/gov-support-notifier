@@ -357,6 +357,7 @@ document.addEventListener('click', async (event) => {
     }
 });
 
+// js/public.js v4.1 - 구독 성공 시 실시간 잠금 해제 로직 최종 수정
 document.addEventListener('submit', async (event) => {
     if (event.target.classList.contains('subscription-form')) {
         event.preventDefault();
@@ -387,10 +388,18 @@ document.addEventListener('submit', async (event) => {
                 isSubscribed = true;
             }
             
-            await renderPublicPage();
-            const currentlyLoadedContent = allContent.slice(0, loadedContentIndex);
-            renderAllContent(currentlyLoadedContent);
+            // ✨ [핵심 해결책]
+            // 1. 서버에서 모든 콘텐츠가 포함된 최신 목록을 다시 가져옵니다.
+            const contentResponse = await fetch('/.netlify/functions/get-content');
+            allContent = await contentResponse.json(); // 전역 콘텐츠 목록을 업데이트합니다.
 
+            // 2. 받아온 '전체 콘텐츠'를 한 번에 화면에 모두 그려줍니다.
+            renderAllContent(allContent);
+
+            // 3. 모든 콘텐츠가 로드되었으므로 '더 보기' 트리거는 제거합니다.
+            loadedContentIndex = allContent.length;
+            const trigger = document.getElementById('load-more-trigger');
+            if (trigger) trigger.remove();
 
         } catch (error) {
             showToast(error.message, 'error');
