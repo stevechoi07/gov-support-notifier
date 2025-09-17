@@ -1,4 +1,4 @@
-// js/public.js v3.7 - 구독 성공 시 실시간으로 콘텐츠 잠금 해제
+// js/public.js v3.8 - 구독 성공 시 모든 콘텐츠를 즉시 렌더링 
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -394,13 +394,27 @@ document.addEventListener('submit', async (event) => {
             
             if (result.token) {
                 localStorage.setItem('vip-pass', result.token);
-                isSubscribed = true; // 상태를 즉시 업데이트
+                isSubscribed = true;
             }
             
-            // ✨ [핵심 변경] 페이지 전체를 다시 렌더링해서 모든 잠금을 해제합니다.
-            // 이렇게 하면 새로고침 없이도 "이미 구독 중입니다" 메시지와 함께
-            // 멤버 전용 콘텐츠가 모두 나타나게 됩니다.
-            await renderPublicPage();
+            // ✨ [핵심 해결책]
+            // 1. VIP 패스를 장착하고 서버에서 '전체 콘텐츠 목록'을 새로 받아옵니다.
+            const token = localStorage.getItem('vip-pass');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const contentResponse = await fetch('/.netlify/functions/get-content', { headers });
+            allContent = await contentResponse.json(); // 전역 콘텐츠 목록을 업데이트합니다.
+
+            // 2. 받아온 '전체 콘텐츠'를 한 번에 화면에 모두 그려줍니다.
+            renderAllContent(allContent);
+
+            // 3. 모든 콘텐츠가 로드되었으므로 '더 보기' 트리거는 제거합니다.
+            loadedContentIndex = allContent.length;
+            const trigger = document.getElementById('load-more-trigger');
+            if (trigger) trigger.remove();
+
 
         } catch (error) {
             showToast(error.message, 'error');
