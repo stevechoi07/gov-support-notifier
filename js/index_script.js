@@ -4,11 +4,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // ===============================================================
-// 🚀 정부 지원사업 알리미 v2.0
+// 🚀 정부 지원사업 알리미 v2.2
 // ===============================================================
 // [변경점]
-// 1. JavaScript 코드를 index.html에서 완전히 분리!
-// 2. 브라우저 캐싱 및 defer 로딩을 통해 2차 방문부터 로딩 속도 향상.
+// 1. '마감 임박순' 정렬 기능 복구!
+// 2. 전체적인 UI에 다크 모드 적용.
 // ===============================================================
 
 let db;
@@ -57,14 +57,14 @@ document.addEventListener('DOMContentLoaded', startApp);
 
 async function startApp() {
   try {
-      console.log("🚀 [v2.0] 앱 실행 시작!");
+      console.log("🚀 [v2.2] 앱 실행 시작!");
       const response = await fetch('/.netlify/functions/get-firebase-config');
       if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
       const firebaseConfig = await response.json();
       
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      console.log("✅ [v2.0] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+      console.log("✅ [v2.2] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
       await initialize();
   } catch (error) {
@@ -88,7 +88,7 @@ async function initialize() {
     populateFilters();
 
     await firstRenderPromise;
-    console.log("[v2.0] ✅ 첫 화면 렌더링 로직 완료!");
+    console.log("[v2.2] ✅ 첫 화면 렌더링 로직 완료!");
 }
 
 async function loadAdData() {
@@ -109,14 +109,13 @@ async function loadAdData() {
             if (end && now > end) return false;
             return true;
         });
-        console.log(`[v2.0] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
+        console.log(`[v2.2] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
     } catch (error) {
-        console.error("[v2.0] 🔥 광고 데이터 로딩 실패:", error);
+        console.error("[v2.2] 🔥 광고 데이터 로딩 실패:", error);
         adDataList = [];
     }
 }
 
-// --- 데이터 요청 및 렌더링 ---
 async function fetchAndRenderData(isNewSearch = false) {
     if (isLoading) return;
     isLoading = true;
@@ -139,8 +138,11 @@ async function fetchAndRenderData(isNewSearch = false) {
     if (currentFilters.showFavorites && favorites.length > 0) {
         query += `&favorites=${favorites.join(',')}`;
     }
+    if (currentFilters.sort !== 'default') {
+        query += `&sort=${currentFilters.sort}`;
+    }
     
-    console.log(`[v2.0 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
+    console.log(`[v2.2 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
 
     try {
         const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
@@ -154,7 +156,7 @@ async function fetchAndRenderData(isNewSearch = false) {
             appendData(data);
         } else if (isNewSearch) {
             const message = currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.';
-            elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${message}</p>`;
+            elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-400">${message}</p>`;
         }
         renderActiveFilters();
     } catch (error) {
@@ -170,12 +172,12 @@ function appendData(items) {
     let contentToAdd = '';
     items.forEach(item => {
         contentToAdd += createItemHTML(item);
-        if (!item.isAd) { // 광고가 아닐 때만 공고 카운트 증가
+        if (!item.isAd) {
             renderedItemCount++;
         }
         
         if (adDataList.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
-            if (elements.resultsContainer.querySelectorAll('.ad-card').length <= Math.floor(renderedItemCount / 7)) {
+            if (elements.resultsContainer.querySelectorAll('.ad-card').length < Math.floor(renderedItemCount / 7)) {
                 const ad = adDataList[adIndex % adDataList.length];
                 if (ad) {
                    contentToAdd += createItemHTML(ad);
@@ -211,21 +213,20 @@ async function populateFilters() {
           elements.categoryCheckboxContainer.innerHTML = '';
           Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(category => {
               const label = document.createElement('label');
-              label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
-              label.innerHTML = `<input type="checkbox" class="category-checkbox" value="${category}"><span>${category.includes('기술개발(R&D)') ? '기술개발' : category} (${categoryCounts[category]})</span>`;
+              label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-slate-700 p-1 rounded';
+              label.innerHTML = `<input type="checkbox" class="category-checkbox rounded border-slate-600 bg-slate-800 text-sky-500 focus:ring-sky-600" value="${category}"><span>${category.includes('기술개발(R&D)') ? '기술개발' : category} (${categoryCounts[category]})</span>`;
               elements.categoryCheckboxContainer.appendChild(label);
           });
           
           elements.regionSelect.disabled = false;
       } catch(error) {
-          console.error("[v2.0] 🔥 필터 UI 생성 실패", error);
+          console.error("[v2.2] 🔥 필터 UI 생성 실패", error);
           elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
           elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
           elements.regionSelect.disabled = false;
       }
 }
 
-// --- 이벤트 리스너 ---
 function addEventListeners() {
     window.addEventListener('scroll', handleScroll);
     
@@ -256,6 +257,15 @@ function addEventListeners() {
         fetchAndRenderData(true); 
     });
 
+    elements.sortButtons.addEventListener('click', (e) => {
+        const button = e.target.closest('button[data-sort]');
+        if (button) {
+            currentFilters.sort = button.dataset.sort;
+            updateSortButtonUI();
+            fetchAndRenderData(true);
+        }
+    });
+
     elements.resultsContainer.addEventListener('click', e => {
           const adLink = e.target.closest('.ad-link');
           if (adLink) {
@@ -266,7 +276,6 @@ function addEventListeners() {
               window.open(adUrl, '_blank');
               return;
           }
-
           const button = e.target.closest('button');
           if (button) {
               if (button.classList.contains('favorite-button')) toggleFavorite(button);
@@ -296,21 +305,29 @@ function addEventListeners() {
       });
 }
 
+function updateSortButtonUI() {
+    elements.sortButtons.querySelectorAll('button').forEach(btn => {
+        if (btn.dataset.sort === currentFilters.sort) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
 async function handleAdClick(adId) {
     try {
         const adRef = doc(db, "adv", adId);
         await updateDoc(adRef, { clickCount: increment(1) });
-        console.log(`[v2.0] 📢 광고 클릭 카운트 업데이트 성공: ${adId}`);
+        console.log(`[v2.2] 📢 광고 클릭 카운트 업데이트 성공: ${adId}`);
     } catch (error) {
-        console.error("[v2.0] 🔥 광고 클릭 카운트 업데이트 실패:", error);
+        console.error("[v2.2] 🔥 광고 클릭 카운트 업데이트 실패:", error);
     }
 }
 
 function handleScroll() {
     const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
     const itemsOnScreen = elements.resultsContainer.children.length;
-    // totalItems는 필터링된 '공고' 수, itemsOnScreen은 '공고+광고' 수
-    // 스크롤 판단은 공고 수 기준으로 해야 정확
     if (clientHeight + scrollTop >= scrollHeight - 100 && !isLoading && renderedItemCount < totalItems) {
         currentPage++;
         fetchAndRenderData(false);
@@ -327,11 +344,11 @@ function handleError(context, message) {
 
 function renderSkeletonUI() {
     const skeletonHTML = `
-      <div class="bg-white rounded-xl shadow-md p-6 space-y-4">
-          <div class="animate-pulse flex justify-between items-center"><div class="h-4 bg-slate-200 rounded w-1/3"></div><div class="h-4 bg-slate-200 rounded w-1/4"></div></div>
-          <div class="animate-pulse h-6 bg-slate-200 rounded w-full"></div>
-          <div class="animate-pulse h-4 bg-slate-200 rounded w-1/2"></div>
-          <div class="border-t pt-4 mt-4 flex justify-between items-center"><div class="animate-pulse h-4 bg-slate-200 rounded w-1/4"></div><div class="animate-pulse h-4 bg-slate-200 rounded w-1/4"></div></div>
+      <div class="bg-slate-800 rounded-xl shadow-lg p-6 space-y-4">
+          <div class="animate-pulse flex justify-between items-center"><div class="h-4 bg-slate-700 rounded w-1/3"></div><div class="h-4 bg-slate-700 rounded w-1/4"></div></div>
+          <div class="animate-pulse h-6 bg-slate-700 rounded w-full"></div>
+          <div class="animate-pulse h-4 bg-slate-700 rounded w-1/2"></div>
+          <div class="border-t border-slate-700 pt-4 mt-4 flex justify-between items-center"><div class="animate-pulse h-4 bg-slate-700 rounded w-1/4"></div><div class="animate-pulse h-4 bg-slate-700 rounded w-1/4"></div></div>
       </div>`.repeat(3);
     elements.statusContainer.innerHTML = skeletonHTML;
 }
@@ -345,19 +362,19 @@ function createItemHTML(item) {
                 : `<img src="${item.mediaUrl}" alt="${item.title}" loading="lazy">`;
         }
         return `
-        <div class="ad-card bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative flex flex-col">
+        <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col">
             <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block">
                 <div class="ad-media-container">${mediaElement}</div>
             </a>
             <div class="p-4 flex-grow flex flex-col">
                 <div class="flex justify-between items-start">
-                     <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
-                     <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-slate-200">AD</span>
+                     <span class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Sponsored</span>
+                     <span class="text-slate-300 text-xs font-bold rounded-full px-3 py-1 bg-slate-700">AD</span>
                 </div>
-                <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
-                <p class="mt-2 text-slate-600 text-sm flex-grow">${item.description || ''}</p>
-                <div class="mt-4 pt-4 border-t text-right">
-                     <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-100 hover:text-sky-400">${item.title}</a>
+                <p class="mt-2 text-slate-400 text-sm flex-grow">${item.description || ''}</p>
+                <div class="mt-4 pt-4 border-t border-slate-700 text-right">
+                     <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-400 hover:underline">자세히 보기 &rarr;</a>
                 </div>
             </div>
         </div>`;
@@ -368,26 +385,26 @@ function createItemHTML(item) {
     const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
     const isNew = isWithinLast7Days(item.pbanc_rcpt_bgng_dt); 
     return `
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative">
+        <div class="bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative">
             ${isNew ? '<span class="new-badge absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</span>' : ''}
             <div class="p-6">
                 <div class="flex justify-between items-start">
-                    <span class="text-sm font-semibold text-sky-600 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span>
+                    <span class="text-sm font-semibold text-sky-400 uppercase tracking-wide">${item.pbanc_ntrp_nm || '기관명 없음'}</span>
                     <span class="text-white text-xs font-bold rounded-full px-3 py-1 ${dday.className}">${dday.text}</span>
                 </div>
-                <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm || '공고 제목 없음'}</a>
-                <p class="mt-2 text-slate-500 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p>
-                <div class="details-content mt-4 pt-4 border-t text-sm text-slate-600 space-y-2">
+                <a href="${item.detl_pg_url}" target="_blank" class="block mt-2 text-xl leading-tight font-bold text-slate-100 hover:text-sky-400 transition-colors">${item.biz_pbanc_nm || '공고 제목 없음'}</a>
+                <p class="mt-2 text-slate-400 text-sm"><strong>접수기간:</strong> ${item.pbanc_rcpt_bgng_dt || '?'} ~ ${item.pbanc_rcpt_end_dt || '?'}</p>
+                <div class="details-content mt-4 pt-4 border-t border-slate-700 text-sm text-slate-300 space-y-2">
                     <p><strong>- 신청대상:</strong> ${item.aply_trgt_ctnt || '상세 정보 없음'}</p>
                 </div>
-                <div class="flex justify-between items-center mt-4 pt-4 border-t">
+                <div class="flex justify-between items-center mt-4 pt-4 border-t border-slate-700">
                     <div class="flex items-center gap-4">
-                        <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}><span>비교</span></label>
-                        <button class="details-toggle text-sm font-semibold text-sky-600 hover:underline">자세히 보기 ▼</button>
+                        <label class="flex items-center space-x-2 text-sm cursor-pointer text-slate-300"><input type="checkbox" class="compare-checkbox rounded bg-slate-700 border-slate-600 text-sky-500 focus:ring-sky-600" data-id="${item.pbanc_sn}" ${isChecked}><span>비교</span></label>
+                        <button class="details-toggle text-sm font-semibold text-sky-500 hover:underline">자세히 보기 ▼</button>
                     </div>
                     <div>
-                        <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367-2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button>
-                        <button class="favorite-button text-2xl text-slate-400 hover:text-amber-400 transition-colors ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
+                        <button class="share-button text-slate-500 hover:text-sky-400 transition-colors" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367-2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button>
+                        <button class="favorite-button text-2xl text-slate-500 hover:text-amber-400 transition-colors ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
                     </div>
                 </div>
             </div>
@@ -445,4 +462,4 @@ function addKeyword() { const keyword = elements.keywordInput.value.trim(); if (
 function renderAlertKeywords() { elements.keywordTagsContainer.innerHTML = alertKeywords.length === 0 ? '<span class="text-xs text-slate-400">알림 받을 키워드를 추가해보세요.</span>' : alertKeywords.map((keyword, index) => `<span class="keyword-tag">${keyword} <button data-index="${index}">x</button></span>`).join(''); }
 function handleKeywordTagClick(e) { if (e.target.tagName === 'BUTTON') { const index = parseInt(e.target.dataset.index); alertKeywords.splice(index, 1); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); } }
 function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiDataForUtils.length === 0) return; const currentItemIds = allApiDataForUtils.map(item => item.pbanc_sn); const newItems = allApiDataForUtils.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
-function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => `<div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"><p class="text-sm text-slate-500"><span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고!</p><a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a></div>`).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
+function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => `<div class="mb-4 p-3 border rounded-lg hover:bg-slate-700"><p class="text-sm text-slate-400"><span class="font-bold text-sky-400">[${keyword}]</span> 키워드와 일치하는 새 공고!</p><a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-100 hover:underline">${item.biz_pbanc_nm}</a></div>`).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
