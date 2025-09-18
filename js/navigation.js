@@ -1,4 +1,4 @@
-// js/navigation.js v2.6 - 광고콘텐츠관리 버튼 추가
+// js/navigation.js v2.7 - 광고콘텐츠관리 버튼 추가
 
 import { ui } from './ui.js';
 
@@ -22,7 +22,7 @@ export async function navigateTo(viewName, pageId = null) {
         ui.viewTitle.setAttribute('contenteditable', 'false');
     }
     
-    const viewConfig = {
+     const viewConfig = {
         layout: { title: '🎨 레이아웃 관리', action: `<button id="add-content-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 콘텐츠 추가</button>` },
         pages: { title: '📄 페이지 관리', action: `<button id="new-page-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">✨ 새 페이지</button>` },
         cards: { title: '🗂️ 콘텐츠 카드 관리', action: `
@@ -31,15 +31,14 @@ export async function navigateTo(viewName, pageId = null) {
                 <button id="add-new-iframe-card-button" class="bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-600">➕ iframe 카드</button>
                 <button id="add-new-card-button" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 미디어 카드</button>
             </div>`
-		// ✨ 아래 'adv-cards' 부분을 새로 추가해주세요!
+        }, // ✨ 1. cards 속성 뒤에 쉼표(,)를 추가했습니다.
         'adv-cards': { title: '📢 광고 콘텐츠 관리', action: `
             <div class="flex gap-2">
                 <button id="adv-add-new-iframe-card-button" class="bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-600">➕ iframe 카드</button>
                 <button id="adv-add-new-card-button" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 미디어 카드</button>
             </div>`
         },
-
-        },
+        // ✨ 2. 여기에 있던 불필요한 닫는 괄호(})를 삭제했습니다.
         editor: { title: '📝 페이지 편집 중...', action: '' }
     };
 
