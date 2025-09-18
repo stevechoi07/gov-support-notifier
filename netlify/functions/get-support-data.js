@@ -1,4 +1,4 @@
-// js/get-support-data.js v2.1 - API 오류 처리 강화
+// js/get-support-data.js v2.2 - 디버깅을 위해 API 원본 응답을 기록
 
 const fetch = require('node-fetch');
 
@@ -16,15 +16,16 @@ exports.handler = async function(event, context) {
 
     const response = await fetch(targetUrl);
     const responseText = await response.text();
+    
+    // ✨ [핵심 디버깅 코드] 정부 서버가 보낸 원본 응답을 그대로 출력합니다.
+    console.log("정부 API 원본 응답:", responseText);
+
     const data = JSON.parse(responseText);
 
-    // ✨ [핵심 수정] 정부 API가 성공 응답('00')을 주었는지 먼저 확인합니다.
     if (data.response?.header?.resultCode !== '00') {
-      // 성공이 아닐 경우, API가 보내준 에러 메시지를 전달합니다.
       throw new Error(data.response?.header?.resultMsg || '정부 API로부터 데이터를 가져오지 못했습니다.');
     }
 
-    // 성공했을 때만 실제 데이터(items, totalCount)를 전달합니다.
     return {
       statusCode: 200,
       body: JSON.stringify(data.response.body) 
