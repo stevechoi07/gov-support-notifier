@@ -186,7 +186,7 @@
 
       async function loadAdData() {
         try {
-            const q = query(collection(db, "ads"), orderBy("order", "asc"));
+            const q = query(collection(db, "adv"), orderBy("order", "asc"));
             const querySnapshot = await getDocs(q);
             const rawAdData = [];
             querySnapshot.forEach((doc) => { rawAdData.push({ id: doc.id, ...doc.data(), isAd: true }); });
@@ -200,12 +200,12 @@
                 if (end && now > end) return false;
                 return true;
             });
-        } catch (error) { console.error("Error loading ads:", error); adDataList = []; }
+        } catch (error) { console.error("Error loading adv:", error); adDataList = []; }
       }
 
       async function handleAdClick(adId) {
           try {
-              const adRef = doc(db, "ads", adId);
+              const adRef = doc(db, "adv", adId); // "ads" -> "adv"
               await updateDoc(adRef, { clickCount: increment(1) });
           } catch (error) { console.error("클릭 카운트 업데이트 실패:", error); }
       }
