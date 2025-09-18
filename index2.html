@@ -35,9 +35,24 @@
         }
         .filter-placeholder {
             font-size: 0.875rem;
-            color: #64748b; /* slate-500 */
+            color: #64748b;
             text-align: center;
             padding: 0.5rem;
+        }
+        .ad-media-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 비율 */
+            background-color: #e2e8f0;
+        }
+        .ad-media-container img,
+        .ad-media-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -54,7 +69,7 @@
                     <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 break-keep">🚀 정부 지원사업 알리미</h1>
                     <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
                         <span>K-Startup, 청년창업, R&D 지원금</span>
-                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.8</span>
+                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.9</span>
                     </p>
                 </div>
                 <div class="w-11 h-11"></div>
@@ -101,15 +116,9 @@
             </div>
         </div>
 
-        <div id="status-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            </div>
-
+        <div id="status-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         <main id="results-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
-        
-        <div id="load-more-spinner" class="text-center mt-8 hidden">
-            <div class="loader mx-auto"></div>
-        </div>
-        
+        <div id="load-more-spinner" class="text-center mt-8 hidden"><div class="loader mx-auto"></div></div>
         <div id="error-message" class="hidden col-span-full text-center p-8 bg-red-100 text-red-700 rounded-lg"></div>
 
         <footer class="text-center mt-12 text-sm text-slate-500">
@@ -119,7 +128,7 @@
     </div>
 
     <div id="comparison-modal" class="fixed inset-0 z-50 hidden"><div id="comparison-modal-bg" class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white rounded-lg shadow-xl m-4 md:m-8 max-w-6xl mx-auto max-h-[90vh] flex flex-col"><div class="flex justify-between items-center p-4 border-b"><h2 class="text-xl font-bold">지원사업 비교하기</h2><button id="close-modal-button" class="text-2xl">&times;</button></div><div id="comparison-content" class="p-4 overflow-auto"></div></div></div>
-    <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
+    <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4"></div>
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
     <script type="module">
@@ -127,22 +136,24 @@
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       // ===============================================================
-      // 🚀 정부 지원사업 알리미 v1.8
+      // 🚀 정부 지원사업 알리미 v1.9
       // ===============================================================
       // [변경점]
-      // 1. 필터 외부 클릭 감지 기능 추가!
-      // 2. 햄버거 메뉴나 필터 목록이 아닌 곳을 클릭하면 필터 창이 자동으로 닫힙니다.
+      // 1. 광고 기능 활성화!
+      // 2. 페이지네이션 환경에 맞게 광고가 지능적으로 삽입되도록 로직 수정.
       // ===============================================================
 
       let db;
 
       // --- 상태 관리 변수 ---
-      let favorites = [], comparisonList = [], alertKeywords = [], seenItems = [], allApiDataForUtils = [];
+      let favorites = [], comparisonList = [], alertKeywords = [], seenItems = [], allApiDataForUtils = [], adDataList = [];
       let currentFilters = { searchTerm: '', region: 'all', category: [], sort: 'default', showFavorites: false };
       let currentPage = 1;
       let totalItems = 0;
       let isLoading = false;
       let searchTimeout;
+      let renderedItemCount = 0;
+      let adIndex = 0;
 
       // --- DOM 요소 ---
       const elements = { 
@@ -162,7 +173,7 @@
           closeModalButton: document.getElementById('close-modal-button'), 
           comparisonContent: document.getElementById('comparison-content'), 
           toast: document.getElementById('toast-notification'), 
-          stickyHeaderContainer: document.getElementById('sticky-header-container'), // sticky-header-container 추가
+          stickyHeaderContainer: document.getElementById('sticky-header-container'),
           toggleFiltersButton: document.getElementById('toggle-filters-button'), 
           collapsibleFilters: document.getElementById('collapsible-filters'),
           keywordInput: document.getElementById('keyword-input'), 
@@ -178,14 +189,14 @@
 
       async function startApp() {
         try {
-            console.log("🚀 [v1.8] 앱 실행 시작!");
+            console.log("🚀 [v1.9] 앱 실행 시작!");
             const response = await fetch('/.netlify/functions/get-firebase-config');
             if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
             const firebaseConfig = await response.json();
             
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            console.log("✅ [v1.8] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+            console.log("✅ [v1.9] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
             await initialize();
         } catch (error) {
@@ -195,6 +206,8 @@
 
       async function initialize() {
           addEventListeners();
+          
+          await loadAdData(); // 광고 데이터 로딩 활성화
           
           favorites = JSON.parse(localStorage.getItem('favorites')) || [];
           alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
@@ -207,7 +220,137 @@
           populateFilters();
 
           await firstRenderPromise;
-          console.log("[v1.8] ✅ 첫 화면 렌더링 로직 완료!");
+          console.log("[v1.9] ✅ 첫 화면 렌더링 로직 완료!");
+      }
+
+      async function loadAdData() {
+          try {
+              const q = query(collection(db, "adv"), orderBy("order", "asc"));
+              const querySnapshot = await getDocs(q);
+              const rawAdData = [];
+              querySnapshot.forEach((doc) => {
+                  rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
+              });
+
+              const now = new Date();
+              adDataList = rawAdData.filter(ad => {
+                  if (ad.isActive === false) return false;
+                  const start = ad.startDate ? new Date(ad.startDate) : null;
+                  const end = ad.endDate ? new Date(ad.endDate) : null;
+                  if (start && now < start) return false;
+                  if (end && now > end) return false;
+                  return true;
+              });
+              console.log(`[v1.9] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
+          } catch (error) {
+              console.error("[v1.9] 🔥 광고 데이터 로딩 실패:", error);
+              adDataList = [];
+          }
+      }
+
+      // --- 데이터 요청 및 렌더링 ---
+      async function fetchAndRenderData(isNewSearch = false) {
+          if (isLoading) return;
+          isLoading = true;
+
+          if (isNewSearch) {
+              currentPage = 1;
+              renderedItemCount = 0;
+              adIndex = 0;
+              elements.resultsContainer.innerHTML = '';
+              renderSkeletonUI();
+              elements.errorMessage.classList.add('hidden');
+          } else {
+              elements.loadMoreSpinner.classList.remove('hidden');
+          }
+          
+          let query = `page=${currentPage}&perPage=12`;
+          if (currentFilters.searchTerm) query += `&searchTerm=${encodeURIComponent(currentFilters.searchTerm)}`;
+          if (currentFilters.region !== 'all') query += `&region=${encodeURIComponent(currentFilters.region)}`;
+          if (currentFilters.category.length > 0) query += `&category=${encodeURIComponent(currentFilters.category.join(','))}`;
+          if (currentFilters.showFavorites && favorites.length > 0) {
+              query += `&favorites=${favorites.join(',')}`;
+          }
+          
+          console.log(`[v1.9 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
+
+          try {
+              const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
+              if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
+              const { data, totalItems: newTotalItems } = await response.json();
+              
+              totalItems = newTotalItems;
+              elements.statusContainer.innerHTML = '';
+
+              if (data && data.length > 0) {
+                  appendData(data);
+              } else if (isNewSearch) {
+                  const message = currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.';
+                  elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${message}</p>`;
+              }
+              renderActiveFilters();
+          } catch (error) {
+              handleError("데이터 요청 오류:", error.message);
+          } finally {
+              isLoading = false;
+              elements.statusContainer.innerHTML = '';
+              elements.loadMoreSpinner.classList.add('hidden');
+          }
+      }
+
+      function appendData(items) {
+          let contentToAdd = '';
+          items.forEach(item => {
+              contentToAdd += createItemHTML(item);
+              renderedItemCount++;
+              
+              if (adDataList.length > 0 && renderedItemCount % 7 === 0) {
+                  const ad = adDataList[adIndex % adDataList.length];
+                  if (ad) {
+                     contentToAdd += createItemHTML(ad);
+                     adIndex++;
+                  }
+              }
+          });
+          elements.resultsContainer.insertAdjacentHTML('beforeend', contentToAdd);
+      }
+      
+      async function populateFilters() {
+            try {
+                const response = await fetch(`/.netlify/functions/get-support-data?perPage=500`);
+                if (!response.ok) throw new Error(`필터 데이터 로딩 실패: ${response.status}`);
+                const result = await response.json();
+                allApiDataForUtils = result.data || [];
+
+                const regionCounts = {}, categoryCounts = {};
+                allApiDataForUtils.forEach(item => {
+                    if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
+                    if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
+                });
+
+                elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiDataForUtils.length +')</option>';
+                Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = `${region} (${regionCounts[region]})`;
+                    elements.regionSelect.appendChild(option);
+                });
+
+                elements.categoryCheckboxContainer.innerHTML = '';
+                Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(category => {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
+                    label.innerHTML = `<input type="checkbox" class="category-checkbox" value="${category}"><span>${category.includes('기술개발(R&D)') ? '기술개발' : category} (${categoryCounts[category]})</span>`;
+                    elements.categoryCheckboxContainer.appendChild(label);
+                });
+                
+                elements.regionSelect.disabled = false;
+            } catch(error) {
+                console.error("[v1.9] 🔥 필터 UI 생성 실패", error);
+                elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
+                elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
+                elements.regionSelect.disabled = false;
+            }
       }
 
       // --- 이벤트 리스너 ---
@@ -242,6 +385,16 @@
           });
 
           elements.resultsContainer.addEventListener('click', e => {
+                const adLink = e.target.closest('.ad-link');
+                if (adLink) {
+                    e.preventDefault();
+                    const adId = adLink.dataset.id;
+                    const adUrl = adLink.href;
+                    if (adId) handleAdClick(adId);
+                    window.open(adUrl, '_blank');
+                    return;
+                }
+
                 const button = e.target.closest('button');
                 if (button) {
                     if (button.classList.contains('favorite-button')) toggleFavorite(button);
@@ -261,111 +414,24 @@
             elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
             elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
 
-            // ✨ [v1.8 추가] 외부 클릭 감지 이벤트 리스너
             document.addEventListener('click', function(event) {
-                // 필터 메뉴가 열려 있는지 확인
                 if (elements.collapsibleFilters.classList.contains('expanded')) {
-                    // 클릭된 위치가 헤더 컨테이너(버튼, 필터 포함)의 내부인지 확인
                     const isClickInsideHeader = elements.stickyHeaderContainer.contains(event.target);
-                    
-                    // 만약 헤더 외부를 클릭했다면
                     if (!isClickInsideHeader) {
-                        console.log('[v1.8] 외부 클릭 감지! 필터 메뉴를 닫습니다.');
                         elements.collapsibleFilters.classList.remove('expanded');
                     }
                 }
             });
       }
-
-      // --- (데이터 요청, UI 렌더링, 유틸리티 등 나머지 모든 함수는 v1.7과 동일합니다) ---
-      async function fetchAndRenderData(isNewSearch = false) {
-          if (isLoading) return;
-          isLoading = true;
-
-          if (isNewSearch) {
-              currentPage = 1;
-              elements.resultsContainer.innerHTML = '';
-              renderSkeletonUI();
-              elements.errorMessage.classList.add('hidden');
-          } else {
-              elements.loadMoreSpinner.classList.remove('hidden');
-          }
-          
-          let query = `page=${currentPage}&perPage=12`;
-          if (currentFilters.searchTerm) query += `&searchTerm=${encodeURIComponent(currentFilters.searchTerm)}`;
-          if (currentFilters.region !== 'all') query += `&region=${encodeURIComponent(currentFilters.region)}`;
-          if (currentFilters.category.length > 0) query += `&category=${encodeURIComponent(currentFilters.category.join(','))}`;
-          if (currentFilters.showFavorites && favorites.length > 0) {
-              query += `&favorites=${favorites.join(',')}`;
-          }
-          
-          console.log(`[v1.8 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
-
-          try {
-              const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
-              if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
-              const { data, totalItems: newTotalItems } = await response.json();
-              
-              totalItems = newTotalItems;
-              elements.statusContainer.innerHTML = '';
-
-              if (data && data.length > 0) {
-                  appendData(data);
-              } else if (isNewSearch) {
-                  const message = currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.';
-                  elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${message}</p>`;
-              }
-              renderActiveFilters();
-          } catch (error) {
-              handleError("데이터 요청 오류:", error.message);
-          } finally {
-              isLoading = false;
-              elements.statusContainer.innerHTML = '';
-              elements.loadMoreSpinner.classList.add('hidden');
-          }
-      }
-
-      function appendData(items) {
-          const newContent = items.map(createItemHTML).join('');
-          elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
-      }
       
-      async function populateFilters() {
-            try {
-                const response = await fetch(`/.netlify/functions/get-support-data?perPage=500`);
-                if (!response.ok) throw new Error(`필터 데이터 로딩 실패: ${response.status}`);
-                const result = await response.json();
-                allApiDataForUtils = result.data || [];
-
-                const regionCounts = {}, categoryCounts = {};
-                allApiDataForUtils.forEach(item => {
-                    if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
-                    if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
-                });
-
-                elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiDataForUtils.length +')</option>';
-                Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(region => {
-                    const option = document.createElement('option');
-                    option.value = region;
-                    option.textContent = `${region} (${regionCounts[region]})`;
-                    elements.regionSelect.appendChild(option);
-                });
-
-                elements.categoryCheckboxContainer.innerHTML = '';
-                Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(category => {
-                    const label = document.createElement('label');
-                    label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
-                    label.innerHTML = `<input type="checkbox" class="category-checkbox" value="${category}"><span>${category.includes('기술개발(R&D)') ? '기술개발' : category} (${categoryCounts[category]})</span>`;
-                    elements.categoryCheckboxContainer.appendChild(label);
-                });
-                
-                elements.regionSelect.disabled = false;
-            } catch(error) {
-                console.error("[v1.8] 🔥 필터 UI 생성 실패", error);
-                elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
-                elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
-                elements.regionSelect.disabled = false;
-            }
+      async function handleAdClick(adId) {
+          try {
+              const adRef = doc(db, "adv", adId);
+              await updateDoc(adRef, { clickCount: increment(1) });
+              console.log(`[v1.9] 📢 광고 클릭 카운트 업데이트 성공: ${adId}`);
+          } catch (error) {
+              console.error("[v1.9] 🔥 광고 클릭 카운트 업데이트 실패:", error);
+          }
       }
 
       function handleScroll() {
@@ -397,6 +463,32 @@
       }
 
       function createItemHTML(item) {
+          if (item.isAd) {
+              let mediaElement = '';
+              if (item.mediaUrl) {
+                  mediaElement = item.mediaType === 'video'
+                      ? `<video autoplay loop muted playsinline src="${item.mediaUrl}"></video>`
+                      : `<img src="${item.mediaUrl}" alt="${item.title}" loading="lazy">`;
+              }
+              return `
+              <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden relative flex flex-col">
+                  <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block">
+                      <div class="ad-media-container">${mediaElement}</div>
+                  </a>
+                  <div class="p-4 flex-grow flex flex-col">
+                      <div class="flex justify-between items-start">
+                           <span class="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sponsored</span>
+                           <span class="text-slate-600 text-xs font-bold rounded-full px-3 py-1 bg-slate-200">AD</span>
+                      </div>
+                      <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-800 hover:underline">${item.title}</a>
+                      <p class="mt-2 text-slate-600 text-sm flex-grow">${item.description || ''}</p>
+                      <div class="mt-4 pt-4 border-t text-right">
+                           <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link text-sm font-semibold text-sky-600 hover:underline">자세히 보기 &rarr;</a>
+                      </div>
+                  </div>
+              </div>`;
+          }
+
           const dday = calculateDday(item.pbanc_rcpt_end_dt); 
           const isFavorited = favorites.includes(item.pbanc_sn); 
           const isChecked = comparisonList.includes(item.pbanc_sn) ? 'checked' : ''; 
@@ -420,7 +512,7 @@
                               <button class="details-toggle text-sm font-semibold text-sky-600 hover:underline">자세히 보기 ▼</button>
                           </div>
                           <div>
-                              <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button>
+                              <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367-2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button>
                               <button class="favorite-button text-2xl text-slate-400 hover:text-amber-400 transition-colors ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
                           </div>
                       </div>
