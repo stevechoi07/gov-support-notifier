@@ -9,6 +9,7 @@
     <title>정부 지원사업 알리미 | K-Startup 공고, 청년창업, R&D 지원금 정보</title>
     <meta name="description" content="최신 정부 지원사업 공고를 한 곳에서 확인하세요. K-Startup, 청년창업, 소상공인, R&D 지원금 등 맞춤형 필터와 키워드 알림으로 놓치지 마세요.">
     <meta name="keywords" content="정부지원사업, K-Startup, 창업지원, 청년창업, 소상공인 지원, R&D, 정책자금, 지원금, 사업공고">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -44,7 +45,7 @@
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         
-        <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
+        <div id="sticky-header-container" class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
             <header class="flex justify-between items-start mb-2">
                 <button id="toggle-filters-button" class="p-1 rounded-md hover:bg-slate-200 transition-colors">
                     <svg class="w-9 h-9 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -53,7 +54,7 @@
                     <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 break-keep">🚀 정부 지원사업 알리미</h1>
                     <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
                         <span>K-Startup, 청년창업, R&D 지원금</span>
-                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.7</span>
+                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.8</span>
                     </p>
                 </div>
                 <div class="w-11 h-11"></div>
@@ -126,11 +127,11 @@
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       // ===============================================================
-      // 🚀 정부 지원사업 알리미 v1.7
+      // 🚀 정부 지원사업 알리미 v1.8
       // ===============================================================
       // [변경점]
-      // 1. 서버사이드 필터링 방식에 맞게 '즐겨찾기 보기' 기능 수정!
-      // 2. 이제 즐겨찾기 버튼을 누르면, 즐겨찾기 ID 목록을 백엔드로 보내 필터링합니다.
+      // 1. 필터 외부 클릭 감지 기능 추가!
+      // 2. 햄버거 메뉴나 필터 목록이 아닌 곳을 클릭하면 필터 창이 자동으로 닫힙니다.
       // ===============================================================
 
       let db;
@@ -161,6 +162,7 @@
           closeModalButton: document.getElementById('close-modal-button'), 
           comparisonContent: document.getElementById('comparison-content'), 
           toast: document.getElementById('toast-notification'), 
+          stickyHeaderContainer: document.getElementById('sticky-header-container'), // sticky-header-container 추가
           toggleFiltersButton: document.getElementById('toggle-filters-button'), 
           collapsibleFilters: document.getElementById('collapsible-filters'),
           keywordInput: document.getElementById('keyword-input'), 
@@ -176,14 +178,14 @@
 
       async function startApp() {
         try {
-            console.log("🚀 [v1.7] 앱 실행 시작!");
+            console.log("🚀 [v1.8] 앱 실행 시작!");
             const response = await fetch('/.netlify/functions/get-firebase-config');
             if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
             const firebaseConfig = await response.json();
             
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            console.log("✅ [v1.7] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+            console.log("✅ [v1.8] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
             await initialize();
         } catch (error) {
@@ -202,106 +204,11 @@
           renderAlertKeywords();
           
           const firstRenderPromise = fetchAndRenderData(true);
-          populateFilters(); // 백그라운드에서 실행
+          populateFilters();
 
           await firstRenderPromise;
-          console.log("[v1.7] ✅ 첫 화면 렌더링 로직 완료!");
+          console.log("[v1.8] ✅ 첫 화면 렌더링 로직 완료!");
       }
-
-      // --- 데이터 요청 및 렌더링 ---
-      async function fetchAndRenderData(isNewSearch = false) {
-          if (isLoading) return;
-          isLoading = true;
-
-          if (isNewSearch) {
-              currentPage = 1;
-              elements.resultsContainer.innerHTML = '';
-              renderSkeletonUI(); // 스켈레톤 보이기
-              elements.errorMessage.classList.add('hidden');
-          } else {
-              elements.loadMoreSpinner.classList.remove('hidden');
-          }
-          
-          let query = `page=${currentPage}&perPage=12`;
-          if (currentFilters.searchTerm) query += `&searchTerm=${encodeURIComponent(currentFilters.searchTerm)}`;
-          if (currentFilters.region !== 'all') query += `&region=${encodeURIComponent(currentFilters.region)}`;
-          if (currentFilters.category.length > 0) query += `&category=${encodeURIComponent(currentFilters.category.join(','))}`;
-          
-          if (currentFilters.showFavorites && favorites.length > 0) {
-              query += `&favorites=${favorites.join(',')}`;
-          }
-          
-          console.log(`[v1.7 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
-
-          try {
-              const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
-              if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
-              
-              const { data, totalItems: newTotalItems } = await response.json();
-              console.log(`[v1.7 프론트엔드] ✅ 백엔드로부터 응답 수신!`, { data, newTotalItems });
-              
-              totalItems = newTotalItems;
-              
-              elements.statusContainer.innerHTML = ''; // 스켈레톤 숨기기
-
-              if (data && data.length > 0) {
-                  appendData(data);
-              } else if (isNewSearch) {
-                  const message = currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.';
-                  elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${message}</p>`;
-              }
-              renderActiveFilters();
-          } catch (error) {
-              handleError("데이터 요청 오류:", error.message);
-          } finally {
-              isLoading = false;
-              elements.statusContainer.innerHTML = ''; // 스켈레톤 숨기기
-              elements.loadMoreSpinner.classList.add('hidden');
-          }
-      }
-
-      function appendData(items) {
-          const newContent = items.map(createItemHTML).join('');
-          elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
-      }
-      
-      async function populateFilters() {
-            try {
-                const response = await fetch(`/.netlify/functions/get-support-data?perPage=500`);
-                if (!response.ok) throw new Error(`필터 데이터 로딩 실패: ${response.status}`);
-                const result = await response.json();
-                allApiDataForUtils = result.data || [];
-
-                const regionCounts = {}, categoryCounts = {};
-                allApiDataForUtils.forEach(item => {
-                    if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
-                    if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
-                });
-
-                elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiDataForUtils.length +')</option>';
-                Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(region => {
-                    const option = document.createElement('option');
-                    option.value = region;
-                    option.textContent = `${region} (${regionCounts[region]})`;
-                    elements.regionSelect.appendChild(option);
-                });
-
-                elements.categoryCheckboxContainer.innerHTML = '';
-                Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(category => {
-                    const label = document.createElement('label');
-                    label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
-                    label.innerHTML = `<input type="checkbox" class="category-checkbox" value="${category}"><span>${category.includes('기술개발(R&D)') ? '기술개발' : category} (${categoryCounts[category]})</span>`;
-                    elements.categoryCheckboxContainer.appendChild(label);
-                });
-                
-                elements.regionSelect.disabled = false;
-            } catch(error) {
-                console.error("[v1.7] 🔥 필터 UI 생성 실패", error);
-                elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
-                elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
-                elements.regionSelect.disabled = false;
-            }
-        }
 
       // --- 이벤트 리스너 ---
       function addEventListeners() {
@@ -353,6 +260,112 @@
             elements.keywordInput.addEventListener('keypress', e => { if (e.key === 'Enter') addKeyword(); });
             elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
             elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
+
+            // ✨ [v1.8 추가] 외부 클릭 감지 이벤트 리스너
+            document.addEventListener('click', function(event) {
+                // 필터 메뉴가 열려 있는지 확인
+                if (elements.collapsibleFilters.classList.contains('expanded')) {
+                    // 클릭된 위치가 헤더 컨테이너(버튼, 필터 포함)의 내부인지 확인
+                    const isClickInsideHeader = elements.stickyHeaderContainer.contains(event.target);
+                    
+                    // 만약 헤더 외부를 클릭했다면
+                    if (!isClickInsideHeader) {
+                        console.log('[v1.8] 외부 클릭 감지! 필터 메뉴를 닫습니다.');
+                        elements.collapsibleFilters.classList.remove('expanded');
+                    }
+                }
+            });
+      }
+
+      // --- (데이터 요청, UI 렌더링, 유틸리티 등 나머지 모든 함수는 v1.7과 동일합니다) ---
+      async function fetchAndRenderData(isNewSearch = false) {
+          if (isLoading) return;
+          isLoading = true;
+
+          if (isNewSearch) {
+              currentPage = 1;
+              elements.resultsContainer.innerHTML = '';
+              renderSkeletonUI();
+              elements.errorMessage.classList.add('hidden');
+          } else {
+              elements.loadMoreSpinner.classList.remove('hidden');
+          }
+          
+          let query = `page=${currentPage}&perPage=12`;
+          if (currentFilters.searchTerm) query += `&searchTerm=${encodeURIComponent(currentFilters.searchTerm)}`;
+          if (currentFilters.region !== 'all') query += `&region=${encodeURIComponent(currentFilters.region)}`;
+          if (currentFilters.category.length > 0) query += `&category=${encodeURIComponent(currentFilters.category.join(','))}`;
+          if (currentFilters.showFavorites && favorites.length > 0) {
+              query += `&favorites=${favorites.join(',')}`;
+          }
+          
+          console.log(`[v1.8 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
+
+          try {
+              const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
+              if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
+              const { data, totalItems: newTotalItems } = await response.json();
+              
+              totalItems = newTotalItems;
+              elements.statusContainer.innerHTML = '';
+
+              if (data && data.length > 0) {
+                  appendData(data);
+              } else if (isNewSearch) {
+                  const message = currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.';
+                  elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${message}</p>`;
+              }
+              renderActiveFilters();
+          } catch (error) {
+              handleError("데이터 요청 오류:", error.message);
+          } finally {
+              isLoading = false;
+              elements.statusContainer.innerHTML = '';
+              elements.loadMoreSpinner.classList.add('hidden');
+          }
+      }
+
+      function appendData(items) {
+          const newContent = items.map(createItemHTML).join('');
+          elements.resultsContainer.insertAdjacentHTML('beforeend', newContent);
+      }
+      
+      async function populateFilters() {
+            try {
+                const response = await fetch(`/.netlify/functions/get-support-data?perPage=500`);
+                if (!response.ok) throw new Error(`필터 데이터 로딩 실패: ${response.status}`);
+                const result = await response.json();
+                allApiDataForUtils = result.data || [];
+
+                const regionCounts = {}, categoryCounts = {};
+                allApiDataForUtils.forEach(item => {
+                    if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
+                    if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
+                });
+
+                elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiDataForUtils.length +')</option>';
+                Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = `${region} (${regionCounts[region]})`;
+                    elements.regionSelect.appendChild(option);
+                });
+
+                elements.categoryCheckboxContainer.innerHTML = '';
+                Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(category => {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
+                    label.innerHTML = `<input type="checkbox" class="category-checkbox" value="${category}"><span>${category.includes('기술개발(R&D)') ? '기술개발' : category} (${categoryCounts[category]})</span>`;
+                    elements.categoryCheckboxContainer.appendChild(label);
+                });
+                
+                elements.regionSelect.disabled = false;
+            } catch(error) {
+                console.error("[v1.8] 🔥 필터 UI 생성 실패", error);
+                elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
+                elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
+                elements.regionSelect.disabled = false;
+            }
       }
 
       function handleScroll() {
@@ -372,7 +385,6 @@
           elements.errorMessage.classList.remove('hidden');
       }
 
-      // --- UI 렌더링 및 유틸리티 함수 ---
       function renderSkeletonUI() {
           const skeletonHTML = `
             <div class="bg-white rounded-xl shadow-md p-6 space-y-4">
@@ -455,7 +467,7 @@
       }
       
       function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const [year, month, day] = [parseInt(endDateStr.substring(0, 4)), parseInt(endDateStr.substring(4, 6)) - 1, parseInt(endDateStr.substring(6, 8))]; const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
-      function isWithinLast7Days(dateStr) { if (!dateStr) return false; const [year, month, day] = [parseInt(dateStr.substring(0, 4)), parseInt(dateStr.substring(4, 6)) - 1, parseInt(dateStr.substring(6, 8))]; const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(today.setDate(today.getDate() - 7)); return itemDate >= sevenDaysAgo && itemDate <= new Date(); }
+      function isWithinLast7Days(dateStr) { if (!dateStr) return false; const [year, month, day] = [parseInt(dateStr.substring(0, 4)), parseInt(dateStr.substring(4, 6)) - 1, parseInt(dateStr.substring(6, 8))]; const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(new Date().setDate(new Date().getDate() - 7)); return itemDate >= sevenDaysAgo && itemDate <= new Date(); }
       function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
       function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); updateFavoritesButtonVisibility(); if (currentFilters.showFavorites) { fetchAndRenderData(true); } }
       function toggleComparison(checkbox) { const id = parseInt(checkbox.dataset.id); const index = comparisonList.indexOf(id); if (index > -1) { comparisonList.splice(index, 1); } else { comparisonList.push(id); } elements.compareButton.classList.toggle('hidden', comparisonList.length === 0); }
