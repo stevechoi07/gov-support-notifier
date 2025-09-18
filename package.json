@@ -13,5 +13,19 @@
     "firebase-admin": "^11.11.1",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.7"
-  }
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.13"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stevechoi07/gov-support-notifier.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/stevechoi07/gov-support-notifier/issues"
+  },
+  "homepage": "https://github.com/stevechoi07/gov-support-notifier#readme"
 }
