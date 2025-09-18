@@ -56,6 +56,15 @@ export async function navigateTo(viewName, pageId = null) {
         document.getElementById('add-new-iframe-card-button')?.addEventListener('click', () => cards.handleAddNewIframeAd());
         // ✨ [핵심 수정] '구독 폼 추가' 버튼에 이벤트 리스너를 추가합니다.
         document.getElementById('add-new-subscription-card-button')?.addEventListener('click', () => cards.handleAddNewSubscriptionCard());
+		
+		// ✨ 아래 'else if' 블록 전체를 새로 추가해주세요!
+    } else if (viewName === 'adv_cards') {
+        const { adv_cards } = await import('./adv_cards.js');
+        adv_cards.init();
+        // adv 페이지에서는 구독 폼 추가 버튼이 없으므로 해당 리스너는 제외합니다.
+        document.getElementById('add-new-card-button')?.addEventListener('click', () => adv_cards.handleAddNewAd());
+        document.getElementById('add-new-iframe-card-button')?.addEventListener('click', () => adv_cards.handleAddNewIframeAd());
+		
     } else if (viewName === 'editor' && pageId) {
         const { editor } = await import('./editor.js');
         editor.init(pageId);
