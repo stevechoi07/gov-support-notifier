@@ -1,4 +1,4 @@
-// js/navigation.js v2.5 - '구독 폼 추가' 버튼 이벤트 리스너 추가
+// js/navigation.js v2.6 - 광고콘텐츠관리 버튼 추가
 
 import { ui } from './ui.js';
 
@@ -31,6 +31,14 @@ export async function navigateTo(viewName, pageId = null) {
                 <button id="add-new-iframe-card-button" class="bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-600">➕ iframe 카드</button>
                 <button id="add-new-card-button" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 미디어 카드</button>
             </div>`
+		// ✨ 아래 'adv-cards' 부분을 새로 추가해주세요!
+        'adv-cards': { title: '📢 광고 콘텐츠 관리', action: `
+            <div class="flex gap-2">
+                <button id="adv-add-new-iframe-card-button" class="bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-600">➕ iframe 카드</button>
+                <button id="adv-add-new-card-button" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">➕ 미디어 카드</button>
+            </div>`
+        },
+
         },
         editor: { title: '📝 페이지 편집 중...', action: '' }
     };
@@ -58,13 +66,12 @@ export async function navigateTo(viewName, pageId = null) {
         document.getElementById('add-new-subscription-card-button')?.addEventListener('click', () => cards.handleAddNewSubscriptionCard());
 		
 		// ✨ 아래 'else if' 블록 전체를 새로 추가해주세요!
-    } else if (viewName === 'adv-cards') {
+	} else if (viewName === 'adv-cards') {
         const { adv_cards } = await import('./adv_cards.js');
         adv_cards.init();
-        // adv 페이지에서는 구독 폼 추가 버튼이 없으므로 해당 리스너는 제외합니다.
-        document.getElementById('add-new-card-button')?.addEventListener('click', () => adv_cards.handleAddNewAd());
-        document.getElementById('add-new-iframe-card-button')?.addEventListener('click', () => adv_cards.handleAddNewIframeAd());
-		
+        // ✨ adv- 접두사가 붙은 새 버튼 ID에 이벤트 리스너를 연결합니다.
+        document.getElementById('adv-add-new-card-button')?.addEventListener('click', () => adv_cards.handleAddNewAd());
+        document.getElementById('adv-add-new-iframe-card-button')?.addEventListener('click', () => adv_cards.handleAddNewIframeAd());
     } else if (viewName === 'editor' && pageId) {
         const { editor } = await import('./editor.js');
         editor.init(pageId);
