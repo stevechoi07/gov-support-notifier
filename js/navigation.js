@@ -58,7 +58,7 @@ export async function navigateTo(viewName, pageId = null) {
         document.getElementById('add-new-subscription-card-button')?.addEventListener('click', () => cards.handleAddNewSubscriptionCard());
 		
 		// ✨ 아래 'else if' 블록 전체를 새로 추가해주세요!
-    } else if (viewName === 'adv_cards') {
+    } else if (viewName === 'adv-cards') {
         const { adv_cards } = await import('./adv_cards.js');
         adv_cards.init();
         // adv 페이지에서는 구독 폼 추가 버튼이 없으므로 해당 리스너는 제외합니다.
