@@ -53,7 +53,7 @@
                     <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 break-keep">🚀 정부 지원사업 알리미</h1>
                     <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
                         <span>K-Startup, 청년창업, R&D 지원금</span>
-                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.4</span>
+                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.7</span>
                     </p>
                 </div>
                 <div class="w-11 h-11"></div>
@@ -101,29 +101,15 @@
         </div>
 
         <div id="status-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="skeleton-card space-y-4">
-                <div class="skeleton-line h-6 w-full"></div>
-                <div class="skeleton-line h-4 w-1/2"></div>
-                <div class="border-t pt-4 mt-4 flex justify-between items-center"><div class="skeleton-line h-4 w-1/4"></div><div class="skeleton-line h-4 w-1/4"></div></div>
             </div>
-            <div class="skeleton-card space-y-4 hidden md:block">
-                <div class="skeleton-line h-6 w-full"></div>
-                <div class="skeleton-line h-4 w-1/2"></div>
-                <div class="border-t pt-4 mt-4 flex justify-between items-center"><div class="skeleton-line h-4 w-1/4"></div><div class="skeleton-line h-4 w-1/4"></div></div>
-            </div>
-            <div class="skeleton-card space-y-4 hidden lg:block">
-                <div class="skeleton-line h-6 w-full"></div>
-                <div class="skeleton-line h-4 w-1/2"></div>
-                <div class="border-t pt-4 mt-4 flex justify-between items-center"><div class="skeleton-line h-4 w-1/4"></div><div class="skeleton-line h-4 w-1/4"></div></div>
-            </div>
-            <div id="error-message" class="hidden col-span-full text-center"></div>
-        </div>
 
         <main id="results-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
         
         <div id="load-more-spinner" class="text-center mt-8 hidden">
             <div class="loader mx-auto"></div>
         </div>
+        
+        <div id="error-message" class="hidden col-span-full text-center p-8 bg-red-100 text-red-700 rounded-lg"></div>
 
         <footer class="text-center mt-12 text-sm text-slate-500">
             <p>본 데이터는 공공데이터포털(K-Startup) API를 통해 제공받았습니다.</p>
@@ -140,17 +126,16 @@
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       // ===============================================================
-      // 🚀 정부 지원사업 알리미 v1.4
+      // 🚀 정부 지원사업 알리미 v1.7
       // ===============================================================
       // [변경점]
-      // 1. 필터 데이터 지연 로딩! 초기 콘텐츠 렌더링을 막지 않도록 변경.
-      // 2. 사용자는 이제 즉시 첫 화면을 보고, 필터 메뉴는 백그라운드에서 채워짐.
-      // 3. 체감 로딩 속도 극대화!
+      // 1. 서버사이드 필터링 방식에 맞게 '즐겨찾기 보기' 기능 수정!
+      // 2. 이제 즐겨찾기 버튼을 누르면, 즐겨찾기 ID 목록을 백엔드로 보내 필터링합니다.
       // ===============================================================
 
       let db;
 
-      // --- JavaScript 코드 시작 ---
+      // --- 상태 관리 변수 ---
       let favorites = [], comparisonList = [], alertKeywords = [], seenItems = [], allApiDataForUtils = [];
       let currentFilters = { searchTerm: '', region: 'all', category: [], sort: 'default', showFavorites: false };
       let currentPage = 1;
@@ -158,6 +143,7 @@
       let isLoading = false;
       let searchTimeout;
 
+      // --- DOM 요소 ---
       const elements = { 
           statusContainer: document.getElementById('status-container'), 
           errorMessage: document.getElementById('error-message'), 
@@ -185,18 +171,19 @@
           closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
       };
       
+      // --- 앱 시작점 ---
       document.addEventListener('DOMContentLoaded', startApp);
 
       async function startApp() {
         try {
-            console.log("🚀 [v1.4] 앱 실행 시작!");
+            console.log("🚀 [v1.7] 앱 실행 시작!");
             const response = await fetch('/.netlify/functions/get-firebase-config');
             if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
             const firebaseConfig = await response.json();
             
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            console.log("✅ [v1.4] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+            console.log("✅ [v1.7] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
             await initialize();
         } catch (error) {
@@ -214,16 +201,14 @@
           updateFavoritesButtonVisibility(); 
           renderAlertKeywords();
           
-          console.log("[v1.4] 🏎️ 최우선! 첫 화면 렌더링 시작...");
           const firstRenderPromise = fetchAndRenderData(true);
-          
-          console.log("[v1.4] 👟 후순위. 필터 메뉴 채우기 시작 (느긋하게~)");
-          populateFilters(); // await를 제거하여 백그라운드에서 실행
+          populateFilters(); // 백그라운드에서 실행
 
-          await firstRenderPromise; // 첫 렌더링이 끝날 때까지는 기다림(선택사항)
-          console.log("[v1.4] ✅ 첫 화면 렌더링 로직 완료!");
+          await firstRenderPromise;
+          console.log("[v1.7] ✅ 첫 화면 렌더링 로직 완료!");
       }
 
+      // --- 데이터 요청 및 렌더링 ---
       async function fetchAndRenderData(isNewSearch = false) {
           if (isLoading) return;
           isLoading = true;
@@ -231,7 +216,7 @@
           if (isNewSearch) {
               currentPage = 1;
               elements.resultsContainer.innerHTML = '';
-              elements.statusContainer.classList.remove('hidden');
+              renderSkeletonUI(); // 스켈레톤 보이기
               elements.errorMessage.classList.add('hidden');
           } else {
               elements.loadMoreSpinner.classList.remove('hidden');
@@ -242,28 +227,35 @@
           if (currentFilters.region !== 'all') query += `&region=${encodeURIComponent(currentFilters.region)}`;
           if (currentFilters.category.length > 0) query += `&category=${encodeURIComponent(currentFilters.category.join(','))}`;
           
-          console.log(`[v1.4 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
+          if (currentFilters.showFavorites && favorites.length > 0) {
+              query += `&favorites=${favorites.join(',')}`;
+          }
+          
+          console.log(`[v1.7 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
 
           try {
               const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
               if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
               
               const { data, totalItems: newTotalItems } = await response.json();
-              console.log(`[v1.4 프론트엔드] ✅ 백엔드로부터 응답 수신!`, { data, newTotalItems });
+              console.log(`[v1.7 프론트엔드] ✅ 백엔드로부터 응답 수신!`, { data, newTotalItems });
               
               totalItems = newTotalItems;
+              
+              elements.statusContainer.innerHTML = ''; // 스켈레톤 숨기기
 
               if (data && data.length > 0) {
                   appendData(data);
               } else if (isNewSearch) {
-                  elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">조건에 맞는 사업이 없습니다.</p>`;
+                  const message = currentFilters.showFavorites ? '즐겨찾기한 사업이 없습니다.' : '조건에 맞는 사업이 없습니다.';
+                  elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">${message}</p>`;
               }
               renderActiveFilters();
           } catch (error) {
               handleError("데이터 요청 오류:", error.message);
           } finally {
               isLoading = false;
-              elements.statusContainer.classList.add('hidden');
+              elements.statusContainer.innerHTML = ''; // 스켈레톤 숨기기
               elements.loadMoreSpinner.classList.add('hidden');
           }
       }
@@ -274,12 +266,11 @@
       }
       
       async function populateFilters() {
-            console.log("[v1.4] 🗂️ 필터 데이터 요청 시작...");
             try {
                 const response = await fetch(`/.netlify/functions/get-support-data?perPage=500`);
-                 if (!response.ok) throw new Error(`필터 데이터 로딩 실패: ${response.status}`);
-                 const result = await response.json();
-                 allApiDataForUtils = result.data || [];
+                if (!response.ok) throw new Error(`필터 데이터 로딩 실패: ${response.status}`);
+                const result = await response.json();
+                allApiDataForUtils = result.data || [];
 
                 const regionCounts = {}, categoryCounts = {};
                 allApiDataForUtils.forEach(item => {
@@ -288,38 +279,31 @@
                 });
 
                 elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiDataForUtils.length +')</option>';
-                const sortedRegions = Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko'));
-                for (const region of sortedRegions) {
-                    const count = regionCounts[region];
+                Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(region => {
                     const option = document.createElement('option');
                     option.value = region;
-                    option.textContent = `${region} (${count})`;
+                    option.textContent = `${region} (${regionCounts[region]})`;
                     elements.regionSelect.appendChild(option);
-                }
+                });
 
                 elements.categoryCheckboxContainer.innerHTML = '';
-                const sortedCategories = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko'));
-                for (const category of sortedCategories) {
-                    const count = categoryCounts[category];
-                    let displayText = category.includes('기술개발(R&D)') ? '기술개발' : category;
-                    
+                Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(category => {
                     const label = document.createElement('label');
                     label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
-                    label.innerHTML = `<input type="checkbox" class="category-checkbox" value="${category}"><span>${displayText} (${count})</span>`;
+                    label.innerHTML = `<input type="checkbox" class="category-checkbox" value="${category}"><span>${category.includes('기술개발(R&D)') ? '기술개발' : category} (${categoryCounts[category]})</span>`;
                     elements.categoryCheckboxContainer.appendChild(label);
-                }
+                });
                 
                 elements.regionSelect.disabled = false;
-                console.log("[v1.4] ✅ 필터 UI 생성 완료!");
-
             } catch(error) {
-                console.error("[v1.4] 🔥 필터 UI 생성 실패", error);
+                console.error("[v1.7] 🔥 필터 UI 생성 실패", error);
                 elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
                 elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
                 elements.regionSelect.disabled = false;
             }
         }
 
+      // --- 이벤트 리스너 ---
       function addEventListeners() {
           window.addEventListener('scroll', handleScroll);
           
@@ -338,13 +322,19 @@
           
           elements.categoryCheckboxContainer.addEventListener('change', e => {
               if (e.target.classList.contains('category-checkbox')) {
-                  const checkedCategories = Array.from(elements.categoryCheckboxContainer.querySelectorAll('.category-checkbox:checked')).map(cb => cb.value);
-                  currentFilters.category = checkedCategories;
+                  currentFilters.category = Array.from(elements.categoryCheckboxContainer.querySelectorAll('.category-checkbox:checked')).map(cb => cb.value);
                   fetchAndRenderData(true);
               }
           });
           
-           elements.resultsContainer.addEventListener('click', e => {
+          elements.favoritesToggle.addEventListener('click', e => { 
+              currentFilters.showFavorites = !currentFilters.showFavorites; 
+              e.target.classList.toggle('active'); 
+              e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; 
+              fetchAndRenderData(true); 
+          });
+
+          elements.resultsContainer.addEventListener('click', e => {
                 const button = e.target.closest('button');
                 if (button) {
                     if (button.classList.contains('favorite-button')) toggleFavorite(button);
@@ -368,7 +358,6 @@
       function handleScroll() {
           const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
           const itemsRendered = elements.resultsContainer.children.length;
-
           if (clientHeight + scrollTop >= scrollHeight - 100 && !isLoading && itemsRendered < totalItems) {
               currentPage++;
               fetchAndRenderData(false);
@@ -377,13 +366,24 @@
 
       function handleError(context, message) {
           console.error(context, message);
-          elements.statusContainer.classList.add('hidden');
+          elements.statusContainer.innerHTML = '';
           elements.loadMoreSpinner.classList.add('hidden');
           elements.errorMessage.textContent = `${context} ${message}`;
           elements.errorMessage.classList.remove('hidden');
       }
 
       // --- UI 렌더링 및 유틸리티 함수 ---
+      function renderSkeletonUI() {
+          const skeletonHTML = `
+            <div class="bg-white rounded-xl shadow-md p-6 space-y-4">
+                <div class="animate-pulse flex justify-between items-center"><div class="h-4 bg-slate-200 rounded w-1/3"></div><div class="h-4 bg-slate-200 rounded w-1/4"></div></div>
+                <div class="animate-pulse h-6 bg-slate-200 rounded w-full"></div>
+                <div class="animate-pulse h-4 bg-slate-200 rounded w-1/2"></div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center"><div class="animate-pulse h-4 bg-slate-200 rounded w-1/4"></div><div class="animate-pulse h-4 bg-slate-200 rounded w-1/4"></div></div>
+            </div>`.repeat(3);
+          elements.statusContainer.innerHTML = skeletonHTML;
+      }
+
       function createItemHTML(item) {
           const dday = calculateDday(item.pbanc_rcpt_end_dt); 
           const isFavorited = favorites.includes(item.pbanc_sn); 
@@ -404,16 +404,11 @@
                       </div>
                       <div class="flex justify-between items-center mt-4 pt-4 border-t">
                           <div class="flex items-center gap-4">
-                              <label class="flex items-center space-x-2 text-sm cursor-pointer">
-                                  <input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}>
-                                  <span>비교</span>
-                              </label>
+                              <label class="flex items-center space-x-2 text-sm cursor-pointer"><input type="checkbox" class="compare-checkbox" data-id="${item.pbanc_sn}" ${isChecked}><span>비교</span></label>
                               <button class="details-toggle text-sm font-semibold text-sky-600 hover:underline">자세히 보기 ▼</button>
                           </div>
                           <div>
-                              <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기">
-                                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
-                              </button>
+                              <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg></button>
                               <button class="favorite-button text-2xl text-slate-400 hover:text-amber-400 transition-colors ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
                           </div>
                       </div>
@@ -425,23 +420,15 @@
           let html = ''; 
           if (currentFilters.searchTerm) html += `<span class="active-filter-tag" data-type="searchTerm">검색: ${currentFilters.searchTerm} <button>x</button></span>`; 
           if (currentFilters.region !== 'all') html += `<span class="active-filter-tag" data-type="region">지역: ${currentFilters.region} <button>x</button></span>`; 
-          
           if (currentFilters.category.length > 0) {
-              currentFilters.category.forEach(cat => {
-                  html += `<span class="active-filter-tag" data-type="category" data-value="${cat}">분야: ${cat} <button>x</button></span>`;
-              });
+              currentFilters.category.forEach(cat => { html += `<span class="active-filter-tag" data-type="category" data-value="${cat}">분야: ${cat} <button>x</button></span>`; });
           }
-
-          if (html) { 
-              html += `<button id="reset-filters-button" class="text-sm text-red-500 hover:underline ml-auto">모든 필터 초기화</button>`; 
-          } 
+          if (html) { html += `<button id="reset-filters-button" class="text-sm text-red-500 hover:underline ml-auto">모든 필터 초기화</button>`; } 
           elements.activeFiltersContainer.innerHTML = html; 
           
           elements.activeFiltersContainer.querySelectorAll('.active-filter-tag button').forEach(btn => btn.addEventListener('click', e => { 
               const tagElement = e.target.parentElement;
-              const type = tagElement.dataset.type; 
-              const value = tagElement.dataset.value; 
-              resetFilter(type, value); 
+              resetFilter(tagElement.dataset.type, tagElement.dataset.value); 
           })); 
           if(document.getElementById('reset-filters-button')) { 
               document.getElementById('reset-filters-button').addEventListener('click', resetAllFilters); 
@@ -449,16 +436,12 @@
       }
 
       function resetFilter(type, value) {
-          if (type === 'searchTerm') {
-              currentFilters.searchTerm = ''; 
-              elements.searchInput.value = '';
-          } else if (type === 'region') {
-              currentFilters.region = 'all'; 
-              elements.regionSelect.value = 'all';
-          } else if (type === 'category') {
+          if (type === 'searchTerm') { currentFilters.searchTerm = ''; elements.searchInput.value = ''; }
+          else if (type === 'region') { currentFilters.region = 'all'; elements.regionSelect.value = 'all'; }
+          else if (type === 'category') {
               currentFilters.category = currentFilters.category.filter(cat => cat !== value);
-              const checkboxToUncheck = elements.categoryCheckboxContainer.querySelector(`.category-checkbox[value="${value}"]`);
-              if (checkboxToUncheck) checkboxToUncheck.checked = false;
+              const checkbox = elements.categoryCheckboxContainer.querySelector(`.category-checkbox[value="${value}"]`);
+              if (checkbox) checkbox.checked = false;
           }
           fetchAndRenderData(true);
       }
@@ -471,20 +454,20 @@
           fetchAndRenderData(true);
       }
       
-      function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
-      function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
+      function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const [year, month, day] = [parseInt(endDateStr.substring(0, 4)), parseInt(endDateStr.substring(4, 6)) - 1, parseInt(endDateStr.substring(6, 8))]; const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
+      function isWithinLast7Days(dateStr) { if (!dateStr) return false; const [year, month, day] = [parseInt(dateStr.substring(0, 4)), parseInt(dateStr.substring(4, 6)) - 1, parseInt(dateStr.substring(6, 8))]; const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(today.setDate(today.getDate() - 7)); return itemDate >= sevenDaysAgo && itemDate <= new Date(); }
       function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
-      function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); updateFavoritesButtonVisibility(); }
+      function toggleFavorite(button) { const id = parseInt(button.dataset.id); const index = favorites.indexOf(id); if (index > -1) { favorites.splice(index, 1); button.classList.remove('favorited'); button.textContent = '☆'; } else { favorites.push(id); button.classList.add('favorited'); button.textContent = '★'; } localStorage.setItem('favorites', JSON.stringify(favorites)); updateFavoritesButtonVisibility(); if (currentFilters.showFavorites) { fetchAndRenderData(true); } }
       function toggleComparison(checkbox) { const id = parseInt(checkbox.dataset.id); const index = comparisonList.indexOf(id); if (index > -1) { comparisonList.splice(index, 1); } else { comparisonList.push(id); } elements.compareButton.classList.toggle('hidden', comparisonList.length === 0); }
       function updateFavoritesButtonVisibility() { elements.favoritesToggle.classList.toggle('hidden', favorites.length === 0); if (favorites.length === 0 && currentFilters.showFavorites) { currentFilters.showFavorites = false; elements.favoritesToggle.classList.remove('active'); elements.favoritesToggle.innerHTML = '☆ 즐겨찾기 보기'; fetchAndRenderData(true); } }
-      function showComparisonModal() { const itemsToCompare = allApiDataForFilterPopulation.filter(item => comparisonList.includes(item.pbanc_sn)); const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-slate-100"><th class="p-2 w-1/5">항목</th>'; itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); tableHTML += '</tr></thead><tbody>'; Object.keys(headers).forEach(key => { tableHTML += `<tr class="border-b"><td class="font-bold p-2 align-top">${headers[key]}</td>`; itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); tableHTML += '</tr>'; }); tableHTML += '</tbody></table></div>'; elements.comparisonContent.innerHTML = tableHTML; elements.modal.classList.remove('hidden'); }
-      function shareLink(button) { const url = button.dataset.url; const textArea = document.createElement("textarea"); textArea.value = url; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); showToast("링크가 복사되었습니다!"); } catch (err) { showToast("링크 복사에 실패했습니다.", true); } document.body.removeChild(textArea); }
-      function showToast(message, isError = false) { elements.toast.textContent = message; elements.toast.className = `fixed bottom-10 right-10 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 ${isError ? 'bg-red-500' : 'bg-slate-800'}`; elements.toast.classList.remove('opacity-0', 'translate-y-4'); setTimeout(() => { elements.toast.classList.add('opacity-0', 'translate-y-4'); }, 2000); }
+      function showComparisonModal() { const itemsToCompare = allApiDataForUtils.filter(item => comparisonList.includes(item.pbanc_sn)); const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-slate-100"><th class="p-2 w-1/5">항목</th>'; itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); tableHTML += '</tr></thead><tbody>'; Object.keys(headers).forEach(key => { tableHTML += `<tr class="border-b"><td class="font-bold p-2 align-top">${headers[key]}</td>`; itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); tableHTML += '</tr>'; }); tableHTML += '</tbody></table></div>'; elements.comparisonContent.innerHTML = tableHTML; elements.modal.classList.remove('hidden'); }
+      function shareLink(button) { const url = button.dataset.url; navigator.clipboard.writeText(url).then(() => showToast("링크가 복사되었습니다!"), () => showToast("링크 복사에 실패했습니다.", true)); }
+      function showToast(message, isError = false) { elements.toast.textContent = message; elements.toast.className = `fixed bottom-10 right-10 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 ${isError ? 'bg-red-500' : 'bg-slate-800'}`; requestAnimationFrame(() => { elements.toast.classList.remove('opacity-0', 'translate-y-4'); }); setTimeout(() => { elements.toast.classList.add('opacity-0', 'translate-y-4'); }, 2000); }
       function addKeyword() { const keyword = elements.keywordInput.value.trim(); if (keyword && !alertKeywords.includes(keyword)) { alertKeywords.push(keyword); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); elements.keywordInput.value = ''; } }
-      function renderAlertKeywords() { if (alertKeywords.length === 0) { elements.keywordTagsContainer.innerHTML = '<span class="text-xs text-slate-400">알림 받을 키워드를 추가해보세요.</span>'; return; } elements.keywordTagsContainer.innerHTML = alertKeywords.map((keyword, index) => ` <span class="keyword-tag">${keyword} <button data-index="${index}">x</button></span> `).join(''); }
+      function renderAlertKeywords() { elements.keywordTagsContainer.innerHTML = alertKeywords.length === 0 ? '<span class="text-xs text-slate-400">알림 받을 키워드를 추가해보세요.</span>' : alertKeywords.map((keyword, index) => `<span class="keyword-tag">${keyword} <button data-index="${index}">x</button></span>`).join(''); }
       function handleKeywordTagClick(e) { if (e.target.tagName === 'BUTTON') { const index = parseInt(e.target.dataset.index); alertKeywords.splice(index, 1); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); } }
-      function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiDataForFilterPopulation.length === 0) return; const currentItemIds = allApiDataForFilterPopulation.map(item => item.pbanc_sn); const newItems = allApiDataForFilterPopulation.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
-      function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
+      function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiDataForUtils.length === 0) return; const currentItemIds = allApiDataForUtils.map(item => item.pbanc_sn); const newItems = allApiDataForUtils.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
+      function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => `<div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"><p class="text-sm text-slate-500"><span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고!</p><a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a></div>`).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
       
     </script>
 </body>
