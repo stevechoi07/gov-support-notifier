@@ -32,63 +32,12 @@
             backdrop-filter: saturate(180%) blur(10px);
             -webkit-backdrop-filter: saturate(180%) blur(10px);
         }
-        .ad-media-container {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 비율 */
-            background-color: #e2e8f0;
+        .filter-placeholder {
+            font-size: 0.875rem;
+            color: #64748b; /* slate-500 */
+            text-align: center;
+            padding: 0.5rem;
         }
-        .ad-media-container img,
-        .ad-media-container video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .iframe-ad-wrapper {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .iframe-ad-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-        
-        /* --- 스켈레톤 UI 스타일 시작 --- */
-        .skeleton-card {
-            background-color: #fff;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            padding: 1.5rem;
-            overflow: hidden;
-        }
-        .skeleton-line {
-            background-color: #e2e8f0;
-            border-radius: 0.25rem;
-            animation: shimmer 1.5s infinite linear;
-        }
-        .skeleton-line.h-4 { height: 1rem; }
-        .skeleton-line.h-6 { height: 1.5rem; }
-        .skeleton-line.w-1-3 { width: 33.333333%; }
-        .skeleton-line.w-1-4 { width: 25%; }
-        .skeleton-line.w-full { width: 100%; }
-        .skeleton-line.w-1-2 { width: 50%; }
-        @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-        }
-        .skeleton-line {
-            background-image: linear-gradient(to right, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%);
-            background-size: 2000px 100%;
-        }
-        /* --- 스켈레톤 UI 스타일 끝 --- */
     </style>
 </head>
 <body class="bg-slate-100">
@@ -100,15 +49,13 @@
                 <button id="toggle-filters-button" class="p-1 rounded-md hover:bg-slate-200 transition-colors">
                     <svg class="w-9 h-9 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
-
                 <div class="text-center -mt-1">
                     <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 break-keep">🚀 정부 지원사업 알리미</h1>
                     <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
                         <span>K-Startup, 청년창업, R&D 지원금</span>
-                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.3</span>
+                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.4</span>
                     </p>
                 </div>
-
                 <div class="w-11 h-11"></div>
             </header>
 
@@ -124,13 +71,14 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                     <div>
                         <label for="region-select" class="text-sm font-semibold text-slate-500 mb-2 block">지역</label>
-                        <select id="region-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
-                            <option value="all">모든 지역</option>
+                        <select id="region-select" class="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" disabled>
+                            <option value="all">필터 로딩 중...</option>
                         </select>
                     </div>
                     <div>
                         <label class="text-sm font-semibold text-slate-500 mb-2 block">사업분야 (중복 가능)</label>
                         <div id="category-checkbox-container" class="max-h-40 overflow-y-auto space-y-2 p-2 border rounded-lg bg-white">
+                            <p class="filter-placeholder">필터 로딩 중...</p>
                         </div>
                     </div>
                 </div>
@@ -154,40 +102,19 @@
 
         <div id="status-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="skeleton-card space-y-4">
-                <div class="flex justify-between items-center">
-                    <div class="skeleton-line h-4 w-1/3"></div>
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                </div>
                 <div class="skeleton-line h-6 w-full"></div>
                 <div class="skeleton-line h-4 w-1/2"></div>
-                <div class="border-t pt-4 mt-4 flex justify-between items-center">
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                </div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center"><div class="skeleton-line h-4 w-1/4"></div><div class="skeleton-line h-4 w-1/4"></div></div>
             </div>
             <div class="skeleton-card space-y-4 hidden md:block">
-                <div class="flex justify-between items-center">
-                    <div class="skeleton-line h-4 w-1/3"></div>
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                </div>
                 <div class="skeleton-line h-6 w-full"></div>
                 <div class="skeleton-line h-4 w-1/2"></div>
-                <div class="border-t pt-4 mt-4 flex justify-between items-center">
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                </div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center"><div class="skeleton-line h-4 w-1/4"></div><div class="skeleton-line h-4 w-1/4"></div></div>
             </div>
             <div class="skeleton-card space-y-4 hidden lg:block">
-                <div class="flex justify-between items-center">
-                    <div class="skeleton-line h-4 w-1/3"></div>
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                </div>
                 <div class="skeleton-line h-6 w-full"></div>
                 <div class="skeleton-line h-4 w-1/2"></div>
-                <div class="border-t pt-4 mt-4 flex justify-between items-center">
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                    <div class="skeleton-line h-4 w-1/4"></div>
-                </div>
+                <div class="border-t pt-4 mt-4 flex justify-between items-center"><div class="skeleton-line h-4 w-1/4"></div><div class="skeleton-line h-4 w-1/4"></div></div>
             </div>
             <div id="error-message" class="hidden col-span-full text-center"></div>
         </div>
@@ -213,27 +140,24 @@
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       // ===============================================================
-      // 🚀 정부 지원사업 알리미 v1.3
+      // 🚀 정부 지원사업 알리미 v1.4
       // ===============================================================
       // [변경점]
-      // 1. 페이지네이션 & 서버사이드 필터링 도입!
-      // 2. 초기 로딩 시 모든 데이터를 받지 않고, 첫 페이지만큼만 요청하여 로딩 속도 극적 개선.
-      // 3. 필터 변경 시, 백엔드에 새로운 조건으로 데이터를 다시 요청하는 방식으로 변경.
-      // 4. 디버깅을 위한 console.log 추가!
+      // 1. 필터 데이터 지연 로딩! 초기 콘텐츠 렌더링을 막지 않도록 변경.
+      // 2. 사용자는 이제 즉시 첫 화면을 보고, 필터 메뉴는 백그라운드에서 채워짐.
+      // 3. 체감 로딩 속도 극대화!
       // ===============================================================
 
       let db;
 
       // --- JavaScript 코드 시작 ---
-      // 상태 관리 변수
-      let favorites = [], comparisonList = [], alertKeywords = [], seenItems = [], adDataList = [], allApiDataForFilterPopulation = [];
+      let favorites = [], comparisonList = [], alertKeywords = [], seenItems = [], allApiDataForUtils = [];
       let currentFilters = { searchTerm: '', region: 'all', category: [], sort: 'default', showFavorites: false };
       let currentPage = 1;
       let totalItems = 0;
       let isLoading = false;
       let searchTimeout;
 
-      // DOM 요소
       const elements = { 
           statusContainer: document.getElementById('status-container'), 
           errorMessage: document.getElementById('error-message'), 
@@ -261,19 +185,18 @@
           closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
       };
       
-      // --- 앱 시작점 ---
       document.addEventListener('DOMContentLoaded', startApp);
 
       async function startApp() {
         try {
-            console.log("🚀 [v1.3] 앱 실행 시작!");
+            console.log("🚀 [v1.4] 앱 실행 시작!");
             const response = await fetch('/.netlify/functions/get-firebase-config');
             if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
             const firebaseConfig = await response.json();
             
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            console.log("✅ [v1.3] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+            console.log("✅ [v1.4] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
             await initialize();
         } catch (error) {
@@ -284,7 +207,6 @@
       async function initialize() {
           addEventListeners();
           
-          // 로컬 스토리지에서 사용자 데이터 불러오기
           favorites = JSON.parse(localStorage.getItem('favorites')) || [];
           alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
           seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
@@ -292,14 +214,16 @@
           updateFavoritesButtonVisibility(); 
           renderAlertKeywords();
           
-          // 필터 옵션(지역, 카테고리)을 채우기 위해 모든 데이터를 한번 가져옴
-          await populateFilters();
+          console.log("[v1.4] 🏎️ 최우선! 첫 화면 렌더링 시작...");
+          const firstRenderPromise = fetchAndRenderData(true);
           
-          // 첫 페이지 데이터 로딩
-          await fetchAndRenderData(true);
+          console.log("[v1.4] 👟 후순위. 필터 메뉴 채우기 시작 (느긋하게~)");
+          populateFilters(); // await를 제거하여 백그라운드에서 실행
+
+          await firstRenderPromise; // 첫 렌더링이 끝날 때까지는 기다림(선택사항)
+          console.log("[v1.4] ✅ 첫 화면 렌더링 로직 완료!");
       }
 
-      // --- 데이터 요청 및 렌더링 ---
       async function fetchAndRenderData(isNewSearch = false) {
           if (isLoading) return;
           isLoading = true;
@@ -307,27 +231,25 @@
           if (isNewSearch) {
               currentPage = 1;
               elements.resultsContainer.innerHTML = '';
-              elements.statusContainer.classList.remove('hidden'); // 새 검색 시 스켈레톤 보이기
+              elements.statusContainer.classList.remove('hidden');
               elements.errorMessage.classList.add('hidden');
           } else {
-              elements.loadMoreSpinner.classList.remove('hidden'); // 더보기 시 스피너 보이기
+              elements.loadMoreSpinner.classList.remove('hidden');
           }
           
-          // 백엔드로 보낼 쿼리 문자열 생성
           let query = `page=${currentPage}&perPage=12`;
           if (currentFilters.searchTerm) query += `&searchTerm=${encodeURIComponent(currentFilters.searchTerm)}`;
           if (currentFilters.region !== 'all') query += `&region=${encodeURIComponent(currentFilters.region)}`;
           if (currentFilters.category.length > 0) query += `&category=${encodeURIComponent(currentFilters.category.join(','))}`;
-          // 정렬(sort)은 아직 서버에서 구현되지 않았으므로 추후 추가
           
-          console.log(`[v1.3 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
+          console.log(`[v1.4 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
 
           try {
               const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
               if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
               
               const { data, totalItems: newTotalItems } = await response.json();
-              console.log(`[v1.3 프론트엔드] ✅ 백엔드로부터 응답 수신!`, { data, newTotalItems });
+              console.log(`[v1.4 프론트엔드] ✅ 백엔드로부터 응답 수신!`, { data, newTotalItems });
               
               totalItems = newTotalItems;
 
@@ -336,9 +258,7 @@
               } else if (isNewSearch) {
                   elements.resultsContainer.innerHTML = `<p class="col-span-full text-center text-slate-500">조건에 맞는 사업이 없습니다.</p>`;
               }
-              
               renderActiveFilters();
-
           } catch (error) {
               handleError("데이터 요청 오류:", error.message);
           } finally {
@@ -354,20 +274,20 @@
       }
       
       async function populateFilters() {
-            // 필터 UI를 채우기 위해 한번만 모든 데이터를 요청
+            console.log("[v1.4] 🗂️ 필터 데이터 요청 시작...");
             try {
                 const response = await fetch(`/.netlify/functions/get-support-data?perPage=500`);
                  if (!response.ok) throw new Error(`필터 데이터 로딩 실패: ${response.status}`);
                  const result = await response.json();
-                 allApiDataForFilterPopulation = result.data || [];
+                 allApiDataForUtils = result.data || [];
 
                 const regionCounts = {}, categoryCounts = {};
-                allApiDataForFilterPopulation.forEach(item => {
+                allApiDataForUtils.forEach(item => {
                     if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
                     if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
                 });
 
-                elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiDataForFilterPopulation.length +')</option>';
+                elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiDataForUtils.length +')</option>';
                 const sortedRegions = Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko'));
                 for (const region of sortedRegions) {
                     const count = regionCounts[region];
@@ -385,33 +305,33 @@
                     
                     const label = document.createElement('label');
                     label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
-                    label.innerHTML = `
-                        <input type="checkbox" class="category-checkbox rounded border-gray-300 text-sky-600 shadow-sm focus:border-sky-300 focus:ring focus:ring-offset-0 focus:ring-sky-200 focus:ring-opacity-50" value="${category}">
-                        <span>${displayText} (${count})</span>
-                    `;
+                    label.innerHTML = `<input type="checkbox" class="category-checkbox" value="${category}"><span>${displayText} (${count})</span>`;
                     elements.categoryCheckboxContainer.appendChild(label);
                 }
+                
+                elements.regionSelect.disabled = false;
+                console.log("[v1.4] ✅ 필터 UI 생성 완료!");
+
             } catch(error) {
-                console.error("필터 UI 생성 실패", error);
-                // 실패해도 앱이 멈추지 않도록 처리
+                console.error("[v1.4] 🔥 필터 UI 생성 실패", error);
+                elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
+                elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
+                elements.regionSelect.disabled = false;
             }
         }
 
-      // --- 이벤트 리스너 ---
       function addEventListeners() {
           window.addEventListener('scroll', handleScroll);
           
           elements.searchInput.addEventListener('input', e => {
               clearTimeout(searchTimeout);
               searchTimeout = setTimeout(() => {
-                  console.log(`[v1.3 프론트엔드] 🔍 검색 필터 적용! 검색어: ${e.target.value}`);
                   currentFilters.searchTerm = e.target.value.toLowerCase();
                   fetchAndRenderData(true);
               }, 300);
           });
 
           elements.regionSelect.addEventListener('change', e => {
-              console.log(`[v1.3 프론트엔드] 🌍 지역 필터 적용! 지역: ${e.target.value}`);
               currentFilters.region = e.target.value;
               fetchAndRenderData(true);
           });
@@ -419,21 +339,19 @@
           elements.categoryCheckboxContainer.addEventListener('change', e => {
               if (e.target.classList.contains('category-checkbox')) {
                   const checkedCategories = Array.from(elements.categoryCheckboxContainer.querySelectorAll('.category-checkbox:checked')).map(cb => cb.value);
-                  console.log(`[v1.3 프론트엔드] 📂 카테고리 필터 적용!`, checkedCategories);
                   currentFilters.category = checkedCategories;
                   fetchAndRenderData(true);
               }
           });
           
            elements.resultsContainer.addEventListener('click', e => {
-                const target = e.target;
-                const button = target.closest('button');
+                const button = e.target.closest('button');
                 if (button) {
                     if (button.classList.contains('favorite-button')) toggleFavorite(button);
                     if (button.classList.contains('share-button')) shareLink(button);
                     if (button.classList.contains('details-toggle')) toggleDetails(button);
                 }
-                const checkbox = target.closest('.compare-checkbox');
+                const checkbox = e.target.closest('.compare-checkbox');
                 if (checkbox) toggleComparison(checkbox);
             });
 
@@ -451,9 +369,7 @@
           const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
           const itemsRendered = elements.resultsContainer.children.length;
 
-          // 스크롤이 하단에 가깝고, 로딩 중이 아니며, 아직 불러올 아이템이 남았을 때
           if (clientHeight + scrollTop >= scrollHeight - 100 && !isLoading && itemsRendered < totalItems) {
-              console.log(`[v1.3 프론트엔드] 📜 스크롤 감지! 다음 페이지(${currentPage + 1}) 로딩...`);
               currentPage++;
               fetchAndRenderData(false);
           }
