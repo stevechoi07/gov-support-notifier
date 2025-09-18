@@ -6,9 +6,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
+    <!-- SEO 최적화 태그 시작 -->
     <title>정부 지원사업 알리미 | K-Startup 공고, 청년창업, R&D 지원금 정보</title>
     <meta name="description" content="최신 정부 지원사업 공고를 한 곳에서 확인하세요. K-Startup, 청년창업, 소상공인, R&D 지원금 등 맞춤형 필터와 키워드 알림으로 놓치지 마세요.">
     <meta name="keywords" content="정부지원사업, K-Startup, 창업지원, 청년창업, 소상공인 지원, R&D, 정책자금, 지원금, 사업공고">
+    <!-- SEO 최적화 태그 끝 -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -96,27 +99,35 @@
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         
         <div class="bg-white/80 sticky-header rounded-xl shadow-lg p-4 sm:p-6 mb-8 sticky top-4 z-10">
+            <!-- 헤더 구조 변경: 하단 여백을 mb-4에서 mb-2로 수정 -->
             <header class="flex justify-between items-start mb-2">
+                <!-- 좌측: 상세 필터 토글 버튼 (햄버거 아이콘) - 아이콘 크기 조정 -->
                 <button id="toggle-filters-button" class="p-1 rounded-md hover:bg-slate-200 transition-colors">
                     <svg class="w-9 h-9 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
 
+                <!-- 중앙: 제목 및 부제목 -->
                 <div class="text-center -mt-1">
+                    <!-- 반응형 글자 크기 및 단어 단위 줄바꿈 적용 -->
                     <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 break-keep">🚀 정부 지원사업 알리미</h1>
+                    <!-- 부제목을 flex로 변경하여 한 줄로 표현 -->
                     <p class="text-slate-600 mt-2 text-sm md:text-base flex items-center justify-center flex-wrap gap-2">
                         <span>K-Startup, 청년창업, R&D 지원금</span>
-                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.3</span>
+                        <span class="text-xs font-semibold bg-sky-100 text-sky-800 px-2 py-1 rounded-full">v1.2</span>
                     </p>
                 </div>
 
+                <!-- 우측: 중앙 정렬을 위한 빈 공간 - 버튼 크기에 맞춰 조정 -->
                 <div class="w-11 h-11"></div>
             </header>
 
+            <!-- 필터 및 검색 UI -->
             <div class="relative flex-grow mb-4">
                 <input type="text" id="search-input" placeholder="검색어를 입력하세요" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="बजट 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             <div id="collapsible-filters" class="space-y-4">
+                <!-- 정렬 버튼 위치 이동 -->
                 <div id="sort-buttons" class="flex flex-wrap gap-2 items-center justify-center pt-4 border-t">
                     <button data-sort="default" class="control-button active px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">기본순</button>
                     <button data-sort="deadline" class="control-button px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">마감 임박순</button>
@@ -144,6 +155,7 @@
                 </div>
                 <div id="active-filters-container" class="flex flex-wrap gap-2 items-center pt-4 border-t min-h-[41px]"></div>
             </div>
+            <!-- 기존 상세 필터 보기 버튼 위치 제거 -->
             <div class="mt-4 text-center">
                  <button id="compare-button" class="control-button w-full px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 shadow-md transition-colors hidden">📋 선택 항목 비교하기</button>
             </div>
@@ -152,7 +164,9 @@
             </div>
         </div>
 
+        <!-- status-container를 스켈레톤 로더로 교체 -->
         <div id="status-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 스켈레톤 카드 (초기 로딩 시 보여줄 가짜 카드) -->
             <div class="skeleton-card space-y-4">
                 <div class="flex justify-between items-center">
                     <div class="skeleton-line h-4 w-1/3"></div>
@@ -189,6 +203,7 @@
                     <div class="skeleton-line h-4 w-1/4"></div>
                 </div>
             </div>
+            <!-- 오류 메시지 영역 -->
             <div id="error-message" class="hidden col-span-full text-center"></div>
         </div>
 
@@ -204,34 +219,39 @@
         </footer>
     </div>
 
+    <!-- 모달 UI -->
     <div id="comparison-modal" class="fixed inset-0 z-50 hidden"><div id="comparison-modal-bg" class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white rounded-lg shadow-xl m-4 md:m-8 max-w-6xl mx-auto max-h-[90vh] flex flex-col"><div class="flex justify-between items-center p-4 border-b"><h2 class="text-xl font-bold">지원사업 비교하기</h2><button id="close-modal-button" class="text-2xl">&times;</button></div><div id="comparison-content" class="p-4 overflow-auto"></div></div></div>
     <div id="toast-notification" class="fixed bottom-10 right-10 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4">링크가 복사되었습니다!</div>
     <div id="keyword-alert-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex justify-center items-center"><div class="bg-white rounded-lg shadow-xl m-4 max-w-lg w-full"><div class="flex justify-between items-center p-4 border-b bg-sky-500 text-white rounded-t-lg"><h2 class="text-xl font-bold">🔔 새로운 키워드 공고 알림!</h2><button id="close-keyword-alert-button" class="text-2xl">&times;</button></div><div id="keyword-alert-content" class="p-6 max-h-[60vh] overflow-y-auto"></div></div></div>
     
+    <!-- Firebase SDK 및 앱 초기화 로직 -->
     <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       // ===============================================================
-      // 🚀 정부 지원사업 알리미 v1.4 - 필터링과 페이지네이션 통합
+      // 🚀 정부 지원사업 알리미 v1.2
       // ===============================================================
-      let db;
-      const ITEMS_PER_PAGE = 12;
-      const TOTAL_LOAD_COUNT = 500;
-      
-      let masterDataList = [], // 500개 전체 원본 데이터 저장소
-          filteredItems = [],  // 필터링된 결과 저장소
-          favorites = [],
-          comparisonList = [],
-          alertKeywords = [],
-          seenItems = [],
-          adDataList = [];
+      // [변경점]
+      // 1. Firebase 설정(API 키 등)을 코드에서 완전히 제거!
+      // 2. Netlify의 '비밀요원(Function)'에게 접속 정보를 요청해서 받아오는 방식으로 변경.
+      // 3. 이제 이 코드는 Github에 100% 공개해도 안전합니다. 캬~
+      // ===============================================================
 
-      let visibleItemCount = 0; // 현재 화면에 보여진 아이템 개수
+      // 전역에서 사용할 변수 선언 (초기화는 startApp 내부에서)
+      let db;
+
+      // --- JavaScript 코드 시작 ---
+      const INITIAL_LOAD_COUNT = 12;
+      const TOTAL_LOAD_COUNT = 500; 
+      let allApiData = [], filteredItems = [], favorites = [], comparisonList = [];
+      let visibleItemCount = 12;
+      let currentFilters = { searchTerm: '', region: 'all', category: [], sort: 'default', showFavorites: false };
+      let alertKeywords = [];
+      let seenItems = [];
       let isLoadingMore = false;
       let searchTimeout;
-      
-      let currentFilters = { searchTerm: '', region: 'all', category: [], sort: 'default', showFavorites: false };
+      let adDataList = [];
 
       const elements = { 
           statusContainer: document.getElementById('status-container'), 
@@ -259,15 +279,34 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
           keywordAlertContent: document.getElementById('keyword-alert-content'), 
           closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
       };
-      
+
+      /**
+       * 앱을 시작하는 메인 함수.
+       * Netlify Function을 통해 Firebase 설정을 받아온 후 모든 기능을 초기화한다.
+       */
       async function startApp() {
         try {
+            console.log("🚀 [v1.2] 앱 실행 시작!");
+            
+            // 1. 비밀요원에게 Firebase 접속 정보 요청
+            console.log("📡 [Debug] Netlify 비밀요원에게 Firebase 설정 정보 요청 중...");
             const response = await fetch('/.netlify/functions/get-firebase-config');
-            if (!response.ok) throw new Error(`[오류] 비밀요원 응답 실패! 상태: ${response.status}`);
+            
+            if (!response.ok) {
+                throw new Error(`[오류] 비밀요원 응답 실패! 상태: ${response.status}`);
+            }
             const firebaseConfig = await response.json();
+            console.log("✅ [Debug] 비밀요원으로부터 설정 정보 수신 완료!");
+
+            // 2. 수신한 정보로 Firebase 앱 초기화
+            console.log("🔥 [Debug] Firebase 앱 초기화 시도...");
             const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
+            db = getFirestore(app); // 전역 db 변수 초기화
+            console.log("✅ [Debug] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+
+            // 3. 모든 기능 초기화 함수 호출
             initialize();
+
         } catch (error) {
             console.error("🔥 [치명적 오류] 앱 시작 중 문제 발생:", error);
             elements.statusContainer.classList.add('hidden');
@@ -276,10 +315,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
         }
       }
 
+      // DOM이 로드되면 앱 시작
       document.addEventListener('DOMContentLoaded', startApp);
 
       async function initialize() {
           addEventListeners();
+          await loadAdData();
           favorites = JSON.parse(localStorage.getItem('favorites')) || [];
           alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
           seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
@@ -287,13 +328,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
           updateFavoritesButtonVisibility(); 
           renderAlertKeywords();
           
-          const [_, fullData] = await Promise.all([
-              loadAdData(),
-              fetchData(TOTAL_LOAD_COUNT)
-          ]);
-          
+          const fullData = await fetchData(TOTAL_LOAD_COUNT);
           if (fullData) {
-              masterDataList = fullData;
+              allApiData = fullData;
               await populateFilters();
               applyFiltersAndRender();
               checkNewItemsForKeywords();
@@ -328,60 +365,57 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
       }
       
       async function fetchData(perPage) {
-          const backendApiUrl = `/.netlify/functions/get-support-data?perPage=${perPage}&page=1`;
-          try {
-              const response = await fetch(backendApiUrl);
-              if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
-              const result = await response.json();
-              if (result && result.items) {
-                  return result.items;
-              }
-              throw new Error(result.message || "백엔드로부터 유효한 데이터를 받지 못했습니다.");
-          } catch (error) {
-              console.error("데이터 요청 오류:", error);
-              elements.statusContainer.classList.add('hidden');
-              let friendlyMessage = "데이터를 불러오는 데 실패했습니다.";
-              if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 서버에 연결할 수 없습니다.";
-              else friendlyMessage = `오류 발생: ${error.message}`;
-              elements.errorMessage.textContent = friendlyMessage;
-              elements.errorMessage.classList.remove('hidden');
-              return null;
-          }
-      }
+            const backendApiUrl = `/.netlify/functions/get-support-data?perPage=${perPage}`;
+            try {
+                const response = await fetch(backendApiUrl);
+                if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
+                const data = await response.json();
+                if (data && data.data) return data.data;
+                throw new Error(data.resultMsg || "백엔드로부터 유효한 데이터를 받지 못했습니다.");
+            } catch (error) {
+                console.error("데이터 요청 오류:", error);
+                elements.statusContainer.classList.add('hidden'); // 스켈레톤 숨기기
+                let friendlyMessage = "데이터를 불러오는 데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.";
+                if (error.message.includes("Failed to fetch")) friendlyMessage = "네트워크 연결이 불안정하거나 백엔드 서버에 연결할 수 없습니다. 주소가 올바른지 확인해주세요.";
+                else friendlyMessage = `오류 발생: ${error.message}`;
+                elements.errorMessage.textContent = friendlyMessage;
+                elements.errorMessage.classList.remove('hidden');
+                return null;
+            }
+        }
         
       async function populateFilters() {
-        const fullDataForFilters = masterDataList;
+            const regionCounts = {}, categoryCounts = {};
+            allApiData.forEach(item => {
+                if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
+                if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
+            });
 
-        const regionCounts = {}, categoryCounts = {};
-        fullDataForFilters.forEach(item => {
-            if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
-            if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
-        });
+            elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiData.length +')</option>';
+            const sortedRegions = Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko'));
+            for (const region of sortedRegions) {
+                const count = regionCounts[region];
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = `${region} (${count})`;
+                elements.regionSelect.appendChild(option);
+            }
 
-        elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ fullDataForFilters.length +')</option>';
-        const sortedRegions = Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko'));
-        for (const region of sortedRegions) {
-            const option = document.createElement('option');
-            option.value = region;
-            option.textContent = `${region} (${regionCounts[region]})`;
-            elements.regionSelect.appendChild(option);
+            elements.categoryCheckboxContainer.innerHTML = '';
+            const sortedCategories = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko'));
+            for (const category of sortedCategories) {
+                const count = categoryCounts[category];
+                let displayText = category.includes('기술개발(R&D)') ? '기술개발' : category;
+                
+                const label = document.createElement('label');
+                label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
+                label.innerHTML = `
+                    <input type="checkbox" class="category-checkbox rounded border-gray-300 text-sky-600 shadow-sm focus:border-sky-300 focus:ring focus:ring-offset-0 focus:ring-sky-200 focus:ring-opacity-50" value="${category}">
+                    <span>${displayText} (${count})</span>
+                `;
+                elements.categoryCheckboxContainer.appendChild(label);
+            }
         }
-
-        elements.categoryCheckboxContainer.innerHTML = '';
-        const sortedCategories = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko'));
-        for (const category of sortedCategories) {
-            const count = categoryCounts[category];
-            let displayText = category.includes('기술개발(R&D)') ? '기술개발' : category;
-            
-            const label = document.createElement('label');
-            label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-sky-50 p-1 rounded';
-            label.innerHTML = `
-                <input type="checkbox" class="category-checkbox rounded border-gray-300 text-sky-600 shadow-sm focus:border-sky-300 focus:ring focus:ring-offset-0 focus:ring-sky-200 focus:ring-opacity-50" value="${category}">
-                <span>${displayText} (${count})</span>
-            `;
-            elements.categoryCheckboxContainer.appendChild(label);
-        }
-      }
 
       function addEventListeners() {
             window.addEventListener('scroll', handleScroll);
@@ -443,7 +477,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
 
       async function handleAdClick(adId) {
           try {
-              const adRef = doc(db, "adv", adId);
+              const adRef = doc(db, "adv", adId); // "ads" -> "adv"
               await updateDoc(adRef, {
                   clickCount: increment(1)
               });
@@ -463,13 +497,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
             isLoadingMore = true;
             elements.loadMoreSpinner.classList.remove('hidden');
             setTimeout(() => {
-                const currentVisible = visibleItemCount;
-                visibleItemCount += ITEMS_PER_PAGE;
-                const nextItems = filteredItems.slice(currentVisible, visibleItemCount);
+                const nextItems = filteredItems.slice(visibleItemCount, visibleItemCount + 12);
                 appendData(nextItems);
+                visibleItemCount += 12;
                 elements.loadMoreSpinner.classList.add('hidden');
                 isLoadingMore = false;
-            }, 300);
+            }, 500);
         }
         
       function createItemHTML(item) {
@@ -493,7 +526,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
                   if (mediaType === 'video') {
                       mediaElement = `<video autoplay loop muted playsinline src="${mediaUrl}"></video>`;
                   } else {
-                      mediaElement = `<img src="${mediaUrl}" alt="${item.title}" loading="lazy" onerror="this.onerror=null;this.src='https.placehold.co/600x400/e2e8f0/94a3b8?text=Image+Error';">`;
+                      mediaElement = `<img src="${mediaUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+Error';">`;
                   }
               } else {
                   mediaElement = `<img src="https://placehold.co/600x400/0ea5e9/ffffff?text=Your+AD+Here" alt="${item.title}">`;
@@ -550,7 +583,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
                           </div>
                           <div>
                               <button class="share-button text-slate-400 hover:text-sky-500 transition-colors" data-url="${item.detl_pg_url}" title="공유하기">
-                                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
+                                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="बजट 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6.002l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.318a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
                               </button>
                               <button class="favorite-button text-2xl text-slate-400 hover:text-amber-400 transition-colors ${isFavorited ? 'favorited' : ''}" data-id="${item.pbanc_sn}">${isFavorited ? '★' : '☆'}</button>
                           </div>
@@ -570,10 +603,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
 
       function applyFiltersAndRender() {
             elements.resultsContainer.classList.add('hidden');
-            elements.statusContainer.classList.remove('hidden');
+            elements.statusContainer.classList.remove('hidden'); // 필터링 시작 시 스켈레톤 보이기
 
             setTimeout(() => {
-                let items = [...masterDataList]; 
+                let items = [...allApiData]; 
                 if (currentFilters.showFavorites) items = items.filter(item => favorites.includes(item.pbanc_sn)); 
                 if (currentFilters.searchTerm) items = items.filter(item => (item.biz_pbanc_nm || '').toLowerCase().includes(currentFilters.searchTerm) || (item.pbanc_ntrp_nm || '').toLowerCase().includes(currentFilters.searchTerm)); 
                 if (currentFilters.region !== 'all') items = items.filter(item => item.supt_regin === currentFilters.region); 
@@ -600,8 +633,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
                 }
 
                 filteredItems = itemsWithAds;
-                visibleItemCount = ITEMS_PER_PAGE;
-
+                visibleItemCount = INITIAL_LOAD_COUNT;
                 elements.statusContainer.classList.add('hidden'); 
                 elements.resultsContainer.classList.remove('hidden'); 
                 renderActiveFilters(); 
@@ -672,7 +704,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
         }
 
       function calculateDday(endDateStr) { if (!endDateStr) return { text: "정보 없음", className: "bg-slate-500", days: 9999 }; const year = parseInt(endDateStr.substring(0, 4)), month = parseInt(endDateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const today = new Date(); today.setHours(0, 0, 0, 0); const endDate = new Date(year, month, day); const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)); if (diffDays < 0) return { text: "마감", className: "bg-slate-700", days: 9999 + diffDays }; if (diffDays === 0) return { text: "D-Day", className: "bg-red-500", days: 0 }; if (diffDays <= 7) return { text: `D-${diffDays}`, className: "bg-orange-500", days: diffDays }; return { text: `D-${diffDays}`, className: "bg-green-600", days: diffDays }; }
-      function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(endDateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
+      function isWithinLast7Days(dateStr) { if (!dateStr) return false; const year = parseInt(dateStr.substring(0, 4)), month = parseInt(dateStr.substring(4, 6)) - 1, day = parseInt(dateStr.substring(6, 8)); const itemDate = new Date(year, month, day); const today = new Date(); const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 7); return itemDate >= sevenDaysAgo && itemDate <= today; }
       function toggleDetails(button) { const content = button.closest('.p-6').querySelector('.details-content'); content.classList.toggle('expanded'); button.textContent = content.classList.contains('expanded') ? '간략히 보기 ▲' : '자세히 보기 ▼'; }
       
       function toggleFavorite(button) { 
@@ -715,13 +747,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
           }
       }
 
-      function showComparisonModal() { const itemsToCompare = masterDataList.filter(item => comparisonList.includes(item.pbanc_sn)); const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-slate-100"><th class="p-2 w-1/5">항목</th>'; itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); tableHTML += '</tr></thead><tbody>'; Object.keys(headers).forEach(key => { tableHTML += `<tr class="border-b"><td class="font-bold p-2 align-top">${headers[key]}</td>`; itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); tableHTML += '</tr>'; }); tableHTML += '</tbody></table></div>'; elements.comparisonContent.innerHTML = tableHTML; elements.modal.classList.remove('hidden'); }
+      function showComparisonModal() { const itemsToCompare = allApiData.filter(item => comparisonList.includes(item.pbanc_sn)); const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-slate-100"><th class="p-2 w-1/5">항목</th>'; itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); tableHTML += '</tr></thead><tbody>'; Object.keys(headers).forEach(key => { tableHTML += `<tr class="border-b"><td class="font-bold p-2 align-top">${headers[key]}</td>`; itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); tableHTML += '</tr>'; }); tableHTML += '</tbody></table></div>'; elements.comparisonContent.innerHTML = tableHTML; elements.modal.classList.remove('hidden'); }
       function shareLink(button) { const url = button.dataset.url; const textArea = document.createElement("textarea"); textArea.value = url; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); showToast("링크가 복사되었습니다!"); } catch (err) { showToast("링크 복사에 실패했습니다.", true); } document.body.removeChild(textArea); }
       function showToast(message, isError = false) { elements.toast.textContent = message; elements.toast.className = `fixed bottom-10 right-10 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-4 ${isError ? 'bg-red-500' : 'bg-slate-800'}`; elements.toast.classList.remove('opacity-0', 'translate-y-4'); setTimeout(() => { elements.toast.classList.add('opacity-0', 'translate-y-4'); }, 2000); }
       function addKeyword() { const keyword = elements.keywordInput.value.trim(); if (keyword && !alertKeywords.includes(keyword)) { alertKeywords.push(keyword); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); elements.keywordInput.value = ''; } }
       function renderAlertKeywords() { if (alertKeywords.length === 0) { elements.keywordTagsContainer.innerHTML = '<span class="text-xs text-slate-400">알림 받을 키워드를 추가해보세요.</span>'; return; } elements.keywordTagsContainer.innerHTML = alertKeywords.map((keyword, index) => ` <span class="keyword-tag">${keyword} <button data-index="${index}">x</button></span> `).join(''); }
       function handleKeywordTagClick(e) { if (e.target.tagName === 'BUTTON') { const index = parseInt(e.target.dataset.index); alertKeywords.splice(index, 1); localStorage.setItem('alertKeywords', JSON.stringify(alertKeywords)); renderAlertKeywords(); } }
-      function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || masterDataList.length === 0) return; const currentItemIds = masterDataList.map(item => item.pbanc_sn); const newItems = masterDataList.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
+      function checkNewItemsForKeywords() { if (alertKeywords.length === 0 || allApiData.length === 0) return; const currentItemIds = allApiData.map(item => item.pbanc_sn); const newItems = allApiData.filter(item => !seenItems.includes(item.pbanc_sn)); if (newItems.length > 0) { const matchedItems = []; newItems.forEach(item => { const title = item.biz_pbanc_nm || ''; const matchedKeyword = alertKeywords.find(keyword => title.toLowerCase().includes(keyword.toLowerCase())); if (matchedKeyword) { matchedItems.push({ item, keyword: matchedKeyword }); } }); if (matchedItems.length > 0) { showKeywordAlertDialog(matchedItems); } } localStorage.setItem('seenItems', JSON.stringify(currentItemIds)); seenItems = currentItemIds; }
+      function showKeywordAlertDialog(matchedItems) { elements.keywordAlertContent.innerHTML = matchedItems.map(({item, keyword}) => ` <div class="mb-4 p-3 border rounded-lg hover:bg-slate-50"> <p class="text-sm text-slate-500"> <span class="font-bold text-sky-600">[${keyword}]</span> 키워드와 일치하는 새 공고! </p> <a href="${item.detl_pg_url}" target="_blank" class="font-bold text-slate-800 hover:underline">${item.biz_pbanc_nm}</a> </div> `).join(''); elements.keywordAlertModal.classList.remove('hidden'); }
       
     </script>
 </body>
