@@ -64,7 +64,7 @@ async function startApp() {
       
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      console.log("✅ [v2.3] Firebase 앱 초기화 및 Firestore DB 연결 성공!`);
+      console.log("✅ [v2.3] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
       await initialize();
   } catch (error) {
