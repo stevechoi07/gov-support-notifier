@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>5분이면 5년간 더 낸 세금 환급 (반응형)</title>
+    <title>5분이면 5년간 더 낸 세금 환급 (가로 공간 최적화)</title>
     <style>
         body, html {
             margin: 0;
@@ -11,7 +11,6 @@
             width: 100%;
             height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            /* [변경점!] iframe 환경을 위해 기본 폰트 크기 단위를 상대 단위로 설정 */
             font-size: 1.5vmin;
         }
 
@@ -20,7 +19,7 @@
             color: white;
             width: 100%;
             height: 100%;
-            padding: 4vmin 2vmin; /* [변경점!] 패딩 단위를 vmin으로 변경 */
+            padding: 4vmin 2vmin;
             box-sizing: border-box;
             
             display: flex;
@@ -31,48 +30,49 @@
         }
 
         .pre-title {
-            font-size: 1.8vmin; /* [변경점!] */
+            font-size: 2vmin;
             font-weight: 500;
             opacity: 0.8;
-            margin-bottom: 2vmin; /* [변경점!] */
+            margin-bottom: 2.5vmin;
         }
 
         h1 {
-            font-size: 5vmin; /* [변경점!] */
+            font-size: 5.5vmin;
             font-weight: 900;
-            margin: 0 2vmin; /* [변경점!] */
+            margin: 0 2vmin;
             line-height: 1.3;
+            max-width: 80%; /* [가독성 조정] 제목도 최대 너비를 설정하여 너무 길어지지 않게 합니다. */
         }
 
         .description {
-            font-size: 1.8vmin; /* [변경점!] */
+            font-size: 2vmin;
             font-weight: 500;
             line-height: 1.7;
-            max-width: 90%; /* [변경점!] */
-            margin: 3vmin 2vmin; /* [변경점!] */
+            max-width: 75%; /* [가독성 조정] 최대 너비를 늘려 가로 공간을 더 활용합니다. */
+            margin: 3.5vmin 2vmin;
             opacity: 0.9;
         }
 
         .refund-info-box {
             background-color: rgba(255, 255, 255, 0.15); 
-            padding: 2.5vmin 4vmin; /* [변경점!] */
-            border-radius: 1.5vmin; /* [변경점!] */
-            margin-bottom: 4vmin; /* [변경점!] */
+            padding: 3vmin 4.5vmin;
+            border-radius: 1.5vmin;
+            margin-bottom: 4vmin;
         }
         .card-title { 
-            font-size: 1.8vmin; /* [변경점!] */
+            font-size: 2vmin;
             font-weight: bold;
             opacity: 0.8;
         }
         .card-money { 
-            font-size: 4.5vmin; /* [변경점!] */
+            font-size: 5vmin;
             font-weight: 700;
             display: block; 
-            margin: 0.2em 0; 
+            margin: 0.3em 0; 
             white-space: nowrap;
         }
         .card-text { 
-            font-size: 1.5vmin; /* [변경점!] */
+            font-size: 1.6vmin;
             color: rgba(255, 255, 255, 0.8);
             white-space: nowrap;
         }
@@ -87,10 +87,10 @@
             display: inline-block;
             background-color: #6a5acd;
             color: white;
-            font-size: 1.8vmin; /* [변경점!] */
+            font-size: 2vmin;
             font-weight: bold;
-            padding: 1.5vmin 3.5vmin; /* [변경점!] */
-            border-radius: 1vmin; /* [변경점!] */
+            padding: 1.5vmin 3.5vmin;
+            border-radius: 1vmin;
             text-decoration: none;
             transition: background-color 0.3s ease;
             animation: sparkle 2s ease-in-out infinite;
@@ -107,11 +107,11 @@
     <div class="main-container">
         <p class="pre-title">국세기본법 제45조의2</p>
         
-        <h1>5분이면 5년간 더 낸 세금을<br>바로 찾을 수 있습니다</h1>
+        <h1>5분이면 5년간 더 낸 세금을 바로 찾을 수 있습니다</h1>
         
         <p class="description">
-            법인세, 소득세를 신고한 날로부터 5년 이내에<br>
-            자료미비, 세제 혜택에 대한 누락 등으로 본래 납부해야 할<br>
+            법인세, 소득세를 신고한 날로부터 5년 이내에
+            자료미비, 세제 혜택에 대한 누락 등으로 본래 납부해야 할
             세금보다 더 납부한 세금을 환급 해달라고 청구하는 제도
         </p>
 
