@@ -1,4 +1,4 @@
-// js/index_script.js v2.4 
+// js/index_script.js v2.5 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -352,17 +352,21 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        let adContent = '';
-        // ✨ [v2.4] adType에 따라 분기 처리
+        // ✨ [v2.5 수정] iframe 광고 생성 로직 변경
         if (item.adType === 'iframe' && item.iframeSrc) {
-            // iframe 광고는 전체 카드를 차지하도록 수정
+            // iframe 광고는 카드 전체를 차지하며, 요청하신 스타일을 직접 적용합니다.
+            // 컨테이너 div는 iframe을 보기 좋게 중앙에 배치하는 역할을 합니다.
             return `
-            <div class.="ad-card ad-iframe-container bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col" style="padding: 0; min-height: 300px;">
-                <iframe src="${item.iframeSrc}" class="w-full h-full flex-grow" frameborder="0" scrolling="no" title="${item.title || 'Advertisement'}"></iframe>
+            <div class="ad-card ad-iframe-container bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex justify-center items-center p-0 md:p-4" style="min-height: 300px;">
+                <iframe src="${item.iframeSrc}" 
+                        style="width: 100%; max-width: 1200px; aspect-ratio: 16 / 9; border: none;"
+                        title="${item.title || 'Advertisement'}">
+                </iframe>
             </div>`;
         } 
         
-        // 이미지 및 비디오 광고 처리
+        // --- 이미지 및 비디오 광고 처리 (기존과 동일) ---
+        let adContent = '';
         if (item.mediaUrl) {
             const mediaTag = item.mediaType === 'video'
                 ? `<video autoplay loop muted playsinline src="${item.mediaUrl}"></video>`
