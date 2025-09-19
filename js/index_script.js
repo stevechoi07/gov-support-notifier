@@ -1,15 +1,15 @@
-// js/index_script.js v2.7
+// js/index_script.js v2.8
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // ===============================================================
-// 🚀 정부 지원사업 알리미 v2.6.1
+// 🚀 정부 지원사업 알리미 v2.8
 // ===============================================================
 // [변경점]
-// 1. iframe 광고가 PC 레이아웃을 깨뜨리지 않도록 전용 광고 슬롯에 표시.
-// 2. 일반 카드가 12개 이상 표시된 후에 iframe 광고 슬롯이 나타납니다.
-// 3. 누락되었던 변수 및 UI 요소 선언을 수정.
+// 1. Intersection Observer를 사용하여 광고 조회수(viewCount) 추적 기능 추가.
+// 2. 광고 카드가 화면에 50% 이상 노출될 때 한 번만 viewCount를 업데이트.
+// 3. 관련 로직(Observer 초기화, Firestore 업데이트 함수 등) 추가 및 기존 코드에 통합.
 // ===============================================================
 
 let db;
@@ -24,6 +24,7 @@ let searchTimeout;
 let renderedItemCount = 0;
 let adIndex = 0;
 let iframeAdRendered = false;
+let adViewObserver; // ✨ [v2.8 추가] 광고 조회수 추적을 위한 Intersection Observer 변수
 
 // --- DOM 요소 ---
 const elements = { 
@@ -60,14 +61,14 @@ document.addEventListener('DOMContentLoaded', startApp);
 
 async function startApp() {
   try {
-      console.log("🚀 [v2.6.1] 앱 실행 시작!");
+      console.log("🚀 [v2.8] 앱 실행 시작!");
       const response = await fetch('/.netlify/functions/get-firebase-config');
       if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
       const firebaseConfig = await response.json();
       
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      console.log("✅ [v2.6.1] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+      console.log("✅ [v2.8] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
       await initialize();
   } catch (error) {
@@ -77,6 +78,7 @@ async function startApp() {
 
 async function initialize() {
     addEventListeners();
+    initializeAdViewObserver(); // ✨ [v2.8 추가] 광고 조회수 옵저버 초기화
     
     await loadAdData();
     
@@ -91,7 +93,26 @@ async function initialize() {
     populateFilters();
 
     await firstRenderPromise;
-    console.log("[v2.6.1] ✅ 첫 화면 렌더링 로직 완료!");
+    console.log("[v2.8] ✅ 첫 화면 렌더링 로직 완료!");
+}
+
+// ✨ [v2.8 추가] 광고 조회수 추적을 위한 Intersection Observer 초기화 함수
+function initializeAdViewObserver() {
+    adViewObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const adCard = entry.target;
+                const adId = adCard.dataset.id;
+                
+                // 한 번만 카운트하기 위해, 아직 view가 기록되지 않은 카드만 처리
+                if (adId && !adCard.dataset.viewed) {
+                    adCard.dataset.viewed = 'true'; // 봤다고 표시
+                    handleAdView(adId);
+                    observer.unobserve(adCard); // 감시 목록에서 제거
+                }
+            }
+        });
+    }, { threshold: 0.5 }); // 카드가 50% 이상 보이면 콜백 실행
 }
 
 async function loadAdData() {
@@ -112,9 +133,9 @@ async function loadAdData() {
             if (end && now > end) return false;
             return true;
         });
-        console.log(`[v2.6.1] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
+        console.log(`[v2.8] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
     } catch (error) {
-        console.error("[v2.6.1] 🔥 광고 데이터 로딩 실패:", error);
+        console.error("[v2.8] 🔥 광고 데이터 로딩 실패:", error);
         adDataList = [];
     }
 }
@@ -171,7 +192,6 @@ async function fetchAndRenderData(isNewSearch = false) {
     }
 }
 
-// ✨ [v2.7 수정] 광고 삽입 로직을 다시 통합
 function appendData(items) {
     let contentToAdd = '';
     items.forEach(item => {
@@ -180,9 +200,7 @@ function appendData(items) {
             renderedItemCount++;
         }
         
-        // 모든 광고(카드형, iframe)를 7번째 공고마다 삽입
         if (adDataList.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
-            // 이전에 삽입된 광고 수를 세어, 중복 삽입을 방지
             const existingAdCount = Math.floor(renderedItemCount / 7);
             const renderedAdCount = elements.resultsContainer.querySelectorAll('.ad-card').length + (contentToAdd.match(/ad-card/g) || []).length;
 
@@ -196,6 +214,13 @@ function appendData(items) {
         }
     });
     elements.resultsContainer.insertAdjacentHTML('beforeend', contentToAdd);
+
+    // ✨ [v2.8 추가] 새로 추가된 광고 카드를 찾아서 조회수 추적(observe) 시작
+    const newAdCards = elements.resultsContainer.querySelectorAll('.ad-card:not([data-observed])');
+    newAdCards.forEach(card => {
+        card.dataset.observed = 'true'; // 감시 시작했다고 표시
+        adViewObserver.observe(card);
+    });
 }
 
 async function populateFilters() {
@@ -229,7 +254,7 @@ async function populateFilters() {
           
           elements.regionSelect.disabled = false;
       } catch(error) {
-          console.error("[v2.6.1] 🔥 필터 UI 생성 실패", error);
+          console.error("[v2.8] 🔥 필터 UI 생성 실패", error);
           elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
           elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
           elements.regionSelect.disabled = false;
@@ -329,7 +354,18 @@ async function handleAdClick(adId) {
         const adRef = doc(db, "adv", adId);
         await updateDoc(adRef, { clickCount: increment(1) });
     } catch (error) {
-        console.error("[v2.6.1] 🔥 광고 클릭 카운트 업데이트 실패:", error);
+        console.error("[v2.8] 🔥 광고 클릭 카운트 업데이트 실패:", error);
+    }
+}
+
+// ✨ [v2.8 추가] 광고 조회수를 Firestore에 업데이트하는 함수
+async function handleAdView(adId) {
+    try {
+        const adRef = doc(db, "adv", adId);
+        await updateDoc(adRef, { viewCount: increment(1) });
+        console.log(`[v2.8] 👁️ 광고 ${adId} 조회수 업데이트 완료!`);
+    } catch (error) {
+        console.error("[v2.8] 🔥 광고 조회수 카운트 업데이트 실패:", error);
     }
 }
 
@@ -362,10 +398,10 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        // ✨ [v2.7 수정] iframe 광고를 다른 카드와 동일한 스타일의 '액자'에 담도록 변경
+        // ✨ [v2.8 수정] 모든 광고 카드에 data-id 속성 추가
         if (item.adType === 'iframe' && item.iframeSrc) {
             return `
-            <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col p-0">
+            <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col p-0" data-id="${item.id}">
                 <iframe src="${item.iframeSrc}" 
                         style="width: 100%; height: 100%; aspect-ratio: 4 / 3; border: none; min-height: 350px;"
                         title="${item.title || 'Advertisement'}">
@@ -382,7 +418,7 @@ function createItemHTML(item) {
         }
 
         return `
-        <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col">
+        <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col" data-id="${item.id}">
             ${adContent}
             <div class="p-4 flex-grow flex flex-col">
                 <div class="flex justify-between items-start"><span class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Sponsored</span><span class="text-slate-300 text-xs font-bold rounded-full px-3 py-1 bg-slate-700">AD</span></div>
