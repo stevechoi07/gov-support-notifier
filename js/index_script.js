@@ -1,4 +1,4 @@
-// js/index_script.js v2.5 
+// js/index_script.js v2.6 iframe광고 view 변경 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -352,19 +352,18 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        // ✨ [v2.5 수정] iframe 광고 생성 로직 변경
+        // ✨ [v2.5 수정] iframe 광고일 경우, 템플릿 없이 iframe만 렌더링
         if (item.adType === 'iframe' && item.iframeSrc) {
-            // iframe 광고는 카드 전체를 차지하며, 요청하신 스타일을 직접 적용합니다.
-            // 컨테이너 div는 iframe을 보기 좋게 중앙에 배치하는 역할을 합니다.
             return `
-            <div class="ad-card ad-iframe-container bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex justify-center items-center p-0 md:p-4" style="min-height: 300px;">
+            <div class="ad-card ad-iframe-container col-span-1 md:col-span-2 lg:col-span-3 w-full mx-auto" style="max-width: 1200px;">
                 <iframe src="${item.iframeSrc}" 
-                        style="width: 100%; max-width: 1200px; aspect-ratio: 16 / 9; border: none;"
+                        style="width: 100%; aspect-ratio: 16 / 9; border: none; border-radius: 0.75rem;"
+                        class="shadow-lg"
                         title="${item.title || 'Advertisement'}">
                 </iframe>
             </div>`;
-        } 
-        
+        }
+
         // --- 이미지 및 비디오 광고 처리 (기존과 동일) ---
         let adContent = '';
         if (item.mediaUrl) {
