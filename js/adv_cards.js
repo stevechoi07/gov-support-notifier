@@ -1,4 +1,4 @@
-// js/adv_cards.js v1.0 - 'adv' 컬렉션 전용으로 복제 및 수정
+// js/adv_cards.js v1.1 - 'adv' 컬렉션 전용으로 복제 및 수정
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -6,11 +6,11 @@ import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js
 import { showToast } from "./ui.js";
 
 let resolveCardsReady;
-export const advCardsReady = new Promise(resolve => { // 변수명 변경
+export const advCardsReady = new Promise(resolve => {
     resolveCardsReady = resolve;
 });
 
-export const adv_cards = { // 객체명 변경
+export const adv_cards = {
     list: [],
     editingId: null,
     selectedMediaFile: null,
@@ -34,8 +34,6 @@ export const adv_cards = { // 객체명 변경
     },
 
     mapUI() {
-        // ✨ 이 스크립트가 제어할 HTML 요소들의 ID를 'adv-' 버전으로 모두 변경합니다.
-        // 이 ID들은 나중에 admin.html 파일에 실제로 추가해주어야 합니다.
         this.ui = {
             adListContainer: document.getElementById('adv-list-container'),
             adModal: document.getElementById('adv-ad-modal'),
@@ -60,19 +58,22 @@ export const adv_cards = { // 객체명 변경
             iframeModalTitle: document.getElementById('adv-iframe-modal-title'),
             closeIframeModalButton: document.getElementById('adv-close-iframe-modal-button'),
             iframeAdTitleInput: document.getElementById('adv-iframe-ad-title'),
-            iframeAdCodeInput: document.getElementById('adv-iframe-ad-code'),
+            iframeAdSrcInput: document.getElementById('adv-iframe-ad-src'), // [v1.1] ID 변경
             iframeIsPartnersCheckbox: document.getElementById('adv-iframe-is-partners-checkbox'),
             iframeAdStartDateInput: document.getElementById('adv-iframe-ad-start-date'),
             iframeAdEndDateInput: document.getElementById('adv-iframe-ad-end-date'),
             saveIframeAdButton: document.getElementById('adv-save-iframe-ad-button'),
-            addNewSubscriptionCardButton: null, // 이 페이지에서는 사용하지 않음
+            addNewSubscriptionCardButton: null,
         };
     },
 
     addEventListeners() {
         this.ui.closeModalButton?.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
         this.ui.saveAdButton?.addEventListener('click', this.handleSaveAd.bind(this));
-        [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => { if(input) input.addEventListener('input', () => this.updatePreview()); });
+        if(this.ui.adTitleInput) this.ui.adTitleInput.addEventListener('input', () => this.updatePreview());
+        if(this.ui.adDescriptionInput) this.ui.adDescriptionInput.addEventListener('input', () => this.updatePreview());
+        if(this.ui.adLinkInput) this.ui.adLinkInput.addEventListener('input', () => this.updatePreview());
+        if(this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.addEventListener('input', () => this.updatePreview());
         this.ui.adMediaFileInput?.addEventListener('change', this.handleFileUpload.bind(this));
         this.ui.closeIframeModalButton?.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
@@ -81,10 +82,10 @@ export const adv_cards = { // 객체명 변경
     async listen() {
         await firebaseReady;
         const db = getFirestoreDB();
-        const q = query(collection(db, "adv"), orderBy("order", "asc")); // 컬렉션 이름 변경
+        const q = query(collection(db, "adv"), orderBy("order", "asc"));
         onSnapshot(q, (querySnapshot) => {
             this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const cardsView = document.getElementById('adv-cards-view'); // 뷰 ID 변경
+            const cardsView = document.getElementById('adv-cards-view');
             if (cardsView && !cardsView.classList.contains('hidden')) {
                 this.render();
             }
@@ -98,7 +99,7 @@ export const adv_cards = { // 객체명 변경
     initSortable() {
         if (!this.ui.adListContainer) return;
         new Sortable(this.ui.adListContainer, {
-            handle: '.content-card-drag-handle', 
+            handle: '.content-card-drag-handle',
             animation: 150,
             ghostClass: 'sortable-ghost',
             onEnd: async (evt) => {
@@ -110,7 +111,7 @@ export const adv_cards = { // 객체명 변경
                 const batch = writeBatch(db);
                 reorderedList.forEach((ad, index) => {
                     if (ad) {
-                        batch.update(doc(db, "adv", ad.id), { order: index }); // 컬렉션 이름 변경
+                        batch.update(doc(db, "adv", ad.id), { order: index });
                     }
                 });
                 await batch.commit();
@@ -145,7 +146,7 @@ export const adv_cards = { // 객체명 변경
             
             if (isIframe) {
                 typeIconHTML = `<div class="content-card-type-icon" title="iframe 광고">🔗</div>`;
-                previewHTML = `<div class="content-card-preview ${noMediaClass}">${typeIconHTML}</div>`;
+                previewHTML = `<div class="content-card-preview no-media">${typeIconHTML}</div>`;
             } else {
                 if (ad.mediaUrl) {
                     typeIconHTML = ad.mediaType === 'video' ? `<div class="content-card-type-icon" title="비디오 광고">🎬</div>` : `<div class="content-card-type-icon" title="이미지 광고">🖼️</div>`;
@@ -189,8 +190,11 @@ export const adv_cards = { // 객체명 변경
         const db = getFirestoreDB();
         const id = event.target.dataset.id;
         const isActive = event.target.checked;
-        try { await updateDoc(doc(db, "adv", id), { isActive: isActive }); } catch (error) { // 컬렉션 이름 변경
-            alert("상태 변경에 실패했습니다.");
+        try { 
+            await updateDoc(doc(db, "adv", id), { isActive: isActive });
+            showToast("상태가 변경되었습니다.");
+        } catch (error) {
+            showToast("상태 변경에 실패했습니다.", true);
             event.target.checked = !isActive;
         }
     },
@@ -218,19 +222,19 @@ export const adv_cards = { // 객체명 변경
     resetCardModalState() {
         const btn = this.ui.saveAdButton;
         if(btn) { btn.disabled = false; btn.innerHTML = `저장하기`; btn.classList.remove('button-disabled'); }
-        if(this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0; 
+        if(this.ui.mediaUploadStatus) this.ui.mediaUploadStatus.style.opacity = 0;
         if(this.ui.uploadProgress) this.ui.uploadProgress.textContent = '0%';
-        if(this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%'; 
+        if(this.ui.progressBarFill) this.ui.progressBarFill.style.width = '0%';
         if(this.ui.uploadLabel) this.ui.uploadLabel.textContent = '업로드 중...';
-        if(this.ui.adTitleInput) this.ui.adTitleInput.value = ''; 
-        if(this.ui.adDescriptionInput) this.ui.adDescriptionInput.value = ''; 
+        if(this.ui.adTitleInput) this.ui.adTitleInput.value = '';
+        if(this.ui.adDescriptionInput) this.ui.adDescriptionInput.value = '';
         if(this.ui.adLinkInput) this.ui.adLinkInput.value = '';
-        if(this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.checked = false; 
+        if(this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.checked = false;
         if(this.ui.isMembersOnlyCheckbox) this.ui.isMembersOnlyCheckbox.checked = false;
         if(this.ui.adStartDateInput) this.ui.adStartDateInput.value = '';
-        if(this.ui.adEndDateInput) this.ui.adEndDateInput.value = ''; 
+        if(this.ui.adEndDateInput) this.ui.adEndDateInput.value = '';
         if(this.ui.adMediaFileInput) this.ui.adMediaFileInput.value = '';
-        if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음'; 
+        if(this.ui.fileNameDisplay) this.ui.fileNameDisplay.textContent = '선택된 파일 없음';
         if(this.ui.adPreview) this.ui.adPreview.innerHTML = '';
         if (this.tempPreviewUrl) { URL.revokeObjectURL(this.tempPreviewUrl); this.tempPreviewUrl = null; }
     },
@@ -244,9 +248,9 @@ export const adv_cards = { // 객체명 변경
     
     resetIframeModalState() {
         const btn = this.ui.saveIframeAdButton;
-        if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = ''; 
-        if(this.ui.iframeAdCodeInput) this.ui.iframeAdCodeInput.value = '';
-        if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false; 
+        if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = '';
+        if(this.ui.iframeAdSrcInput) this.ui.iframeAdSrcInput.value = ''; // [v1.1] ID 변경
+        if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false;
         if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
         if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
         if(btn){
@@ -269,7 +273,7 @@ export const adv_cards = { // 객체명 변경
             this.resetIframeModalState();
             this.ui.iframeModalTitle.textContent = "iframe 광고 수정";
             this.ui.iframeAdTitleInput.value = ad.title;
-            this.ui.iframeAdCodeInput.value = ad.iframeCode || '';
+            this.ui.iframeAdSrcInput.value = ad.iframeSrc || ''; // [v1.1] 필드명 변경
             this.ui.iframeIsPartnersCheckbox.checked = ad.isPartners || false;
             this.ui.iframeAdStartDateInput.value = ad.startDate || '';
             this.ui.iframeAdEndDateInput.value = ad.endDate || '';
@@ -298,10 +302,12 @@ export const adv_cards = { // 객체명 변경
         if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
             try {
                 if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
-                await deleteDoc(doc(db, "adv", idToDelete)); // 컬렉션 이름 변경
+                await deleteDoc(doc(db, "adv", idToDelete));
+                showToast("광고가 삭제되었습니다.");
             } catch (error) {
                 if (error.code !== 'storage/object-not-found') { console.error("파일 삭제 중 에러 발생:", error); }
-                await deleteDoc(doc(db, "adv", idToDelete)); // 컬렉션 이름 변경
+                await deleteDoc(doc(db, "adv", idToDelete));
+                showToast("광고가 삭제되었습니다.");
             }
         }
     },
@@ -311,8 +317,8 @@ export const adv_cards = { // 객체명 변경
         const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
             this.ui.mediaUploadStatus.style.opacity = 1;
-            const fileName = `adv_${Date.now()}_${this.selectedMediaFile.name}`; // 폴더명 변경
-            const folder = this.currentMediaType === 'video' ? 'adv_videos' : 'adv_images'; // 폴더명 변경
+            const fileName = `adv_${Date.now()}_${this.selectedMediaFile.name}`;
+            const folder = this.currentMediaType === 'video' ? 'adv_videos' : 'adv_images';
             const storageRef = ref(storage, `${folder}/${fileName}`);
             this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
             this.currentUploadTask.on('state_changed', 
@@ -361,15 +367,16 @@ export const adv_cards = { // 객체명 변경
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
-                await updateDoc(doc(db, "adv", this.editingId), adData); // 컬렉션 이름 변경
+                await updateDoc(doc(db, "adv", this.editingId), adData);
             } else {
-                Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true, isMembersOnly: false });
-                await addDoc(collection(db, "adv"), adData); // 컬렉션 이름 변경
+                Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true });
+                await addDoc(collection(db, "adv"), adData);
             }
             this.ui.adModal.classList.remove('active');
+            showToast("광고가 저장되었습니다.");
         } catch (error) {
             console.error("저장 중 오류 발생:", error);
-            alert("작업에 실패했습니다.");
+            showToast("작업에 실패했습니다.", true);
             btn.disabled = false;
             btn.innerHTML = `저장하기`;
         }
@@ -379,15 +386,15 @@ export const adv_cards = { // 객체명 변경
         await firebaseReady;
         const db = getFirestoreDB();
         const title = this.ui.iframeAdTitleInput.value.trim();
-        const code = this.ui.iframeAdCodeInput.value.trim();
-        if (!title || !code) { alert('제목과 코드를 모두 입력해주세요!'); return; }
+        const src = this.ui.iframeAdSrcInput.value.trim(); // [v1.1] 입력 소스 변경
+        if (!title || !src) { alert('제목과 iframe 주소를 모두 입력해주세요!'); return; }
         const btn = this.ui.saveIframeAdButton;
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
         try {
             const adData = {
                 adType: 'iframe',
                 title: title,
-                iframeCode: code,
+                iframeSrc: src, // [v1.1] 필드명 변경
                 isPartners: this.ui.iframeIsPartnersCheckbox.checked,
                 startDate: this.ui.iframeAdStartDateInput.value,
                 endDate: this.ui.iframeAdEndDateInput.value,
@@ -395,15 +402,16 @@ export const adv_cards = { // 객체명 변경
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: 0, isActive: ad.isActive !== false });
-                await updateDoc(doc(db, "adv", this.editingId), adData); // 컬렉션 이름 변경
+                await updateDoc(doc(db, "adv", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true, isMembersOnly: false });
-                await addDoc(collection(db, "adv"), adData); // 컬렉션 이름 변경
+                await addDoc(collection(db, "adv"), adData);
             }
             this.ui.iframeAdModal.classList.remove('active');
+            showToast("광고가 저장되었습니다.");
         } catch (error) {
             console.error("iframe 광고 저장 중 오류:", error);
-            alert("작업에 실패했습니다.");
+            showToast("작업에 실패했습니다.", true);
             btn.disabled = false;
             btn.innerHTML = '저장하기';
         }
@@ -430,7 +438,7 @@ export const adv_cards = { // 객체명 변경
               <p class="mt-2 text-slate-400 text-sm flex-grow">${description}</p>
               <div class="mt-auto">${partnersText}</div>
               <div class="mt-4 pt-4 border-t border-slate-600 text-right">
-                   <span class="text-sm font-semibold text-emerald-400">자세히 보기 &rarr;</span>
+                  <span class="text-sm font-semibold text-emerald-400">자세히 보기 &rarr;</span>
               </div>
           </div>`;
     },
