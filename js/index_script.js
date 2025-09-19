@@ -1,14 +1,13 @@
-// js/index_script.js v2.3
+// js/index_script.js v2.4 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // ===============================================================
-// 🚀 정부 지원사업 알리미 v2.3
+// 🚀 정부 지원사업 알리미 v2.4
 // ===============================================================
 // [변경점]
-// 1. '지원사업 비교하기' 창에 다크 모드 스타일 적용.
-// 2. 이제 '항목' 헤더가 선명하게 보입니다.
+// 1. iframe 형태의 광고가 정상적으로 표시되도록 로직 추가.
 // ===============================================================
 
 let db;
@@ -57,14 +56,14 @@ document.addEventListener('DOMContentLoaded', startApp);
 
 async function startApp() {
   try {
-      console.log("🚀 [v2.3] 앱 실행 시작!");
+      console.log("🚀 [v2.4] 앱 실행 시작!");
       const response = await fetch('/.netlify/functions/get-firebase-config');
       if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
       const firebaseConfig = await response.json();
       
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      console.log("✅ [v2.3] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+      console.log("✅ [v2.4] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
       await initialize();
   } catch (error) {
@@ -88,7 +87,7 @@ async function initialize() {
     populateFilters();
 
     await firstRenderPromise;
-    console.log("[v2.3] ✅ 첫 화면 렌더링 로직 완료!");
+    console.log("[v2.4] ✅ 첫 화면 렌더링 로직 완료!");
 }
 
 async function loadAdData() {
@@ -109,9 +108,9 @@ async function loadAdData() {
             if (end && now > end) return false;
             return true;
         });
-        console.log(`[v2.3] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
+        console.log(`[v2.4] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
     } catch (error) {
-        console.error("[v2.3] 🔥 광고 데이터 로딩 실패:", error);
+        console.error("[v2.4] 🔥 광고 데이터 로딩 실패:", error);
         adDataList = [];
     }
 }
@@ -142,7 +141,7 @@ async function fetchAndRenderData(isNewSearch = false) {
         query += `&sort=${currentFilters.sort}`;
     }
     
-    console.log(`[v2.3 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
+    console.log(`[v2.4 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
 
     try {
         const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
@@ -220,7 +219,7 @@ async function populateFilters() {
           
           elements.regionSelect.disabled = false;
       } catch(error) {
-          console.error("[v2.3] 🔥 필터 UI 생성 실패", error);
+          console.error("[v2.4] 🔥 필터 UI 생성 실패", error);
           elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
           elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
           elements.regionSelect.disabled = false;
@@ -320,7 +319,7 @@ async function handleAdClick(adId) {
         const adRef = doc(db, "adv", adId);
         await updateDoc(adRef, { clickCount: increment(1) });
     } catch (error) {
-        console.error("[v2.3] 🔥 광고 클릭 카운트 업데이트 실패:", error);
+        console.error("[v2.4] 🔥 광고 클릭 카운트 업데이트 실패:", error);
     }
 }
 
@@ -353,15 +352,27 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        let mediaElement = '';
+        let adContent = '';
+        // ✨ [v2.4] adType에 따라 분기 처리
+        if (item.adType === 'iframe' && item.iframeSrc) {
+            // iframe 광고는 전체 카드를 차지하도록 수정
+            return `
+            <div class.="ad-card ad-iframe-container bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col" style="padding: 0; min-height: 300px;">
+                <iframe src="${item.iframeSrc}" class="w-full h-full flex-grow" frameborder="0" scrolling="no" title="${item.title || 'Advertisement'}"></iframe>
+            </div>`;
+        } 
+        
+        // 이미지 및 비디오 광고 처리
         if (item.mediaUrl) {
-            mediaElement = item.mediaType === 'video'
+            const mediaTag = item.mediaType === 'video'
                 ? `<video autoplay loop muted playsinline src="${item.mediaUrl}"></video>`
                 : `<img src="${item.mediaUrl}" alt="${item.title}" loading="lazy">`;
+            adContent = `<a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block"><div class="ad-media-container">${mediaTag}</div></a>`;
         }
+
         return `
         <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col">
-            <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block"><div class="ad-media-container">${mediaElement}</div></a>
+            ${adContent}
             <div class="p-4 flex-grow flex flex-col">
                 <div class="flex justify-between items-start"><span class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Sponsored</span><span class="text-slate-300 text-xs font-bold rounded-full px-3 py-1 bg-slate-700">AD</span></div>
                 <a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block mt-2 text-lg leading-tight font-bold text-slate-100 hover:text-sky-400">${item.title}</a>
@@ -445,14 +456,13 @@ function updateFavoritesButtonVisibility() { elements.favoritesToggle.classList.
 function showComparisonModal() { 
     const itemsToCompare = allApiDataForUtils.filter(item => comparisonList.includes(item.pbanc_sn));
     const headers = { biz_pbanc_nm: "공고 제목", pbanc_ntrp_nm: "주관 기관", supt_regin: "지원 지역", supt_biz_clsfc: "사업 분야", aply_trgt_ctnt: "신청 대상" }; 
-    // ✨ [v2.3] 다크 모드 테이블 스타일 적용
     let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed"><thead><tr class="bg-slate-700">';
     tableHTML += `<th class="p-2 w-1/5 text-slate-300 font-semibold">항목</th>`;
     itemsToCompare.forEach(item => tableHTML += `<th class="p-2 w-2/5 text-slate-300 font-semibold">${(item.biz_pbanc_nm || '').substring(0, 20)}...</th>`); 
     tableHTML += '</tr></thead><tbody>'; 
     Object.keys(headers).forEach(key => { 
-        tableHTML += `<tr class="border-b border-slate-700"><td class="font-bold p-2 align-top">${headers[key]}</td>`; 
-        itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words">${item[key] || '-'}</td>`); 
+        tableHTML += `<tr class="border-b border-slate-700"><td class="font-bold p-2 align-top text-slate-200">${headers[key]}</td>`; 
+        itemsToCompare.forEach(item => tableHTML += `<td class="p-2 align-top break-words text-slate-300">${item[key] || '-'}</td>`); 
         tableHTML += '</tr>'; 
     }); 
     tableHTML += '</tbody></table></div>'; 
