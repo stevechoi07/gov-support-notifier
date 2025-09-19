@@ -1,13 +1,15 @@
-// js/index_script.js v2.6 iframe광고 view 변경 
+// js/index_script.js v2.6.1
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // ===============================================================
-// 🚀 정부 지원사업 알리미 v2.4
+// 🚀 정부 지원사업 알리미 v2.6.1
 // ===============================================================
 // [변경점]
-// 1. iframe 형태의 광고가 정상적으로 표시되도록 로직 추가.
+// 1. iframe 광고가 PC 레이아웃을 깨뜨리지 않도록 전용 광고 슬롯에 표시.
+// 2. 일반 카드가 12개 이상 표시된 후에 iframe 광고 슬롯이 나타납니다.
+// 3. 누락되었던 변수 및 UI 요소 선언을 수정.
 // ===============================================================
 
 let db;
@@ -21,6 +23,7 @@ let isLoading = false;
 let searchTimeout;
 let renderedItemCount = 0;
 let adIndex = 0;
+let iframeAdRendered = false;
 
 // --- DOM 요소 ---
 const elements = { 
@@ -49,6 +52,7 @@ const elements = {
     keywordAlertModal: document.getElementById('keyword-alert-modal'), 
     keywordAlertContent: document.getElementById('keyword-alert-content'), 
     closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
+    iframeAdSlot: document.getElementById('iframe-ad-slot'),
 };
 
 // --- 앱 시작점 ---
@@ -56,14 +60,14 @@ document.addEventListener('DOMContentLoaded', startApp);
 
 async function startApp() {
   try {
-      console.log("🚀 [v2.4] 앱 실행 시작!");
+      console.log("🚀 [v2.6.1] 앱 실행 시작!");
       const response = await fetch('/.netlify/functions/get-firebase-config');
       if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
       const firebaseConfig = await response.json();
       
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      console.log("✅ [v2.4] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+      console.log("✅ [v2.6.1] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
       await initialize();
   } catch (error) {
@@ -87,7 +91,7 @@ async function initialize() {
     populateFilters();
 
     await firstRenderPromise;
-    console.log("[v2.4] ✅ 첫 화면 렌더링 로직 완료!");
+    console.log("[v2.6.1] ✅ 첫 화면 렌더링 로직 완료!");
 }
 
 async function loadAdData() {
@@ -108,9 +112,9 @@ async function loadAdData() {
             if (end && now > end) return false;
             return true;
         });
-        console.log(`[v2.4] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
+        console.log(`[v2.6.1] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
     } catch (error) {
-        console.error("[v2.4] 🔥 광고 데이터 로딩 실패:", error);
+        console.error("[v2.6.1] 🔥 광고 데이터 로딩 실패:", error);
         adDataList = [];
     }
 }
@@ -123,7 +127,9 @@ async function fetchAndRenderData(isNewSearch = false) {
         currentPage = 1;
         renderedItemCount = 0;
         adIndex = 0;
+        iframeAdRendered = false;
         elements.resultsContainer.innerHTML = '';
+        if(elements.iframeAdSlot) elements.iframeAdSlot.innerHTML = '';
         renderSkeletonUI();
         elements.errorMessage.classList.add('hidden');
     } else {
@@ -141,8 +147,6 @@ async function fetchAndRenderData(isNewSearch = false) {
         query += `&sort=${currentFilters.sort}`;
     }
     
-    console.log(`[v2.4 프론트엔드] 📡 백엔드에 데이터 요청 시작... 조건: ${query}`);
-
     try {
         const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
         if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
@@ -167,22 +171,17 @@ async function fetchAndRenderData(isNewSearch = false) {
     }
 }
 
-// ✨ [v2.6 수정] 광고 삽입 로직 변경
 function appendData(items) {
     let contentToAdd = '';
     const iframeAd = adDataList.find(ad => ad.adType === 'iframe');
+    const cardAds = adDataList.filter(ad => ad.adType !== 'iframe');
 
     items.forEach(item => {
-        // iframe 광고는 일반 목록에 포함하지 않음
-        if (item.isAd && item.adType === 'iframe') return;
-
         contentToAdd += createItemHTML(item);
         if (!item.isAd) {
             renderedItemCount++;
         }
         
-        // 일반 카드형 광고 삽입 로직 (iframe 제외)
-        const cardAds = adDataList.filter(ad => ad.adType !== 'iframe');
         if (cardAds.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
             if (elements.resultsContainer.querySelectorAll('.ad-card').length < Math.floor(renderedItemCount / 7)) {
                 const ad = cardAds[adIndex % cardAds.length];
@@ -195,9 +194,8 @@ function appendData(items) {
     });
     elements.resultsContainer.insertAdjacentHTML('beforeend', contentToAdd);
 
-    // ✨ [v2.6 추가] iframe 광고는 특정 조건에서 전용 슬롯에 렌더링
     if (iframeAd && !iframeAdRendered && renderedItemCount >= 12) {
-        elements.iframeAdSlot.innerHTML = createItemHTML(iframeAd);
+        if(elements.iframeAdSlot) elements.iframeAdSlot.innerHTML = createItemHTML(iframeAd);
         iframeAdRendered = true;
     }
 }
@@ -233,7 +231,7 @@ async function populateFilters() {
           
           elements.regionSelect.disabled = false;
       } catch(error) {
-          console.error("[v2.4] 🔥 필터 UI 생성 실패", error);
+          console.error("[v2.6.1] 🔥 필터 UI 생성 실패", error);
           elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
           elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
           elements.regionSelect.disabled = false;
@@ -333,7 +331,7 @@ async function handleAdClick(adId) {
         const adRef = doc(db, "adv", adId);
         await updateDoc(adRef, { clickCount: increment(1) });
     } catch (error) {
-        console.error("[v2.4] 🔥 광고 클릭 카운트 업데이트 실패:", error);
+        console.error("[v2.6.1] 🔥 광고 클릭 카운트 업데이트 실패:", error);
     }
 }
 
@@ -366,7 +364,6 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        // ✨ [v2.6 수정] iframe 렌더링 시 col-span 제거 (부모가 제어)
         if (item.adType === 'iframe' && item.iframeSrc) {
             return `
             <div class="ad-iframe-container w-full mx-auto my-6" style="max-width: 1200px;">
@@ -376,9 +373,8 @@ function createItemHTML(item) {
                         title="${item.title || 'Advertisement'}">
                 </iframe>
             </div>`;
-        }
-
-        // --- 이미지 및 비디오 광고 처리 (기존과 동일) ---
+        } 
+        
         let adContent = '';
         if (item.mediaUrl) {
             const mediaTag = item.mediaType === 'video'
