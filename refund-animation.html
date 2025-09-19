@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환급왕 섹션 (효과 1+2 결합)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .container-16-9 {
+            width: 90%;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .section {
+            display: flex;
+            width: 85%;
+            height: 80%;
+            gap: 5%;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .application-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        /* --- [변경점!] 줌인 & 슬라이드 업 애니메이션 --- */
+        .obj-ani {
+            opacity: 0;
+            /* Y축 이동과 크기 조절을 결합하여 더 역동적인 효과를 줍니다. */
+            transform: translateY(20px) scale(0.95);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .obj-ani.obj-ani-on {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        
+        .application-box:nth-of-type(1) .obj-ani:nth-of-type(2) { transition-delay: 0.4s; } /* p */
+        .application-box:nth-of-type(1) .obj-ani:nth-of-type(3) { transition-delay: 0.6s; } /* a.btn */
+        .application-box:nth-of-type(2) { transition-delay: 0.8s; } /* phone-box */
+        
+        @keyframes letter-enter {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .text-reveal span {
+            display: inline-block;
+            opacity: 0;
+            animation: letter-enter 0.5s ease-out forwards;
+            animation-delay: calc(var(--i) * 40ms);
+        }
+
+        h2 { 
+            font-size: 1.7vw; /* [변경점!] 요청하신 폰트 사이즈로 수정 */
+            font-weight: 700;
+            margin-top: 0; 
+            margin-bottom: 0.5em; 
+            line-height: 1.4; 
+            color: #333; 
+        }
+        p { 
+            color: #555; 
+            font-size: 1.05vw;
+            line-height: 1.6; 
+        }
+        
+        .btn {
+            background-color: #6a5acd; color: white; border: none;
+            padding: 0.9em 2.5em;
+            border-radius: 12px;
+            font-size: 1.1vw;
+            font-weight: bold;
+            cursor: pointer; text-decoration: none; display: inline-block;
+            align-self: flex-start; margin-top: 1.5em;
+        }
+        .phone {
+            position: relative;
+            max-width: 320px;
+            left: 35%;
+            margin: 0;
+        }
+        .phone img { 
+            width: 100%; 
+            display: block;
+        }
+        .card {
+            position: absolute; 
+            top: 58%;
+            left: -28%;
+            transform: translateY(-50%);
+            background-color: #7965f1;
+            color: white;
+            padding: 5% 7%;
+            border-radius: 18px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+        }
+        .card-title { 
+            font-size: 0.75vw; 
+            font-weight: bold;
+        }
+        .card-money { 
+            font-size: 1.4vw;
+            font-weight: 700;
+            display: block; 
+            margin: 0.4em 0; 
+            white-space: nowrap;
+        }
+        .card-text { 
+            font-size: 0.65vw; 
+            color: rgba(255, 255, 255, 0.9);
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-16-9">
+        <section class="section application-sc">
+            <div class="application-box">
+                <h2 class="section-title text-reveal"> 5분이면 5년간 더 낸 세금 </h2>
+                <h2 class="section-title text-reveal"> 바로 환급 신청 </h2>
+                <p class="text obj-ani"> 5분! '환급왕’ 서비스를 경험해 보세요<br>물 흐르듯 자연스럽게 환급예상금액을 확인할 수 있습니다. </p>
+                <a href="https://cb.refundking.co.kr/requestForRefund" target="_blank" class="btn obj-ani"> 더 낸 세금 돌려 받기 </a>
+            </div>
+            <div class="application-box obj-ani">
+                <div class="phone">
+                    <img src="https://cb.refundking.co.kr/assets/mobile.8122ff28.svg" alt="스마트폰 목업">
+                    <div class="card">
+                        <span class="left">
+                            <span class="card-title">사업자 평균</span>
+                            <span class="card-money"><span class="count" id="refund-amount">0</span>원 환급</span>
+                            <span class="card-text">환급왕을 통해 환급세금을 찾으셨습니다.</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            const textRevealItems = document.querySelectorAll('.text-reveal');
+            textRevealItems.forEach(item => {
+                const text = item.textContent;
+                item.textContent = '';
+                text.split('').forEach((char, index) => {
+                    const span = document.createElement('span');
+                    span.style.setProperty('--i', index);
+                    span.textContent = char;
+                    if (char === ' ') {
+                        span.innerHTML = '&nbsp;';
+                    }
+                    item.appendChild(span);
+                });
+            });
+
+            const animatedItems = document.querySelectorAll('.obj-ani');
+            animatedItems.forEach(item => {
+                item.classList.add('obj-ani-on');
+            });
+
+            const animateCounter = (element, finalNumber, duration) => {
+                let start = null;
+                const step = (timestamp) => {
+                    if (!start) start = timestamp;
+                    const progress = Math.min((timestamp - start) / duration, 1);
+                    const currentNumber = Math.floor(progress * finalNumber);
+                    element.innerText = currentNumber.toLocaleString('ko-KR');
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            };
+
+            setTimeout(() => {
+                const counterElement = document.getElementById('refund-amount');
+                const finalAmount = 9074418;
+                const animationDuration = 2000;
+                animateCounter(counterElement, finalAmount, animationDuration);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
