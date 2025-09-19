@@ -1,4 +1,4 @@
-// js/adv_cards.js v1.2 - iframe 광고에서도 조회수와 클릭수가 표시
+// js/adv_cards.js v1.1 - 'adv' 컬렉션 전용으로 복제 및 수정
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -139,9 +139,10 @@ export const adv_cards = {
         this.ui.adListContainer.innerHTML = this.list.map(ad => {
             const isIframe = ad.adType === 'iframe';
             const clickCount = ad.clickCount || 0;
-            const viewCount = ad.viewCount || 0; // ✨ [v1.2] viewCount 변수 추가
+            const viewCount = ad.viewCount || 0;
             const statusBadge = this.getAdStatus(ad);
             const isChecked = ad.isActive !== false;
+            const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
             let previewHTML = '', typeIconHTML = '';
             
             if (isIframe) {
@@ -167,9 +168,17 @@ export const adv_cards = {
                         <span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>${clickCount}</span>
                     </div>
                     <div class="content-card-actions">
+                        <div class="publish-info">
+                            <label class="toggle-switch"><input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked ? 'checked' : ''}><span class="toggle-slider"></span></label>
+                            <span class="text-sm font-medium ${isChecked ? 'text-emerald-400' : 'text-slate-400'}">${isChecked ? '게시 중' : '비공개'}</span>
                         </div>
+                        <div class="action-buttons">
+                            <button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+                            <button class="delete-ad-button text-red-400 hover:text-red-500" data-id="${ad.id}" title="삭제"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                        </div>
+                    </div>
                 </div>
-                <div class="content-card-drag-handle" title="순서 변경">...</div>
+                <div class="content-card-drag-handle" title="순서 변경"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
             </div>`;
         }).join('');
 
@@ -379,7 +388,7 @@ export const adv_cards = {
         await firebaseReady;
         const db = getFirestoreDB();
         const title = this.ui.iframeAdTitleInput.value.trim();
-        const src = this.ui.iframeAdSrcInput.value.trim(); // [v1.1] 입력 소스 변경
+        const src = this.ui.iframeAdSrcInput.value.trim();
         if (!title || !src) { alert('제목과 iframe 주소를 모두 입력해주세요!'); return; }
         const btn = this.ui.saveIframeAdButton;
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
@@ -387,17 +396,17 @@ export const adv_cards = {
             const adData = {
                 adType: 'iframe',
                 title: title,
-                iframeSrc: src, // [v1.1] 필드명 변경
+                iframeSrc: src,
                 isPartners: this.ui.iframeIsPartnersCheckbox.checked,
                 startDate: this.ui.iframeAdStartDateInput.value,
                 endDate: this.ui.iframeAdEndDateInput.value,
             };
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
-                Object.assign(adData, { order: ad.order, clickCount: 0, isActive: ad.isActive !== false });
+                Object.assign(adData, { order: ad.order, clickCount: 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
                 await updateDoc(doc(db, "adv", this.editingId), adData);
             } else {
-                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true, isMembersOnly: false });
+                Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true, isMembersOnly: false });
                 await addDoc(collection(db, "adv"), adData);
             }
             this.ui.iframeAdModal.classList.remove('active');
