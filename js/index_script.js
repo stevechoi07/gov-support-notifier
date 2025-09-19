@@ -1,4 +1,4 @@
-// js/index_script.js v2.6.1
+// js/index_script.js v2.7
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -171,20 +171,23 @@ async function fetchAndRenderData(isNewSearch = false) {
     }
 }
 
+// ✨ [v2.7 수정] 광고 삽입 로직을 다시 통합
 function appendData(items) {
     let contentToAdd = '';
-    const iframeAd = adDataList.find(ad => ad.adType === 'iframe');
-    const cardAds = adDataList.filter(ad => ad.adType !== 'iframe');
-
     items.forEach(item => {
         contentToAdd += createItemHTML(item);
         if (!item.isAd) {
             renderedItemCount++;
         }
         
-        if (cardAds.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
-            if (elements.resultsContainer.querySelectorAll('.ad-card').length < Math.floor(renderedItemCount / 7)) {
-                const ad = cardAds[adIndex % cardAds.length];
+        // 모든 광고(카드형, iframe)를 7번째 공고마다 삽입
+        if (adDataList.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
+            // 이전에 삽입된 광고 수를 세어, 중복 삽입을 방지
+            const existingAdCount = Math.floor(renderedItemCount / 7);
+            const renderedAdCount = elements.resultsContainer.querySelectorAll('.ad-card').length + (contentToAdd.match(/ad-card/g) || []).length;
+
+            if (renderedAdCount < existingAdCount) {
+                const ad = adDataList[adIndex % adDataList.length];
                 if (ad) {
                    contentToAdd += createItemHTML(ad);
                    adIndex++;
@@ -193,11 +196,6 @@ function appendData(items) {
         }
     });
     elements.resultsContainer.insertAdjacentHTML('beforeend', contentToAdd);
-
-    if (iframeAd && !iframeAdRendered && renderedItemCount >= 12) {
-        if(elements.iframeAdSlot) elements.iframeAdSlot.innerHTML = createItemHTML(iframeAd);
-        iframeAdRendered = true;
-    }
 }
 
 async function populateFilters() {
@@ -364,16 +362,16 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
+        // ✨ [v2.7 수정] iframe 광고를 다른 카드와 동일한 스타일의 '액자'에 담도록 변경
         if (item.adType === 'iframe' && item.iframeSrc) {
             return `
-            <div class="ad-iframe-container w-full mx-auto my-6" style="max-width: 1200px;">
+            <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col p-0">
                 <iframe src="${item.iframeSrc}" 
-                        style="width: 100%; aspect-ratio: 16 / 9; border: none; border-radius: 0.75rem;"
-                        class="shadow-lg"
+                        style="width: 100%; height: 100%; aspect-ratio: 4 / 3; border: none; min-height: 350px;"
                         title="${item.title || 'Advertisement'}">
                 </iframe>
             </div>`;
-        } 
+        }
         
         let adContent = '';
         if (item.mediaUrl) {
