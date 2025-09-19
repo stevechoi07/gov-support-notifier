@@ -167,17 +167,25 @@ async function fetchAndRenderData(isNewSearch = false) {
     }
 }
 
+// ✨ [v2.6 수정] 광고 삽입 로직 변경
 function appendData(items) {
     let contentToAdd = '';
+    const iframeAd = adDataList.find(ad => ad.adType === 'iframe');
+
     items.forEach(item => {
+        // iframe 광고는 일반 목록에 포함하지 않음
+        if (item.isAd && item.adType === 'iframe') return;
+
         contentToAdd += createItemHTML(item);
         if (!item.isAd) {
             renderedItemCount++;
         }
         
-        if (adDataList.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
+        // 일반 카드형 광고 삽입 로직 (iframe 제외)
+        const cardAds = adDataList.filter(ad => ad.adType !== 'iframe');
+        if (cardAds.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
             if (elements.resultsContainer.querySelectorAll('.ad-card').length < Math.floor(renderedItemCount / 7)) {
-                const ad = adDataList[adIndex % adDataList.length];
+                const ad = cardAds[adIndex % cardAds.length];
                 if (ad) {
                    contentToAdd += createItemHTML(ad);
                    adIndex++;
@@ -186,6 +194,12 @@ function appendData(items) {
         }
     });
     elements.resultsContainer.insertAdjacentHTML('beforeend', contentToAdd);
+
+    // ✨ [v2.6 추가] iframe 광고는 특정 조건에서 전용 슬롯에 렌더링
+    if (iframeAd && !iframeAdRendered && renderedItemCount >= 12) {
+        elements.iframeAdSlot.innerHTML = createItemHTML(iframeAd);
+        iframeAdRendered = true;
+    }
 }
 
 async function populateFilters() {
@@ -352,10 +366,10 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        // ✨ [v2.5 수정] iframe 광고일 경우, 템플릿 없이 iframe만 렌더링
+        // ✨ [v2.6 수정] iframe 렌더링 시 col-span 제거 (부모가 제어)
         if (item.adType === 'iframe' && item.iframeSrc) {
             return `
-            <div class="ad-card ad-iframe-container col-span-1 md:col-span-2 lg:col-span-3 w-full mx-auto" style="max-width: 1200px;">
+            <div class="ad-iframe-container w-full mx-auto my-6" style="max-width: 1200px;">
                 <iframe src="${item.iframeSrc}" 
                         style="width: 100%; aspect-ratio: 16 / 9; border: none; border-radius: 0.75rem;"
                         class="shadow-lg"
