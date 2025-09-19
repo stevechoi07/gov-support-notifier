@@ -1,17 +1,18 @@
-// js/index_script.js v2.8
+// js/index_script.js v2.7
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // ===============================================================
-// 🚀 정부 지원사업 알리미 v2.8
+// 🚀 정부 지원사업 알리미 v2.6.1
 // ===============================================================
 // [변경점]
-// 1. Intersection Observer를 사용한 광고 조회수(viewCount) 추적 기능 추가.
+// 1. iframe 광고가 PC 레이아웃을 깨뜨리지 않도록 전용 광고 슬롯에 표시.
+// 2. 일반 카드가 12개 이상 표시된 후에 iframe 광고 슬롯이 나타납니다.
+// 3. 누락되었던 변수 및 UI 요소 선언을 수정.
 // ===============================================================
 
 let db;
-let adViewObserver; // 광고 뷰 감지기 변수
 
 // --- 상태 관리 변수 ---
 let favorites = [], comparisonList = [], alertKeywords = [], seenItems = [], allApiDataForUtils = [], adDataList = [];
@@ -22,6 +23,7 @@ let isLoading = false;
 let searchTimeout;
 let renderedItemCount = 0;
 let adIndex = 0;
+let iframeAdRendered = false;
 
 // --- DOM 요소 ---
 const elements = { 
@@ -50,6 +52,7 @@ const elements = {
     keywordAlertModal: document.getElementById('keyword-alert-modal'), 
     keywordAlertContent: document.getElementById('keyword-alert-content'), 
     closeKeywordAlertButton: document.getElementById('close-keyword-alert-button'),
+    iframeAdSlot: document.getElementById('iframe-ad-slot'),
 };
 
 // --- 앱 시작점 ---
@@ -57,14 +60,14 @@ document.addEventListener('DOMContentLoaded', startApp);
 
 async function startApp() {
   try {
-      console.log("🚀 [v2.8] 앱 실행 시작!");
+      console.log("🚀 [v2.6.1] 앱 실행 시작!");
       const response = await fetch('/.netlify/functions/get-firebase-config');
       if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
       const firebaseConfig = await response.json();
       
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      console.log("✅ [v2.8] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
+      console.log("✅ [v2.6.1] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
 
       await initialize();
   } catch (error) {
@@ -73,7 +76,6 @@ async function startApp() {
 }
 
 async function initialize() {
-    setupAdViewObserver(); // 광고 뷰 감지기 초기 설정
     addEventListeners();
     
     await loadAdData();
@@ -89,38 +91,7 @@ async function initialize() {
     populateFilters();
 
     await firstRenderPromise;
-    console.log("[v2.8] ✅ 첫 화면 렌더링 로직 완료!");
-}
-
-function setupAdViewObserver() {
-    const options = {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.5 // 50% 이상 보였을 때 감지
-    };
-
-    adViewObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const adCard = entry.target;
-                const adId = adCard.dataset.adId;
-                if (adId) {
-                    updateAdViewCount(adId);
-                    observer.unobserve(adCard); // 한번 감지되면 더 이상 추적하지 않음
-                }
-            }
-        });
-    }, options);
-}
-
-async function updateAdViewCount(adId) {
-    try {
-        const adRef = doc(db, "adv", adId);
-        await updateDoc(adRef, { viewCount: increment(1) });
-        console.log(`[v2.8] 📢 광고 조회수 업데이트 성공: ${adId}`);
-    } catch (error) {
-        console.error("[v2.8] 🔥 광고 조회수 업데이트 실패:", error);
-    }
+    console.log("[v2.6.1] ✅ 첫 화면 렌더링 로직 완료!");
 }
 
 async function loadAdData() {
@@ -141,9 +112,9 @@ async function loadAdData() {
             if (end && now > end) return false;
             return true;
         });
-        console.log(`[v2.8] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
+        console.log(`[v2.6.1] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
     } catch (error) {
-        console.error("[v2.8] 🔥 광고 데이터 로딩 실패:", error);
+        console.error("[v2.6.1] 🔥 광고 데이터 로딩 실패:", error);
         adDataList = [];
     }
 }
@@ -156,7 +127,9 @@ async function fetchAndRenderData(isNewSearch = false) {
         currentPage = 1;
         renderedItemCount = 0;
         adIndex = 0;
+        iframeAdRendered = false;
         elements.resultsContainer.innerHTML = '';
+        if(elements.iframeAdSlot) elements.iframeAdSlot.innerHTML = '';
         renderSkeletonUI();
         elements.errorMessage.classList.add('hidden');
     } else {
@@ -198,45 +171,31 @@ async function fetchAndRenderData(isNewSearch = false) {
     }
 }
 
+// ✨ [v2.7 수정] 광고 삽입 로직을 다시 통합
 function appendData(items) {
-    const fragment = document.createDocumentFragment();
+    let contentToAdd = '';
     items.forEach(item => {
-        const cardHtml = createItemHTML(item);
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = cardHtml.trim();
-        const cardElement = tempDiv.firstChild;
-        if (cardElement) {
-            fragment.appendChild(cardElement);
-        }
-
+        contentToAdd += createItemHTML(item);
         if (!item.isAd) {
             renderedItemCount++;
         }
         
-        const cardAds = adDataList.filter(ad => ad.adType !== 'iframe');
-        if (cardAds.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
+        // 모든 광고(카드형, iframe)를 7번째 공고마다 삽입
+        if (adDataList.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
+            // 이전에 삽입된 광고 수를 세어, 중복 삽입을 방지
             const existingAdCount = Math.floor(renderedItemCount / 7);
-            const renderedAdCountInFragment = Array.from(fragment.querySelectorAll('.ad-card')).length;
-            const totalRenderedAdCount = elements.resultsContainer.querySelectorAll('.ad-card').length + renderedAdCountInFragment;
+            const renderedAdCount = elements.resultsContainer.querySelectorAll('.ad-card').length + (contentToAdd.match(/ad-card/g) || []).length;
 
-            if (totalRenderedAdCount < existingAdCount) {
-                const ad = cardAds[adIndex % cardAds.length];
+            if (renderedAdCount < existingAdCount) {
+                const ad = adDataList[adIndex % adDataList.length];
                 if (ad) {
-                   const adHtml = createItemHTML(ad);
-                   const adTempDiv = document.createElement('div');
-                   adTempDiv.innerHTML = adHtml.trim();
-                   if (adTempDiv.firstChild) fragment.appendChild(adTempDiv.firstChild);
+                   contentToAdd += createItemHTML(ad);
                    adIndex++;
                 }
             }
         }
     });
-    
-    fragment.querySelectorAll('.ad-card').forEach(adCard => {
-        if (adViewObserver) adViewObserver.observe(adCard);
-    });
-
-    elements.resultsContainer.appendChild(fragment);
+    elements.resultsContainer.insertAdjacentHTML('beforeend', contentToAdd);
 }
 
 async function populateFilters() {
@@ -270,7 +229,7 @@ async function populateFilters() {
           
           elements.regionSelect.disabled = false;
       } catch(error) {
-          console.error("[v2.8] 🔥 필터 UI 생성 실패", error);
+          console.error("[v2.6.1] 🔥 필터 UI 생성 실패", error);
           elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
           elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
           elements.regionSelect.disabled = false;
@@ -370,7 +329,7 @@ async function handleAdClick(adId) {
         const adRef = doc(db, "adv", adId);
         await updateDoc(adRef, { clickCount: increment(1) });
     } catch (error) {
-        console.error("[v2.8] 🔥 광고 클릭 카운트 업데이트 실패:", error);
+        console.error("[v2.6.1] 🔥 광고 클릭 카운트 업데이트 실패:", error);
     }
 }
 
@@ -403,16 +362,16 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
+        // ✨ [v2.7 수정] iframe 광고를 다른 카드와 동일한 스타일의 '액자'에 담도록 변경
         if (item.adType === 'iframe' && item.iframeSrc) {
             return `
-            <div class="ad-card ad-iframe-container col-span-1 md:col-span-2 lg:col-span-3 w-full mx-auto" data-ad-id="${item.id}" style="max-width: 1200px;">
+            <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col p-0">
                 <iframe src="${item.iframeSrc}" 
-                        style="width: 100%; aspect-ratio: 16 / 9; border: none; border-radius: 0.75rem;"
-                        class="shadow-lg"
+                        style="width: 100%; height: 100%; aspect-ratio: 4 / 3; border: none; min-height: 350px;"
                         title="${item.title || 'Advertisement'}">
                 </iframe>
             </div>`;
-        } 
+        }
         
         let adContent = '';
         if (item.mediaUrl) {
@@ -423,7 +382,7 @@ function createItemHTML(item) {
         }
 
         return `
-        <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col" data-ad-id="${item.id}">
+        <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col">
             ${adContent}
             <div class="p-4 flex-grow flex flex-col">
                 <div class="flex justify-between items-start"><span class="text-sm font-semibold text-slate-400 uppercase tracking-wide">Sponsored</span><span class="text-slate-300 text-xs font-bold rounded-full px-3 py-1 bg-slate-700">AD</span></div>
