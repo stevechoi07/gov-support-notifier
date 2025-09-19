@@ -1,4 +1,4 @@
-// js/index_script.js v2.8
+// js/index_script.js v2.9 iframe무전기 설치
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -329,6 +329,44 @@ function addEventListeners() {
       elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
       elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
 
+// ✨ [v2.9 추가] iframe으로부터 오는 신호(무전)를 수신하는 리스너
+    window.addEventListener('message', (event) => {
+        // 보안을 위해 신호를 보낸 곳(iframe의 도메인)이 내가 허용한 곳인지 확인합니다.
+        // 예를 들어, 내 광고 페이지가 'https://my-ads.netlify.app'에 있다면 아래와 같이 설정합니다.
+        // if (event.origin !== 'https://my-ads.netlify.app') {
+        //     return; 
+        // }
+        
+        // 우리가 약속한 신호("iframe-ad-clicked")가 맞는지 확인합니다.
+        if (event.data === 'iframe-ad-clicked') {
+            console.log('메인 페이지: iframe으로부터 클릭 신호 수신!');
+
+            // 신호를 보낸 iframe 요소를 찾습니다.
+            const iframes = document.querySelectorAll('iframe');
+            let clickedAdId = null;
+            
+            for (const iframe of iframes) {
+                // event.source는 신호를 보낸 iframe의 window 객체입니다.
+                // iframe.contentWindow와 비교하여 어떤 iframe인지 찾아냅니다.
+                if (iframe.contentWindow === event.source) {
+                    // 해당 iframe의 부모 요소(ad-card)에서 data-id를 가져옵니다.
+                    const adCard = iframe.closest('.ad-card');
+                    if (adCard) {
+                        clickedAdId = adCard.dataset.id;
+                    }
+                    break;
+                }
+            }
+            
+            // ID를 찾았다면, 기존의 클릭 핸들러 함수를 호출합니다.
+            if (clickedAdId) {
+                handleAdClick(clickedAdId);
+            } else {
+                console.warn('클릭 신호를 보낸 iframe의 광고 ID를 찾을 수 없습니다.');
+            }
+        }
+    });
+	
       document.addEventListener('click', function(event) {
           if (elements.collapsibleFilters.classList.contains('expanded')) {
               const isClickInsideHeader = elements.stickyHeaderContainer.contains(event.target);

@@ -124,13 +124,14 @@
         
         <a href="https://cb.refundking.co.kr/requestForRefund" 
            target="_blank" 
-           class="cta-button">
+           id="refund-cta-button" class="cta-button">
             더 낸 세금 돌려 받기
         </a>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- 기존 숫자 카운팅 애니메이션 코드 ---
             const animateCounter = (element, finalNumber, duration) => {
                 let start = null;
                 const step = (timestamp) => {
@@ -150,6 +151,20 @@
                 const finalAmount = 9074418;
                 const animationDuration = 2000;
                 animateCounter(counterElement, finalAmount, animationDuration);
+            }
+
+            // --- ✨ 무전기 장착 코드 ---
+            // 1. 신호를 보낼 버튼을 ID로 선택합니다.
+            const ctaButton = document.getElementById('refund-cta-button');
+
+            // 2. 버튼이 존재하면 클릭 이벤트를 감지합니다.
+            if (ctaButton) {
+                ctaButton.addEventListener('click', () => {
+                    console.log('iframe 광고 페이지: 클릭 발생! 부모 페이지에 신호를 보냅니다.');
+                    
+                    // 3. 부모 페이지(관제탑)로 'iframe-ad-clicked'라는 무전 신호를 보냅니다.
+                    parent.postMessage('iframe-ad-clicked', '*');
+                });
             }
         });
     </script>
