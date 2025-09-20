@@ -1,4 +1,4 @@
-// js/layoutManager.js v2.13 - handleAddContentClick 함수 export 누락 수정
+// js/layoutManager.js (v2.14 - 콘텐츠 추가 모달에 썸네일 완벽 적용)
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
@@ -24,19 +24,31 @@ function renderLayoutList(contents) {
         return;
     }
     const sortedContents = currentLayoutIds.map(id => contents.find(c => c.id === id)).filter(Boolean);
+    
+    // ✨ [수정] 렌더링 로직에도 썸네일 정보를 반영하도록 개선
     layoutListContainer.innerHTML = sortedContents.map(content => {
         const isPage = !content.adType;
         const isStory = isPage && content.components?.some(c => c.type === 'scene');
         const typeLabel = isStory ? '✨ 스토리' : (isPage ? '📄 페이지' : '🗂️ 카드');
         const typeColor = isStory ? 'bg-pink-500/20 text-pink-400' : (isPage ? 'bg-sky-500/20 text-sky-400' : 'bg-amber-500/20 text-amber-400');
-        const previewImage = content.mediaUrl || content.pageSettings?.bgImage || '';
+        
+        let previewImageUrl = null;
+        if(isStory) {
+            const firstScene = content.components.find(c => c.type === 'scene');
+            previewImageUrl = firstScene?.sceneSettings?.bgImage;
+        } else if (isPage) {
+            previewImageUrl = content.pageSettings?.thumbnailUrl || content.pageSettings?.bgImage;
+        } else { // card
+            previewImageUrl = content.thumbnailUrl || content.mediaUrl;
+        }
+
         const previewBgColor = isPage ? (content.pageSettings?.bgColor || '#1e2d3b') : '#1e2d3b';
         const statsHtml = `<div class="flex items-center gap-4 text-xs text-slate-400 mt-2"><span class="flex items-center" title="노출 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${(content.viewCount ?? 0).toLocaleString()}</span><span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M22 14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.7a2 2 0 0 1 1.4.6l5.8 5.8a2 2 0 0 1 .6 1.4V14Z"/><path d="m14 14-4-4"/><path d="M10 14h4v-4"/></svg>${(content.clickCount ?? 0).toLocaleString()}</span></div>`;
         
         return `
             <div class="layout-item flex items-center bg-slate-800 rounded-lg p-3 gap-4 shadow-sm" data-id="${content.id}">
                 <div class="drag-handle cursor-move text-slate-600 hover:text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg></div>
-                <div class="w-24 h-14 bg-cover bg-center rounded-md" style="background-color: ${previewBgColor}; ${previewImage ? `background-image: url('${previewImage}')` : ''}"></div>
+                <div class="w-24 h-14 bg-cover bg-center rounded-md" style="background-color: ${previewBgColor}; ${previewImageUrl ? `background-image: url('${previewImageUrl}')` : ''}"></div>
                 <div class="flex-1 overflow-hidden">
                     <div class="flex justify-between items-start">
                         <h4 class="font-bold text-slate-200 truncate" title="${content.title || content.name}">${content.title || content.name}</h4>
@@ -60,21 +72,73 @@ function setupModalListeners() { modalElements.closeButton?.addEventListener('cl
 function switchTab(tabName) { modalElements.tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabName)); modalElements.tabContents.forEach(content => content.classList.toggle('active', content.id.includes(tabName))); }
 async function addItemToLayout(contentId) { await firebaseReady; const db = getFirestoreDB(); if (!db) { showToast("데이터베이스 연결에 실패했습니다.", "error"); return; } try { const layoutRef = doc(db, "layouts", "mainLayout"); await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) }); showToast('콘텐츠가 레이아웃에 추가되었습니다.'); } catch (error) { console.error("레이아웃에 아이템 추가 실패:", error); showToast("아이템 추가에 실패했습니다.", "error"); const button = document.querySelector(`.add-button[data-id="${contentId}"]`); if(button) { button.disabled = false; button.textContent = '추가'; } } }
 
-// ✨ [핵심 수정] export 키워드를 추가합니다.
+// ✨ [핵심 수정] 썸네일 표시 로직을 handleAddContentClick 함수에 통합
 export async function handleAddContentClick() {
     await Promise.all([pagesReady, cardsReady]);
+
+    const getThumbnailHtml = (item, type) => {
+        let thumbnailUrl = null;
+        let mediaTypeIcon = '';
+
+        if (type === 'page') {
+            const settings = item.pageSettings || {};
+            const isStory = item.components?.some(c => c.type === 'scene');
+            
+            if (isStory) {
+                const firstScene = item.components.find(c => c.type === 'scene');
+                thumbnailUrl = firstScene?.sceneSettings?.bgImage;
+                mediaTypeIcon = '✨';
+            } else if (settings.bgVideo) {
+                thumbnailUrl = settings.thumbnailUrl;
+                mediaTypeIcon = '🎬';
+            } else {
+                thumbnailUrl = settings.bgImage;
+                mediaTypeIcon = '🖼️';
+            }
+        } else { // card
+            if (item.mediaType === 'video') {
+                thumbnailUrl = item.thumbnailUrl;
+                mediaTypeIcon = '🎬';
+            } else {
+                thumbnailUrl = item.mediaUrl;
+                mediaTypeIcon = '🖼️';
+            }
+        }
+
+        if (thumbnailUrl) {
+            return `<div class="preview" style="background-image: url('${thumbnailUrl}')"><span class="media-type-icon">${mediaTypeIcon}</span></div>`;
+        }
+        
+        // 썸네일이 없을 경우 기본 아이콘
+        if (type === 'page') mediaTypeIcon = '📄';
+        if (type === 'card') mediaTypeIcon = '🗂️';
+        return `<div class="preview"><span class="media-type-icon">${mediaTypeIcon}</span></div>`;
+    };
+
     modalElements.pagesListContainer.innerHTML = pagesList.map(page => {
         const isAdded = currentLayoutIds.includes(page.id);
-        const previewImage = page.pageSettings?.bgImage || '';
-        const previewBgColor = page.pageSettings?.bgColor || '#334155';
-        return ` <div class="add-content-item"> <div class="item-info"> <div class="preview" style="background-color: ${previewBgColor}; ${previewImage ? `background-image: url('${previewImage}')` : ''}"></div> <span class="title">${page.name}</span> </div> <button class="add-button" data-id="${page.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? '추가됨' : '추가'}</button> </div>`;
+        return `
+            <div class="add-content-item">
+                <div class="item-info">
+                    ${getThumbnailHtml(page, 'page')}
+                    <span class="title">${page.name}</span>
+                </div>
+                <button class="add-button" data-id="${page.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? '추가됨' : '추가'}</button>
+            </div>`;
     }).join('') || `<p class="text-slate-500 text-center py-4">추가할 페이지가 없습니다.</p>`;
+
     modalElements.cardsListContainer.innerHTML = cards.list.map(card => {
         const isAdded = currentLayoutIds.includes(card.id);
-        const previewImage = card.mediaUrl || '';
-        const previewBgColor = '#334155';
-        return ` <div class="add-content-item"> <div class="item-info"> <div class="preview" style="background-color: ${previewBgColor}; ${previewImage ? `background-image: url('${previewImage}')` : ''}"></div> <span class="title">${card.title}</span> </div> <button class="add-button" data-id="${card.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? '추가됨' : '추가'}</button> </div>`;
+        return `
+            <div class="add-content-item">
+                <div class="item-info">
+                    ${getThumbnailHtml(card, 'card')}
+                    <span class="title">${card.title}</span>
+                </div>
+                <button class="add-button" data-id="${card.id}" ${isAdded ? 'disabled' : ''}>${isAdded ? '추가됨' : '추가'}</button>
+            </div>`;
     }).join('') || `<p class="text-slate-500 text-center py-4">추가할 카드가 없습니다.</p>`;
+
     switchTab('pages');
     modalElements.modal.classList.add('active');
 }
