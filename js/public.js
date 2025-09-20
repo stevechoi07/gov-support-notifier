@@ -1,4 +1,4 @@
-// js/public.js v7.8 - 동적 하이라이트 기능 정상화
+// js/public.js v8.0 - 페이지네이션 및 진정한 무한 스크롤 구현
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -6,11 +6,18 @@ import { showToast } from './ui.js';
 
 let swiperInstance = null;
 let storyTimer = null;
-let allContent = [];
-let loadedContentIndex = 0;
-const INITIAL_LOAD_COUNT = 3;
+
+// [v8.0 수정] 전체 콘텐츠를 저장하는 대신, 페이지 상태를 관리합니다.
+let allContentForStoryLookup = []; // 스토리 뷰어용 데이터는 계속 누적 저장
+let currentPage = 1;
+let totalItems = 0;
+let isLoadingMore = false;
+const ITEMS_PER_PAGE = 5; // 한 번에 불러올 아이템 수
 
 let isSubscribed = !!localStorage.getItem('vip-pass');
+
+// [v8.0 수정] 하이라이트 감시자를 관리하기 위한 변수
+let highlightObserver = null;
 
 const allPossibleFormFields = [ 
     { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, 
@@ -26,8 +33,8 @@ function stylesToString(styles = {}) {
         .join(' ');
 }
 
-function assignMediaCardIndices(contentList) {
-    let mediaCardCounter = 0;
+function assignMediaCardIndices(contentList, startIndex = 0) {
+    let mediaCardCounter = startIndex;
     return contentList.map(content => {
         const isTrueMediaCard = content.adType && content.adType !== 'subscription-form' && content.adType !== 'iframe';
         if (isTrueMediaCard) {
@@ -277,9 +284,14 @@ function renderAllContent(contents, append = false) {
         return `<div class="${layoutClass}" ${staggerAttr}>${finalHtml}</div>`;
 
     }).join('');
-
+    
+    const trigger = document.getElementById('load-more-trigger');
+    
     if (append) {
+        // 추가 로드 시에는 트리거를 잠시 떼었다가 다시 붙입니다.
+        if (trigger) trigger.remove();
         container.insertAdjacentHTML('beforeend', contentHtml);
+        if (trigger) container.appendChild(trigger);
     } else {
         container.innerHTML = contentHtml;
     }
@@ -288,16 +300,49 @@ function renderAllContent(contents, append = false) {
     setupHighlightObserver();
 }
 
-function loadMoreContent() {
-    if (loadedContentIndex >= allContent.length) {
+// [v8.0 수정] 더 많은 콘텐츠를 서버에서 불러오는 함수
+async function loadMoreContent() {
+    if (isLoadingMore) return; // 중복 로딩 방지
+
+    const loadedElementCount = document.querySelectorAll('#content-container > [data-stagger]').length;
+    if (loadedElementCount >= totalItems) {
         console.log("All content loaded.");
+        const trigger = document.getElementById('load-more-trigger');
+        if (trigger) trigger.remove();
         return;
     }
+
+    isLoadingMore = true;
+    currentPage++;
+
+    console.log(`🚀 Loading page ${currentPage}...`);
     
-    const nextContentsToRender = allContent.slice(loadedContentIndex, loadedContentIndex + INITIAL_LOAD_COUNT);
-    
-    renderAllContent(nextContentsToRender, true);
-    loadedContentIndex += INITIAL_LOAD_COUNT;
+    try {
+        const response = await fetch(`/.netlify/functions/get-content-paginated?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
+        if (!response.ok) throw new Error(`추가 콘텐츠 로딩 실패! (상태: ${response.status})`);
+        
+        const { data: newContent } = await response.json();
+
+        if (newContent && newContent.length > 0) {
+            // 스토리 뷰어용 데이터 누적
+            allContentForStoryLookup = [...allContentForStoryLookup, ...newContent];
+            // 새 콘텐츠에 미디어 카드 인덱스 할당
+            const lastMediaIndex = Math.max(-1, ...allContentForStoryLookup.filter(c => typeof c.mediaCardIndex !== 'undefined').map(c => c.mediaCardIndex));
+            const processedNewContent = assignMediaCardIndices(newContent, lastMediaIndex + 1);
+            
+            renderAllContent(processedNewContent, true); // 기존 콘텐츠에 이어서 렌더링
+        } else {
+             // 더 이상 불러올 콘텐츠가 없음
+            const trigger = document.getElementById('load-more-trigger');
+            if (trigger) trigger.remove();
+        }
+
+    } catch (error) {
+        console.error("🔥 Error loading more content:", error);
+        currentPage--; // 실패 시 페이지 번호 원상 복구
+    } finally {
+        isLoadingMore = false;
+    }
 }
 
 function handleParallaxScroll() {
@@ -336,13 +381,13 @@ async function track(contentId, contentType, fieldToIncrement) {
 
 function setupHighlightObserver() {
     const trackedImpressions = new Set();
+    
+    if (highlightObserver) highlightObserver.disconnect();
 
-    const observer = new IntersectionObserver((entries) => {
+    highlightObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // [v7.8 수정] 디버깅 코드 제거, 모든 기기에서 is-visible 클래스 추가
                 entry.target.classList.add('is-visible');
-                
                 const { id, type } = entry.target.dataset;
                 if (id && !trackedImpressions.has(id)) {
                     track(id, type, 'viewCount');
@@ -357,54 +402,50 @@ function setupHighlightObserver() {
     });
 
     const targets = document.querySelectorAll('[data-observe-target]');
-    targets.forEach(target => observer.observe(target));
+    targets.forEach(target => highlightObserver.observe(target));
 }
 
 
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
     const loadingIndicator = document.getElementById('loading-indicator');
-    
     const loadingProgress = document.getElementById('loading-progress');
     
     if (loadingIndicator) loadingIndicator.style.display = 'flex';
     
     let progress = 0;
     const progressInterval = setInterval(() => {
-        progress += 1;
-        if (progress <= 100) {
-            if (loadingProgress) loadingProgress.textContent = `${progress}%`;
-        } else {
-            clearInterval(progressInterval);
-        }
+        progress = Math.min(progress + 1, 100);
+        if (loadingProgress) loadingProgress.textContent = `${progress}%`;
+        if (progress >= 100) clearInterval(progressInterval);
     }, 20);
 
-    console.log("🚀 Public page script loaded. Fetching all content...");
+    console.log("🚀 Public page script loaded. Fetching first page...");
 
     try {
-        const response = await fetch('/.netlify/functions/get-content');
+        const response = await fetch(`/.netlify/functions/get-content-paginated?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
         if (!response.ok) {
             throw new Error(`콘텐츠 로딩 실패! (상태: ${response.status})`);
         }
-        allContent = await response.json();
-        console.log("🎉 Total content received:", allContent.length);
+        
+        const { data: initialContent, totalItems: serverTotalItems } = await response.json();
+        totalItems = serverTotalItems;
+        console.log("🎉 First page received:", initialContent.length, "| Total items:", totalItems);
 
-        allContent = assignMediaCardIndices(allContent);
+        allContentForStoryLookup = [...initialContent];
+        const processedInitialContent = assignMediaCardIndices(initialContent);
 
         clearInterval(progressInterval);
         if (loadingIndicator) loadingIndicator.style.display = 'none';
 
-        const initialContents = allContent.slice(0, INITIAL_LOAD_COUNT);
-        renderAllContent(initialContents);
-        loadedContentIndex = INITIAL_LOAD_COUNT;
+        renderAllContent(processedInitialContent);
         
-        if (allContent.length > INITIAL_LOAD_COUNT) {
+        if (processedInitialContent.length < totalItems) {
             setupLoadMoreTrigger();
         }
     } catch (error) {
         console.error("🔥 An error occurred:", error);
         clearInterval(progressInterval);
-
         if (loadingIndicator) loadingIndicator.style.display = 'none';
         
         if (container) {
@@ -423,11 +464,7 @@ function setupLoadMoreTrigger() {
 
     const observer = new IntersectionObserver(async (entries) => {
         if (entries[0].isIntersecting) {
-            loadMoreContent();
-            if (loadedContentIndex >= allContent.length) {
-                observer.unobserve(trigger);
-                trigger.remove();
-            }
+            await loadMoreContent();
         }
     }, { threshold: 1.0 });
 
@@ -470,7 +507,7 @@ document.addEventListener('click', async (event) => {
     const storyLauncher = event.target.closest('.story-launcher');
     if (storyLauncher) {
         const pageId = storyLauncher.dataset.storyPageId;
-        const pageData = allContent.find(p => p.id === pageId);
+        const pageData = allContentForStoryLookup.find(p => p.id === pageId);
         if(pageData) {
             launchStoryViewer(pageData);
         }
@@ -521,11 +558,12 @@ document.addEventListener('submit', async (event) => {
             if (result.token) {
                 localStorage.setItem('vip-pass', result.token);
                 isSubscribed = true;
+                
+                // 페이지 전체를 다시 렌더링하여 잠금 해제된 콘텐츠를 보여줍니다.
+                currentPage = 1;
+                document.getElementById('content-container').innerHTML = '';
+                renderPublicPage();
             }
-            
-            renderAllContent(allContent, false); 
-            const trigger = document.getElementById('load-more-trigger');
-            if (trigger) trigger.remove();
 
         } catch (error) {
             showToast(error.message, 'error');
