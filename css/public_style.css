@@ -1,4 +1,4 @@
-/* css/public_style.css v5.9 - '약' 레이아웃 텍스트 줄임 규칙 강화 */
+/* css/public_style.css v6.0 - '약' 레이아웃 수직 정렬 패딩 조정 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -157,14 +157,16 @@ body {
 .layout-default .card { display: flex; flex-direction: row; align-items: center; }
 .layout-default .card-media-wrapper { flex: 0 0 150px; border-radius: 8px; height: 100px; }
 .layout-default .card-media-wrapper img, .layout-default .card-media-wrapper video { height: 100%; object-fit: cover; }
-.layout-default .card-content { padding-left: 1.5rem; }
+.layout-default .card-content { 
+    padding: 0 0 0 1.5rem; /* [v6.0 수정] 상하 여백 제거 */
+}
 .layout-default .card-content h2 {
     font-size: 1.3rem;
-    -webkit-line-clamp: 1; /* [v5.9 수정] '약' 레이아웃 제목은 1줄로 제한 */
+    -webkit-line-clamp: 1; 
 }
 .layout-default .card-content p {
     font-size: 0.95rem;
-    -webkit-line-clamp: 2; /* [v5.9 수정] '약' 레이아웃 설명은 2줄로 제한 */
+    -webkit-line-clamp: 2; 
 }
 
 
