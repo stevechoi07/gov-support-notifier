@@ -1,4 +1,4 @@
-// js/cards.js (v3.2 - 안정적인 이전 업로드 로직으로 복원)
+// js/cards.js (v3.3 - 메타데이터 방식 최종 수정본)
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -333,7 +333,10 @@ export const cards = {
         if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
             try {
                 if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
-                if (adToDelete.thumbnailUrl) { await deleteObject(ref(storage, adToDelete.thumbnailUrl)); }
+                if (adToDelete.thumbnailUrl) { 
+                    const thumbRef = ref(storage, adToDelete.thumbnailUrl);
+                    await deleteObject(thumbRef);
+                }
                 await deleteDoc(doc(db, "ads", idToDelete));
             } catch (error) {
                 if (error.code !== 'storage/object-not-found') { console.error("파일 삭제 중 에러 발생:", error); }
@@ -342,7 +345,7 @@ export const cards = {
         }
     },
 
-    async uploadMediaFile() {
+    async uploadMediaFile(docId, collectionName) {
         await firebaseReady;
         const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
@@ -350,7 +353,15 @@ export const cards = {
             const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
             const folder = this.currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
             const storageRef = ref(storage, `${folder}/${fileName}`);
-            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
+            
+            const metadata = {
+                customMetadata: {
+                    'firestoreDocId': docId,
+                    'firestoreCollection': collectionName
+                }
+            };
+
+            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile, metadata);
             this.currentUploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -374,6 +385,14 @@ export const cards = {
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
         try {
             let mediaUrlToSave = this.currentMediaUrl;
+            
+            let docRef;
+            if (this.editingId) {
+                docRef = doc(db, "ads", this.editingId);
+            } else {
+                docRef = doc(collection(db, "ads"));
+            }
+
             if (this.selectedMediaFile) {
                 if (this.editingId && this.currentMediaUrl) {
                     const storage = getFirebaseStorage();
@@ -385,9 +404,10 @@ export const cards = {
                         }
                     } catch (e) { console.warn("Could not delete old file(s):", e.message); }
                 }
-                mediaUrlToSave = await this.uploadMediaFile();
+                mediaUrlToSave = await this.uploadMediaFile(docRef.id, 'ads');
                 this.ui.uploadLabel.textContent = '업로드 완료!';
             }
+            
             const adData = {
                 adType: 'card',
                 title: this.ui.adTitleInput.value,
@@ -400,13 +420,18 @@ export const cards = {
                 startDate: this.ui.adStartDateInput.value,
                 endDate: this.ui.adEndDateInput.value,
             };
+
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
-                await updateDoc(doc(db, "ads", this.editingId), adData);
+                // When editing, we don't want to overwrite a potentially existing thumbnailUrl if the file wasn't changed
+                if (!this.selectedMediaFile && ad.thumbnailUrl) {
+                    adData.thumbnailUrl = ad.thumbnailUrl;
+                }
+                await updateDoc(docRef, adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true });
-                await addDoc(collection(db, "ads"), adData);
+                await setDoc(docRef, adData);
             }
             this.ui.adModal.classList.remove('active');
         } catch (error) {

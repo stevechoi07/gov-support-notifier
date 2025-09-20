@@ -1,4 +1,4 @@
-// functions/index.js (v2.4 - 페이지 썸네일 지원)
+// functions/index.js (v2.6 - 메타데이터 방식 최종 수정본)
 
 const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const { logger } = require("firebase-functions");
@@ -25,6 +25,9 @@ exports.generateThumbnail = onObjectFinalized(
     const fileBucket = event.data.bucket;
     const filePath = event.data.name;
     const contentType = event.data.contentType;
+    const customMetadata = event.data.metadata?.customMetadata || {};
+    const docId = customMetadata.firestoreDocId;
+    const collectionName = customMetadata.firestoreCollection;
 
     if (!contentType.startsWith("video/")) {
       logger.log("This is not a video.");
@@ -34,8 +37,12 @@ exports.generateThumbnail = onObjectFinalized(
       logger.log("This is already a thumbnail.");
       return;
     }
+    if (!docId || !collectionName) {
+      logger.warn("Required metadata (firestoreDocId, firestoreCollection) not found. Exiting.", { metadata: event.data.metadata });
+      return;
+    }
 
-    logger.log(`Processing video: ${filePath}`);
+    logger.log(`Processing video: ${filePath} for document: ${collectionName}/${docId}`);
 
     const bucket = getStorage().bucket(fileBucket);
     const fileName = path.basename(filePath);
@@ -43,15 +50,6 @@ exports.generateThumbnail = onObjectFinalized(
     const thumbnailFileName = `thumb_${path.parse(fileName).name}.jpg`;
     const tempThumbnailPath = path.join(os.tmpdir(), thumbnailFileName);
     const finalThumbnailPath = `thumbnails/${thumbnailFileName}`;
-    
-    // ✨ 파일 이름에서 타임스탬프(고유 ID)를 계속 사용합니다.
-    const timestampMatch = fileName.match(/_(\d{13})_/);
-    if (!timestampMatch) {
-        logger.log(`Filename ${fileName} does not contain a timestamp. Exiting.`);
-        return;
-    }
-    const timestamp = timestampMatch[1];
-    logger.log(`Extracted timestamp ${timestamp} from filename.`);
 
     try {
       await bucket.file(filePath).download({ destination: tempFilePath });
@@ -81,49 +79,24 @@ exports.generateThumbnail = onObjectFinalized(
       });
       logger.log("Optimized thumbnail uploaded to", finalThumbnailPath);
       
-      const [thumbnailUrl] = await thumbnailFile.getSignedUrl({
-          action: 'read',
-          expires: '03-09-2491'
-      });
+      await thumbnailFile.makePublic();
+      const thumbnailUrl = `https://storage.googleapis.com/${fileBucket}/${finalThumbnailPath}`;
+      logger.log("Thumbnail made public. URL:", thumbnailUrl);
 
       const db = getFirestore();
-      // ✨ 검색할 컬렉션 목록에 'pages'를 추가합니다.
-      const collectionsToSearch = ["ads", "adv", "pages"];
-      let documentFound = false;
-
-      for (const collectionName of collectionsToSearch) {
-        const querySnapshot = await db.collection(collectionName).get();
-
-        for (const doc of querySnapshot.docs) {
-            const data = doc.data();
-            let urlToCompare = null;
-            
-            // ✨ 컬렉션에 따라 비교할 URL 필드를 다르게 설정합니다.
-            if (collectionName === "pages") {
-                urlToCompare = data.pageSettings?.bgVideo;
-            } else {
-                urlToCompare = data.mediaUrl;
-            }
-
-            if (urlToCompare && urlToCompare.includes(timestamp)) {
-                // ✨ pages 컬렉션일 경우 pageSettings 객체를 업데이트합니다.
-                if (collectionName === "pages") {
-                    const newPageSettings = { ...data.pageSettings, thumbnailUrl: thumbnailUrl };
-                    await doc.ref.update({ pageSettings: newPageSettings });
-                } else {
-                    await doc.ref.update({ thumbnailUrl: thumbnailUrl });
-                }
-                
-                logger.log(`Firestore document ${collectionName}/${doc.id} updated with thumbnail URL.`);
-                documentFound = true;
-                break; 
-            }
-        }
-        if(documentFound) break;
+      const docRef = db.collection(collectionName).doc(docId);
+      
+      if (collectionName === "pages") {
+          const docSnapshot = await docRef.get();
+          if (docSnapshot.exists) {
+              const pageSettings = docSnapshot.data().pageSettings || {};
+              const newPageSettings = { ...pageSettings, thumbnailUrl: thumbnailUrl };
+              await docRef.update({ pageSettings: newPageSettings });
+          }
+      } else {
+          await docRef.update({ thumbnailUrl: thumbnailUrl });
       }
-      if(!documentFound) {
-        logger.warn(`No Firestore document found in any collection containing timestamp ${timestamp}`);
-      }
+      logger.log(`Firestore document ${collectionName}/${docId} updated successfully.`);
 
     } catch (error) {
       logger.error("Error generating thumbnail:", error);
