@@ -1,4 +1,4 @@
-/* css/public_style.css v4.0 - 약 스타일 추가 */
+/* css/public_style.css v2.8 토스트 알림 메시지 스타일 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -18,53 +18,17 @@ body {
     line-height: 1.6;
 }
 
-/* ================================== */
-/* ✨ 동적 레이아웃 시스템 v3.0 ✨ */
-/* ================================== */
-
-/* 1. 콘텐츠 컨테이너를 Flexbox로 설정 */
 #content-container {
-    display: flex;
-    flex-wrap: wrap; /* 자식 요소들이 너비를 초과하면 다음 줄로 넘어가도록 설정 */
-    gap: 2.5rem; /* 기존 margin-bottom 값을 간격으로 사용 */
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem 1rem;
 }
 
-/* 2. 레이아웃 클래스별 너비 지정 */
-.layout-full,
-.layout-hero,
-.layout-default {
-    width: 100%;
-}
-
-.layout-medium {
-    /* 2.5rem gap의 절반인 1.25rem을 빼줌 */
-    width: calc(50% - 1.25rem);
-}
-
-/* 3. 모바일 화면을 위한 반응형 디자인 */
-@media (max-width: 768px) {
-    #content-container {
-        gap: 1.5rem; /* 모바일에서는 간격 살짝 줄임 */
-    }
-
-    .layout-medium {
-        width: 100%; /* 화면이 768px보다 작으면, medium 카드도 100% 너비를 차지 */
-    }
-}
-
-
-/* ================================== */
-/* ✨ 기존 컴포넌트 스타일 ✨ */
-/* ================================== */
-
 .card,
 .page-section {
     background-color: var(--chzzk-container-bg);
     border-radius: 12px;
-    margin-bottom: 0; /* ✨ 레이아웃 시스템의 gap으로 대체되었으므로 0으로 변경 */
+    margin-bottom: 2.5rem;
     border: 1px solid var(--chzzk-border);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     transform-style: preserve-3d;
@@ -122,30 +86,98 @@ body {
 .swiper-slide { background-size: cover; background-position: center; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px 30px; }
 
 /* --- 스켈레톤 UI 스타일 --- */
-.skeleton-card { background-color: var(--chzzk-container-bg); border-radius: 12px; margin-bottom: 0; /* ✨ 레이아웃 시스템의 gap으로 대체되었으므로 0으로 변경 */ border: 1px solid var(--chzzk-border); padding: 1.5rem; }
+.skeleton-card { background-color: var(--chzzk-container-bg); border-radius: 12px; margin-bottom: 2.5rem; border: 1px solid var(--chzzk-border); padding: 1.5rem; }
 .skeleton-image { width: 100%; height: 200px; background-color: #2a2a2f; border-radius: 8px; margin-bottom: 1.5rem; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .skeleton-text { height: 20px; width: 90%; background-color: #2a2a2f; border-radius: 4px; margin-bottom: 1rem; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .skeleton-text.short { width: 60%; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
 
-/* --- 구독 폼 카드 스타일 (v1.2 기준으로 통합) --- */
+/* --- 구독 폼 카드 스타일 --- */
 .subscription-card {
-    background-color: #1E1E1E;
+    background: #2a2a2f;
+    padding: 2rem;
+    text-align: center;
+}
+.subscription-card h2 {
+    color: var(--chzzk-text-primary);
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+.subscription-card p {
+    color: var(--chzzk-text-secondary);
+    margin: 0.5rem 0 1.5rem 0;
+}
+.subscription-form {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 400px;
+    margin: 0 auto;
+}
+.subscription-form input {
+    flex-grow: 1;
+    border: 1px solid var(--chzzk-border);
+    background-color: var(--chzzk-bg);
+    color: var(--chzzk-text-primary);
+    padding: 0.75rem;
+    border-radius: 8px;
+    outline: none;
+}
+.subscription-form input:focus {
+    border-color: var(--chzzk-accent);
+}
+.subscription-form button {
+    background-color: var(--chzzk-accent);
+    color: var(--chzzk-bg);
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.subscription-form button:hover {
+    background-color: #00e090;
+}
+
+/* --- 멤버 전용 잠금 화면 스타일 --- */
+.members-only-lock {
+    padding: 3rem 2rem;
+    text-align: center;
+    border-style: dashed;
+    border-color: var(--chzzk-border);
+}
+.members-only-lock h2 {
+    color: var(--chzzk-text-primary);
+    font-size: 1.5rem;
+}
+.members-only-lock p {
+    color: var(--chzzk-text-secondary);
+    margin-top: 0.5rem;
+}
+
+
+/* =============================================== */
+/* ✨ [v1.2] 뉴스레터 구독 폼 색상 및 스타일 업데이트 ✨ */
+/* =============================================== */
+
+/* 구독 카드 전체 스타일 (이미지 톤에 맞춤) */
+.subscription-card {
+    background-color: #1E1E1E; /* 더 깊은 어두운 배경색 */
     border-radius: 12px;
     padding: 24px;
-    border: 1px solid #4b5563;
-    text-align: left; /* ✨ 변경: 전체 콘텐츠 왼쪽 정렬 */
+    text-align: center;
+    border: 1px solid #4b5563; /* 테두리 색상 변경 */
 }
 
 .subscription-card h2 {
     font-size: 22px;
     font-weight: bold;
-    color: var(--chzzk-text-primary); /* ✨ 변경: CSS 변수 사용으로 통일성 확보 */
+    color: #f9fafb; /* 밝은 텍스트 색상 */
     margin-bottom: 8px;
 }
 
 .subscription-card p {
-    color: var(--chzzk-text-secondary); /* ✨ 변경: 더 밝은 회색 변수로 변경하여 가독성 확보 */
+    color: #9ca3af; /* 회색 톤 설명 텍스트 */
     margin-bottom: 20px;
 }
 
@@ -162,37 +194,32 @@ body {
     padding: 14px;
     font-size: 16px;
     border-radius: 8px;
-    border: none;
+    border: none; /* 테두리 제거 */
 }
 
-/* 입력창 스타일 */
+/* 입력창 스타일 (이미지 참조) */
 .subscription-form input[type="email"] {
-    background-color: #f9fafb;
-    color: #111827;
+    background-color: #f9fafb; /* 밝은 배경색 */
+    color: #111827; /* 어두운 글자색 */
 }
-
-/* ✨ 추가: 입력창 플레이스홀더 색상 지정 */
-.subscription-form input[type="email"]::placeholder {
-  color: #6b7280; /* 너무 어둡지 않은 회색으로 설정 */
-}
-
 /* 입력창 포커스 시 테두리 효과 */
 .subscription-form input[type="email"]:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 255, 163, 0.5); /* ✨ 변경: 테두리 색상을 포인트 색상으로 변경 */
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.5); 
 }
 
-/* 버튼 스타일 */
+
+/* 버튼 스타일 (이미지 참조) */
 .subscription-form button {
-    background-color: var(--chzzk-accent); /* ✨ 변경: CSS 변수 사용 */
-    color: var(--chzzk-bg); /* ✨ 변경: CSS 변수 사용 */
+    background-color: #14b8a6; /* 생생한 청록색 */
+    color: white;
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .subscription-form button:hover {
-    filter: brightness(1.1); /* ✨ 변경: 기존 색상에서 더 밝아지는 효과 */
+    background-color: #0d9488;
 }
 
 /* 데스크탑 화면에서는 가로로 배치 (화면 너비 640px 이상) */
@@ -209,73 +236,91 @@ body {
     }
 }
 
-/* --- 토스트 알림 메시지 스타일 (v1.3) --- */
+/* ================================== */
+/* ✨ [v1.3] 토스트 알림 메시지 스타일 ✨ */
+/* ================================== */
 .toast-notification {
-    position: fixed;
-    bottom: 20px;
+    position: fixed; /* 화면에 고정 */
+    bottom: 20px; /* 아래쪽에서 20px */
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%); /* 가운데 정렬 */
     padding: 12px 24px;
     border-radius: 8px;
     color: white;
     font-weight: 500;
-    z-index: 1000;
+    z-index: 1000; /* 다른 요소들 위에 표시 */
     opacity: 1;
     transition: opacity 0.5s ease, transform 0.5s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-	white-space: nowrap;
-    max-width: 90vw;
-    box-sizing: border-box;
-    text-align: center;
-}
-.toast-notification.success {
-    background-color: #10b981;
-}
-.toast-notification.error {
-    background-color: #ef4444;
-}
-.toast-notification.fade-out {
-    opacity: 0;
-    transform: translateX(-50%) translateY(20px);
+	white-space: nowrap; /* 1. 절대로 줄바꿈하지 않도록 설정 */
+    max-width: 90vw;     /* 2. 너비가 화면의 90%를 넘지 않도록 제한 */
+    box-sizing: border-box; /* 3. 패딩을 포함해서 너비를 계산하도록 설정 */
+    text-align: center;  /* 4. 텍스트를 중앙 정렬 */
 }
 
-/* --- 멤버 전용 콘텐츠 미리보기 효과 스타일 (v1.5) --- */
+.toast-notification.success {
+    background-color: #10b981; /* 성공 (초록색) */
+}
+
+.toast-notification.error {
+    background-color: #ef4444; /* 에러 (빨간색) */
+}
+
+.toast-notification.fade-out {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px); /* 아래로 사라지는 효과 */
+}
+
+/* ============================================== */
+/* ✨ [v1.5] 멤버 전용 콘텐츠 미리보기 효과 스타일 ✨ */
+/* ============================================== */
+
+/* 1. 전체를 감싸는 래퍼 */
 .locked-content-wrapper {
-    position: relative;
-    overflow: hidden;
+    position: relative; /* 자식 요소(오버레이)의 위치 기준점 */
+    overflow: hidden; /* 모서리가 둥글게 잘리도록 설정 */
     border-radius: 12px;
-    margin-bottom: 0; /* ✨ 레이아웃 시스템의 gap으로 대체되었으므로 0으로 변경 */
 }
-.is-blurred > * {
-    filter: blur(8px);
-    transform: scale(1.05);
-    pointer-events: none;
-    user-select: none;
+
+/* 2. 블러 효과를 적용할 콘텐츠 */
+.is-blurred > * { /* 내부의 카드나 페이지 섹션에 직접 효과 적용 */
+    filter: blur(8px); /* 흐릿하게 만드는 블러 효과 */
+    transform: scale(1.05); /* 약간 확대해서 가장자리가 어색하지 않게 */
+    pointer-events: none; /* 블러 처리된 콘텐츠는 클릭할 수 없도록 설정 */
+    user-select: none; /* 텍스트를 선택할 수 없도록 설정 */
 }
+
+/* 3. 블러 위에 올라갈 오버레이 */
 .locked-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.5); /* 반투명 검은색 배경 */
+    
+    /* 내용물을 중앙에 배치 */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
     padding: 20px;
+    
     color: white;
 }
+
 .locked-overlay h3 {
     font-size: 20px;
     font-weight: bold;
     margin-bottom: 8px;
 }
+
 .locked-overlay p {
     font-size: 14px;
     margin-bottom: 16px;
 }
+
 .locked-overlay .subscribe-button-overlay {
     background-color: #14b8a6;
     color: white;
@@ -286,55 +331,8 @@ body {
     cursor: pointer;
     transition: background-color 0.2s;
 }
+
 .locked-overlay .subscribe-button-overlay:hover {
     background-color: #0d9488;
 }
-
-/* ================================== */
-/* ✨ '약' (Default) 레이아웃 스타일 ✨ */
-/* ================================== */
-
-/* '약' 레이아웃의 카드는 가로로 배치되도록 설정 */
-.layout-default .card {
-    display: flex;
-    flex-direction: row; /* 가로 방향으로 */
-    align-items: center; /* 세로 중앙 정렬 */
-}
-
-/* 이미지(미디어) 영역 스타일 */
-.layout-default .card-media-wrapper {
-    flex: 0 0 150px; /* 너비를 150px로 고정하고 늘어나거나 줄어들지 않음 */
-    border-radius: 8px;
-    height: 100px;
-}
-.layout-default .card-media-wrapper img, 
-.layout-default .card-media-wrapper video {
-    height: 100%;
-    object-fit: cover; /* 이미지가 영역에 꽉 차도록 설정 */
-}
-
-/* 콘텐츠(텍스트) 영역 스타일 */
-.layout-default .card-content {
-    padding-left: 1.5rem; /* 이미지와의 간격 확보 */
-}
-.layout-default .card-content h2 {
-    font-size: 1.1rem; /* 제목 폰트 살짝 작게 */
-}
-.layout-default .card-content p {
-    font-size: 0.9rem; /* 설명 폰트 살짝 작게 */
-}
-
-
-/* 모바일 화면에서는 다시 세로로 쌓이도록 설정 */
-@media (max-width: 500px) {
-    .layout-default .card {
-        flex-direction: column; /* 세로 방향으로 */
-        align-items: stretch;
-    }
-    
-    .layout-default .card-media-wrapper {
-        flex-basis: auto; /* 너비 고정 해제 */
-        width: 100%;
-        height: auto;
-    }
-}
+/* 이전에 여기에 불필요한 닫는 괄호 '}'가 있었습니다. 이제 수정되었습니다. */
