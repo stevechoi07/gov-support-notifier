@@ -1,4 +1,4 @@
-// js/public.js v7.7 - 디버깅: 모바일에서 is-visible 클래스 추가 기능 비활성화
+// js/public.js v7.8 - 동적 하이라이트 기능 정상화
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -340,10 +340,8 @@ function setupHighlightObserver() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // [v7.7 수정] 모바일 화면(폭 768px 이하)에서는 is-visible 클래스를 추가하지 않음
-                if (window.innerWidth > 768) {
-                    entry.target.classList.add('is-visible');
-                }
+                // [v7.8 수정] 디버깅 코드 제거, 모든 기기에서 is-visible 클래스 추가
+                entry.target.classList.add('is-visible');
                 
                 const { id, type } = entry.target.dataset;
                 if (id && !trackedImpressions.has(id)) {
@@ -351,7 +349,6 @@ function setupHighlightObserver() {
                     trackedImpressions.add(id);
                 }
             } else {
-                // 화면에서 사라지면 항상 클래스를 제거하는 것이 안전합니다.
                 entry.target.classList.remove('is-visible');
             }
         });
