@@ -1,4 +1,4 @@
-/* css/public_style.css v3.1.1 - news form pc보이기 수정 */
+/* css/public_style.css v4.0 - 제미니 로딩 인디케이터 도입 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -57,7 +57,6 @@ body {
 
 .card,
 .page-section, 
-.skeleton-card, 
 .locked-content-wrapper {
     margin-bottom: 0; 
 }
@@ -122,12 +121,49 @@ body {
 .story-nav.next { right: 0; }
 .swiper-slide { background-size: cover; background-position: center; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px 30px; }
 
-/* --- 스켈레톤 UI 스타일 --- */
-.skeleton-card { background-color: var(--chzzk-container-bg); border-radius: 12px; border: 1px solid var(--chzzk-border); padding: 1.5rem; }
-.skeleton-image { width: 100%; height: 200px; background-color: #2a2a2f; border-radius: 8px; margin-bottom: 1.5rem; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-.skeleton-text { height: 20px; width: 90%; background-color: #2a2a2f; border-radius: 4px; margin-bottom: 1rem; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-.skeleton-text.short { width: 60%; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+/* ================================== */
+/* ✨ 제미니 스타일 로딩 인디케이터 ✨ */
+/* ================================== */
+
+#loading-indicator {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 50vh;
+    gap: 1.5rem;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #89B3F7, #A189F7);
+    border-radius: 30%;
+    animation: gemini-spin 2s ease-in-out infinite;
+}
+
+#loading-progress {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+@keyframes gemini-spin {
+    0% {
+        transform: rotate(0deg) scale(1);
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        transform: rotate(180deg) scale(1.1);
+        border-radius: 50%;
+    }
+    100% {
+        transform: rotate(360deg) scale(1);
+        filter: hue-rotate(360deg);
+    }
+}
+
 
 /* --- 구독 폼 카드 스타일 (기존 버전 유지) --- */
 .subscription-card {
@@ -180,7 +216,6 @@ body {
 }
 
 @media (min-width: 640px) {
-    /* 기존 폼 스타일 (변경 없음) */
     .subscription-form {
         flex-direction: row;
     }
@@ -191,26 +226,21 @@ body {
         width: auto;
         flex-shrink: 0;
     }
-
-    /* ✨ [수정] PC 화면에서 구독 카드를 두 줄로 만들기 */
     .subscription-card {
-        display: flex; /* 플렉스 컨테이너로 설정 */
-        flex-wrap: wrap; /* 자식 요소들이 줄바꿈 되도록 설정 */
-        justify-content: center; /* 가운데 정렬 */
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
     }
-    
     .subscription-card h2,
     .subscription-card p {
-        flex-basis: 100%; /* 첫 번째 줄의 텍스트들이 너비 100%를 차지하게 함 */
-        text-align: center; /* 텍스트 가운데 정렬 */
+        flex-basis: 100%;
+        text-align: center;
     }
-    
     .subscription-card h2 {
-        margin-right: 0; /* 기존 여백 제거 */
+        margin-right: 0;
     }
-
     .subscription-form {
-        margin-top: 1rem; /* ✨ 추가: 텍스트와 폼 사이의 간격 */
+        margin-top: 1rem;
     }
 }
 
