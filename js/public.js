@@ -1,4 +1,4 @@
-// js/public.js (v7.2 - 버튼 하단 정렬 기능 추가)
+// js/public.js (v7.3 - 고객 정보 블록 렌더링 및 제출 기능 추가)
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -11,6 +11,15 @@ let loadedContentIndex = 0;
 const INITIAL_LOAD_COUNT = 3;
 
 let isSubscribed = !!localStorage.getItem('vip-pass');
+
+// ✨ editor.js와 동일한 필드 목록을 추가하여 폼을 정확하게 렌더링합니다.
+const allPossibleFormFields = [ 
+    { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, 
+    { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, 
+    { name: 'phone', label: '전화번호', type: 'tel', placeholder: '전화번호를 입력하세요' }, 
+    { name: 'birthdate', label: '생년월일', type: 'date', placeholder: '' }, 
+    { name: 'gender', label: '성별', type: 'text', placeholder: '성별을 입력하세요' } 
+];
 
 function stylesToString(styles = {}) {
     return Object.entries(styles)
@@ -29,7 +38,6 @@ function assignMediaCardIndices(contentList) {
         return content;
     });
 }
-
 
 function launchStoryViewer(pageContent) {
     const viewer = document.querySelector('.story-viewer');
@@ -143,10 +151,32 @@ function renderAllContent(contents, append = false, startIndex = 0) {
                         elementHtml = `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
                         break;
                     case 'paragraph': 
-                        elementHtml = `<p class="page-component" style="${componentStyle}">${component.content}</h1>`;
+                        elementHtml = `<p class="page-component" style="${componentStyle}">${component.content}</p>`;
                         break;
                     case 'button': 
                         elementHtml = `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
+                        break;
+                    case 'lead-form':
+                        const formStyles = component.styles || {};
+                        let formFieldsHtml = (allPossibleFormFields.filter(field => component.activeFields?.includes(field.name)) || []).map(field => `
+                            <div class="lead-form-group">
+                                <input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" required class="lead-form-input">
+                            </div>
+                        `).join('');
+
+                        if (component.privacy?.enabled) {
+                            formFieldsHtml += `
+                                <div class="lead-form-privacy">
+                                    <input type="checkbox" id="privacy-${component.id}" required>
+                                    <label for="privacy-${component.id}">${component.privacy.text}</label>
+                                </div>`;
+                        }
+                        
+                        elementHtml = `
+                            <form class="lead-form" style="${componentStyle}" data-script-url="${component.googleScriptUrl || ''}" data-success-message="${component.successMessage || '제출되었습니다.'}">
+                                ${formFieldsHtml}
+                                <button type="submit" class="lead-form-submit" style="background-color: ${formStyles.submitButtonColor || '#1877f2'};">${component.submitText || '제출'}</button>
+                            </form>`;
                         break;
                     default: 
                         elementHtml = '';
@@ -240,14 +270,7 @@ function renderAllContent(contents, append = false, startIndex = 0) {
     if (append) {
         containerToAppend.insertAdjacentHTML('beforeend', contentHtml);
     } else {
-        const loadingIndicator = containerToAppend.querySelector('#loading-indicator');
-        if (loadingIndicator) {
-             containerToAppend.innerHTML = '';
-             containerToAppend.appendChild(loadingIndicator);
-             containerToAppend.insertAdjacentHTML('beforeend', contentHtml);
-        } else {
-            containerToAppend.innerHTML = contentHtml;
-        }
+        containerToAppend.innerHTML = contentHtml;
     }
 
     setupIntersectionObserver();
@@ -474,10 +497,12 @@ document.addEventListener('click', async (event) => {
     }
 });
 
+// ✨ [핵심 수정] 폼 제출 이벤트 리스너를 확장하여 lead-form도 처리하도록 함
 document.addEventListener('submit', async (event) => {
-    if (event.target.classList.contains('subscription-form')) {
+    const form = event.target;
+    // 뉴스레터 구독 폼 처리
+    if (form.classList.contains('subscription-form')) {
         event.preventDefault();
-        const form = event.target;
         const input = form.querySelector('input[type="email"]');
         const button = form.querySelector('button');
         const email = input.value;
@@ -504,12 +529,11 @@ document.addEventListener('submit', async (event) => {
                 isSubscribed = true;
             }
             
+            // 콘텐츠 새로고침
             const contentResponse = await fetch('/.netlify/functions/get-content');
             allContent = await contentResponse.json();
             allContent = assignMediaCardIndices(allContent);
-            
             renderAllContent(allContent, false);
-
             loadedContentIndex = allContent.length;
             const trigger = document.getElementById('load-more-trigger');
             if (trigger) trigger.remove();
@@ -518,6 +542,41 @@ document.addEventListener('submit', async (event) => {
             showToast(error.message, 'error');
             button.disabled = false;
             button.textContent = '구독하기';
+        }
+    } 
+    // 고객 정보(lead) 폼 처리
+    else if (form.classList.contains('lead-form')) {
+        event.preventDefault();
+        const scriptUrl = form.dataset.scriptUrl;
+        const successMessage = form.dataset.successMessage;
+        if (!scriptUrl) {
+            showToast('폼 제출 URL이 설정되지 않았습니다.', 'error');
+            return;
+        }
+
+        const button = form.querySelector('button[type="submit"]');
+        const originalButtonText = button.textContent;
+        button.disabled = true;
+        button.textContent = '전송 중...';
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(scriptUrl, {
+                method: 'POST',
+                body: formData,
+                mode: 'no-cors' // Google Script 웹 앱은 보통 no-cors 모드가 필요
+            });
+            
+            // no-cors 모드에서는 응답을 직접 확인할 수 없으므로, 요청이 보내진 것으로 간주하고 성공 처리
+            showToast(successMessage, 'success');
+            form.reset();
+
+        } catch (error) {
+            console.error('Lead form submission error:', error);
+            showToast('제출 중 오류가 발생했습니다.', 'error');
+        } finally {
+            button.disabled = false;
+            button.textContent = originalButtonText;
         }
     }
 });
