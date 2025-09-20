@@ -1,4 +1,4 @@
-/* css/public_style.css v6.1 - 날짜 선택(Date Picker) 필드 스타일 수정 */
+/* css/public_style.css v6.2 - 날짜 필드 시각적 너비 보정 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -274,10 +274,11 @@ body {
     color: #6b7280;
 }
 
-/* [v6.1 추가] 날짜 선택 필드 스타일 */
+/* 날짜 선택 필드 스타일 */
 .lead-form-input[type="date"] {
     color-scheme: dark;
     color: #FFFFFF;
+    padding-right: 8px; /* [v6.2 수정] 아이콘 공간 확보를 위한 오른쪽 여백 조정 */
 }
 
 .lead-form-privacy {
