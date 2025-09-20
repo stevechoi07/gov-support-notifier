@@ -1,4 +1,4 @@
-// js/public.js v7.6 - 로딩 진행률(%) 표시 기능 복원
+// js/public.js v7.7 - 디버깅: 모바일에서 is-visible 클래스 추가 기능 비활성화
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -340,13 +340,18 @@ function setupHighlightObserver() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('is-visible');
+                // [v7.7 수정] 모바일 화면(폭 768px 이하)에서는 is-visible 클래스를 추가하지 않음
+                if (window.innerWidth > 768) {
+                    entry.target.classList.add('is-visible');
+                }
+                
                 const { id, type } = entry.target.dataset;
                 if (id && !trackedImpressions.has(id)) {
                     track(id, type, 'viewCount');
                     trackedImpressions.add(id);
                 }
             } else {
+                // 화면에서 사라지면 항상 클래스를 제거하는 것이 안전합니다.
                 entry.target.classList.remove('is-visible');
             }
         });
@@ -363,12 +368,10 @@ async function renderPublicPage() {
     const container = document.getElementById('content-container');
     const loadingIndicator = document.getElementById('loading-indicator');
     
-    // [v7.6 추가] 로딩 진행률 표시를 위한 요소 선택
     const loadingProgress = document.getElementById('loading-progress');
     
     if (loadingIndicator) loadingIndicator.style.display = 'flex';
     
-    // [v7.6 추가] 로딩 진행률 타이머 로직
     let progress = 0;
     const progressInterval = setInterval(() => {
         progress += 1;
@@ -391,7 +394,7 @@ async function renderPublicPage() {
 
         allContent = assignMediaCardIndices(allContent);
 
-        clearInterval(progressInterval); // [v7.6 추가] 성공 시 타이머 정지
+        clearInterval(progressInterval);
         if (loadingIndicator) loadingIndicator.style.display = 'none';
 
         const initialContents = allContent.slice(0, INITIAL_LOAD_COUNT);
@@ -403,7 +406,8 @@ async function renderPublicPage() {
         }
     } catch (error) {
         console.error("🔥 An error occurred:", error);
-        clearInterval(progressInterval); // [v7.6 추가] 실패 시 타이머 정지
+        clearInterval(progressInterval);
+
         if (loadingIndicator) loadingIndicator.style.display = 'none';
         
         if (container) {
@@ -522,7 +526,6 @@ document.addEventListener('submit', async (event) => {
                 isSubscribed = true;
             }
             
-            // Re-render all content to unlock member-only sections
             renderAllContent(allContent, false); 
             const trigger = document.getElementById('load-more-trigger');
             if (trigger) trigger.remove();
