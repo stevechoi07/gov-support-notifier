@@ -1,4 +1,4 @@
-// js/subscribers.js (새 파일)
+// js/subscribers.js subscribedAt필드로 수정
 
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -35,17 +35,18 @@ export const subscribers = {
     },
 
     async listen() {
-        await firebaseReady;
-        const db = getFirestoreDB();
-        // 'subscribers' 컬렉션에서 'createdAt' 필드를 기준으로 내림차순 정렬하여 가져옵니다.
-        // 필드명이 다를 경우 수정해주세요. (예: subscribedAt, timestamp 등)
-        const q = query(collection(db, "subscribers"), orderBy("createdAt", "desc"));
-        
-        onSnapshot(q, (querySnapshot) => {
-            this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            this.render();
-        });
-    },
+		await firebaseReady;
+		const db = getFirestoreDB();
+		
+		// 변경 전: const q = query(collection(db, "subscribers"), orderBy("createdAt", "desc"));
+		// 변경 후 ▼
+		const q = query(collection(db, "subscribers"), orderBy("subscribedAt", "desc"));
+		
+		onSnapshot(q, (querySnapshot) => {
+			this.list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+			this.render();
+		});
+	},
 
     render() {
         if (!this.ui.listContainer) return;
@@ -72,24 +73,26 @@ export const subscribers = {
         if (this.list.length === 0) {
             tableHTML += `<tr><td colspan="3" class="px-6 py-8 text-center">구독자가 없습니다.</td></tr>`;
         } else {
-            this.list.forEach(subscriber => {
-                // Firestore Timestamp를 JavaScript Date 객체로 변환
-                const subscribedDate = subscriber.createdAt?.toDate ? subscriber.createdAt.toDate() : new Date();
-                const formattedDate = subscribedDate.toLocaleString('ko-KR', {
-                    year: 'numeric', month: 'long', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit',
-                });
+		this.list.forEach(subscriber => {
+				// Firestore Timestamp를 JavaScript Date 객체로 변환
+				// 변경 전: const subscribedDate = subscriber.createdAt?.toDate ? subscriber.createdAt.toDate() : new Date();
+				// 변경 후 ▼
+				const subscribedDate = subscriber.subscribedAt?.toDate ? subscriber.subscribedAt.toDate() : new Date();
+				const formattedDate = subscribedDate.toLocaleString('ko-KR', {
+					year: 'numeric', month: 'long', day: 'numeric',
+					hour: '2-digit', minute: '2-digit',
+				});
 
-                tableHTML += `
-                    <tr class="bg-slate-800 border-b border-slate-700 hover:bg-slate-600">
-                        <td class="px-6 py-4 font-medium text-white">${subscriber.email}</td>
-                        <td class="px-6 py-4">${formattedDate}</td>
-                        <td class="px-6 py-4 text-right">
-                            <button data-id="${subscriber.id}" class="delete-subscriber-button font-medium text-red-500 hover:underline">삭제</button>
-                        </td>
-                    </tr>
-                `;
-            });
+				tableHTML += `
+					<tr class="bg-slate-800 border-b border-slate-700 hover:bg-slate-600">
+						<td class="px-6 py-4 font-medium text-white">${subscriber.email}</td>
+						<td class="px-6 py-4">${formattedDate}</td>
+						<td class="px-6 py-4 text-right">
+							<button data-id="${subscriber.id}" class="delete-subscriber-button font-medium text-red-500 hover:underline">삭제</button>
+						</td>
+					</tr>
+				`;
+			});
         }
 
         tableHTML += `</tbody></table></div>`;
