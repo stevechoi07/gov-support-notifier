@@ -70,7 +70,7 @@ export const cards = {
     addEventListeners() {
         this.ui.closeModalButton?.addEventListener('click', () => this.ui.adModal.classList.remove('active'));
         this.ui.saveAdButton?.addEventListener('click', this.handleSaveAd.bind(this));
-        [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox].forEach(input => { if(input) input.addEventListener('input', () => this.updatePreview()); });
+        [this.ui.adTitleInput, this.ui.adDescriptionInput, this.ui.adLinkInput, this.ui.isPartnersCheckbox, this.ui.isMembersOnlyCheckbox].forEach(input => { if(input) input.addEventListener('input', () => this.updatePreview()); });
         this.ui.adMediaFileInput?.addEventListener('change', this.handleFileUpload.bind(this));
         this.ui.closeIframeModalButton?.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
@@ -424,7 +424,6 @@ export const cards = {
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
-                // When editing, we don't want to overwrite a potentially existing thumbnailUrl if the file wasn't changed
                 if (!this.selectedMediaFile && ad.thumbnailUrl) {
                     adData.thumbnailUrl = ad.thumbnailUrl;
                 }

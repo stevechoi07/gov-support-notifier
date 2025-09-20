@@ -1,4 +1,4 @@
-// functions/index.js (v2.6 - 메타데이터 방식 최종 수정본)
+// functions/index.js (v2.7 - 메타데이터 접근 버그 수정)
 
 const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const { logger } = require("firebase-functions");
@@ -25,7 +25,10 @@ exports.generateThumbnail = onObjectFinalized(
     const fileBucket = event.data.bucket;
     const filePath = event.data.name;
     const contentType = event.data.contentType;
-    const customMetadata = event.data.metadata?.customMetadata || {};
+    
+    // ✨ [수정] 메타데이터를 더 안정적으로 읽어옵니다.
+    const metadata = event.data.metadata || {};
+    const customMetadata = metadata.customMetadata || {};
     const docId = customMetadata.firestoreDocId;
     const collectionName = customMetadata.firestoreCollection;
 
@@ -38,7 +41,7 @@ exports.generateThumbnail = onObjectFinalized(
       return;
     }
     if (!docId || !collectionName) {
-      logger.warn("Required metadata (firestoreDocId, firestoreCollection) not found. Exiting.", { metadata: event.data.metadata });
+      logger.warn("Required metadata (firestoreDocId, firestoreCollection) not found. Exiting.", { metadata: metadata });
       return;
     }
 

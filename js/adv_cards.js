@@ -439,7 +439,7 @@ export const adv_cards = {
             };
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
-                Object.assign(adData, { order: ad.order, clickCount: 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
+                Object.assign(adData, { order: ad.order, clickCount: 0, viewCount: 0, isActive: ad.isActive !== false });
                 await updateDoc(doc(db, "adv", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true, isMembersOnly: false });
