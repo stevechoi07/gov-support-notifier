@@ -1,4 +1,4 @@
-// js/public.js (v7.4 - 고객 정보 블록 Firebase DB 연동)
+// js/public.js v7.5 - 하이라이트 로직 및 로딩 애니메이션 개선
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -37,6 +37,20 @@ function assignMediaCardIndices(contentList) {
         return content;
     });
 }
+
+// [v7.5 추가] 새로 추가된 요소에 스태거 애니메이션을 적용하는 함수
+function applyStaggerAnimation(containerSelector) {
+    const targets = document.querySelectorAll(`${containerSelector} [data-stagger]`);
+    targets.forEach((target, index) => {
+        // 이미 애니메이션이 적용된 요소는 건너뜁니다.
+        if (target.classList.contains('is-animated')) return;
+        
+        setTimeout(() => {
+            target.classList.add('is-animated');
+        }, index * 100); // 0.1초 간격으로 순차적 애니메이션 적용
+    });
+}
+
 
 function launchStoryViewer(pageContent) {
     const viewer = document.querySelector('.story-viewer');
@@ -115,7 +129,7 @@ function closeStoryViewer() {
     viewer.classList.remove('is-active');
 }
 
-function renderAllContent(contents, append = false, startIndex = 0) { 
+function renderAllContent(contents, append = false) { 
     const container = document.getElementById('content-container');
     if (!container) { console.error("Content container not found!"); return; }
 
@@ -123,9 +137,10 @@ function renderAllContent(contents, append = false, startIndex = 0) {
         container.innerHTML = '';
     }
 
-    const contentHtml = contents.map((content, index) => {
+    const contentHtml = contents.map((content) => {
         let cardHtml = '';
         let layoutClass = ''; 
+        let staggerAttr = 'data-stagger'; // [v7.5 추가] 애니메이션을 위한 속성
 
         if (!content.adType && !(content.components && content.components.some(c => c.type === 'scene'))) {
             layoutClass = 'layout-full';
@@ -171,7 +186,6 @@ function renderAllContent(contents, append = false, startIndex = 0) {
                                 </div>`;
                         }
                         
-                        // ✨ data-page-name 속성 추가
                         elementHtml = `
                             <form class="lead-form" style="${componentStyle}" data-page-name="${content.name || '알 수 없는 페이지'}" data-success-message="${component.successMessage || '제출되었습니다.'}">
                                 ${formFieldsHtml}
@@ -260,20 +274,22 @@ function renderAllContent(contents, append = false, startIndex = 0) {
         }
         
         if (content.isMembersOnly && !isSubscribed) {
-            return `<div class="locked-content-wrapper ${layoutClass}">${finalHtml}</div>`;
+            return `<div class="locked-content-wrapper ${layoutClass}" ${staggerAttr}>${finalHtml}</div>`;
         }
-        return `<div class="${layoutClass}">${finalHtml}</div>`;
+        return `<div class="${layoutClass}" ${staggerAttr}>${finalHtml}</div>`;
 
     }).join('');
 
-    const containerToAppend = document.getElementById('content-container');
     if (append) {
-        containerToAppend.insertAdjacentHTML('beforeend', contentHtml);
+        container.insertAdjacentHTML('beforeend', contentHtml);
     } else {
-        containerToAppend.innerHTML = contentHtml;
+        container.innerHTML = contentHtml;
     }
-
-    setupIntersectionObserver();
+    
+    // [v7.5 수정] 렌더링 후 애니메이션 적용 함수 호출
+    applyStaggerAnimation('#content-container');
+    // [v7.5 수정] 하이라이트 감시자 재설정
+    setupHighlightObserver();
 }
 
 function loadMoreContent() {
@@ -284,7 +300,7 @@ function loadMoreContent() {
     
     const nextContentsToRender = allContent.slice(loadedContentIndex, loadedContentIndex + INITIAL_LOAD_COUNT);
     
-    renderAllContent(nextContentsToRender, true, loadedContentIndex);
+    renderAllContent(nextContentsToRender, true);
     loadedContentIndex += INITIAL_LOAD_COUNT;
 }
 
@@ -322,70 +338,44 @@ async function track(contentId, contentType, fieldToIncrement) {
     }
 }
 
-function setupIntersectionObserver() {
-    let visibleElements = new Map();
-    let currentActive = null;
+// [v7.5 수정] 하이라이트 로직을 위한 Intersection Observer (단순화 버전)
+function setupHighlightObserver() {
     const trackedImpressions = new Set();
-    const updateActive = () => {
-        let maxRatio = 0;
-        let mostVisibleElement = null;
-        visibleElements.forEach((entry, element) => {
-            if (entry.intersectionRatio > maxRatio) {
-                maxRatio = entry.intersectionRatio;
-                mostVisibleElement = element;
-            }
-        });
-        if (mostVisibleElement && mostVisibleElement !== currentActive) {
-            if (currentActive) {
-                currentActive.classList.remove('is-visible');
-            }
-            mostVisibleElement.classList.add('is-visible');
-            currentActive = mostVisibleElement;
-        }
-    };
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                visibleElements.set(entry.target, entry);
+                entry.target.classList.add('is-visible');
                 const { id, type } = entry.target.dataset;
                 if (id && !trackedImpressions.has(id)) {
                     track(id, type, 'viewCount');
                     trackedImpressions.add(id);
                 }
             } else {
-                visibleElements.delete(entry.target);
-                if (entry.target === currentActive) {
-                    currentActive.classList.remove('is-visible');
-                    currentActive = null;
-                }
+                entry.target.classList.remove('is-visible');
             }
         });
-        updateActive();
     }, {
-        threshold: Array.from({
-            length: 101
-        }, (_, i) => i / 100)
+        threshold: 0.2 // 요소가 20% 이상 보이면 하이라이트
     });
+
     const targets = document.querySelectorAll('[data-observe-target]');
+    // 새로 추가된 요소만 감시하도록 기존 감시 대상을 초기화할 수 있습니다.
+    // 하지만 여기서는 간단하게 모든 대상을 다시 감시하도록 설정합니다.
     targets.forEach(target => observer.observe(target));
 }
+
 
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
     const loadingIndicator = document.getElementById('loading-indicator');
-    const loadingProgress = document.getElementById('loading-progress');
     
     if (loadingIndicator) loadingIndicator.style.display = 'flex';
     
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-        progress += 1;
-        if (progress <= 100) {
-            if (loadingProgress) loadingProgress.textContent = `${progress}%`;
-        } else {
-            clearInterval(progressInterval);
-        }
-    }, 20);
+    // [v7.5 제거] 가짜 로딩 진행률 로직 삭제
+    // const loadingProgress = document.getElementById('loading-progress');
+    // let progress = 0;
+    // const progressInterval = setInterval(() => { ... });
 
     console.log("🚀 Public page script loaded. Fetching all content...");
 
@@ -399,7 +389,6 @@ async function renderPublicPage() {
 
         allContent = assignMediaCardIndices(allContent);
 
-        clearInterval(progressInterval);
         if (loadingIndicator) loadingIndicator.style.display = 'none';
 
         const initialContents = allContent.slice(0, INITIAL_LOAD_COUNT);
@@ -411,7 +400,6 @@ async function renderPublicPage() {
         }
     } catch (error) {
         console.error("🔥 An error occurred:", error);
-        clearInterval(progressInterval);
         if (loadingIndicator) loadingIndicator.style.display = 'none';
         
         if (container) {
@@ -467,6 +455,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    renderPublicPage();
+    window.addEventListener('scroll', handleParallaxScroll);
 });
 
 
@@ -527,12 +518,8 @@ document.addEventListener('submit', async (event) => {
                 isSubscribed = true;
             }
             
-            const contentResponse = await fetch('/.netlify/functions/get-content');
-            allContent = await contentResponse.json();
-            allContent = assignMediaCardIndices(allContent);
-            
-            renderAllContent(allContent, false);
-            loadedContentIndex = allContent.length;
+            // Re-render all content to unlock member-only sections
+            renderAllContent(allContent, false); 
             const trigger = document.getElementById('load-more-trigger');
             if (trigger) trigger.remove();
 
@@ -591,6 +578,3 @@ document.addEventListener('submit', async (event) => {
 
 const storyCloseButton = document.querySelector('.story-viewer .story-close-button');
 if (storyCloseButton) storyCloseButton.addEventListener('click', closeStoryViewer);
-
-renderPublicPage();
-window.addEventListener('scroll', handleParallaxScroll);
