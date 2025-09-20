@@ -1,4 +1,4 @@
-/* css/public_style.css v5.0 - PC/모바일 하이라이트 효과 분리 및 화이트 글로우 호버 적용 */
+/* css/public_style.css v5.0 - 모바일도 화이트글로우 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -78,8 +78,8 @@ body {
 @media (max-width: 1024px) {
     .card.is-visible,
     .page-section.is-visible {
-        box-shadow: 0 0 20px 0 rgba(0, 255, 163, 0.25);
-        border-color: rgba(0, 255, 163, 0.5);
+        box-shadow: 0 0 25px 0 rgba(255, 255, 255, 0.1); /* 호버보다 살짝 약한 글로우 */
+        border-color: rgba(255, 255, 255, 0.7);
     }
 }
 
