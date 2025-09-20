@@ -1,4 +1,4 @@
-/* css/public_style.css v3.1 - 동적 레이아웃 시스템 적용 및 구독 폼 스타일 복원 */
+/* css/public_style.css v3.1.1 - news form pc보이기 수정 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -188,6 +188,20 @@ body {
     .subscription-form button {
         width: auto;
         flex-shrink: 0;
+    }
+ /* ✨ 추가: PC 화면에서 제목과 설명을 한 줄로 만들기 */
+    .subscription-card h2,
+    .subscription-card p {
+        display: inline; /* h2와 p 태그를 옆으로 나란히 표시 */
+        vertical-align: middle; /* 세로 높이를 중앙으로 정렬 */
+    }
+    
+    .subscription-card h2 {
+        margin-right: 0.5rem; /* 제목과 설명 사이 간격 살짝 추가 */
+    }
+
+    .subscription-card p {
+        margin-bottom: 20px; /* 아래 폼과의 간격은 기존 값 유지 */
     }
 }
 
