@@ -1,4 +1,4 @@
-// js/adv_cards.js (v1.4 - 메타데이터 방식 최종 수정본)
+// js/adv_cards.js (v1.5 - 파일 이름 기반 최종 수정본)
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -74,6 +74,7 @@ export const adv_cards = {
         if(this.ui.adDescriptionInput) this.ui.adDescriptionInput.addEventListener('input', () => this.updatePreview());
         if(this.ui.adLinkInput) this.ui.adLinkInput.addEventListener('input', () => this.updatePreview());
         if(this.ui.isPartnersCheckbox) this.ui.isPartnersCheckbox.addEventListener('input', () => this.updatePreview());
+        if(this.ui.isMembersOnlyCheckbox) this.ui.isMembersOnlyCheckbox.addEventListener('input', () => this.updatePreview());
         this.ui.adMediaFileInput?.addEventListener('change', this.handleFileUpload.bind(this));
         this.ui.closeIframeModalButton?.addEventListener('click', () => this.ui.iframeAdModal.classList.remove('active'));
         this.ui.saveIframeAdButton?.addEventListener('click', this.handleSaveIframeAd.bind(this));
@@ -325,23 +326,19 @@ export const adv_cards = {
         }
     },
 
-    async uploadMediaFile(docId, collectionName) {
+    async uploadMediaFile(docId, collectionName, originalFileName) {
         await firebaseReady;
         const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
             this.ui.mediaUploadStatus.style.opacity = 1;
-            const fileName = `adv_${Date.now()}_${this.selectedMediaFile.name}`;
+            
+            const fileExtension = originalFileName.split('.').pop();
+            const fileName = `${collectionName}---${docId}---${Date.now()}.${fileExtension}`;
+
             const folder = this.currentMediaType === 'video' ? 'adv_videos' : 'adv_images';
             const storageRef = ref(storage, `${folder}/${fileName}`);
             
-            const metadata = {
-                customMetadata: {
-                    'firestoreDocId': docId,
-                    'firestoreCollection': collectionName
-                }
-            };
-            
-            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile, metadata);
+            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
             this.currentUploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -384,7 +381,7 @@ export const adv_cards = {
                         }
                     } catch (e) { console.warn("Could not delete old file(s):", e.message); }
                 }
-                mediaUrlToSave = await this.uploadMediaFile(docRef.id, 'adv');
+                mediaUrlToSave = await this.uploadMediaFile(docRef.id, 'adv', this.selectedMediaFile.name);
                 this.ui.uploadLabel.textContent = '업로드 완료!';
             }
             const adData = {

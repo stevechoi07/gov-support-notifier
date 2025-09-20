@@ -1,4 +1,4 @@
-// functions/index.js (v2.7 - 메타데이터 접근 버그 수정)
+// functions/index.js (v2.8 - 파일 이름 기반 최종 수정본)
 
 const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const { logger } = require("firebase-functions");
@@ -25,11 +25,6 @@ exports.generateThumbnail = onObjectFinalized(
     const fileBucket = event.data.bucket;
     const filePath = event.data.name;
     const contentType = event.data.contentType;
-    
-    const metadata = event.data.metadata || {};
-    const customMetadata = metadata.customMetadata || {};
-    const docId = customMetadata.firestoreDocId;
-    const collectionName = customMetadata.firestoreCollection;
 
     if (!contentType.startsWith("video/")) {
       logger.log("This is not a video.");
@@ -39,15 +34,21 @@ exports.generateThumbnail = onObjectFinalized(
       logger.log("This is already a thumbnail.");
       return;
     }
-    if (!docId || !collectionName) {
-      logger.warn("Required metadata (firestoreDocId, firestoreCollection) not found. Exiting.", { metadata: metadata });
-      return;
+
+    const fileName = path.basename(filePath);
+    
+    // 파일 이름에서 정보를 분리합니다. (예: "ads---docId---timestamp.mp4")
+    const parts = path.parse(fileName).name.split('---');
+    if (parts.length < 2) {
+        logger.warn(`Filename "${fileName}" does not match the expected format. Exiting.`);
+        return;
     }
+    const collectionName = parts[0];
+    const docId = parts[1];
 
     logger.log(`Processing video: ${filePath} for document: ${collectionName}/${docId}`);
 
     const bucket = getStorage().bucket(fileBucket);
-    const fileName = path.basename(filePath);
     const tempFilePath = path.join(os.tmpdir(), fileName);
     const thumbnailFileName = `thumb_${path.parse(fileName).name}.jpg`;
     const tempThumbnailPath = path.join(os.tmpdir(), thumbnailFileName);
