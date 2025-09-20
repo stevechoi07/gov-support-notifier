@@ -1,4 +1,4 @@
-// js/public.js v4.0 - 블러 오버레이의 구독 버튼에 스크롤 기능 추가
+// js/public.js v5.0 - 동적 레이아웃 및 콘텐츠 타입 분기 로직 추가
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -95,8 +95,8 @@ function closeStoryViewer() {
     viewer.classList.remove('is-active');
 }
 
-// js/public.js v4.2 - 페이지 콘텐츠의 배경 동영상 경로 오류 수정
-function renderAllContent(contents, append = false) {
+// ✨ 함수의 인자로 startIndex 를 추가합니다. 기본값은 0입니다.
+function renderAllContent(contents, append = false, startIndex = 0) { 
     const container = document.getElementById('content-container');
     if (!container) { console.error("Content container not found!"); return; }
 
@@ -104,9 +104,52 @@ function renderAllContent(contents, append = false) {
         container.innerHTML = '';
     }
 
-    const contentHtml = contents.map(content => {
+    // ✨ map 함수에서 두 번째 인자인 index를 사용하여 절대적인 순서를 계산합니다.
+    const contentHtml = contents.map((content, index) => {
+        const absoluteIndex = startIndex + index;
         let cardHtml = '';
+        let layoutClass = ''; // ✨ 레이아웃 클래스를 담을 변수 선언
 
+        // ✨ [핵심 로직 1] 콘텐츠 타입을 먼저 확인하여 레이아웃을 결정합니다.
+        // '페이지' 타입 콘텐츠는 항상 전체 너비를 차지하도록 layout-full 클래스를 부여합니다.
+        if (!content.adType && !(content.components && content.components.some(c => c.type === 'scene'))) {
+            layoutClass = 'layout-full';
+            
+            // "페이지" 타입 콘텐츠를 그리는 기존 로직 (변경 없음)
+            const contentType = 'page';
+            const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
+            const pageSettings = content.pageSettings || {};
+            let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
+            if (pageSettings.viewport) {
+                const [widthStr, heightStr] = pageSettings.viewport.split(',');
+                const width = parseFloat(widthStr);
+                const height = parseFloat(heightStr);
+                if (height > 0) { pageStyle += ` aspect-ratio: ${width} / ${height};`; }
+            }
+            const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
+            const componentsHtml = (content.components || []).map(component => {
+                const componentStyle = stylesToString(component.styles);
+                switch (component.type) {
+                    case 'heading': return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
+                    case 'paragraph': return `<p class="page-component" style="${componentStyle}">${component.content}</p>`;
+                    case 'button': return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
+                    default: return '';
+                }
+            }).join('');
+            cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
+
+        } else {
+            // ✨ '미디어 카드' (광고, 스토리 런처, 구독 폼 등) 타입일 경우
+            // ✨ [핵심 로직 2] 절대 순서(absoluteIndex)에 따라 '강-중-약' 레이아웃 클래스를 부여합니다.
+            if (absoluteIndex === 0) {
+                layoutClass = 'layout-hero'; // 강
+            } else if (absoluteIndex === 1 || absoluteIndex === 2) {
+                layoutClass = 'layout-medium'; // 중
+            } else {
+                layoutClass = 'layout-default'; // 약
+            }
+
+// 미디어 카드, 구독 폼, 스토리 런처 등을 그리는 기존 로직 (변경 없음)
         if (content.adType === 'subscription-form') {
             if (isSubscribed) {
                 cardHtml = `<div class="card subscription-card"><h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2><p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p></div>`;
@@ -164,20 +207,12 @@ function renderAllContent(contents, append = false) {
             cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
         }
 
+// ✨ [핵심 로직 3] 최종 HTML을 레이아웃 div로 감싸줍니다.
+        // 구독자 전용 콘텐츠는 locked-content-wrapper가 이미 감싸고 있으므로, 그 래퍼에 클래스를 추가합니다.
         if (content.isMembersOnly && !isSubscribed) {
-            return `
-                <div class="locked-content-wrapper">
-                    <div class="is-blurred">${cardHtml}</div>
-                    <div class="locked-overlay">
-                        <h3>✨ 구독자 전용 콘텐츠</h3>
-                        <p>구독하고 바로 확인해보세요!</p>
-                        <button class="subscribe-button-overlay">구독하기</button>
-                    </div>
-                </div>
-            `;
+            return `<div class="locked-content-wrapper ${layoutClass}">${finalHtml}</div>`;
         }
-        
-        return cardHtml;
+        return `<div class="${layoutClass}">${finalHtml}</div>`;
 
     }).join('');
 
@@ -190,13 +225,15 @@ function renderAllContent(contents, append = false) {
     setupIntersectionObserver();
 }
 
+// ✨ `loadMoreContent` 함수도 `startIndex`를 전달하도록 수정이 필요합니다.
 function loadMoreContent() {
     if (loadedContentIndex >= allContent.length) {
         console.log("All content loaded.");
         return;
     }
-    const nextContentsToRender = allContent.slice(loadedContentIndex, loadedContentIndex + INITIAL_LOAD_COUNT);
-    renderAllContent(nextContentsToRender, true);
+    const nextContentsToRender = allContent.slice(loadedContentIndex, loadedContentIndex + INITIAL__LOAD_COUNT);
+    // ✨ renderAllContent를 호출할 때, 현재 로드된 콘텐츠의 인덱스(loadedContentIndex)를 startIndex로 넘겨줍니다.
+    renderAllContent(nextContentsToRender, true, loadedContentIndex);
     loadedContentIndex += INITIAL_LOAD_COUNT;
 }
 
