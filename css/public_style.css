@@ -178,7 +178,9 @@ body {
 .subscription-form button:hover {
     background-color: #0d9488;
 }
+
 @media (min-width: 640px) {
+    /* 기존 폼 스타일 (변경 없음) */
     .subscription-form {
         flex-direction: row;
     }
@@ -189,19 +191,26 @@ body {
         width: auto;
         flex-shrink: 0;
     }
- /* ✨ 추가: PC 화면에서 제목과 설명을 한 줄로 만들기 */
+
+    /* ✨ [수정] PC 화면에서 구독 카드를 두 줄로 만들기 */
+    .subscription-card {
+        display: flex; /* 플렉스 컨테이너로 설정 */
+        flex-wrap: wrap; /* 자식 요소들이 줄바꿈 되도록 설정 */
+        justify-content: center; /* 가운데 정렬 */
+    }
+    
     .subscription-card h2,
     .subscription-card p {
-        display: inline; /* h2와 p 태그를 옆으로 나란히 표시 */
-        vertical-align: middle; /* 세로 높이를 중앙으로 정렬 */
+        flex-basis: 100%; /* 첫 번째 줄의 텍스트들이 너비 100%를 차지하게 함 */
+        text-align: center; /* 텍스트 가운데 정렬 */
     }
     
     .subscription-card h2 {
-        margin-right: 0.5rem; /* 제목과 설명 사이 간격 살짝 추가 */
+        margin-right: 0; /* 기존 여백 제거 */
     }
 
-    .subscription-card p {
-        margin-bottom: 20px; /* 아래 폼과의 간격은 기존 값 유지 */
+    .subscription-form {
+        margin-top: 1rem; /* ✨ 추가: 텍스트와 폼 사이의 간격 */
     }
 }
 
