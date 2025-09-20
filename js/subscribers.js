@@ -1,4 +1,4 @@
-// js/subscribers.js (v2.0 - 메모 & 다운로드 기능 추가)
+// js/subscribers.js (v2.1 - 메모 UI/UX 개선)
 
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -26,17 +26,17 @@ export const subscribers = {
 
     addEventListeners() {
         this.ui.listContainer.addEventListener('click', (event) => {
-            if (event.target.classList.contains('delete-subscriber-button')) {
-                const id = event.target.dataset.id;
+            const target = event.target;
+            if (target.classList.contains('delete-subscriber-button')) {
+                const id = target.dataset.id;
                 this.handleDeleteSubscriber(id);
             }
-            if (event.target.classList.contains('save-memo-button')) {
-                const id = event.target.dataset.id;
+            if (target.classList.contains('save-memo-button')) {
+                const id = target.dataset.id;
                 this.handleSaveMemo(id);
             }
         });
 
-        // 다운로드 버튼은 render 함수에서 생성되므로, statsContainer에 이벤트 위임을 사용합니다.
         this.ui.statsContainer.addEventListener('click', (event) => {
             if (event.target.id === 'download-csv-button') {
                 this.handleDownloadCSV();
@@ -76,7 +76,7 @@ export const subscribers = {
                         <tr>
                             <th scope="col" class="px-6 py-3">이메일</th>
                             <th scope="col" class="px-6 py-3">구독일</th>
-                            <th scope="col" class="px-6 py-3 w-1/3">메모</th>
+                            <th scope="col" class="px-6 py-3 w-2/5">메모</th>
                             <th scope="col" class="px-6 py-3 text-right">관리</th>
                         </tr>
                     </thead>
@@ -97,8 +97,10 @@ export const subscribers = {
                         <td class="px-6 py-4 font-medium text-white">${subscriber.email}</td>
                         <td class="px-6 py-4">${formattedDate}</td>
                         <td class="px-6 py-4">
-                            <textarea id="memo-input-${subscriber.id}" class="memo-textarea" placeholder="메모를 입력하세요...">${subscriber.memo || ''}</textarea>
-                            <button data-id="${subscriber.id}" class="save-memo-button">저장</button>
+                            <div class="flex flex-col">
+                                <textarea id="memo-input-${subscriber.id}" rows="4" class="w-full bg-slate-700 text-slate-200 border border-slate-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none transition" placeholder="메모를 입력하세요...">${subscriber.memo || ''}</textarea>
+                                <button data-id="${subscriber.id}" class="save-memo-button mt-2 self-end px-3 py-1 bg-emerald-600 text-white rounded-md text-xs font-semibold hover:bg-emerald-700 transition-colors">저장</button>
+                            </div>
                         </td>
                         <td class="px-6 py-4 text-right">
                             <button data-id="${subscriber.id}" class="delete-subscriber-button font-medium text-red-500 hover:underline">삭제</button>
@@ -115,7 +117,7 @@ export const subscribers = {
     async handleSaveMemo(id) {
         if (!id) return;
         const memoInput = document.getElementById(`memo-input-${id}`);
-        const memoText = memoInput.value.trim();
+        const memoText = memoInput.value; // trim() 제거, 공백만 있는 메모도 저장 가능하도록
         
         await firebaseReady;
         const db = getFirestoreDB();
@@ -134,20 +136,15 @@ export const subscribers = {
             return;
         }
 
-        // CSV 데이터 생성 (헤더 포함)
         let csvContent = "Email,Subscribed At,Memo\n";
         
         this.list.forEach(subscriber => {
             const date = subscriber.subscribedAt?.toDate ? subscriber.subscribedAt.toDate().toISOString() : '';
-            
-            // CSV 형식에 맞게 데이터 정제 (따옴표, 쉼표 처리)
             const email = `"${subscriber.email || ''}"`;
             const memo = `"${(subscriber.memo || '').replace(/"/g, '""')}"`;
-
             csvContent += [email, date, memo].join(',') + "\n";
         });
 
-        // 파일 다운로드
         const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
