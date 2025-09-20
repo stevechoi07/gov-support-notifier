@@ -1,4 +1,4 @@
-// js/editor.js (v2.13 - 통합 미디어 업로드 기능)
+// js/editor.js (v2.14 - 스토리 장면 배경 이미지 업로드 기능 추가)
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -326,9 +326,18 @@ export const editor = {
             const panel = document.createElement('div'); panel.className = 'editor-panel'; panel.dataset.id = c.id; const handle = document.createElement('h4'); handle.innerHTML = `${{ heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보', scene: '🎬 장면' }[c.type]} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div>`; if (c.id === this.activeComponentId) panel.classList.add('selected');
             let panelContentHTML = '';
             if (c.type === 'scene') {
-                let innerControlsHTML = '';
-                (c.components || []).forEach((innerComp, innerIndex) => { innerControlsHTML += ` <div class="control-group"><label>장면 ${innerComp.type === 'heading' ? '제목' : '내용'}</label><textarea data-scene-inner-prop="${innerIndex}.content">${innerComp.content || ''}</textarea></div> <div class="style-grid"> <div class="control-group"><label>정렬</label><select data-scene-inner-style="${innerIndex}.textAlign"> <option value="left" ${innerComp.styles?.textAlign === 'left' ? 'selected' : ''}>왼쪽</option> <option value="center" ${innerComp.styles?.textAlign === 'center' ? 'selected' : ''}>가운데</option> <option value="right" ${innerComp.styles?.textAlign === 'right' ? 'selected' : ''}>오른쪽</option> </select></div> <div class="control-group"><label>글자색</label><input type="text" data-color-picker data-scene-inner-style="${innerIndex}.color" value="${innerComp.styles?.color || '#FFFFFF'}"></div> <div class="control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div> </div> `; });
-                panelContentHTML = ` <div class="control-group inline-group"><label>장면 배경색</label><input type="text" data-color-picker data-scene-prop="bgColor" value="${c.sceneSettings?.bgColor || '#333333'}"></div> <div class="control-group"><label>장면 배경 이미지 URL</label><input type="text" data-scene-prop="bgImage" value="${c.sceneSettings?.bgImage || ''}"></div> <hr style="border-color: #475569; margin: 15px 0;"> ${innerControlsHTML} `;
+                let innerControlsHTML = (c.components || []).map((innerComp, innerIndex) => ` <div class="control-group"><label>장면 ${innerComp.type === 'heading' ? '제목' : '내용'}</label><textarea data-scene-inner-prop="${innerIndex}.content">${innerComp.content || ''}</textarea></div> <div class="style-grid"> <div class="control-group"><label>정렬</label><select data-scene-inner-style="${innerIndex}.textAlign"> <option value="left" ${innerComp.styles?.textAlign === 'left' ? 'selected' : ''}>왼쪽</option> <option value="center" ${innerComp.styles?.textAlign === 'center' ? 'selected' : ''}>가운데</option> <option value="right" ${innerComp.styles?.textAlign === 'right' ? 'selected' : ''}>오른쪽</option> </select></div> <div class="control-group"><label>글자색</label><input type="text" data-color-picker data-scene-inner-style="${innerIndex}.color" value="${innerComp.styles?.color || '#FFFFFF'}"></div> <div class="control-group"><label>글자 크기</label><input type="text" data-scene-inner-style="${innerIndex}.fontSize" value="${(innerComp.styles?.fontSize || '').replace('px','')}" placeholder="24"></div> </div> `).join('');
+                panelContentHTML = `
+                    <div class="control-group inline-group"><label>장면 배경색</label><input type="text" data-color-picker data-scene-prop="bgColor" value="${c.sceneSettings?.bgColor || '#333333'}"></div>
+                    <div class="control-group">
+                        <label>장면 배경 이미지</label>
+                        <div class="flex items-center gap-4">
+                            <label for="scene-image-file-${c.id}" class="file-input-button">파일 선택</label>
+                            <span id="scene-file-name-${c.id}" class="text-sm text-slate-500 truncate">${c.sceneSettings?.bgImage ? '현재 이미지 있음' : '선택된 파일 없음'}</span>
+                        </div>
+                        <input type="file" id="scene-image-file-${c.id}" data-component-id="${c.id}" class="scene-image-file-input file-input-hidden" accept="image/png, image/jpeg, image/gif">
+                    </div>
+                    <hr style="border-color: #475569; margin: 15px 0;"> ${innerControlsHTML} `;
             } else if (c.type === 'lead-form') {
                 let checklistHTML = '<div class="control-group"><label>📋 포함할 정보 항목</label><div class="form-fields-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background-color: #334155; padding: 10px; border-radius: 6px;">'; this.allPossibleFormFields.forEach(field => { const isChecked = c.activeFields?.includes(field.name); checklistHTML += `<div class="inline-group" style="margin-bottom: 0;"><label for="field-${c.id}-${field.name}" style="font-weight: normal; cursor: pointer;">${field.label}</label><input type="checkbox" id="field-${c.id}-${field.name}" data-control-type="field-toggle" data-field-name="${field.name}" ${isChecked ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>`; }); checklistHTML += '</div></div>'; const privacy = c.privacy || { enabled: false, text: '' }; const privacySettingsHTML = `<div class="control-group" style="background-color: #334155; padding: 10px; border-radius: 6px;"><div class="inline-group"><label for="privacy-enabled-${c.id}" style="cursor: pointer;">🔒 개인정보 수집 동의</label><input type="checkbox" id="privacy-enabled-${c.id}" data-control-type="privacy-toggle" ${privacy.enabled ? 'checked' : ''} style="width: auto; cursor: pointer;"></div>${privacy.enabled ? `<div class="control-group" style="margin-top: 10px; margin-bottom: 0;"><label>동의 문구</label><textarea data-prop="privacy.text" style="height: 60px;">${privacy.text}</textarea></div>` : ''}</div>`; panelContentHTML = `${checklistHTML}<div class="control-group"><label>📝 구글 스크립트 URL</label><textarea data-prop="googleScriptUrl" placeholder="배포된 구글 웹 앱 URL" style="height: 80px;">${c.googleScriptUrl || ''}</textarea></div><div class="control-group"><label>✅ 제출 버튼 텍스트</label><input type="text" data-prop="submitText" value="${c.submitText || ''}"></div><div class="control-group"><label>🎉 성공 메시지</label><input type="text" data-prop="successMessage" value="${c.successMessage || ''}"></div><div class="control-group inline-group"><label>버튼 색상</label><input type="text" data-color-picker data-style="submitButtonColor" value="${c.styles?.submitButtonColor || '#1877f2'}"></div>${privacySettingsHTML}`;
             } else {
@@ -362,11 +371,52 @@ export const editor = {
                     this.updateComponent(id, `components.${index}.styles.${key}`, value, false);
                 });
             });
+            panel.querySelectorAll('.scene-image-file-input').forEach(input => {
+                input.addEventListener('change', this.handleSceneImageUpload.bind(this));
+            });
             panel.querySelectorAll('[data-control-type="field-toggle"]').forEach(checkbox => { checkbox.onchange = () => { const fieldName = checkbox.dataset.fieldName; const component = this.components.find(c => c.id === id); if (!component) return; if (!component.activeFields) component.activeFields = []; if (checkbox.checked) { if (!component.activeFields.includes(fieldName)) component.activeFields.push(fieldName); } else { component.activeFields = component.activeFields.filter(name => name !== fieldName); } this.saveAndRender(true, true); }; }); panel.querySelector('[data-control-type="privacy-toggle"]')?.addEventListener('change', (e) => { this.updateComponent(id, 'privacy.enabled', e.target.checked, true); });
             panel.querySelector('.delete-btn').onclick = () => this.deleteComponent(id);
         });
     },
 
+    async handleSceneImageUpload(event) {
+        const input = event.target;
+        const file = input.files[0];
+        const componentId = Number(input.dataset.componentId);
+        if (!file || !componentId) return;
+
+        const component = this.components.find(c => c.id === componentId);
+        if (!component || component.type !== 'scene') return;
+
+        const fileNameDisplay = document.getElementById(`scene-file-name-${componentId}`);
+        fileNameDisplay.textContent = '업로드 중...';
+
+        const storage = getFirebaseStorage();
+        if (component.sceneSettings?.bgImage) {
+            try {
+                await deleteObject(ref(storage, component.sceneSettings.bgImage));
+            } catch (e) { console.warn("Could not delete old scene image", e); }
+        }
+
+        const fileExtension = file.name.split('.').pop();
+        const newFileName = `scene_${componentId}_${Date.now()}.${fileExtension}`;
+        const storageRef = ref(storage, `scene_images/${newFileName}`);
+
+        try {
+            const uploadTask = await uploadBytesResumable(storageRef, file);
+            const downloadURL = await getDownloadURL(uploadTask.ref);
+
+            this.updateComponent(componentId, 'sceneSettings.bgImage', downloadURL, true);
+            showToast("장면 이미지가 업로드되었습니다.");
+            fileNameDisplay.textContent = file.name;
+
+        } catch (error) {
+            console.error("Scene image upload failed:", error);
+            showToast("이미지 업로드에 실패했습니다.", "error");
+            fileNameDisplay.textContent = "업로드 실패";
+        }
+    },
+    
     renderViewportControls() {
         this.elements.viewportControlsLeft.innerHTML = '';
         const btnGroup = document.createElement('div');

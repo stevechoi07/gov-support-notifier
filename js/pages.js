@@ -1,4 +1,4 @@
-// js/pages.js (v2.5 - 동영상 썸네일 기능 추가)
+// js/pages.js (v2.6 - 스토리 페이지 썸네일 기능 추가)
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -26,25 +26,33 @@ export async function renderPages() {
             const bgColor = settings.bgColor || '#0f172a';
             let previewStyle = `background-color: ${bgColor};`;
             let previewContent = '';
+            
+            const isStory = page.components?.some(c => c.type === 'scene');
+            const storyBadge = isStory ? `<span class="story-badge">✨ 스토리</span>` : '';
 
-            // ✨ [핵심 수정] 썸네일 로직 추가
-            if (settings.bgVideo) {
+            if (isStory) {
+                const firstScene = page.components.find(c => c.type === 'scene');
+                const storyThumbnail = firstScene?.sceneSettings?.bgImage;
+                if (storyThumbnail) {
+                    previewStyle += `background-image: url('${storyThumbnail}'); background-size: cover; background-position: center;`;
+                } else {
+                    // 스토리에 썸네일로 쓸 이미지가 없을 경우 기본 스토리 배경색
+                    previewStyle = `background-color: #333;`;
+                }
+            } else if (settings.bgVideo) {
                 if (settings.thumbnailUrl) {
                     previewStyle += `background-image: url('${settings.thumbnailUrl}'); background-size: cover; background-position: center;`;
                 } else {
                     previewContent = `<div class="thumbnail-spinner"></div><span class="thumbnail-status">썸네일 생성 중...</span>`;
-                    previewStyle += ` background-color: #1e293b;`; // 생성 중 배경색
+                    previewStyle += ` background-color: #1e293b;`;
                 }
             } else if (settings.bgImage) {
                 previewStyle += `background-image: url('${settings.bgImage}'); background-size: cover; background-position: center;`;
             }
 
-            const isStory = page.components?.some(c => c.type === 'scene');
-            const storyBadge = isStory ? `<span class="story-badge">✨ 스토리</span>` : '';
-
             return `
             <div class="page-card">
-                <div class="page-card-preview is-processing" style="${previewStyle}">
+                <div class="page-card-preview ${previewContent ? 'is-processing' : ''}" style="${previewStyle}">
                     ${previewContent}
                     <div class="title-wrapper">
                         <h4>${page.name}</h4>
