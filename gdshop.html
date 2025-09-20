@@ -40,10 +40,12 @@
         #debugger .log { word-break: break-all; }
         #debugger .log-item { margin-top: 4px; border-left: 2px solid #64748b; padding-left: 8px; }
         
+        /* [v28.0] 광고 시스템 비활성화
         .ad-media-container { position: relative; width: 100%; padding-top: 56.25%; background-color: #e2e8f0; }
         .ad-media-container img, .ad-media-container video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         .iframe-ad-wrapper { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
         .iframe-ad-container { display: flex; justify-content: center; align-items: center; width: 100%; }
+        */
 
         #toast-notification {
             position: fixed; bottom: 20px; left: 50%;
@@ -61,9 +63,9 @@
 <body>
     <div class="container mx-auto max-w-7xl px-4">
         <header class="text-center py-10 md:py-16">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">오늘 MUK? 🧐</h1>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">착한가격업소🧐</h1>
             <p class="text-slate-600 mt-2">정부인증 착한가격업소 정보제공 서비스</p>
-            <p class="text-xs text-slate-400 mt-1">v27.0 (보안 강화)</p>
+            <p class="text-xs text-slate-400 mt-1">v28.0</p>
         </header>
 
         <div id="filters-wrapper">
@@ -111,12 +113,13 @@
       import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
       // ===============================================================
-      // 🧐 오늘 MUK? v27.0
+      // 🧐 오늘 MUK? v28.0
       // ===============================================================
       // [변경점]
       // 1. 하드코딩된 Firebase API 키를 제거.
       // 2. Netlify '비밀요원'에게 접속 정보를 받아오도록 수정.
       // 3. 스크립트 구조를 하나로 통합하고, 안전한 초기화 절차를 적용.
+      // 4. 광고 시스템 관련 코드 주석 처리 (임시 비활성화)
       // ===============================================================
 
       let db; // 전역 Firestore 인스턴스
@@ -143,11 +146,11 @@
       let isLoading = false;
       let favorites = JSON.parse(localStorage.getItem('muk_favorites')) || [];
       let toastTimeout;
-      let adDataList = [];
+      // let adDataList = []; // [v28.0] 광고 시스템 비활성화
 
       async function startApp() {
         try {
-            console.log("🚀 [v27.0] 앱 실행 시작!");
+            console.log("🚀 [v28.0] 앱 실행 시작!");
             
             // 1. 비밀요원에게 Firebase 접속 정보 요청
             const response = await fetch('/.netlify/functions/get-firebase-config');
@@ -183,7 +186,8 @@
               toastEl.classList.remove('show');
           }, 2000);
       }
-
+      
+      /* [v28.0] 광고 시스템 비활성화 시작
       async function loadAdData() {
         try {
             const q = query(collection(db, "adv"), orderBy("order", "asc"));
@@ -209,10 +213,11 @@
               await updateDoc(adRef, { clickCount: increment(1) });
           } catch (error) { console.error("클릭 카운트 업데이트 실패:", error); }
       }
+      */ // [v28.0] 광고 시스템 비활성화 끝
       
       async function runMainLogic() {
           try {
-              await loadAdData();
+              // await loadAdData(); // [v28.0] 광고 시스템 비활성화
               const response = await fetch('/api/shops');
               if (!response.ok) throw new Error('서버에서 가게 데이터를 받아오지 못했어요!');
               allShops = await response.json();
@@ -254,6 +259,7 @@
       
       function handleCardClick(e) {
           const target = e.target;
+          /* [v28.0] 광고 시스템 비활성화 시작
           const adLink = target.closest('.ad-link');
           if (adLink) {
               e.preventDefault();
@@ -261,6 +267,7 @@
               window.open(adLink.href, '_blank');
               return;
           }
+          */ // [v28.0] 광고 시스템 비활성화 끝
           const toggleBtn = target.closest('.toggle-details-btn');
           if (toggleBtn) {
               e.stopPropagation();
@@ -358,7 +365,8 @@
           }
           
           const shuffledShops = filteredShops.sort(() => 0.5 - Math.random());
-
+          
+          /* [v28.0] 광고 시스템 비활성화 시작
           const itemsWithAds = [];
           let adIndex = 0;
           if (adDataList.length > 0) {
@@ -373,6 +381,11 @@
           } else { shuffledShops.forEach(item => itemsWithAds.push(item)); }
           
           currentItems = itemsWithAds;
+          */ // [v28.0] 광고 시스템 비활성화 끝
+          
+          // [v28.0] 수정: 광고 로직을 비활성화하고 바로 가게 목록을 할당합니다.
+          currentItems = shuffledShops;
+
           shopListEl.innerHTML = '';
           currentPage = 1;
           updateNoResultsMessage(currentItems);
@@ -417,6 +430,7 @@
           const defaultColor = 'bg-slate-50 text-slate-700';
           
           items.forEach(item => {
+              /* [v28.0] 광고 시스템 비활성화 시작
               if (item.isAd) {
                   const adCard = document.createElement('div');
                   const partnersText = item.isPartners ? `<p class="text-xs text-slate-500 text-left">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
@@ -436,6 +450,7 @@
                   shopListEl.appendChild(adCard);
                   return;
               }
+              */ // [v28.0] 광고 시스템 비활성화 끝
               
               const shop = item;
               const cardWrapper = document.createElement('div');
