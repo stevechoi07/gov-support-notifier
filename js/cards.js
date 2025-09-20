@@ -1,4 +1,4 @@
-// js/cards.js v2.4 - 'isMembersOnly: false 추가
+// js/cards.js v2.5 - iframe 기능 현대화 (URL 방식)
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -58,7 +58,7 @@ export const cards = {
             iframeModalTitle: document.getElementById('iframe-modal-title'),
             closeIframeModalButton: document.getElementById('close-iframe-modal-button'),
             iframeAdTitleInput: document.getElementById('iframe-ad-title'),
-            iframeAdCodeInput: document.getElementById('iframe-ad-code'),
+            iframeAdSrcInput: document.getElementById('iframe-ad-src'), // ID 변경
             iframeIsPartnersCheckbox: document.getElementById('iframe-is-partners-checkbox'),
             iframeAdStartDateInput: document.getElementById('iframe-ad-start-date'),
             iframeAdEndDateInput: document.getElementById('iframe-ad-end-date'),
@@ -166,7 +166,7 @@ export const cards = {
                     <div class="content-card-header"><p class="title" title="${ad.title}">${ad.title}</p></div>
                     <div class="content-card-info">
                         ${statusBadge}
-                        ${!isIframe && !isSubscriptionForm ? `<span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${clickCount}</span>` : ''}
+                        ${!isSubscriptionForm ? `<span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${clickCount}</span>` : ''}
                     </div>
                     <div class="content-card-actions">
                         <div class="publish-info">
@@ -259,7 +259,7 @@ export const cards = {
                     isActive: true,
                     clickCount: 0, 
                     viewCount: 0,
-                    isMembersOnly: false, // ✨ '공개' 도장을 자동으로 추가합니다!
+                    isMembersOnly: false,
                 };
                 await addDoc(collection(db, "ads"), adData);
                 showToast("'뉴스레터 구독' 카드가 생성되었습니다.", "success");
@@ -273,7 +273,7 @@ export const cards = {
     resetIframeModalState() {
         const btn = this.ui.saveIframeAdButton;
         if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = ''; 
-        if(this.ui.iframeAdCodeInput) this.ui.iframeAdCodeInput.value = '';
+        if(this.ui.iframeAdSrcInput) this.ui.iframeAdSrcInput.value = ''; // ID 변경
         if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false; 
         if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
         if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
@@ -297,7 +297,7 @@ export const cards = {
             this.resetIframeModalState();
             this.ui.iframeModalTitle.textContent = "iframe 카드 수정";
             this.ui.iframeAdTitleInput.value = ad.title;
-            this.ui.iframeAdCodeInput.value = ad.iframeCode || '';
+            this.ui.iframeAdSrcInput.value = ad.iframeSrc || ''; // 필드명 변경
             this.ui.iframeIsPartnersCheckbox.checked = ad.isPartners || false;
             this.ui.iframeAdStartDateInput.value = ad.startDate || '';
             this.ui.iframeAdEndDateInput.value = ad.endDate || '';
@@ -407,26 +407,25 @@ export const cards = {
         await firebaseReady;
         const db = getFirestoreDB();
         const title = this.ui.iframeAdTitleInput.value.trim();
-        const code = this.ui.iframeAdCodeInput.value.trim();
-        if (!title || !code) { alert('제목과 코드를 모두 입력해주세요!'); return; }
+        const src = this.ui.iframeAdSrcInput.value.trim(); // 변수명 변경
+        if (!title || !src) { alert('제목과 iframe 주소를 모두 입력해주세요!'); return; } // 유효성 검사 변경
         const btn = this.ui.saveIframeAdButton;
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
         try {
             const adData = {
                 adType: 'iframe',
                 title: title,
-                iframeCode: code,
+                iframeSrc: src, // 필드명 변경
                 isPartners: this.ui.iframeIsPartnersCheckbox.checked,
                 startDate: this.ui.iframeAdStartDateInput.value,
                 endDate: this.ui.iframeAdEndDateInput.value,
             };
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
-                Object.assign(adData, { order: ad.order, clickCount: 0, isActive: ad.isActive !== false });
+                Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
                 await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
-                // ✨ 새 iframe 카드를 만들 때만 '공개' 도장을 추가합니다.
-                Object.assign(adData, { order: this.list.length, clickCount: 0, isActive: true, isMembersOnly: false });
+                Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true, isMembersOnly: false });
                 await addDoc(collection(db, "ads"), adData);
             }
             this.ui.iframeAdModal.classList.remove('active');

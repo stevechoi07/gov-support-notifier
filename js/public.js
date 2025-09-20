@@ -1,4 +1,4 @@
-// js/public.js v7.0 - 제미니 스타일 로딩 인디케이터 기능 추가
+// js/public.js v7.1 - iframe 기능 현대화 (URL 방식 + 클릭 추적)
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -21,7 +21,7 @@ function stylesToString(styles = {}) {
 function assignMediaCardIndices(contentList) {
     let mediaCardCounter = 0;
     return contentList.map(content => {
-        const isTrueMediaCard = content.adType && content.adType !== 'subscription-form';
+        const isTrueMediaCard = content.adType && content.adType !== 'subscription-form' && content.adType !== 'iframe';
         if (isTrueMediaCard) {
             content.mediaCardIndex = mediaCardCounter;
             mediaCardCounter++;
@@ -146,7 +146,7 @@ function renderAllContent(contents, append = false, startIndex = 0) {
             cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
 
         } else {
-            if (content.adType === 'subscription-form' || (content.components && content.components.some(c => c.type === 'scene'))) {
+            if (content.adType === 'subscription-form' || (content.components && content.components.some(c => c.type === 'scene')) || content.adType === 'iframe') {
                 layoutClass = 'layout-default';
             } 
             else if (typeof content.mediaCardIndex !== 'undefined') {
@@ -172,6 +172,18 @@ function renderAllContent(contents, append = false, startIndex = 0) {
                 const sceneSettings = firstScene.sceneSettings || {};
                 const bgHtml = `<div class="story-launcher-bg" style="background-image: url('${sceneSettings.bgImage || ''}');"></div>`;
                 cardHtml = `<div class="page-section story-launcher" style="background-color: ${sceneSettings.bgColor || '#000'}; cursor: pointer;" data-story-page-id="${content.id}" data-observe-target>${bgHtml}<div class="page-content-wrapper"><h1 class="page-component" style="color:white; font-size: 2rem;">${content.name}</h1><p style="color: white; opacity: 0.8;">클릭하여 스토리 보기</p></div></div>`;
+            } else if (content.adType === 'iframe' && content.iframeSrc) {
+                const contentType = 'card';
+                const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
+                cardHtml = `
+                    <div class="card ad-card" ${commonAttributes}>
+                        <div class="iframe-container" style="aspect-ratio: 16 / 9; width: 100%;">
+                            <iframe src="${content.iframeSrc}"
+                                    style="width: 100%; height: 100%; border: none;"
+                                    title="${content.title || 'Advertisement'}">
+                            </iframe>
+                        </div>
+                    </div>`;
             } else if (content.adType) {
                 const contentType = 'card';
                 const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
@@ -216,7 +228,6 @@ function renderAllContent(contents, append = false, startIndex = 0) {
     if (append) {
         containerToAppend.insertAdjacentHTML('beforeend', contentHtml);
     } else {
-        // ✨ 로딩 인디케이터가 있다면 그 뒤에 콘텐츠를 추가합니다.
         const loadingIndicator = containerToAppend.querySelector('#loading-indicator');
         if (loadingIndicator) {
              containerToAppend.innerHTML = '';
@@ -324,7 +335,6 @@ function setupIntersectionObserver() {
     targets.forEach(target => observer.observe(target));
 }
 
-// ✨ [v7.0 변경] 로딩 인디케이터 제어 로직이 포함된 새로운 함수
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
     const loadingIndicator = document.getElementById('loading-indicator');
@@ -370,7 +380,6 @@ async function renderPublicPage() {
         if (loadingIndicator) loadingIndicator.style.display = 'none';
         
         if (container) {
-            // 로딩 인디케이터는 남겨두지 않고, 컨테이너 내용을 완전히 교체합니다.
             container.innerHTML = `<p style="color: white; text-align: center;">페이지를 불러오는 중 오류가 발생했습니다.</p>`;
         }
     }
@@ -397,6 +406,45 @@ function setupLoadMoreTrigger() {
     observer.observe(trigger);
 }
 
+// ✨ iframe 클릭 카운트를 처리할 함수
+function handleAdClick(adId) {
+    // 기존의 track 함수를 재사용하여 'card' 타입의 'clickCount'를 증가시킵니다.
+    track(adId, 'card', 'clickCount');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // ✨ iframe 무전기 수신기 설치
+    window.addEventListener('message', (event) => {
+        // 보안을 위해 특정 도메인에서 온 메시지만 처리할 수 있습니다.
+        // 예: if (event.origin !== 'https://my-ad-domain.com') return;
+
+        // 약속된 암호('iframe-ad-clicked')가 맞는지 확인합니다.
+        if (event.data === 'iframe-ad-clicked') {
+            console.log('메인 페이지: iframe으로부터 클릭 신호 수신!');
+            
+            const iframes = document.querySelectorAll('iframe');
+            let clickedAdId = null;
+            
+            for (const iframe of iframes) {
+                if (iframe.contentWindow === event.source) {
+                    const adCard = iframe.closest('.ad-card[data-id]');
+                    if (adCard) {
+                        clickedAdId = adCard.dataset.id;
+                        break;
+                    }
+                }
+            }
+            
+            if (clickedAdId) {
+                handleAdClick(clickedAdId);
+            } else {
+                console.warn('클릭된 iframe의 광고 ID를 찾을 수 없습니다.');
+            }
+        }
+    });
+});
+
+
 document.addEventListener('click', async (event) => {
     const storyLauncher = event.target.closest('.story-launcher');
     if (storyLauncher) {
@@ -416,8 +464,9 @@ document.addEventListener('click', async (event) => {
         }
         return;
     }
-
-    const trackableElement = event.target.closest('[data-id][data-type]');
+    
+    // 일반 카드(a 태그) 클릭은 여기서 처리합니다.
+    const trackableElement = event.target.closest('a.card-link [data-id][data-type]');
     if (trackableElement) {
         const { id, type } = trackableElement.dataset;
         track(id, type, 'clickCount');
@@ -454,16 +503,12 @@ document.addEventListener('submit', async (event) => {
                 isSubscribed = true;
             }
             
-            // 구독 성공 후 콘텐츠를 다시 렌더링 할 때 로딩 인디케이터를 다시 보여주지 않기 위해
-            // renderPublicPage() 대신 renderAllContent()를 직접 호출합니다.
             const contentResponse = await fetch('/.netlify/functions/get-content');
             allContent = await contentResponse.json();
             allContent = assignMediaCardIndices(allContent);
             
-            // ✨ renderAllContent 호출 시, append=false 로 설정하여 기존 콘텐츠를 완전히 교체합니다.
             renderAllContent(allContent, false);
 
-            // '더 보기' 관련 상태 초기화
             loadedContentIndex = allContent.length;
             const trigger = document.getElementById('load-more-trigger');
             if (trigger) trigger.remove();
