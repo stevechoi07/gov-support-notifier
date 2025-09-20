@@ -1,6 +1,6 @@
-// js/adv_cards.js v1.1 - 'adv' 컬렉션 전용으로 복제 및 수정
+// js/adv_cards.js (v1.2 - 메타데이터 기반 썸네일 최종 수정본)
 
-import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 import { showToast } from "./ui.js";
@@ -58,7 +58,7 @@ export const adv_cards = {
             iframeModalTitle: document.getElementById('adv-iframe-modal-title'),
             closeIframeModalButton: document.getElementById('adv-close-iframe-modal-button'),
             iframeAdTitleInput: document.getElementById('adv-iframe-ad-title'),
-            iframeAdSrcInput: document.getElementById('adv-iframe-ad-src'), // [v1.1] ID 변경
+            iframeAdSrcInput: document.getElementById('adv-iframe-ad-src'),
             iframeIsPartnersCheckbox: document.getElementById('adv-iframe-is-partners-checkbox'),
             iframeAdStartDateInput: document.getElementById('adv-iframe-ad-start-date'),
             iframeAdEndDateInput: document.getElementById('adv-iframe-ad-end-date'),
@@ -152,16 +152,14 @@ export const adv_cards = {
 				if (ad.mediaType === 'video') {
 					typeIconHTML = `<div class="content-card-type-icon" title="비디오 광고">🎬</div>`;
 					if (ad.thumbnailUrl) {
-						// 썸네일 URL이 있으면 썸네일 이미지를 보여줍니다.
 						previewHTML = `<div class="content-card-preview"><img src="${ad.thumbnailUrl}" alt="${ad.title} thumbnail">${typeIconHTML}</div>`;
 					} else {
-						// 썸네일이 아직 없으면 '생성 중' 상태를 보여줍니다.
 						previewHTML = `<div class="content-card-preview is-processing">${typeIconHTML}<div class="thumbnail-spinner"></div><span class="thumbnail-status">썸네일 생성 중...</span></div>`;
 					}
-				} else if (ad.mediaUrl) { // 이미지인 경우
+				} else if (ad.mediaUrl) {
 					typeIconHTML = `<div class="content-card-type-icon" title="이미지 광고">🖼️</div>`;
 					previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
-				} else { // 미디어가 없는 카드
+				} else {
 					previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
 				}
 			}
@@ -260,7 +258,7 @@ export const adv_cards = {
     resetIframeModalState() {
         const btn = this.ui.saveIframeAdButton;
         if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = '';
-        if(this.ui.iframeAdSrcInput) this.ui.iframeAdSrcInput.value = ''; // [v1.1] ID 변경
+        if(this.ui.iframeAdSrcInput) this.ui.iframeAdSrcInput.value = '';
         if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false;
         if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
         if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
@@ -284,7 +282,7 @@ export const adv_cards = {
             this.resetIframeModalState();
             this.ui.iframeModalTitle.textContent = "iframe 광고 수정";
             this.ui.iframeAdTitleInput.value = ad.title;
-            this.ui.iframeAdSrcInput.value = ad.iframeSrc || ''; // [v1.1] 필드명 변경
+            this.ui.iframeAdSrcInput.value = ad.iframeSrc || '';
             this.ui.iframeIsPartnersCheckbox.checked = ad.isPartners || false;
             this.ui.iframeAdStartDateInput.value = ad.startDate || '';
             this.ui.iframeAdEndDateInput.value = ad.endDate || '';
@@ -313,6 +311,7 @@ export const adv_cards = {
         if (adToDelete && confirm(`'${adToDelete.title}' 광고를 정말 삭제하시겠습니까?`)) {
             try {
                 if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
+                if (adToDelete.thumbnailUrl) { await deleteObject(ref(storage, adToDelete.thumbnailUrl)); }
                 await deleteDoc(doc(db, "adv", idToDelete));
                 showToast("광고가 삭제되었습니다.");
             } catch (error) {
@@ -323,7 +322,7 @@ export const adv_cards = {
         }
     },
 
-    async uploadMediaFile() {
+    async uploadMediaFile(docId) {
         await firebaseReady;
         const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
@@ -331,7 +330,14 @@ export const adv_cards = {
             const fileName = `adv_${Date.now()}_${this.selectedMediaFile.name}`;
             const folder = this.currentMediaType === 'video' ? 'adv_videos' : 'adv_images';
             const storageRef = ref(storage, `${folder}/${fileName}`);
-            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
+            
+            const metadata = {
+                customMetadata: {
+                    'firestoreDocId': docId
+                }
+            };
+            
+            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile, metadata);
             this.currentUploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -355,12 +361,26 @@ export const adv_cards = {
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
         try {
             let mediaUrlToSave = this.currentMediaUrl;
+
+            let docRef;
+            if (this.editingId) {
+                docRef = doc(db, "adv", this.editingId);
+            } else {
+                docRef = doc(collection(db, "adv"));
+            }
+
             if (this.selectedMediaFile) {
                 if (this.editingId && this.currentMediaUrl) {
                     const storage = getFirebaseStorage();
-                    try { await deleteObject(ref(storage, this.currentMediaUrl)); } catch (e) { console.warn("Could not delete old file:", e.message); }
+                    try { 
+                        await deleteObject(ref(storage, this.currentMediaUrl)); 
+                        const ad = this.list.find(ad => ad.id === this.editingId);
+                        if(ad && ad.thumbnailUrl) {
+                           await deleteObject(ref(storage, ad.thumbnailUrl));
+                        }
+                    } catch (e) { console.warn("Could not delete old file(s):", e.message); }
                 }
-                mediaUrlToSave = await this.uploadMediaFile();
+                mediaUrlToSave = await this.uploadMediaFile(docRef.id);
                 this.ui.uploadLabel.textContent = '업로드 완료!';
             }
             const adData = {
@@ -378,10 +398,10 @@ export const adv_cards = {
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
-                await updateDoc(doc(db, "adv", this.editingId), adData);
+                await updateDoc(docRef, adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true });
-                await addDoc(collection(db, "adv"), adData);
+                await setDoc(docRef, adData);
             }
             this.ui.adModal.classList.remove('active');
             showToast("광고가 저장되었습니다.");

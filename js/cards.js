@@ -1,6 +1,6 @@
-// js/cards.js v3.0 동영상 썸네일 render() 함수 수정
+// js/cards.js (v3.1 - 메타데이터 기반 썸네일 최종 수정본)
 
-import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 import { showToast } from "./ui.js";
@@ -58,7 +58,7 @@ export const cards = {
             iframeModalTitle: document.getElementById('iframe-modal-title'),
             closeIframeModalButton: document.getElementById('close-iframe-modal-button'),
             iframeAdTitleInput: document.getElementById('iframe-ad-title'),
-            iframeAdSrcInput: document.getElementById('iframe-ad-src'), // ID 변경
+            iframeAdSrcInput: document.getElementById('iframe-ad-src'),
             iframeIsPartnersCheckbox: document.getElementById('iframe-is-partners-checkbox'),
             iframeAdStartDateInput: document.getElementById('iframe-ad-start-date'),
             iframeAdEndDateInput: document.getElementById('iframe-ad-end-date'),
@@ -151,21 +151,19 @@ export const cards = {
 				typeIconHTML = `<div class="content-card-type-icon" title="iframe 카드">🔗</div>`;
 				previewHTML = `<div class="content-card-preview ${noMediaClass}">${typeIconHTML}${membersOnlyBadge}</div>`;
 			} else {
-				if (ad.mediaType === 'video') {
-					typeIconHTML = `<div class="content-card-type-icon" title="비디오 카드">🎬</div>`;
-					if (ad.thumbnailUrl) {
-						// 썸네일 URL이 있으면 썸네일 이미지를 보여줍니다.
-						previewHTML = `<div class="content-card-preview"><img src="${ad.thumbnailUrl}" alt="${ad.title} thumbnail">${typeIconHTML}${membersOnlyBadge}</div>`;
-					} else {
-						// 썸네일이 아직 없으면 '생성 중' 상태를 보여줍니다.
-						previewHTML = `<div class="content-card-preview is-processing">${typeIconHTML}${membersOnlyBadge}<div class="thumbnail-spinner"></div><span class="thumbnail-status">썸네일 생성 중...</span></div>`;
-					}
-				} else if (ad.mediaUrl) { // 이미지인 경우
-					typeIconHTML = `<div class="content-card-type-icon" title="이미지 카드">🖼️</div>`;
-					previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}${membersOnlyBadge}</div>`;
-				} else { // 미디어가 없는 카드
-					previewHTML = `<div class="content-card-preview ${noMediaClass}">${membersOnlyBadge}</div>`;
-				}
+                if (ad.mediaType === 'video') {
+                    typeIconHTML = `<div class="content-card-type-icon" title="비디오 카드">🎬</div>`;
+                    if (ad.thumbnailUrl) {
+                        previewHTML = `<div class="content-card-preview"><img src="${ad.thumbnailUrl}" alt="${ad.title} thumbnail">${typeIconHTML}${membersOnlyBadge}</div>`;
+                    } else {
+                        previewHTML = `<div class="content-card-preview is-processing">${typeIconHTML}${membersOnlyBadge}<div class="thumbnail-spinner"></div><span class="thumbnail-status">썸네일 생성 중...</span></div>`;
+                    }
+                } else if (ad.mediaUrl) {
+                    typeIconHTML = `<div class="content-card-type-icon" title="이미지 카드">🖼️</div>`;
+                    previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}${membersOnlyBadge}</div>`;
+                } else {
+                    previewHTML = `<div class="content-card-preview ${noMediaClass}">${membersOnlyBadge}</div>`;
+                }
 			}
 
 			return `
@@ -282,7 +280,7 @@ export const cards = {
     resetIframeModalState() {
         const btn = this.ui.saveIframeAdButton;
         if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = ''; 
-        if(this.ui.iframeAdSrcInput) this.ui.iframeAdSrcInput.value = ''; // ID 변경
+        if(this.ui.iframeAdSrcInput) this.ui.iframeAdSrcInput.value = '';
         if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false; 
         if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
         if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
@@ -306,7 +304,7 @@ export const cards = {
             this.resetIframeModalState();
             this.ui.iframeModalTitle.textContent = "iframe 카드 수정";
             this.ui.iframeAdTitleInput.value = ad.title;
-            this.ui.iframeAdSrcInput.value = ad.iframeSrc || ''; // 필드명 변경
+            this.ui.iframeAdSrcInput.value = ad.iframeSrc || '';
             this.ui.iframeIsPartnersCheckbox.checked = ad.isPartners || false;
             this.ui.iframeAdStartDateInput.value = ad.startDate || '';
             this.ui.iframeAdEndDateInput.value = ad.endDate || '';
@@ -335,6 +333,7 @@ export const cards = {
         if (adToDelete && confirm(`'${adToDelete.title}' 카드를 정말 삭제하시겠습니까?`)) {
             try {
                 if (adToDelete.mediaUrl) { await deleteObject(ref(storage, adToDelete.mediaUrl)); }
+                if (adToDelete.thumbnailUrl) { await deleteObject(ref(storage, adToDelete.thumbnailUrl)); }
                 await deleteDoc(doc(db, "ads", idToDelete));
             } catch (error) {
                 if (error.code !== 'storage/object-not-found') { console.error("파일 삭제 중 에러 발생:", error); }
@@ -343,7 +342,7 @@ export const cards = {
         }
     },
 
-    async uploadMediaFile() {
+    async uploadMediaFile(docId) {
         await firebaseReady;
         const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
@@ -351,7 +350,14 @@ export const cards = {
             const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
             const folder = this.currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
             const storageRef = ref(storage, `${folder}/${fileName}`);
-            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
+            
+            const metadata = {
+                customMetadata: {
+                    'firestoreDocId': docId
+                }
+            };
+
+            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile, metadata);
             this.currentUploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -375,14 +381,29 @@ export const cards = {
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
         try {
             let mediaUrlToSave = this.currentMediaUrl;
+            
+            let docRef;
+            if (this.editingId) {
+                docRef = doc(db, "ads", this.editingId);
+            } else {
+                docRef = doc(collection(db, "ads"));
+            }
+
             if (this.selectedMediaFile) {
                 if (this.editingId && this.currentMediaUrl) {
                     const storage = getFirebaseStorage();
-                    try { await deleteObject(ref(storage, this.currentMediaUrl)); } catch (e) { console.warn("Could not delete old file:", e.message); }
+                    try { 
+                        await deleteObject(ref(storage, this.currentMediaUrl));
+                        const ad = this.list.find(ad => ad.id === this.editingId);
+                        if(ad && ad.thumbnailUrl) {
+                           await deleteObject(ref(storage, ad.thumbnailUrl));
+                        }
+                    } catch (e) { console.warn("Could not delete old file(s):", e.message); }
                 }
-                mediaUrlToSave = await this.uploadMediaFile();
+                mediaUrlToSave = await this.uploadMediaFile(docRef.id);
                 this.ui.uploadLabel.textContent = '업로드 완료!';
             }
+            
             const adData = {
                 adType: 'card',
                 title: this.ui.adTitleInput.value,
@@ -395,13 +416,14 @@ export const cards = {
                 startDate: this.ui.adStartDateInput.value,
                 endDate: this.ui.adEndDateInput.value,
             };
+
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
-                await updateDoc(doc(db, "ads", this.editingId), adData);
+                await updateDoc(docRef, adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true });
-                await addDoc(collection(db, "ads"), adData);
+                await setDoc(docRef, adData);
             }
             this.ui.adModal.classList.remove('active');
         } catch (error) {
@@ -416,22 +438,22 @@ export const cards = {
         await firebaseReady;
         const db = getFirestoreDB();
         const title = this.ui.iframeAdTitleInput.value.trim();
-        const src = this.ui.iframeAdSrcInput.value.trim(); // 변수명 변경
-        if (!title || !src) { alert('제목과 iframe 주소를 모두 입력해주세요!'); return; } // 유효성 검사 변경
+        const src = this.ui.iframeAdSrcInput.value.trim();
+        if (!title || !src) { alert('제목과 iframe 주소를 모두 입력해주세요!'); return; }
         const btn = this.ui.saveIframeAdButton;
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
         try {
             const adData = {
                 adType: 'iframe',
                 title: title,
-                iframeSrc: src, // 필드명 변경
+                iframeSrc: src,
                 isPartners: this.ui.iframeIsPartnersCheckbox.checked,
                 startDate: this.ui.iframeAdStartDateInput.value,
                 endDate: this.ui.iframeAdEndDateInput.value,
             };
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
-                Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
+                Object.assign(adData, { order: ad.order, clickCount: 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
                 await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true, isMembersOnly: false });
