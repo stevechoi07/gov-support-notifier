@@ -1,4 +1,4 @@
-/* css/public_style.css v6.0 - '약' 레이아웃 수직 정렬 패딩 조정 */
+/* css/public_style.css v6.1 - 날짜 선택(Date Picker) 필드 스타일 수정 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -158,7 +158,7 @@ body {
 .layout-default .card-media-wrapper { flex: 0 0 150px; border-radius: 8px; height: 100px; }
 .layout-default .card-media-wrapper img, .layout-default .card-media-wrapper video { height: 100%; object-fit: cover; }
 .layout-default .card-content { 
-    padding: 0 0 0 1.5rem; /* [v6.0 수정] 상하 여백 제거 */
+    padding: 0 0 0 1.5rem; 
 }
 .layout-default .card-content h2 {
     font-size: 1.3rem;
@@ -273,6 +273,13 @@ body {
 .lead-form-input::placeholder {
     color: #6b7280;
 }
+
+/* [v6.1 추가] 날짜 선택 필드 스타일 */
+.lead-form-input[type="date"] {
+    color-scheme: dark;
+    color: #FFFFFF;
+}
+
 .lead-form-privacy {
     display: flex;
     align-items: center;
