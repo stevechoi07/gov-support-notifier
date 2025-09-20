@@ -1,4 +1,4 @@
-// js/cards.js (v3.1 - 메타데이터 기반 썸네일 최종 수정본)
+// js/cards.js (v3.2 - 안정적인 이전 업로드 로직으로 복원)
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -342,7 +342,7 @@ export const cards = {
         }
     },
 
-    async uploadMediaFile(docId) {
+    async uploadMediaFile() {
         await firebaseReady;
         const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
@@ -350,14 +350,7 @@ export const cards = {
             const fileName = `ad_${Date.now()}_${this.selectedMediaFile.name}`;
             const folder = this.currentMediaType === 'video' ? 'ad_videos' : 'ad_images';
             const storageRef = ref(storage, `${folder}/${fileName}`);
-            
-            const metadata = {
-                customMetadata: {
-                    'firestoreDocId': docId
-                }
-            };
-
-            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile, metadata);
+            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
             this.currentUploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -381,14 +374,6 @@ export const cards = {
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
         try {
             let mediaUrlToSave = this.currentMediaUrl;
-            
-            let docRef;
-            if (this.editingId) {
-                docRef = doc(db, "ads", this.editingId);
-            } else {
-                docRef = doc(collection(db, "ads"));
-            }
-
             if (this.selectedMediaFile) {
                 if (this.editingId && this.currentMediaUrl) {
                     const storage = getFirebaseStorage();
@@ -400,10 +385,9 @@ export const cards = {
                         }
                     } catch (e) { console.warn("Could not delete old file(s):", e.message); }
                 }
-                mediaUrlToSave = await this.uploadMediaFile(docRef.id);
+                mediaUrlToSave = await this.uploadMediaFile();
                 this.ui.uploadLabel.textContent = '업로드 완료!';
             }
-            
             const adData = {
                 adType: 'card',
                 title: this.ui.adTitleInput.value,
@@ -416,14 +400,13 @@ export const cards = {
                 startDate: this.ui.adStartDateInput.value,
                 endDate: this.ui.adEndDateInput.value,
             };
-
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
-                await updateDoc(docRef, adData);
+                await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true });
-                await setDoc(docRef, adData);
+                await addDoc(collection(db, "ads"), adData);
             }
             this.ui.adModal.classList.remove('active');
         } catch (error) {

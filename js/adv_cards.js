@@ -1,6 +1,6 @@
-// js/adv_cards.js (v1.2 - 메타데이터 기반 썸네일 최종 수정본)
+// js/adv_cards.js (v1.3 - 안정적인 업로드 로직 전체 코드)
 
-import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 import { showToast } from "./ui.js";
@@ -125,7 +125,7 @@ export const adv_cards = {
         const end = ad.endDate ? new Date(ad.endDate) : null;
         if (!start && !end) return `<span class="status-badge bg-slate-600 text-slate-200">상시</span>`;
         if (start && now < start) return `<span class="status-badge bg-blue-500 text-white">예정</span>`;
-        if (end && now > end) return `<span class="status-badge bg-red-500 text-white">종료</span>`;
+        if (end && now > end) return `<span class.status-badge bg-red-500 text-white">종료</span>`;
         return `<span class="status-badge bg-emerald-500 text-white">진행중</span>`;
     },
     
@@ -322,7 +322,7 @@ export const adv_cards = {
         }
     },
 
-    async uploadMediaFile(docId) {
+    async uploadMediaFile() {
         await firebaseReady;
         const storage = getFirebaseStorage();
         return new Promise((resolve, reject) => {
@@ -330,14 +330,7 @@ export const adv_cards = {
             const fileName = `adv_${Date.now()}_${this.selectedMediaFile.name}`;
             const folder = this.currentMediaType === 'video' ? 'adv_videos' : 'adv_images';
             const storageRef = ref(storage, `${folder}/${fileName}`);
-            
-            const metadata = {
-                customMetadata: {
-                    'firestoreDocId': docId
-                }
-            };
-            
-            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile, metadata);
+            this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile);
             this.currentUploadTask.on('state_changed', 
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -362,13 +355,6 @@ export const adv_cards = {
         try {
             let mediaUrlToSave = this.currentMediaUrl;
 
-            let docRef;
-            if (this.editingId) {
-                docRef = doc(db, "adv", this.editingId);
-            } else {
-                docRef = doc(collection(db, "adv"));
-            }
-
             if (this.selectedMediaFile) {
                 if (this.editingId && this.currentMediaUrl) {
                     const storage = getFirebaseStorage();
@@ -380,7 +366,7 @@ export const adv_cards = {
                         }
                     } catch (e) { console.warn("Could not delete old file(s):", e.message); }
                 }
-                mediaUrlToSave = await this.uploadMediaFile(docRef.id);
+                mediaUrlToSave = await this.uploadMediaFile();
                 this.ui.uploadLabel.textContent = '업로드 완료!';
             }
             const adData = {
@@ -398,10 +384,10 @@ export const adv_cards = {
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
                 Object.assign(adData, { order: ad.order, clickCount: ad.clickCount || 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
-                await updateDoc(docRef, adData);
+                await updateDoc(doc(db, "adv", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true });
-                await setDoc(docRef, adData);
+                await addDoc(collection(db, "adv"), adData);
             }
             this.ui.adModal.classList.remove('active');
             showToast("광고가 저장되었습니다.");

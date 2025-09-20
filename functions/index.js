@@ -1,4 +1,4 @@
-// functions/index.js (v2.1 - 메타데이터 기반 최종 수정본)
+// functions/index.js (v2.3 - 문법 오류 수정 최종본)
 
 const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const { logger } = require("firebase-functions");
@@ -25,8 +25,6 @@ exports.generateThumbnail = onObjectFinalized(
     const fileBucket = event.data.bucket;
     const filePath = event.data.name;
     const contentType = event.data.contentType;
-    const customMetadata = event.data.metadata?.customMetadata || {};
-    const docId = customMetadata.firestoreDocId;
 
     if (!contentType.startsWith("video/")) {
       logger.log("This is not a video.");
@@ -36,12 +34,8 @@ exports.generateThumbnail = onObjectFinalized(
       logger.log("This is already a thumbnail.");
       return;
     }
-    if (!docId) {
-      logger.log("Firestore document ID not found in metadata. Exiting.");
-      return;
-    }
 
-    logger.log(`Processing video: ${filePath} for document ID: ${docId}`);
+    logger.log(`Processing video: ${filePath}`);
 
     const bucket = getStorage().bucket(fileBucket);
     const fileName = path.basename(filePath);
@@ -49,6 +43,14 @@ exports.generateThumbnail = onObjectFinalized(
     const thumbnailFileName = `thumb_${path.parse(fileName).name}.jpg`;
     const tempThumbnailPath = path.join(os.tmpdir(), thumbnailFileName);
     const finalThumbnailPath = `thumbnails/${thumbnailFileName}`;
+    
+    const timestampMatch = fileName.match(/_(\d{13})_/);
+    if (!timestampMatch) {
+        logger.log(`Filename ${fileName} does not contain a timestamp. Exiting.`);
+        return;
+    }
+    const timestamp = timestampMatch[1];
+    logger.log(`Extracted timestamp ${timestamp} from filename.`);
 
     try {
       await bucket.file(filePath).download({ destination: tempFilePath });
@@ -57,7 +59,7 @@ exports.generateThumbnail = onObjectFinalized(
       await new Promise((resolve, reject) => {
         ffmpeg(tempFilePath)
           .on("end", resolve)
-          .on("error", reject)
+          .on("error", reject) // ✨ [수정] 빠졌던 .on()을 추가했습니다.
           .screenshots({
             timestamps: ["1"],
             filename: thumbnailFileName,
@@ -85,14 +87,25 @@ exports.generateThumbnail = onObjectFinalized(
 
       const db = getFirestore();
       const collectionsToSearch = ["ads", "adv"];
+      let documentFound = false;
       for (const collectionName of collectionsToSearch) {
-        const docRef = db.collection(collectionName).doc(docId);
-        const docSnapshot = await docRef.get();
-        if (docSnapshot.exists) {
-            await docRef.update({ thumbnailUrl: thumbnailUrl });
-            logger.log(`Firestore document ${collectionName}/${docId} updated with thumbnail URL.`);
-            break;
+        const q = db.collection(collectionName);
+        const querySnapshot = await q.get();
+
+        for (const doc of querySnapshot.docs) {
+            const data = doc.data();
+            const mediaUrl = data.mediaUrl;
+            if (mediaUrl && mediaUrl.includes(timestamp)) {
+                await doc.ref.update({ thumbnailUrl: thumbnailUrl });
+                logger.log(`Firestore document ${collectionName}/${doc.id} updated with thumbnail URL.`);
+                documentFound = true;
+                break; 
+            }
         }
+        if(documentFound) break;
+      }
+      if(!documentFound) {
+        logger.warn(`No Firestore document found in any collection containing timestamp ${timestamp}`);
       }
 
     } catch (error) {
