@@ -1,4 +1,4 @@
-/* css/public_style.css v7.1 - 모바일 하이라이트 그림자 효과 미세 조정 */
+/* css/public_style.css v7.2 - PC 뉴스레터 폼 레이아웃 복원 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -297,8 +297,37 @@ body {
 }
 
 /* ================================== */
-/* ✨ 반응형 스타일 (모바일 우선) ✨ */
+/* ✨ 반응형 스타일 ✨ */
 /* ================================== */
+
+@media (min-width: 640px) {
+    /* [v7.2 추가] PC 뉴스레터 폼 스타일 복원 */
+    .subscription-form { 
+        flex-direction: row; 
+    }
+    .subscription-form input[type="email"] { 
+        flex-grow: 1; 
+    }
+    .subscription-form button { 
+        width: auto; 
+        flex-shrink: 0; 
+    }
+    .subscription-card { 
+        display: flex; 
+        flex-wrap: wrap; 
+        justify-content: center; 
+    }
+    .subscription-card h2, .subscription-card p { 
+        flex-basis: 100%; 
+        text-align: center; 
+    }
+    .subscription-card h2 { 
+        margin-right: 0; 
+    }
+    .subscription-form { 
+        margin-top: 1rem; 
+    }
+}
 
 @media (max-width: 768px) {
     #content-container {
@@ -317,7 +346,7 @@ body {
 
     .card.is-visible,
     .page-section.is-visible {
-        box-shadow: 0 0 12px -5px rgba(255, 255, 255, 0.2); /* [v7.1 수정] 그림자 효과 감소 */
+        box-shadow: 0 0 12px -5px rgba(255, 255, 255, 0.2);
         border-color: var(--chzzk-container-bg);
     }
 }
