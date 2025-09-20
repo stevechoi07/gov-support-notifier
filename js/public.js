@@ -1,4 +1,4 @@
-// js/public.js v5.0 - 동적 레이아웃 렌더링 함수 구조 수정
+// js/public.js v6.0 - 미디어 카드 전용 인덱스 시스템 도입으로 동적 레이아웃 안정화
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -17,6 +17,22 @@ function stylesToString(styles = {}) {
         .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
         .join(' ');
 }
+
+// ✨ [v6.0 추가] '미디어 카드'에만 순서대로 번호표(mediaCardIndex)를 부여하는 함수
+function assignMediaCardIndices(contentList) {
+    let mediaCardCounter = 0;
+    return contentList.map(content => {
+        // '미디어 카드' 타입인지 확인 (구독폼과 스토리 런처는 제외)
+        const isTrueMediaCard = content.adType && content.adType !== 'subscription-form';
+        
+        if (isTrueMediaCard) {
+            content.mediaCardIndex = mediaCardCounter; // 번호표 부착!
+            mediaCardCounter++; // 다음 카드를 위해 숫자 1 증가
+        }
+        return content;
+    });
+}
+
 
 function launchStoryViewer(pageContent) {
     const viewer = document.querySelector('.story-viewer');
@@ -95,7 +111,6 @@ function closeStoryViewer() {
     viewer.classList.remove('is-active');
 }
 
-// ✨ 함수의 인자로 startIndex 를 추가합니다. 기본값은 0입니다.
 function renderAllContent(contents, append = false, startIndex = 0) { 
     const container = document.getElementById('content-container');
     if (!container) { console.error("Content container not found!"); return; }
@@ -105,13 +120,11 @@ function renderAllContent(contents, append = false, startIndex = 0) {
     }
 
     const contentHtml = contents.map((content, index) => {
-        const absoluteIndex = startIndex + index;
         let cardHtml = '';
         let layoutClass = ''; 
 
-        // [구조 수정] '페이지' 타입과 '미디어 카드' 타입을 명확하게 분리하여 처리합니다.
+        // '페이지' 타입 콘텐츠 처리
         if (!content.adType && !(content.components && content.components.some(c => c.type === 'scene'))) {
-            // ✨ 1. '페이지' 타입 콘텐츠 처리
             layoutClass = 'layout-full';
             
             const contentType = 'page';
@@ -137,16 +150,28 @@ function renderAllContent(contents, append = false, startIndex = 0) {
             cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
 
         } else {
-            // ✨ 2. '미디어 카드' (광고, 스토리 런처, 구독 폼 등) 타입 처리
-            if (absoluteIndex === 0) {
-                layoutClass = 'layout-hero';
-            } else if (absoluteIndex === 1 || absoluteIndex === 2) {
-                layoutClass = 'layout-medium';
+            // '미디어 카드' 및 기타 카드 타입 처리
+            
+            // ✨ [v6.0 변경] 레이아웃 클래스 부여 로직 수정
+            // 구독폼과 스토리 런처는 항상 전체 너비 레이아웃을 가집니다.
+            if (content.adType === 'subscription-form' || (content.components && content.components.some(c => c.type === 'scene'))) {
+                layoutClass = 'layout-default';
+            } 
+            // 진짜 '미디어 카드'일 경우에만 전용 번호표(mediaCardIndex)를 기준으로 '강-중-약'을 결정합니다.
+            else if (typeof content.mediaCardIndex !== 'undefined') {
+                if (content.mediaCardIndex === 0) {
+                    layoutClass = 'layout-hero';
+                } else if (content.mediaCardIndex === 1 || content.mediaCardIndex === 2) {
+                    layoutClass = 'layout-medium';
+                } else {
+                    layoutClass = 'layout-default';
+                }
             } else {
+                // mediaCardIndex가 없는 경우 (예: 예외 상황) 기본 레이아웃을 부여합니다.
                 layoutClass = 'layout-default';
             }
 
-            // 미디어 카드, 구독 폼, 스토리 런처 등을 그리는 로직
+            // 카드 HTML 생성 로직 (기존과 동일)
             if (content.adType === 'subscription-form') {
                 if (isSubscribed) {
                     cardHtml = `<div class="card subscription-card"><h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2><p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p></div>`;
@@ -179,7 +204,6 @@ function renderAllContent(contents, append = false, startIndex = 0) {
             }
         }
         
-        // ✨ 3. 멤버 전용 콘텐츠인지 확인하고 최종 HTML을 결정합니다.
         let finalHtml = cardHtml;
         if (content.isMembersOnly && !isSubscribed) {
             finalHtml = `
@@ -192,7 +216,6 @@ function renderAllContent(contents, append = false, startIndex = 0) {
             `;
         }
         
-        // ✨ 4. 최종 HTML을 레이아웃 div로 감싸서 반환합니다.
         if (content.isMembersOnly && !isSubscribed) {
             return `<div class="locked-content-wrapper ${layoutClass}">${finalHtml}</div>`;
         }
@@ -209,17 +232,14 @@ function renderAllContent(contents, append = false, startIndex = 0) {
     setupIntersectionObserver();
 }
 
-// ✨ `loadMoreContent` 함수도 `startIndex`를 전달하도록 수정이 필요합니다.
 function loadMoreContent() {
     if (loadedContentIndex >= allContent.length) {
         console.log("All content loaded.");
         return;
     }
     
-    // ✨ 여기에서 밑줄 두 개짜리 오타(INITIAL__LOAD_COUNT)를 하나짜리(INITIAL_LOAD_COUNT)로 수정합니다.
     const nextContentsToRender = allContent.slice(loadedContentIndex, loadedContentIndex + INITIAL_LOAD_COUNT);
     
-    // renderAllContent를 호출할 때, 현재 로드된 콘텐츠의 인덱스(loadedContentIndex)를 startIndex로 넘겨줍니다.
     renderAllContent(nextContentsToRender, true, loadedContentIndex);
     loadedContentIndex += INITIAL_LOAD_COUNT;
 }
@@ -308,7 +328,7 @@ function setupIntersectionObserver() {
 
 async function renderPublicPage() {
     const container = document.getElementById('content-container');
-    console.log("🚀 Public page v4.0 script loaded. Fetching all content...");
+    console.log("🚀 Public page script loaded. Fetching all content...");
 
     try {
         const response = await fetch('/.netlify/functions/get-content');
@@ -317,6 +337,9 @@ async function renderPublicPage() {
         }
         allContent = await response.json();
         console.log("🎉 Total content received:", allContent.length);
+
+        // ✨ [v6.0 추가] '번호표 발급기'를 실행하여 미디어 카드에 전용 인덱스를 부여합니다.
+        allContent = assignMediaCardIndices(allContent);
 
         const initialContents = allContent.slice(0, INITIAL_LOAD_COUNT);
         renderAllContent(initialContents);
@@ -355,7 +378,6 @@ function setupLoadMoreTrigger() {
 }
 
 document.addEventListener('click', async (event) => {
-    // 1. 스토리 실행 버튼인지 확인
     const storyLauncher = event.target.closest('.story-launcher');
     if (storyLauncher) {
         const pageId = storyLauncher.dataset.storyPageId;
@@ -366,18 +388,15 @@ document.addEventListener('click', async (event) => {
         return;
     }
 
-    // 2. ✨ [v4.0 변경] 블러 오버레이의 '구독하기' 버튼인지 확인
     const overlayButton = event.target.closest('.subscribe-button-overlay');
     if (overlayButton) {
         const subscriptionForm = document.getElementById('subscription-form-card');
         if (subscriptionForm) {
-            // 구독 폼 위치로 부드럽게 스크롤합니다.
             subscriptionForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        return; // 다른 클릭 이벤트는 무시
+        return;
     }
 
-    // 3. 클릭 수 추적 대상인지 확인
     const trackableElement = event.target.closest('[data-id][data-type]');
     if (trackableElement) {
         const { id, type } = trackableElement.dataset;
@@ -385,7 +404,6 @@ document.addEventListener('click', async (event) => {
     }
 });
 
-// js/public.js v4.1 - 구독 성공 시 실시간 잠금 해제 로직 최종 수정
 document.addEventListener('submit', async (event) => {
     if (event.target.classList.contains('subscription-form')) {
         event.preventDefault();
@@ -416,15 +434,14 @@ document.addEventListener('submit', async (event) => {
                 isSubscribed = true;
             }
             
-            // ✨ [핵심 해결책]
-            // 1. 서버에서 모든 콘텐츠가 포함된 최신 목록을 다시 가져옵니다.
             const contentResponse = await fetch('/.netlify/functions/get-content');
-            allContent = await contentResponse.json(); // 전역 콘텐츠 목록을 업데이트합니다.
-
-            // 2. 받아온 '전체 콘텐츠'를 한 번에 화면에 모두 그려줍니다.
+            allContent = await contentResponse.json();
+            
+            // ✨ [v6.0 추가] 구독 후 새로고침될 때도 번호표를 다시 발급합니다.
+            allContent = assignMediaCardIndices(allContent);
+            
             renderAllContent(allContent);
 
-            // 3. 모든 콘텐츠가 로드되었으므로 '더 보기' 트리거는 제거합니다.
             loadedContentIndex = allContent.length;
             const trigger = document.getElementById('load-more-trigger');
             if (trigger) trigger.remove();
@@ -442,3 +459,4 @@ if (storyCloseButton) storyCloseButton.addEventListener('click', closeStoryViewe
 
 renderPublicPage();
 window.addEventListener('scroll', handleParallaxScroll);
+// ✨ [v6.0 수정] 파일 마지막에 있던 불필요한 닫는 괄호 제거 완료
