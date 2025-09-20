@@ -1,4 +1,4 @@
-// js/public.js v5.0 - 동적 레이아웃 및 콘텐츠 타입 분기 로직 추가
+// js/public.js v5.0 - 동적 레이아웃 렌더링 함수 구조 수정
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -104,18 +104,16 @@ function renderAllContent(contents, append = false, startIndex = 0) {
         container.innerHTML = '';
     }
 
-    // ✨ map 함수에서 두 번째 인자인 index를 사용하여 절대적인 순서를 계산합니다.
     const contentHtml = contents.map((content, index) => {
         const absoluteIndex = startIndex + index;
         let cardHtml = '';
-        let layoutClass = ''; // ✨ 레이아웃 클래스를 담을 변수 선언
+        let layoutClass = ''; 
 
-        // ✨ [핵심 로직 1] 콘텐츠 타입을 먼저 확인하여 레이아웃을 결정합니다.
-        // '페이지' 타입 콘텐츠는 항상 전체 너비를 차지하도록 layout-full 클래스를 부여합니다.
+        // [구조 수정] '페이지' 타입과 '미디어 카드' 타입을 명확하게 분리하여 처리합니다.
         if (!content.adType && !(content.components && content.components.some(c => c.type === 'scene'))) {
+            // ✨ 1. '페이지' 타입 콘텐츠 처리
             layoutClass = 'layout-full';
             
-            // "페이지" 타입 콘텐츠를 그리는 기존 로직 (변경 없음)
             const contentType = 'page';
             const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
             const pageSettings = content.pageSettings || {};
@@ -139,76 +137,62 @@ function renderAllContent(contents, append = false, startIndex = 0) {
             cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
 
         } else {
-            // ✨ '미디어 카드' (광고, 스토리 런처, 구독 폼 등) 타입일 경우
-            // ✨ [핵심 로직 2] 절대 순서(absoluteIndex)에 따라 '강-중-약' 레이아웃 클래스를 부여합니다.
+            // ✨ 2. '미디어 카드' (광고, 스토리 런처, 구독 폼 등) 타입 처리
             if (absoluteIndex === 0) {
-                layoutClass = 'layout-hero'; // 강
+                layoutClass = 'layout-hero';
             } else if (absoluteIndex === 1 || absoluteIndex === 2) {
-                layoutClass = 'layout-medium'; // 중
+                layoutClass = 'layout-medium';
             } else {
-                layoutClass = 'layout-default'; // 약
+                layoutClass = 'layout-default';
             }
 
-// 미디어 카드, 구독 폼, 스토리 런처 등을 그리는 기존 로직 (변경 없음)
-        if (content.adType === 'subscription-form') {
-            if (isSubscribed) {
-                cardHtml = `<div class="card subscription-card"><h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2><p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p></div>`;
-            } else {
-                cardHtml = `<div class="card subscription-card" id="subscription-form-card"><h2>${content.title}</h2><p>${content.description}</p><form class="subscription-form"><input type="email" placeholder="이메일 주소를 입력하세요" required><button type="submit">구독하기</button></form></div>`;
-            }
-        } else if (content.components && content.components.some(c => c.type === 'scene')) {
-            const firstScene = content.components[0] || {};
-            const sceneSettings = firstScene.sceneSettings || {};
-            const bgHtml = `<div class="story-launcher-bg" style="background-image: url('${sceneSettings.bgImage || ''}');"></div>`;
-            cardHtml = `<div class="page-section story-launcher" style="background-color: ${sceneSettings.bgColor || '#000'}; cursor: pointer;" data-story-page-id="${content.id}" data-observe-target>${bgHtml}<div class="page-content-wrapper"><h1 class="page-component" style="color:white; font-size: 2rem;">${content.name}</h1><p style="color: white; opacity: 0.8;">클릭하여 스토리 보기</p></div></div>`;
-        } else if (content.adType) {
-            const contentType = 'card';
-            const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
-            let mediaHtml = '';
-            if (content.mediaUrl) {
-                if (content.mediaType === 'video') {
-                    mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`;
+            // 미디어 카드, 구독 폼, 스토리 런처 등을 그리는 로직
+            if (content.adType === 'subscription-form') {
+                if (isSubscribed) {
+                    cardHtml = `<div class="card subscription-card"><h2 style="font-size: 22px; font-weight: bold; color: #f9fafb; margin-bottom: 8px;">이미 구독 중입니다!</h2><p style="color: #9ca3af; margin-bottom: 0;">최신 소식을 빠짐없이 보내드릴게요. ✨</p></div>`;
                 } else {
-                    mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" loading="lazy" alt="${content.title || '카드 이미지'}"></div>`;
+                    cardHtml = `<div class="card subscription-card" id="subscription-form-card"><h2>${content.title}</h2><p>${content.description}</p><form class="subscription-form"><input type="email" placeholder="이메일 주소를 입력하세요" required><button type="submit">구독하기</button></form></div>`;
+                }
+            } else if (content.components && content.components.some(c => c.type === 'scene')) {
+                const firstScene = content.components[0] || {};
+                const sceneSettings = firstScene.sceneSettings || {};
+                const bgHtml = `<div class="story-launcher-bg" style="background-image: url('${sceneSettings.bgImage || ''}');"></div>`;
+                cardHtml = `<div class="page-section story-launcher" style="background-color: ${sceneSettings.bgColor || '#000'}; cursor: pointer;" data-story-page-id="${content.id}" data-observe-target>${bgHtml}<div class="page-content-wrapper"><h1 class="page-component" style="color:white; font-size: 2rem;">${content.name}</h1><p style="color: white; opacity: 0.8;">클릭하여 스토리 보기</p></div></div>`;
+            } else if (content.adType) {
+                const contentType = 'card';
+                const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
+                let mediaHtml = '';
+                if (content.mediaUrl) {
+                    if (content.mediaType === 'video') {
+                        mediaHtml = `<div class="card-media-wrapper"><video src="${content.mediaUrl}" autoplay loop muted playsinline></video></div>`;
+                    } else {
+                        mediaHtml = `<div class="card-media-wrapper"><img src="${content.mediaUrl}" loading="lazy" alt="${content.title || '카드 이미지'}"></div>`;
+                    }
+                }
+                const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
+                const cardInnerHtml = `<div class="card" ${commonAttributes}>${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`;
+                if (content.link) {
+                    cardHtml = `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`;
+                } else {
+                    cardHtml = cardInnerHtml;
                 }
             }
-            const partnersText = content.isPartners ? `<p class="partners-text">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>` : '';
-            const cardInnerHtml = `<div class="card" ${commonAttributes}>${mediaHtml}<div class="card-content"><h2>${content.title || '제목 없음'}</h2><p>${content.description || ' '}</p>${partnersText}</div></div>`;
-            if (content.link) {
-                cardHtml = `<a href="${content.link}" target="_blank" rel="noopener noreferrer" class="card-link">${cardInnerHtml}</a>`;
-            } else {
-                cardHtml = cardInnerHtml;
-            }
-        } else {
-            // "페이지" 타입 콘텐츠를 그리는 부분
-            const contentType = 'page';
-            const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
-            const pageSettings = content.pageSettings || {};
-            let pageStyle = `background-color: ${pageSettings.bgColor || 'transparent'};`;
-            if (pageSettings.viewport) {
-                const [widthStr, heightStr] = pageSettings.viewport.split(',');
-                const width = parseFloat(widthStr);
-                const height = parseFloat(heightStr);
-                if (height > 0) { pageStyle += ` aspect-ratio: ${width} / ${height};`; }
-            }
-            
-            // ✨ [핵심 수정] content.bgVideo -> pageSettings.bgVideo 로 올바르게 수정
-            const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
-
-            const componentsHtml = (content.components || []).map(component => {
-                const componentStyle = stylesToString(component.styles);
-                switch (component.type) {
-                    case 'heading': return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
-                    case 'paragraph': return `<p class="page-component" style="${componentStyle}">${component.content}</p>`;
-                    case 'button': return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
-                    default: return '';
-                }
-            }).join('');
-            cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
         }
-
-// ✨ [핵심 로직 3] 최종 HTML을 레이아웃 div로 감싸줍니다.
-        // 구독자 전용 콘텐츠는 locked-content-wrapper가 이미 감싸고 있으므로, 그 래퍼에 클래스를 추가합니다.
+        
+        // ✨ 3. 멤버 전용 콘텐츠인지 확인하고 최종 HTML을 결정합니다.
+        let finalHtml = cardHtml;
+        if (content.isMembersOnly && !isSubscribed) {
+            finalHtml = `
+                <div class="is-blurred">${cardHtml}</div>
+                <div class="locked-overlay">
+                    <h3>✨ 구독자 전용 콘텐츠</h3>
+                    <p>구독하고 바로 확인해보세요!</p>
+                    <button class="subscribe-button-overlay">구독하기</button>
+                </div>
+            `;
+        }
+        
+        // ✨ 4. 최종 HTML을 레이아웃 div로 감싸서 반환합니다.
         if (content.isMembersOnly && !isSubscribed) {
             return `<div class="locked-content-wrapper ${layoutClass}">${finalHtml}</div>`;
         }
