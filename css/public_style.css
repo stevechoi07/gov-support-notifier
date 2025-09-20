@@ -1,4 +1,4 @@
-/* css/public_style.css v6.2 - 날짜 필드 시각적 너비 보정 */
+/* css/public_style.css v6.4 - 동적 하이라이트 효과 색상 조정 (라이트 그레이) */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -73,12 +73,11 @@ body {
     transition: transform 0.1s linear, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-@media (max-width: 1024px) {
-    .card.is-visible,
-    .page-section.is-visible {
-        box-shadow: 0 0 25px 0 rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.7);
-    }
+/* [v6.4 수정] 동적 하이라이트 효과 개선 */
+.card.is-visible,
+.page-section.is-visible {
+    border-color: rgba(255, 255, 255, 0.5); /* 부드러운 회색빛으로 변경 */
+    box-shadow: 0 0 15px -2px rgba(255, 255, 255, 0.2); /* 은은한 Glow 효과 */
 }
 
 .card:hover,
