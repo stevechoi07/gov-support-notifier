@@ -130,53 +130,72 @@ body {
 
 /* --- 구독 폼 카드 스타일 (v1.2 기준으로 통합) --- */
 .subscription-card {
-    background-color: #1E1E1E; /* 더 깊은 어두운 배경색 */
+    background-color: #1E1E1E;
     border-radius: 12px;
     padding: 24px;
-    text-align: center;
-    border: 1px solid #4b5563; /* 테두리 색상 변경 */
+    border: 1px solid #4b5563;
+    text-align: left; /* ✨ 변경: 전체 콘텐츠 왼쪽 정렬 */
 }
+
 .subscription-card h2 {
     font-size: 22px;
     font-weight: bold;
-    color: #f9fafb; /* 밝은 텍스트 색상 */
+    color: var(--chzzk-text-primary); /* ✨ 변경: CSS 변수 사용으로 통일성 확보 */
     margin-bottom: 8px;
 }
+
 .subscription-card p {
-    color: #9ca3af; /* 회색 톤 설명 텍스트 */
+    color: var(--chzzk-text-secondary); /* ✨ 변경: 더 밝은 회색 변수로 변경하여 가독성 확보 */
     margin-bottom: 20px;
 }
+
+/* 폼 기본 스타일 (모바일 우선: 세로 쌓기) */
 .subscription-form {
     display: flex;
     flex-direction: column; 
     gap: 12px;
 }
+
 .subscription-form input[type="email"],
 .subscription-form button {
     width: 100%;
     padding: 14px;
     font-size: 16px;
     border-radius: 8px;
-    border: none; /* 테두리 제거 */
+    border: none;
 }
+
+/* 입력창 스타일 */
 .subscription-form input[type="email"] {
-    background-color: #f9fafb; /* 밝은 배경색 */
-    color: #111827; /* 어두운 글자색 */
+    background-color: #f9fafb;
+    color: #111827;
 }
+
+/* ✨ 추가: 입력창 플레이스홀더 색상 지정 */
+.subscription-form input[type="email"]::placeholder {
+  color: #6b7280; /* 너무 어둡지 않은 회색으로 설정 */
+}
+
+/* 입력창 포커스 시 테두리 효과 */
 .subscription-form input[type="email"]:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.5); 
+    box-shadow: 0 0 0 3px rgba(0, 255, 163, 0.5); /* ✨ 변경: 테두리 색상을 포인트 색상으로 변경 */
 }
+
+/* 버튼 스타일 */
 .subscription-form button {
-    background-color: #14b8a6; /* 생생한 청록색 */
-    color: white;
+    background-color: var(--chzzk-accent); /* ✨ 변경: CSS 변수 사용 */
+    color: var(--chzzk-bg); /* ✨ 변경: CSS 변수 사용 */
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s;
 }
+
 .subscription-form button:hover {
-    background-color: #0d9488;
+    filter: brightness(1.1); /* ✨ 변경: 기존 색상에서 더 밝아지는 효과 */
 }
+
+/* 데스크탑 화면에서는 가로로 배치 (화면 너비 640px 이상) */
 @media (min-width: 640px) {
     .subscription-form {
         flex-direction: row;
