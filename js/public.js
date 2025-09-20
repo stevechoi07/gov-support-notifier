@@ -215,8 +215,11 @@ function loadMoreContent() {
         console.log("All content loaded.");
         return;
     }
-    const nextContentsToRender = allContent.slice(loadedContentIndex, loadedContentIndex + INITIAL__LOAD_COUNT);
-    // ✨ renderAllContent를 호출할 때, 현재 로드된 콘텐츠의 인덱스(loadedContentIndex)를 startIndex로 넘겨줍니다.
+    
+    // ✨ 여기에서 밑줄 두 개짜리 오타(INITIAL__LOAD_COUNT)를 하나짜리(INITIAL_LOAD_COUNT)로 수정합니다.
+    const nextContentsToRender = allContent.slice(loadedContentIndex, loadedContentIndex + INITIAL_LOAD_COUNT);
+    
+    // renderAllContent를 호출할 때, 현재 로드된 콘텐츠의 인덱스(loadedContentIndex)를 startIndex로 넘겨줍니다.
     renderAllContent(nextContentsToRender, true, loadedContentIndex);
     loadedContentIndex += INITIAL_LOAD_COUNT;
 }
