@@ -1,4 +1,4 @@
-/* css/public_style.css v5.2 - 고객 정보 블록 및 하단 정렬 스타일 최종본 */
+/* css/public_style.css v5.6 - PC/모바일 레이아웃 구조 동일화 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -46,9 +46,14 @@ body {
         gap: 1.5rem;
     }
 
+    /* * [v5.6 변경] 아래 .layout-medium 스타일을 삭제하여
+     * 모바일에서도 PC처럼 2열 구조를 유지하도록 합니다.
+     */
+    /*
     .layout-medium {
         width: 100%;
     }
+    */
 }
 
 /* ================================== */
@@ -205,10 +210,15 @@ body {
 .layout-default .card-content h2 { font-size: 1.1rem; }
 .layout-default .card-content p { font-size: 0.9rem; }
 
+/* * [v5.6 변경] 아래 @media (max-width: 500px) 규칙을 삭제하여
+ * '약'(.layout-default) 레이아웃이 모바일에서도 PC 구조를 유지하도록 합니다.
+ */
+/*
 @media (max-width: 500px) {
     .layout-default .card { flex-direction: column; align-items: stretch; }
     .layout-default .card-media-wrapper { flex-basis: auto; width: 100%; height: auto; }
 }
+*/
 
 /* ================================== */
 /* ✨ 고객 정보(Lead Form) 블록 스타일 ✨ */
