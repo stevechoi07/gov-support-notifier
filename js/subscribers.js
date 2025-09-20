@@ -1,4 +1,4 @@
-// js/subscribers.js (v2.2 - 고객 정보 타입 표시 기능 추가)
+// js/subscribers.js (v2.3 - 선택 다운로드 및 UI 개선)
 
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -27,22 +27,30 @@ export const subscribers = {
     addEventListeners() {
         this.ui.listContainer.addEventListener('click', (event) => {
             const target = event.target;
+            if (target.id === 'select-all-checkbox') {
+                this.handleSelectAll(target.checked);
+            }
             if (target.classList.contains('delete-subscriber-button')) {
-                const id = target.dataset.id;
-                this.handleDeleteSubscriber(id);
+                this.handleDeleteSubscriber(target.dataset.id);
             }
             if (target.classList.contains('save-memo-button')) {
-                const id = target.dataset.id;
-                this.handleSaveMemo(id);
+                this.handleSaveMemo(target.dataset.id);
             }
         });
 
-        // 다운로드 버튼은 render 함수에서 동적으로 생성되므로, 이벤트 위임을 사용합니다.
         this.ui.statsContainer.addEventListener('click', (event) => {
-            if (event.target.id === 'download-csv-button') {
-                this.handleDownloadCSV();
+            if (event.target.id === 'download-all-csv-button') {
+                this.handleDownloadCSV('all');
+            }
+            if (event.target.id === 'download-selected-csv-button') {
+                this.handleDownloadCSV('selected');
             }
         });
+    },
+    
+    handleSelectAll(isChecked) {
+        const checkboxes = this.ui.listContainer.querySelectorAll('.subscriber-checkbox');
+        checkboxes.forEach(checkbox => checkbox.checked = isChecked);
     },
 
     async listen() {
@@ -59,22 +67,22 @@ export const subscribers = {
     render() {
         if (!this.ui.listContainer || !this.ui.statsContainer) return;
 
-        // 통계 및 다운로드 버튼 렌더링
         this.ui.statsContainer.innerHTML = `
             <div class="flex justify-between items-center">
                 <p class="text-lg text-slate-300">총 <span class="font-bold text-emerald-400">${this.list.length}</span>명의 구독자가 있습니다.</p>
-                <button id="download-csv-button" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-md transition-colors">
-                    CSV 다운로드
-                </button>
+                <div class="flex gap-2">
+                    <button id="download-selected-csv-button" class="px-4 py-2 bg-sky-600 text-white rounded-lg text-sm font-semibold hover:bg-sky-700 shadow-md transition-colors">선택 항목 다운로드</button>
+                    <button id="download-all-csv-button" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-md transition-colors">전체 다운로드</button>
+                </div>
             </div>
         `;
 
-        // 리스트 테이블 렌더링
         let tableHTML = `
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-slate-400">
                     <thead class="text-xs text-slate-300 uppercase bg-slate-700">
                         <tr>
+                            <th scope="col" class="px-4 py-3"><input type="checkbox" id="select-all-checkbox" class="w-4 h-4 rounded border-slate-500 bg-slate-600 text-emerald-500 focus:ring-emerald-500"></th>
                             <th scope="col" class="px-6 py-3">이메일</th>
                             <th scope="col" class="px-6 py-3">구분</th>
                             <th scope="col" class="px-6 py-3">추가 정보</th>
@@ -87,36 +95,33 @@ export const subscribers = {
         `;
 
         if (this.list.length === 0) {
-            tableHTML += `<tr><td colspan="6" class="px-6 py-8 text-center">구독자가 없습니다.</td></tr>`;
+            tableHTML += `<tr><td colspan="7" class="px-6 py-8 text-center">구독자가 없습니다.</td></tr>`;
         } else {
             this.list.forEach(subscriber => {
                 const subscribedDate = subscriber.subscribedAt?.toDate ? subscriber.subscribedAt.toDate() : new Date();
-                const formattedDate = subscribedDate.toLocaleString('ko-KR', {
-                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                });
+                const formattedDate = subscribedDate.toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
                 let typeBadge = '';
                 let extraInfo = '<span class="text-slate-500">-</span>';
 
                 if (subscriber.type === 'lead') {
                     typeBadge = `<span class="px-2 py-1 text-xs font-medium rounded-full bg-sky-900 text-sky-300">고객 정보</span>`;
-                    
-                    let formDataHtml = `출처: ${subscriber.sourcePageName || '알 수 없음'}<br>`;
+                    let formDataHtml = `<span class="font-semibold">출처:</span> ${subscriber.sourcePageName || '알 수 없음'}<br>`;
                     if (subscriber.formData) {
                         for (const [key, value] of Object.entries(subscriber.formData)) {
-                            if (key !== 'email' && value) { // 이메일은 이미 표시되므로 제외
-                                formDataHtml += `${key}: ${value}<br>`;
+                            if (key !== 'email' && value) {
+                                formDataHtml += `<span class="font-semibold">${key}:</span> ${value}<br>`;
                             }
                         }
                     }
-                    extraInfo = `<div class="text-xs">${formDataHtml}</div>`;
-
-                } else { // 'newsletter' 또는 type이 없는 기존 데이터
+                    extraInfo = `<div class="text-base">${formDataHtml}</div>`; // ✨ 글씨 크기 키움
+                } else {
                     typeBadge = `<span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-900 text-emerald-300">뉴스레터</span>`;
                 }
 
                 tableHTML += `
                     <tr class="bg-slate-800 border-b border-slate-700 hover:bg-slate-600 align-top">
+                        <td class="px-4 py-4"><input type="checkbox" class="subscriber-checkbox w-4 h-4 rounded border-slate-500 bg-slate-600 text-emerald-500 focus:ring-emerald-500" data-id="${subscriber.id}"></td>
                         <td class="px-6 py-4 font-medium text-white">${subscriber.email}</td>
                         <td class="px-6 py-4">${typeBadge}</td>
                         <td class="px-6 py-4">${extraInfo}</td>
@@ -155,23 +160,35 @@ export const subscribers = {
         }
     },
 
-    handleDownloadCSV() {
-        if (this.list.length === 0) {
-            showToast("다운로드할 구독자가 없습니다.", true);
+    handleDownloadCSV(type) {
+        let subscribersToDownload = [];
+
+        if (type === 'selected') {
+            const selectedIds = Array.from(this.ui.listContainer.querySelectorAll('.subscriber-checkbox:checked')).map(cb => cb.dataset.id);
+            if (selectedIds.length === 0) {
+                showToast("다운로드할 항목을 선택해주세요.", "error");
+                return;
+            }
+            subscribersToDownload = this.list.filter(sub => selectedIds.includes(sub.id));
+        } else { // 'all'
+            subscribersToDownload = this.list;
+        }
+        
+        if (subscribersToDownload.length === 0) {
+            showToast("다운로드할 구독자가 없습니다.", "error");
             return;
         }
 
         let csvContent = "Email,Type,Subscribed At,Source Page,Memo,Form Data\n";
         
-        this.list.forEach(subscriber => {
+        subscribersToDownload.forEach(subscriber => {
             const email = `"${subscriber.email || ''}"`;
-            const type = `"${subscriber.type || 'newsletter'}"`;
+            const subType = `"${subscriber.type || 'newsletter'}"`;
             const date = subscriber.subscribedAt?.toDate ? subscriber.subscribedAt.toDate().toISOString() : '';
             const sourcePage = `"${subscriber.sourcePageName || ''}"`;
             const memo = `"${(subscriber.memo || '').replace(/"/g, '""')}"`;
             const formData = `"${JSON.stringify(subscriber.formData || {}).replace(/"/g, '""')}"`;
-
-            csvContent += [email, type, date, sourcePage, memo, formData].join(',') + "\n";
+            csvContent += [email, subType, date, sourcePage, memo, formData].join(',') + "\n";
         });
 
         const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -179,7 +196,7 @@ export const subscribers = {
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
         const today = new Date();
-        const filename = `subscribers_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.csv`;
+        const filename = `subscribers_${type}_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.csv`;
         link.setAttribute("download", filename);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
