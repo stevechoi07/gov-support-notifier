@@ -1,4 +1,4 @@
-// js/public.js v7.5 - 하이라이트 로직 및 로딩 애니메이션 개선
+// js/public.js v7.6 - 로딩 진행률(%) 표시 기능 복원
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -38,16 +38,14 @@ function assignMediaCardIndices(contentList) {
     });
 }
 
-// [v7.5 추가] 새로 추가된 요소에 스태거 애니메이션을 적용하는 함수
 function applyStaggerAnimation(containerSelector) {
     const targets = document.querySelectorAll(`${containerSelector} [data-stagger]`);
     targets.forEach((target, index) => {
-        // 이미 애니메이션이 적용된 요소는 건너뜁니다.
         if (target.classList.contains('is-animated')) return;
         
         setTimeout(() => {
             target.classList.add('is-animated');
-        }, index * 100); // 0.1초 간격으로 순차적 애니메이션 적용
+        }, index * 100);
     });
 }
 
@@ -140,7 +138,7 @@ function renderAllContent(contents, append = false) {
     const contentHtml = contents.map((content) => {
         let cardHtml = '';
         let layoutClass = ''; 
-        let staggerAttr = 'data-stagger'; // [v7.5 추가] 애니메이션을 위한 속성
+        let staggerAttr = 'data-stagger'; 
 
         if (!content.adType && !(content.components && content.components.some(c => c.type === 'scene'))) {
             layoutClass = 'layout-full';
@@ -286,9 +284,7 @@ function renderAllContent(contents, append = false) {
         container.innerHTML = contentHtml;
     }
     
-    // [v7.5 수정] 렌더링 후 애니메이션 적용 함수 호출
     applyStaggerAnimation('#content-container');
-    // [v7.5 수정] 하이라이트 감시자 재설정
     setupHighlightObserver();
 }
 
@@ -338,7 +334,6 @@ async function track(contentId, contentType, fieldToIncrement) {
     }
 }
 
-// [v7.5 수정] 하이라이트 로직을 위한 Intersection Observer (단순화 버전)
 function setupHighlightObserver() {
     const trackedImpressions = new Set();
 
@@ -356,12 +351,10 @@ function setupHighlightObserver() {
             }
         });
     }, {
-        threshold: 0.2 // 요소가 20% 이상 보이면 하이라이트
+        threshold: 0.2
     });
 
     const targets = document.querySelectorAll('[data-observe-target]');
-    // 새로 추가된 요소만 감시하도록 기존 감시 대상을 초기화할 수 있습니다.
-    // 하지만 여기서는 간단하게 모든 대상을 다시 감시하도록 설정합니다.
     targets.forEach(target => observer.observe(target));
 }
 
@@ -370,12 +363,21 @@ async function renderPublicPage() {
     const container = document.getElementById('content-container');
     const loadingIndicator = document.getElementById('loading-indicator');
     
+    // [v7.6 추가] 로딩 진행률 표시를 위한 요소 선택
+    const loadingProgress = document.getElementById('loading-progress');
+    
     if (loadingIndicator) loadingIndicator.style.display = 'flex';
     
-    // [v7.5 제거] 가짜 로딩 진행률 로직 삭제
-    // const loadingProgress = document.getElementById('loading-progress');
-    // let progress = 0;
-    // const progressInterval = setInterval(() => { ... });
+    // [v7.6 추가] 로딩 진행률 타이머 로직
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += 1;
+        if (progress <= 100) {
+            if (loadingProgress) loadingProgress.textContent = `${progress}%`;
+        } else {
+            clearInterval(progressInterval);
+        }
+    }, 20);
 
     console.log("🚀 Public page script loaded. Fetching all content...");
 
@@ -389,6 +391,7 @@ async function renderPublicPage() {
 
         allContent = assignMediaCardIndices(allContent);
 
+        clearInterval(progressInterval); // [v7.6 추가] 성공 시 타이머 정지
         if (loadingIndicator) loadingIndicator.style.display = 'none';
 
         const initialContents = allContent.slice(0, INITIAL_LOAD_COUNT);
@@ -400,6 +403,7 @@ async function renderPublicPage() {
         }
     } catch (error) {
         console.error("🔥 An error occurred:", error);
+        clearInterval(progressInterval); // [v7.6 추가] 실패 시 타이머 정지
         if (loadingIndicator) loadingIndicator.style.display = 'none';
         
         if (container) {
