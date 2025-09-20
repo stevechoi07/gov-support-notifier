@@ -1,4 +1,4 @@
-/* css/public_style.css v6.4 - 동적 하이라이트 효과 색상 조정 (라이트 그레이) */
+/* css/public_style.css v6.6 - 모바일 동적 하이라이트 효과 수정 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -50,6 +50,20 @@ body {
     .layout-medium {
         width: calc(50% - 0.5rem);
     }
+
+    /* 모바일 전용 호버 효과 */
+    .card:hover,
+    .page-section:hover {
+        box-shadow: 0 0 35px 5px rgba(255, 255, 255, 0.15); 
+        border-color: var(--chzzk-border); 
+    }
+
+    /* [v6.6 추가] 모바일 전용 동적 하이라이트 효과 */
+    .card.is-visible,
+    .page-section.is-visible {
+        box-shadow: 0 0 15px -2px rgba(255, 255, 255, 0.2); /* 그림자 효과는 유지 */
+        border-color: var(--chzzk-border); /* 테두리 색상은 기본값으로 유지 */
+    }
 }
 
 /* ================================== */
@@ -73,13 +87,14 @@ body {
     transition: transform 0.1s linear, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-/* [v6.4 수정] 동적 하이라이트 효과 개선 */
+/* PC 전용 동적 하이라이트 효과 */
 .card.is-visible,
 .page-section.is-visible {
-    border-color: rgba(255, 255, 255, 0.5); /* 부드러운 회색빛으로 변경 */
-    box-shadow: 0 0 15px -2px rgba(255, 255, 255, 0.2); /* 은은한 Glow 효과 */
+    border-color: rgba(255, 255, 255, 0.5); 
+    box-shadow: 0 0 15px -2px rgba(255, 255, 255, 0.2); 
 }
 
+/* PC 전용 호버 효과 */
 .card:hover,
 .page-section:hover {
     box-shadow: 0 0 35px 5px rgba(255, 255, 255, 0.15);
@@ -124,7 +139,6 @@ body {
     color: var(--chzzk-text-primary); 
     margin-bottom: 0.5rem; 
     
-    /* 기본 텍스트 2줄 줄임 처리 */
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -135,7 +149,6 @@ body {
     font-size: 1rem; 
     color: var(--chzzk-text-secondary); 
 
-    /* 기본 텍스트 3줄 줄임 처리 */
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -144,7 +157,6 @@ body {
 }
 .partners-text { font-size: 0.75rem; color: #6c6c72; margin-top: 1rem; border-top: 1px solid var(--chzzk-border); padding-top: 1rem; }
 
-/* '중' 레이아웃 폰트 크기 조정 */
 .layout-medium .card-content h2 {
     font-size: 1.3rem;
 }
@@ -152,7 +164,6 @@ body {
     font-size: 0.95rem;
 }
 
-/* '약' 레이아웃 스타일 및 폰트 */
 .layout-default .card { display: flex; flex-direction: row; align-items: center; }
 .layout-default .card-media-wrapper { flex: 0 0 150px; border-radius: 8px; height: 100px; }
 .layout-default .card-media-wrapper img, .layout-default .card-media-wrapper video { height: 100%; object-fit: cover; }
@@ -245,9 +256,6 @@ body {
 .locked-overlay .subscribe-button-overlay { background-color: #14b8a6; color: white; font-weight: bold; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
 .locked-overlay .subscribe-button-overlay:hover { background-color: #0d9488; }
 
-/* ================================== */
-/* ✨ 고객 정보(Lead Form) 블록 스타일 ✨ */
-/* ================================== */
 .lead-form {
     width: 100%;
     max-width: 400px;
@@ -273,11 +281,10 @@ body {
     color: #6b7280;
 }
 
-/* 날짜 선택 필드 스타일 */
 .lead-form-input[type="date"] {
     color-scheme: dark;
     color: #FFFFFF;
-    padding-right: 8px; /* [v6.2 수정] 아이콘 공간 확보를 위한 오른쪽 여백 조정 */
+    padding-right: 8px; 
 }
 
 .lead-form-privacy {
@@ -311,7 +318,7 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
-/* ✨ 등장 애니메이션 스타일 (public_style.css에 추가) */
+
 [data-stagger] {
     opacity: 0;
     transform: translateY(30px);
