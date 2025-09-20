@@ -1,4 +1,4 @@
-// js/main.js v2.4 - SDK 버전 통일
+// js/main.js v2.5 - 구독자 관리 모듈 추가
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { firebaseReady, getFirebaseAuth, getFirestoreDB, getFirebaseStorage } from './firebase.js';
@@ -7,6 +7,7 @@ import { setupLoginListeners, handleLogout, showAuthMessage } from './auth.js';
 import { navigateTo } from './navigation.js';
 import { init as initPages } from './pages.js';
 import { cards } from './cards.js';
+import { subscribers } from './subscribers.js'; // ✨ 구독자 모듈 import
 
 export async function initializeAppAndAuth() {
     try {
@@ -16,7 +17,8 @@ export async function initializeAppAndAuth() {
         // [핵심] Firebase 준비 직후, 핵심 데이터 모듈들을 먼저 초기화합니다.
         initPages();
         cards.init();
-        console.log('✅ [main.js] Pages와 Cards 모듈 선제적 초기화 완료!');
+        subscribers.init(); // ✨ 구독자 모듈 초기화
+        console.log('✅ [main.js] Pages, Cards, Subscribers 모듈 선제적 초기화 완료!');
 
         mapInitialUI();
         setupLoginListeners();

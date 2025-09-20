@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 대시보드 v2.39</title>
+    <title>All-in-One 대시보드 v2.40</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@melloware/coloris@latest/dist/coloris.min.css"/>
@@ -31,6 +31,7 @@
                     <a href="#" data-view="pages" class="nav-link flex items-center px-3 py-2.5 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span class="ml-3">페이지 관리</span></a>
                     <a href="#" data-view="cards" class="nav-link flex items-center px-3 py-2.5 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span class="ml-3">콘텐츠 카드 관리</span></a>
                     <a href="#" data-view="adv-cards" class="nav-link flex items-center px-3 py-2.5 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-5 0-9-4.5-9-9.5s4-9.5 9-9.5 9 4.5 9 9.5-4.2 9.5-9 9.5Z"/><path d="M10 10a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z"/><path d="m5 12 2-2"/><path d="m17 12 2-2"/></svg><span class="ml-3">광고 콘텐츠 관리</span></a>
+                    <a href="#" data-view="subscribers" class="nav-link flex items-center px-3 py-2.5 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="ml-3">구독자 관리</span></a>
                 </nav>
                  <div class="p-4 border-t border-slate-800"><button id="logout-button" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg transition-colors text-slate-400 hover:bg-red-500 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg><span class="ml-3">로그아웃</span></button></div>
             </aside>
@@ -48,6 +49,11 @@
                     <div id="pages-view" class="view hidden p-6"><div id="page-list-container"></div></div>
                     <div id="cards-view" class="view hidden p-6"><div id="ad-list-container"></div></div>
                     <div id="adv-cards-view" class="view hidden p-6"><div id="adv-list-container"></div> </div>
+                    <div id="subscribers-view" class="view hidden p-6">
+                        <div id="subscriber-stats" class="mb-4"></div>
+                        <div id="subscriber-list-container" class="bg-slate-800 rounded-lg border border-slate-700">
+                            </div>
+                    </div>
                     <div id="editor-view" class="view hidden h-full"></div>
                 </div>
             </main>
