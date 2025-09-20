@@ -1,4 +1,4 @@
-/* css/public_style.css v5.2 - 고객 정보 블록 및 하단 정렬 스타일 최종본 */
+/* css/public_style.css v5.3 - 모바일 반응형 동적 레이아웃 적용 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -46,9 +46,14 @@ body {
         gap: 1.5rem;
     }
 
+    /* * [v5.3 변경] 아래 .layout-medium 스타일을 삭제하여 
+     * 모바일에서도 PC처럼 2열 구조를 유지하도록 합니다.
+     */
+    /*
     .layout-medium {
         width: 100%;
     }
+    */
 }
 
 /* ================================== */
