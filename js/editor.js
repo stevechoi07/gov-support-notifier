@@ -1,10 +1,11 @@
-// js/editor.js v2.12 - 버튼 블록 기본 위치 하단으로 변경
+// js/editor.js (v2.13 - 통합 미디어 업로드 기능)
 
 import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-import { ui } from './ui.js';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+import { ui, showToast } from './ui.js';
 import { pagesList } from './pages.js';
 import { navigateTo } from './navigation.js';
-import { firebaseReady, getFirestoreDB } from './firebase.js';
+import { firebaseReady, getFirestoreDB, getFirebaseStorage } from './firebase.js';
 
 export const editor = {
     currentPageId: null, 
@@ -13,6 +14,7 @@ export const editor = {
     activeComponentId: null, 
     sortableInstance: null, 
     elements: {},
+    selectedBgMediaFile: null,
     viewportOptions: [
         { id: 'mobile',  label: '🤳', value: '375px,667px',  title: '모바일' },
         { id: 'tablet',  label: '📱', value: '768px,1024px', title: '태블릿' },
@@ -49,8 +51,21 @@ export const editor = {
                 <div id="page-background-controls">
                     <h3>- 페이지 배경 -</h3>
                     <div class="control-group inline-group"><label for="page-bg-color">배경색</label><input type="text" data-color-picker id="page-bg-color"></div>
-                    <div class="control-group"><label for="page-background-image">배경 이미지 URL</label><input type="text" id="page-background-image"></div>
-                    <div class="control-group"><label for="page-background-video">배경 동영상 URL</label><input type="text" id="page-background-video"></div>
+                    <div class="control-group">
+                        <label>배경 미디어 (이미지/동영상)</label>
+                        <div class="flex items-center gap-4">
+                            <label for="page-media-file" class="file-input-button">파일 선택</label>
+                            <span id="page-file-name-display" class="text-sm text-slate-500 truncate">선택된 파일 없음</span>
+                        </div>
+                        <input type="file" id="page-media-file" accept="image/png, image/jpeg, image/gif, video/mp4, video/webm" class="file-input-hidden">
+                        <p class="mt-1 text-xs text-slate-500">동영상은 자동으로 썸네일이 생성됩니다.</p>
+                        <div id="page-media-upload-status" class="mt-2 space-y-1 opacity-0">
+                            <div class="flex justify-between text-xs font-semibold text-emerald-400">
+                                <span>업로드 중...</span><span id="page-upload-progress">0%</span>
+                            </div>
+                            <div class="progress-bar"><div id="page-progress-bar-fill" class="progress-bar-fill"></div></div>
+                        </div>
+                    </div>
                 </div>
                 <hr style="border-color: var(--border-color); margin: 20px 0;">
                 <div id="editors-container"></div>
@@ -64,14 +79,108 @@ export const editor = {
             preview: editorView.querySelector('#editor-preview'), contentArea: editorView.querySelector('.content-area'),
             backgroundImageOverlay: editorView.querySelector('.background-image-overlay'), backgroundVideo: editorView.querySelector('.background-video'),
             editorsContainer: editorView.querySelector('#editors-container'), adders: editorView.querySelectorAll('.component-adders button'),
-            pageBgColorInput: editorView.querySelector('#page-bg-color'), pageBackgroundImageInput: editorView.querySelector('#page-background-image'),
-            pageBackgroundVideoInput: editorView.querySelector('#page-background-video'), viewportControlsLeft: editorView.querySelector('#viewport-controls-left'),
+            pageBgColorInput: editorView.querySelector('#page-bg-color'),
+            viewportControlsLeft: editorView.querySelector('#viewport-controls-left'),
             backToListBtn: editorView.querySelector('#back-to-list-btn'),
-            pageBackgroundControls: editorView.querySelector('#page-background-controls')
+            pageBackgroundControls: editorView.querySelector('#page-background-controls'),
+            pageMediaFileInput: editorView.querySelector('#page-media-file'),
+            pageFileNameDisplay: editorView.querySelector('#page-file-name-display'),
+            pageMediaUploadStatus: editorView.querySelector('#page-media-upload-status'),
+            pageUploadProgress: editorView.querySelector('#page-upload-progress'),
+            pageProgressBarFill: editorView.querySelector('#page-progress-bar-fill'),
         };
 
         await this.loadProject();
         this.setupEventListeners();
+    },
+
+    async uploadPageMediaFile() {
+        if (!this.selectedBgMediaFile || !this.currentPageId) return null;
+
+        const storage = getFirebaseStorage();
+        const originalFileName = this.selectedBgMediaFile.name;
+        const fileExtension = originalFileName.split('.').pop();
+        const isVideo = this.selectedBgMediaFile.type.startsWith('video/');
+        const folder = isVideo ? 'page_videos' : 'page_images';
+        
+        const fileName = `pages---${this.currentPageId}---${Date.now()}.${fileExtension}`;
+        
+        const storageRef = ref(storage, `${folder}/${fileName}`);
+        
+        this.elements.pageMediaUploadStatus.style.opacity = 1;
+
+        return new Promise((resolve, reject) => {
+            const uploadTask = uploadBytesResumable(storageRef, this.selectedBgMediaFile);
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    this.elements.pageUploadProgress.textContent = `${Math.round(progress)}%`;
+                    this.elements.pageProgressBarFill.style.width = `${progress}%`;
+                },
+                (error) => {
+                    console.error("Upload failed:", error);
+                    showToast("미디어 업로드 실패.", "error");
+                    this.elements.pageMediaUploadStatus.style.opacity = 0;
+                    reject(error);
+                },
+                async () => {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    showToast("미디어 업로드 성공!");
+                    this.elements.pageMediaUploadStatus.style.opacity = 0;
+                    resolve({ url: downloadURL, isVideo: isVideo });
+                }
+            );
+        });
+    },
+
+    async handlePageFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        this.selectedBgMediaFile = file;
+        this.elements.pageFileNameDisplay.textContent = file.name;
+
+        const storage = getFirebaseStorage();
+        if (this.pageSettings.bgVideo) {
+             try { await deleteObject(ref(storage, this.pageSettings.bgVideo)); } catch(e) { console.warn("Could not delete old video", e); }
+        }
+        if (this.pageSettings.bgImage) {
+             try { await deleteObject(ref(storage, this.pageSettings.bgImage)); } catch(e) { console.warn("Could not delete old image", e); }
+        }
+        if (this.pageSettings.thumbnailUrl) {
+             try { await deleteObject(ref(storage, this.pageSettings.thumbnailUrl)); } catch(e) { console.warn("Could not delete old thumbnail", e); }
+        }
+        
+        const uploadResult = await this.uploadPageMediaFile();
+        if (uploadResult) {
+            if (uploadResult.isVideo) {
+                this.pageSettings.bgVideo = uploadResult.url;
+                this.pageSettings.bgImage = ''; 
+                delete this.pageSettings.thumbnailUrl;
+            } else {
+                this.pageSettings.bgImage = uploadResult.url;
+                this.pageSettings.bgVideo = '';
+                delete this.pageSettings.thumbnailUrl;
+            }
+            this.selectedBgMediaFile = null;
+            await this.saveAndRender(false, true);
+        }
+    },
+
+    setupEventListeners() {
+        this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
+        this.elements.pageBgColorInput.addEventListener('change', (e) => { this.pageSettings.bgColor = e.target.value; this.saveAndRender(false, true); });
+        
+        this.elements.pageMediaFileInput.addEventListener('change', this.handlePageFileUpload.bind(this));
+
+        this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages'));
+        if (ui.viewTitle) {
+            ui.viewTitle.addEventListener('blur', () => this.handleTitleUpdate());
+            ui.viewTitle.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); ui.viewTitle.blur(); }
+            });
+        }
+        document.addEventListener('color', this.handleColorRealtimeUpdate.bind(this));
     },
 
     async loadProject() {
@@ -91,21 +200,6 @@ export const editor = {
             }
         } else { navigateTo('pages'); }
         this.renderAll();
-    },
-
-    setupEventListeners() {
-        this.elements.adders.forEach(button => button.addEventListener('click', () => this.addComponent(button.dataset.type)));
-        this.elements.pageBgColorInput.addEventListener('change', (e) => { this.pageSettings.bgColor = e.target.value; this.saveAndRender(false, true); });
-        this.elements.pageBackgroundImageInput.addEventListener('input', (e) => { this.pageSettings.bgImage = e.target.value; this.saveAndRender(false, true); });
-        this.elements.pageBackgroundVideoInput.addEventListener('input', (e) => { this.pageSettings.bgVideo = e.target.value; this.saveAndRender(false, true); });
-        this.elements.backToListBtn.addEventListener('click', () => navigateTo('pages'));
-        if (ui.viewTitle) {
-            ui.viewTitle.addEventListener('blur', () => this.handleTitleUpdate());
-            ui.viewTitle.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); ui.viewTitle.blur(); }
-            });
-        }
-        document.addEventListener('color', this.handleColorRealtimeUpdate.bind(this));
     },
 
     handleColorRealtimeUpdate(event) {
@@ -227,7 +321,7 @@ export const editor = {
                 notice = document.createElement('p'); notice.className = 'disabled-notice text-xs text-amber-400 mt-2'; notice.textContent = '※ 스토리 페이지에서는 각 장면의 배경을 사용합니다.'; this.elements.pageBackgroundControls.appendChild(notice);
             } else if (!isStoryPage && notice) { notice.remove(); }
         }
-        this.elements.pageBgColorInput.value = this.pageSettings.bgColor || '#DCEAF7'; this.elements.pageBackgroundImageInput.value = this.pageSettings.bgImage || ''; this.elements.pageBackgroundVideoInput.value = this.pageSettings.bgVideo || ''; this.elements.editorsContainer.innerHTML = '';
+        this.elements.pageBgColorInput.value = this.pageSettings.bgColor || '#DCEAF7'; this.elements.editorsContainer.innerHTML = '';
         this.components.forEach((c, componentIndex) => {
             const panel = document.createElement('div'); panel.className = 'editor-panel'; panel.dataset.id = c.id; const handle = document.createElement('h4'); handle.innerHTML = `${{ heading: '제목', paragraph: '내용', button: '버튼', 'lead-form': '고객 정보', scene: '🎬 장면' }[c.type]} 블록 <div class="panel-controls"><button class="delete-btn" title="삭제">✖</button></div>`; if (c.id === this.activeComponentId) panel.classList.add('selected');
             let panelContentHTML = '';
