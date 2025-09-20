@@ -26,7 +26,6 @@ exports.generateThumbnail = onObjectFinalized(
     const filePath = event.data.name;
     const contentType = event.data.contentType;
     
-    // ✨ [수정] 메타데이터를 더 안정적으로 읽어옵니다.
     const metadata = event.data.metadata || {};
     const customMetadata = metadata.customMetadata || {};
     const docId = customMetadata.firestoreDocId;
