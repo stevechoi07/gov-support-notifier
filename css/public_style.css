@@ -1,4 +1,4 @@
-/* css/public_style.css v5.6 - PC/모바일 레이아웃 구조 동일화 */
+/* css/public_style.css v5.7 - '중'/'약' 레이아웃 스타일 및 폰트 조정 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -26,9 +26,10 @@ body {
     display: flex;
     flex-wrap: wrap; 
     gap: 2.5rem; 
-    max-width: 800px;
+    max-width: 840px; /* [v5.7 수정] 카드 크기 확대를 위해 최대 너비 증가 */
     margin: 0 auto;
     padding: 2rem 1rem;
+    justify-content: space-between; /* [v5.7 추가] 양쪽 정렬 */
 }
 
 .layout-full,
@@ -45,15 +46,6 @@ body {
     #content-container {
         gap: 1.5rem;
     }
-
-    /* * [v5.6 변경] 아래 .layout-medium 스타일을 삭제하여
-     * 모바일에서도 PC처럼 2열 구조를 유지하도록 합니다.
-     */
-    /*
-    .layout-medium {
-        width: 100%;
-    }
-    */
 }
 
 /* ================================== */
@@ -126,6 +118,17 @@ body {
 .card-content h2 { font-size: 1.5rem; font-weight: 700; color: var(--chzzk-text-primary); margin-bottom: 0.5rem; }
 .card-content p { font-size: 1rem; color: var(--chzzk-text-secondary); }
 .partners-text { font-size: 0.75rem; color: #6c6c72; margin-top: 1rem; border-top: 1px solid var(--chzzk-border); padding-top: 1rem; }
+
+/* [v5.7 추가] '중', '약' 레이아웃 폰트 크기 조정 */
+.layout-medium .card-content h2,
+.layout-default .card-content h2 {
+    font-size: 1.3rem;
+}
+.layout-medium .card-content p,
+.layout-default .card-content p {
+    font-size: 0.95rem;
+}
+
 
 .story-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
 .story-viewer.is-active { opacity: 1; visibility: visible; }
@@ -207,18 +210,8 @@ body {
 .layout-default .card-media-wrapper { flex: 0 0 150px; border-radius: 8px; height: 100px; }
 .layout-default .card-media-wrapper img, .layout-default .card-media-wrapper video { height: 100%; object-fit: cover; }
 .layout-default .card-content { padding-left: 1.5rem; }
-.layout-default .card-content h2 { font-size: 1.1rem; }
-.layout-default .card-content p { font-size: 0.9rem; }
+/* .layout-default h2 and p font sizes are now handled by the new rule block above */
 
-/* * [v5.6 변경] 아래 @media (max-width: 500px) 규칙을 삭제하여
- * '약'(.layout-default) 레이아웃이 모바일에서도 PC 구조를 유지하도록 합니다.
- */
-/*
-@media (max-width: 500px) {
-    .layout-default .card { flex-direction: column; align-items: stretch; }
-    .layout-default .card-media-wrapper { flex-basis: auto; width: 100%; height: auto; }
-}
-*/
 
 /* ================================== */
 /* ✨ 고객 정보(Lead Form) 블록 스타일 ✨ */
