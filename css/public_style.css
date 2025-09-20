@@ -1,4 +1,4 @@
-/* css/public_style.css v7.0 - CSS 규칙 순서 재조정으로 모바일 스타일 오류 해결 */
+/* css/public_style.css v7.1 - 모바일 하이라이트 그림자 효과 미세 조정 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -300,7 +300,6 @@ body {
 /* ✨ 반응형 스타일 (모바일 우선) ✨ */
 /* ================================== */
 
-/* [v7.0 수정] 모든 모바일 덮어쓰기 규칙을 파일 하단으로 이동 */
 @media (max-width: 768px) {
     #content-container {
         gap: 1rem; 
@@ -318,7 +317,7 @@ body {
 
     .card.is-visible,
     .page-section.is-visible {
-        box-shadow: 0 0 15px -2px rgba(255, 255, 255, 0.2);
+        box-shadow: 0 0 12px -5px rgba(255, 255, 255, 0.2); /* [v7.1 수정] 그림자 효과 감소 */
         border-color: var(--chzzk-container-bg);
     }
 }
