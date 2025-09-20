@@ -1,33 +1,71 @@
-// netlify/functions/get-content-paginated.js
+// netlify/functions/get-content-paginated.js v1.0
 
-// 이곳에 원래 사용하시던 콘텐츠 데이터를 가져오는 로직을 넣어주세요.
-// 예시를 위해 임시 데이터로 구성했습니다.
-const allContentData = [
-    // ... 여기에 모든 콘텐츠 객체들이 들어있다고 가정합니다.
-    // 예: { id: '1', name: '페이지 1', ... }, { id: '2', adType: 'card', ... }
-];
+const admin = require('firebase-admin');
 
+// --- Firebase Admin SDK 초기화 ---
+// 기존 get-content.js와 동일한 방식으로 초기화합니다.
+try {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+  }
+} catch (e) {
+  console.error('Firebase Admin SDK 초기화 실패:', e);
+}
+const db = admin.firestore();
+
+// --- 메인 핸들러 함수 ---
 exports.handler = async (event, context) => {
-    // 1. 클라이언트가 요청한 페이지 번호와 페이지 당 아이템 수를 가져옵니다.
-    const page = parseInt(event.queryStringParameters.page) || 1;
-    const limit = parseInt(event.queryStringParameters.limit) || 5; // 한 번에 5개씩 로드
+  if (event.httpMethod !== 'GET') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
 
-    // 2. 전체 데이터에서 요청된 페이지에 해당하는 부분을 계산합니다.
+  try {
+    // --- 1. 기존 로직: 모든 콘텐츠 ID와 정보를 가져옵니다. ---
+    const layoutRef = db.collection('layouts').doc('mainLayout');
+    const layoutDoc = await layoutRef.get();
+    
+    if (!layoutDoc.exists) {
+      throw new Error('mainLayout 문서를 찾을 수 없습니다.');
+    }
+    const contentIds = layoutDoc.data().contentIds || [];
+    
+    const pagesPromise = db.collection('pages').get();
+    const adsPromise = db.collection('ads').get();
+    
+    const [pagesSnapshot, adsSnapshot] = await Promise.all([pagesPromise, adsPromise]);
+
+    const allContentMap = new Map();
+    pagesSnapshot.forEach(doc => allContentMap.set(doc.id, { ...doc.data(), id: doc.id }));
+    adsSnapshot.forEach(doc => allContentMap.set(doc.id, { ...doc.data(), id: doc.id }));
+    
+    const orderedContent = contentIds.map(id => allContentMap.get(id)).filter(Boolean);
+
+    // --- 2. [새로운 기능] 페이지네이션 로직을 적용합니다. ---
+    const page = parseInt(event.queryStringParameters.page) || 1;
+    const limit = parseInt(event.queryStringParameters.limit) || 5;
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
     
-    // 3. 계산된 부분만큼 데이터를 잘라냅니다.
-    const paginatedData = allContentData.slice(startIndex, endIndex);
+    const paginatedData = orderedContent.slice(startIndex, endIndex);
 
-    // 4. 잘라낸 데이터와 전체 아이템 수를 함께 클라이언트에 보냅니다.
+    // --- 3. 잘라낸 데이터와 전체 아이템 수를 함께 보냅니다. ---
     return {
-        statusCode: 200,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            data: paginatedData,
-            totalItems: allContentData.length,
-        }),
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+          data: paginatedData,
+          totalItems: orderedContent.length,
+      }),
     };
+
+  } catch (error) {
+    console.error('콘텐츠를 가져오는 중 오류 발생:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: '서버에서 콘텐츠를 가져오는 데 실패했습니다.' }),
+    };
+  }
 };
