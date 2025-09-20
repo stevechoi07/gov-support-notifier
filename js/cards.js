@@ -1,4 +1,6 @@
-// js/cards.js (v3.3 - 메타데이터 방식 최종 수정본)
+// js/cards.js (v3.4 - 메타데이터 전송 추적 코드 추가)
+
+console.log("cards.js version 3.4 (with metadata tracer) is loaded!");
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -361,6 +363,9 @@ export const cards = {
                 }
             };
 
+            // ✨ [추적 코드] 어떤 메타데이터로 업로드를 시도하는지 콘솔에 출력합니다.
+            console.log("Attempting to upload with metadata:", metadata);
+
             this.currentUploadTask = uploadBytesResumable(storageRef, this.selectedMediaFile, metadata);
             this.currentUploadTask.on('state_changed', 
                 (snapshot) => {
@@ -368,7 +373,11 @@ export const cards = {
                     this.ui.uploadProgress.textContent = `${Math.round(progress)}%`;
                     this.ui.progressBarFill.style.width = `${progress}%`;
                 }, 
-                (error) => { reject(error); }, 
+                (error) => {
+                    // ✨ [추적 코드] 업로드 중 에러가 발생하면 콘솔에 출력합니다.
+                    console.error("Upload failed:", error);
+                    reject(error);
+                }, 
                 async () => {
                     const downloadURL = await getDownloadURL(this.currentUploadTask.snapshot.ref);
                     resolve(downloadURL);
@@ -404,6 +413,9 @@ export const cards = {
                         }
                     } catch (e) { console.warn("Could not delete old file(s):", e.message); }
                 }
+
+                // ✨ [추적 코드] uploadMediaFile을 어떤 ID로 호출하는지 콘솔에 출력합니다.
+                console.log(`Calling uploadMediaFile with docId: ${docRef.id} and collection: 'ads'`);
                 mediaUrlToSave = await this.uploadMediaFile(docRef.id, 'ads');
                 this.ui.uploadLabel.textContent = '업로드 완료!';
             }
@@ -434,7 +446,8 @@ export const cards = {
             }
             this.ui.adModal.classList.remove('active');
         } catch (error) {
-            console.error("저장 중 오류 발생:", error);
+            // ✨ [추적 코드] 저장 과정 전체에서 에러가 발생하면 콘솔에 출력합니다.
+            console.error("Error in handleSaveAd:", error);
             alert("작업에 실패했습니다.");
             btn.disabled = false;
             btn.innerHTML = `저장하기`;
@@ -460,7 +473,7 @@ export const cards = {
             };
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
-                Object.assign(adData, { order: ad.order, clickCount: 0, viewCount: ad.viewCount || 0, isActive: ad.isActive !== false });
+                Object.assign(adData, { order: ad.order, clickCount: 0, viewCount: 0, isActive: ad.isActive !== false });
                 await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
                 Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true, isMembersOnly: false });
