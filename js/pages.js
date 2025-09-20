@@ -1,4 +1,4 @@
-// js/pages.js v2.4 - 새 페이지 생성 시 isMembersOnly: false 자동 추가
+// js/pages.js (v2.5 - 동영상 썸네일 기능 추가)
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ui } from './ui.js';
@@ -22,17 +22,30 @@ export async function renderPages() {
         : pagesList.map(page => {
             const lastUpdated = page.updatedAt ? new Date(page.updatedAt.seconds * 1000).toLocaleString() : '정보 없음';
             const isPublished = page.isPublished || false;
-            const bgColor = page.pageSettings?.bgColor || '#0f172a';
-            const bgImage = page.pageSettings?.bgImage || '';
-            const previewStyle = `background-color: ${bgColor}; ${bgImage ? `background-image: url('${bgImage}');` : ''}`;
+            const settings = page.pageSettings || {};
+            const bgColor = settings.bgColor || '#0f172a';
+            let previewStyle = `background-color: ${bgColor};`;
+            let previewContent = '';
 
-            // ✨ [핵심 추가] 페이지가 스토리 유형인지 확인합니다.
+            // ✨ [핵심 수정] 썸네일 로직 추가
+            if (settings.bgVideo) {
+                if (settings.thumbnailUrl) {
+                    previewStyle += `background-image: url('${settings.thumbnailUrl}'); background-size: cover; background-position: center;`;
+                } else {
+                    previewContent = `<div class="thumbnail-spinner"></div><span class="thumbnail-status">썸네일 생성 중...</span>`;
+                    previewStyle += ` background-color: #1e293b;`; // 생성 중 배경색
+                }
+            } else if (settings.bgImage) {
+                previewStyle += `background-image: url('${settings.bgImage}'); background-size: cover; background-position: center;`;
+            }
+
             const isStory = page.components?.some(c => c.type === 'scene');
             const storyBadge = isStory ? `<span class="story-badge">✨ 스토리</span>` : '';
 
             return `
             <div class="page-card">
-                <div class="page-card-preview" style="${previewStyle}">
+                <div class="page-card-preview is-processing" style="${previewStyle}">
+                    ${previewContent}
                     <div class="title-wrapper">
                         <h4>${page.name}</h4>
                         ${storyBadge}
@@ -85,7 +98,7 @@ export async function handleNewPageClick() {
                 pageSettings: { bgColor: '#1e293b', bgImage: '', bgVideo: '', viewport: '375px,667px' },
                 viewCount: 0,
                 clickCount: 0,
-                isMembersOnly: false // ✨ 바로 이 한 줄이 추가되었습니다!
+                isMembersOnly: false
             };
             const newPageRef = await addDoc(collection(db, "pages"), newPageData);
             return newPageRef.id;

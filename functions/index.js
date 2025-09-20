@@ -1,4 +1,4 @@
-// functions/index.js (v2.3 - 문법 오류 수정 최종본)
+// functions/index.js (v2.4 - 페이지 썸네일 지원)
 
 const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const { logger } = require("firebase-functions");
@@ -44,6 +44,7 @@ exports.generateThumbnail = onObjectFinalized(
     const tempThumbnailPath = path.join(os.tmpdir(), thumbnailFileName);
     const finalThumbnailPath = `thumbnails/${thumbnailFileName}`;
     
+    // ✨ 파일 이름에서 타임스탬프(고유 ID)를 계속 사용합니다.
     const timestampMatch = fileName.match(/_(\d{13})_/);
     if (!timestampMatch) {
         logger.log(`Filename ${fileName} does not contain a timestamp. Exiting.`);
@@ -59,7 +60,7 @@ exports.generateThumbnail = onObjectFinalized(
       await new Promise((resolve, reject) => {
         ffmpeg(tempFilePath)
           .on("end", resolve)
-          .on("error", reject) // ✨ [수정] 빠졌던 .on()을 추가했습니다.
+          .on("error", reject)
           .screenshots({
             timestamps: ["1"],
             filename: thumbnailFileName,
@@ -86,17 +87,33 @@ exports.generateThumbnail = onObjectFinalized(
       });
 
       const db = getFirestore();
-      const collectionsToSearch = ["ads", "adv"];
+      // ✨ 검색할 컬렉션 목록에 'pages'를 추가합니다.
+      const collectionsToSearch = ["ads", "adv", "pages"];
       let documentFound = false;
+
       for (const collectionName of collectionsToSearch) {
-        const q = db.collection(collectionName);
-        const querySnapshot = await q.get();
+        const querySnapshot = await db.collection(collectionName).get();
 
         for (const doc of querySnapshot.docs) {
             const data = doc.data();
-            const mediaUrl = data.mediaUrl;
-            if (mediaUrl && mediaUrl.includes(timestamp)) {
-                await doc.ref.update({ thumbnailUrl: thumbnailUrl });
+            let urlToCompare = null;
+            
+            // ✨ 컬렉션에 따라 비교할 URL 필드를 다르게 설정합니다.
+            if (collectionName === "pages") {
+                urlToCompare = data.pageSettings?.bgVideo;
+            } else {
+                urlToCompare = data.mediaUrl;
+            }
+
+            if (urlToCompare && urlToCompare.includes(timestamp)) {
+                // ✨ pages 컬렉션일 경우 pageSettings 객체를 업데이트합니다.
+                if (collectionName === "pages") {
+                    const newPageSettings = { ...data.pageSettings, thumbnailUrl: thumbnailUrl };
+                    await doc.ref.update({ pageSettings: newPageSettings });
+                } else {
+                    await doc.ref.update({ thumbnailUrl: thumbnailUrl });
+                }
+                
                 logger.log(`Firestore document ${collectionName}/${doc.id} updated with thumbnail URL.`);
                 documentFound = true;
                 break; 
