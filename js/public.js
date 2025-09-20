@@ -1,4 +1,4 @@
-// js/public.js v7.1 - iframe 기능 현대화 (URL 방식 + 클릭 추적)
+// js/public.js (v7.2 - 버튼 하단 정렬 기능 추가)
 
 import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -134,15 +134,27 @@ function renderAllContent(contents, append = false, startIndex = 0) {
                 if (height > 0) { pageStyle += ` aspect-ratio: ${width} / ${height};`; }
             }
             const bgMediaHtml = pageSettings.bgVideo ? `<video class="page-background-video" src="${pageSettings.bgVideo}" autoplay loop muted playsinline></video>` : pageSettings.bgImage ? `<div class="page-background-image" style="background-image: url('${pageSettings.bgImage}');"></div>` : '';
+            
             const componentsHtml = (content.components || []).map(component => {
                 const componentStyle = stylesToString(component.styles);
+                let elementHtml = '';
                 switch (component.type) {
-                    case 'heading': return `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
-                    case 'paragraph': return `<p class="page-component" style="${componentStyle}">${component.content}</p>`;
-                    case 'button': return `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
-                    default: return '';
+                    case 'heading': 
+                        elementHtml = `<h1 class="page-component" style="${componentStyle}">${component.content}</h1>`;
+                        break;
+                    case 'paragraph': 
+                        elementHtml = `<p class="page-component" style="${componentStyle}">${component.content}</h1>`;
+                        break;
+                    case 'button': 
+                        elementHtml = `<a href="${component.link || '#'}" class="page-button page-component" style="${componentStyle}" target="_blank" rel="noopener noreferrer">${component.content}</a>`;
+                        break;
+                    default: 
+                        elementHtml = '';
                 }
+                const wrapperStyle = (component.styles?.verticalAlign === 'bottom') ? 'margin-top: auto;' : '';
+                return `<div class="component-wrapper" style="${wrapperStyle}">${elementHtml}</div>`;
             }).join('');
+
             cardHtml = `<div class="page-section" ${commonAttributes} style="${pageStyle}">${bgMediaHtml}<div class="page-content-wrapper">${componentsHtml}</div></div>`;
 
         } else {
@@ -406,25 +418,16 @@ function setupLoadMoreTrigger() {
     observer.observe(trigger);
 }
 
-// ✨ iframe 클릭 카운트를 처리할 함수
 function handleAdClick(adId) {
-    // 기존의 track 함수를 재사용하여 'card' 타입의 'clickCount'를 증가시킵니다.
     track(adId, 'card', 'clickCount');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ✨ iframe 무전기 수신기 설치
     window.addEventListener('message', (event) => {
-        // 보안을 위해 특정 도메인에서 온 메시지만 처리할 수 있습니다.
-        // 예: if (event.origin !== 'https://my-ad-domain.com') return;
-
-        // 약속된 암호('iframe-ad-clicked')가 맞는지 확인합니다.
         if (event.data === 'iframe-ad-clicked') {
             console.log('메인 페이지: iframe으로부터 클릭 신호 수신!');
-            
             const iframes = document.querySelectorAll('iframe');
             let clickedAdId = null;
-            
             for (const iframe of iframes) {
                 if (iframe.contentWindow === event.source) {
                     const adCard = iframe.closest('.ad-card[data-id]');
@@ -434,7 +437,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
             if (clickedAdId) {
                 handleAdClick(clickedAdId);
             } else {
@@ -465,7 +467,6 @@ document.addEventListener('click', async (event) => {
         return;
     }
     
-    // 일반 카드(a 태그) 클릭은 여기서 처리합니다.
     const trackableElement = event.target.closest('a.card-link [data-id][data-type]');
     if (trackableElement) {
         const { id, type } = trackableElement.dataset;
