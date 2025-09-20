@@ -129,63 +129,72 @@ export const adv_cards = {
         return `<span class="status-badge bg-emerald-500 text-white">진행중</span>`;
     },
     
-    render() {
-        if (!this.ui.adListContainer) return;
-        this.ui.adListContainer.className = 'card-grid';
-        if (this.list.length === 0) {
-            this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8 col-span-full">등록된 광고가 없습니다.</p>`;
-            return;
-        }
-        this.ui.adListContainer.innerHTML = this.list.map(ad => {
-            const isIframe = ad.adType === 'iframe';
-            const clickCount = ad.clickCount || 0;
-            const viewCount = ad.viewCount || 0;
-            const statusBadge = this.getAdStatus(ad);
-            const isChecked = ad.isActive !== false;
-            const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
-            let previewHTML = '', typeIconHTML = '';
-            
-            if (isIframe) {
-                typeIconHTML = `<div class="content-card-type-icon" title="iframe 광고">🔗</div>`;
-                previewHTML = `<div class="content-card-preview no-media">${typeIconHTML}</div>`;
-            } else {
-                if (ad.mediaUrl) {
-                    typeIconHTML = ad.mediaType === 'video' ? `<div class="content-card-type-icon" title="비디오 광고">🎬</div>` : `<div class="content-card-type-icon" title="이미지 광고">🖼️</div>`;
-                    previewHTML = ad.mediaType === 'video' ? `<div class="content-card-preview"><video muted playsinline src="${ad.mediaUrl}"></video>${typeIconHTML}</div>` : `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
-                } else {
-                    previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
-                }
-            }
+	render() {
+		if (!this.ui.adListContainer) return;
+		this.ui.adListContainer.className = 'card-grid';
+		if (this.list.length === 0) {
+			this.ui.adListContainer.innerHTML = `<p class="text-center text-slate-500 py-8 col-span-full">등록된 광고가 없습니다.</p>`;
+			return;
+		}
+		this.ui.adListContainer.innerHTML = this.list.map(ad => {
+			const isIframe = ad.adType === 'iframe';
+			const clickCount = ad.clickCount || 0;
+			const viewCount = ad.viewCount || 0;
+			const statusBadge = this.getAdStatus(ad);
+			const isChecked = ad.isActive !== false;
+			const noMediaClass = (!isIframe && !ad.mediaUrl) ? 'no-media' : '';
+			let previewHTML = '', typeIconHTML = '';
+			
+			if (isIframe) {
+				typeIconHTML = `<div class="content-card-type-icon" title="iframe 광고">🔗</div>`;
+				previewHTML = `<div class="content-card-preview no-media">${typeIconHTML}</div>`;
+			} else {
+				if (ad.mediaType === 'video') {
+					typeIconHTML = `<div class="content-card-type-icon" title="비디오 광고">🎬</div>`;
+					if (ad.thumbnailUrl) {
+						// 썸네일 URL이 있으면 썸네일 이미지를 보여줍니다.
+						previewHTML = `<div class="content-card-preview"><img src="${ad.thumbnailUrl}" alt="${ad.title} thumbnail">${typeIconHTML}</div>`;
+					} else {
+						// 썸네일이 아직 없으면 '생성 중' 상태를 보여줍니다.
+						previewHTML = `<div class="content-card-preview is-processing">${typeIconHTML}<div class="thumbnail-spinner"></div><span class="thumbnail-status">썸네일 생성 중...</span></div>`;
+					}
+				} else if (ad.mediaUrl) { // 이미지인 경우
+					typeIconHTML = `<div class="content-card-type-icon" title="이미지 광고">🖼️</div>`;
+					previewHTML = `<div class="content-card-preview"><img src="${ad.mediaUrl}" alt="${ad.title} preview">${typeIconHTML}</div>`;
+				} else { // 미디어가 없는 카드
+					previewHTML = `<div class="content-card-preview ${noMediaClass}"></div>`;
+				}
+			}
 
-            return `
-            <div class="content-card ${isChecked ? '' : 'opacity-40'}" data-id="${ad.id}">
-                ${previewHTML}
-                <div class="content-card-content">
-                    <div class="content-card-header"><p class="title" title="${ad.title}">${ad.title}</p></div>
-                    <div class="content-card-info">
-                        ${statusBadge}
-                        <span class="flex items-center" title="조회수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${viewCount}</span>
-                        <span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>${clickCount}</span>
-                    </div>
-                    <div class="content-card-actions">
-                        <div class="publish-info">
-                            <label class="toggle-switch"><input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked ? 'checked' : ''}><span class="toggle-slider"></span></label>
-                            <span class="text-sm font-medium ${isChecked ? 'text-emerald-400' : 'text-slate-400'}">${isChecked ? '게시 중' : '비공개'}</span>
-                        </div>
-                        <div class="action-buttons">
-                            <button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
-                            <button class="delete-ad-button text-red-400 hover:text-red-500" data-id="${ad.id}" title="삭제"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
-                        </div>
-                    </div>
-                </div>
-                <div class="content-card-drag-handle" title="순서 변경"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
-            </div>`;
-        }).join('');
+			return `
+			<div class="content-card ${isChecked ? '' : 'opacity-40'}" data-id="${ad.id}">
+				${previewHTML}
+				<div class="content-card-content">
+					<div class="content-card-header"><p class="title" title="${ad.title}">${ad.title}</p></div>
+					<div class="content-card-info">
+						${statusBadge}
+						<span class="flex items-center" title="조회수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>${viewCount}</span>
+						<span class="flex items-center" title="클릭 수"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>${clickCount}</span>
+					</div>
+					<div class="content-card-actions">
+						<div class="publish-info">
+							<label class="toggle-switch"><input type="checkbox" class="ad-status-toggle" data-id="${ad.id}" ${isChecked ? 'checked' : ''}><span class="toggle-slider"></span></label>
+							<span class="text-sm font-medium ${isChecked ? 'text-emerald-400' : 'text-slate-400'}">${isChecked ? '게시 중' : '비공개'}</span>
+						</div>
+						<div class="action-buttons">
+							<button class="edit-ad-button text-slate-300 hover:text-white" data-id="${ad.id}" title="수정"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+							<button class="delete-ad-button text-red-400 hover:text-red-500" data-id="${ad.id}" title="삭제"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+						</div>
+					</div>
+				</div>
+				<div class="content-card-drag-handle" title="순서 변경"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></div>
+			</div>`;
+		}).join('');
 
-        this.ui.adListContainer.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
-        this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
-        this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
-    },
+		this.ui.adListContainer.querySelectorAll('.edit-ad-button').forEach(btn => btn.addEventListener('click', this.handleEditAd.bind(this)));
+		this.ui.adListContainer.querySelectorAll('.delete-ad-button').forEach(btn => btn.addEventListener('click', this.handleDeleteAd.bind(this)));
+		this.ui.adListContainer.querySelectorAll('.ad-status-toggle').forEach(toggle => toggle.addEventListener('change', this.handleToggleAdStatus.bind(this)));
+	},
     
     async handleToggleAdStatus(event) {
         await firebaseReady;
