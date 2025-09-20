@@ -1,6 +1,6 @@
-// js/public.js (v7.3 - 고객 정보 블록 렌더링 및 제출 기능 추가)
+// js/public.js (v7.4 - 고객 정보 블록 Firebase DB 연동)
 
-import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
 import { showToast } from './ui.js';
 
@@ -12,7 +12,6 @@ const INITIAL_LOAD_COUNT = 3;
 
 let isSubscribed = !!localStorage.getItem('vip-pass');
 
-// ✨ editor.js와 동일한 필드 목록을 추가하여 폼을 정확하게 렌더링합니다.
 const allPossibleFormFields = [ 
     { name: 'name', label: '이름', type: 'text', placeholder: '이름을 입력하세요' }, 
     { name: 'email', label: '이메일', type: 'email', placeholder: '이메일 주소를 입력하세요' }, 
@@ -172,8 +171,9 @@ function renderAllContent(contents, append = false, startIndex = 0) {
                                 </div>`;
                         }
                         
+                        // ✨ data-page-name 속성 추가
                         elementHtml = `
-                            <form class="lead-form" style="${componentStyle}" data-script-url="${component.googleScriptUrl || ''}" data-success-message="${component.successMessage || '제출되었습니다.'}">
+                            <form class="lead-form" style="${componentStyle}" data-page-name="${content.name || '알 수 없는 페이지'}" data-success-message="${component.successMessage || '제출되었습니다.'}">
                                 ${formFieldsHtml}
                                 <button type="submit" class="lead-form-submit" style="background-color: ${formStyles.submitButtonColor || '#1877f2'};">${component.submitText || '제출'}</button>
                             </form>`;
@@ -497,10 +497,8 @@ document.addEventListener('click', async (event) => {
     }
 });
 
-// ✨ [핵심 수정] 폼 제출 이벤트 리스너를 확장하여 lead-form도 처리하도록 함
 document.addEventListener('submit', async (event) => {
     const form = event.target;
-    // 뉴스레터 구독 폼 처리
     if (form.classList.contains('subscription-form')) {
         event.preventDefault();
         const input = form.querySelector('input[type="email"]');
@@ -529,10 +527,10 @@ document.addEventListener('submit', async (event) => {
                 isSubscribed = true;
             }
             
-            // 콘텐츠 새로고침
             const contentResponse = await fetch('/.netlify/functions/get-content');
             allContent = await contentResponse.json();
             allContent = assignMediaCardIndices(allContent);
+            
             renderAllContent(allContent, false);
             loadedContentIndex = allContent.length;
             const trigger = document.getElementById('load-more-trigger');
@@ -544,16 +542,13 @@ document.addEventListener('submit', async (event) => {
             button.textContent = '구독하기';
         }
     } 
-    // 고객 정보(lead) 폼 처리
     else if (form.classList.contains('lead-form')) {
         event.preventDefault();
-        const scriptUrl = form.dataset.scriptUrl;
-        const successMessage = form.dataset.successMessage;
-        if (!scriptUrl) {
-            showToast('폼 제출 URL이 설정되지 않았습니다.', 'error');
-            return;
-        }
+        await firebaseReady;
+        const db = getFirestoreDB();
 
+        const successMessage = form.dataset.successMessage;
+        const pageName = form.dataset.pageName;
         const button = form.querySelector('button[type="submit"]');
         const originalButtonText = button.textContent;
         button.disabled = true;
@@ -561,18 +556,31 @@ document.addEventListener('submit', async (event) => {
 
         try {
             const formData = new FormData(form);
-            const response = await fetch(scriptUrl, {
-                method: 'POST',
-                body: formData,
-                mode: 'no-cors' // Google Script 웹 앱은 보통 no-cors 모드가 필요
-            });
+            const dataToSave = {
+                type: 'lead',
+                subscribedAt: serverTimestamp(),
+                sourcePageName: pageName,
+                formData: {}
+            };
+
+            for (let [key, value] of formData.entries()) {
+                if (key === 'email') {
+                    dataToSave.email = value;
+                }
+                dataToSave.formData[key] = value;
+            }
             
-            // no-cors 모드에서는 응답을 직접 확인할 수 없으므로, 요청이 보내진 것으로 간주하고 성공 처리
+            if (!dataToSave.email) {
+                 throw new Error("이메일 필드는 필수입니다.");
+            }
+
+            await addDoc(collection(db, "subscribers"), dataToSave);
+            
             showToast(successMessage, 'success');
             form.reset();
 
         } catch (error) {
-            console.error('Lead form submission error:', error);
+            console.error('Lead form submission to Firebase error:', error);
             showToast('제출 중 오류가 발생했습니다.', 'error');
         } finally {
             button.disabled = false;

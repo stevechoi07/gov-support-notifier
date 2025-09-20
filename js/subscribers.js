@@ -1,4 +1,4 @@
-// js/subscribers.js (v2.1 - 메모 UI/UX 개선)
+// js/subscribers.js (v2.2 - 고객 정보 타입 표시 기능 추가)
 
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -37,6 +37,7 @@ export const subscribers = {
             }
         });
 
+        // 다운로드 버튼은 render 함수에서 동적으로 생성되므로, 이벤트 위임을 사용합니다.
         this.ui.statsContainer.addEventListener('click', (event) => {
             if (event.target.id === 'download-csv-button') {
                 this.handleDownloadCSV();
@@ -75,8 +76,10 @@ export const subscribers = {
                     <thead class="text-xs text-slate-300 uppercase bg-slate-700">
                         <tr>
                             <th scope="col" class="px-6 py-3">이메일</th>
+                            <th scope="col" class="px-6 py-3">구분</th>
+                            <th scope="col" class="px-6 py-3">추가 정보</th>
                             <th scope="col" class="px-6 py-3">구독일</th>
-                            <th scope="col" class="px-6 py-3 w-2/5">메모</th>
+                            <th scope="col" class="px-6 py-3 w-1/3">메모</th>
                             <th scope="col" class="px-6 py-3 text-right">관리</th>
                         </tr>
                     </thead>
@@ -84,7 +87,7 @@ export const subscribers = {
         `;
 
         if (this.list.length === 0) {
-            tableHTML += `<tr><td colspan="4" class="px-6 py-8 text-center">구독자가 없습니다.</td></tr>`;
+            tableHTML += `<tr><td colspan="6" class="px-6 py-8 text-center">구독자가 없습니다.</td></tr>`;
         } else {
             this.list.forEach(subscriber => {
                 const subscribedDate = subscriber.subscribedAt?.toDate ? subscriber.subscribedAt.toDate() : new Date();
@@ -92,9 +95,31 @@ export const subscribers = {
                     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
 
+                let typeBadge = '';
+                let extraInfo = '<span class="text-slate-500">-</span>';
+
+                if (subscriber.type === 'lead') {
+                    typeBadge = `<span class="px-2 py-1 text-xs font-medium rounded-full bg-sky-900 text-sky-300">고객 정보</span>`;
+                    
+                    let formDataHtml = `출처: ${subscriber.sourcePageName || '알 수 없음'}<br>`;
+                    if (subscriber.formData) {
+                        for (const [key, value] of Object.entries(subscriber.formData)) {
+                            if (key !== 'email' && value) { // 이메일은 이미 표시되므로 제외
+                                formDataHtml += `${key}: ${value}<br>`;
+                            }
+                        }
+                    }
+                    extraInfo = `<div class="text-xs">${formDataHtml}</div>`;
+
+                } else { // 'newsletter' 또는 type이 없는 기존 데이터
+                    typeBadge = `<span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-900 text-emerald-300">뉴스레터</span>`;
+                }
+
                 tableHTML += `
                     <tr class="bg-slate-800 border-b border-slate-700 hover:bg-slate-600 align-top">
                         <td class="px-6 py-4 font-medium text-white">${subscriber.email}</td>
+                        <td class="px-6 py-4">${typeBadge}</td>
+                        <td class="px-6 py-4">${extraInfo}</td>
                         <td class="px-6 py-4">${formattedDate}</td>
                         <td class="px-6 py-4">
                             <div class="flex flex-col">
@@ -117,7 +142,7 @@ export const subscribers = {
     async handleSaveMemo(id) {
         if (!id) return;
         const memoInput = document.getElementById(`memo-input-${id}`);
-        const memoText = memoInput.value; // trim() 제거, 공백만 있는 메모도 저장 가능하도록
+        const memoText = memoInput.value;
         
         await firebaseReady;
         const db = getFirestoreDB();
@@ -136,13 +161,17 @@ export const subscribers = {
             return;
         }
 
-        let csvContent = "Email,Subscribed At,Memo\n";
+        let csvContent = "Email,Type,Subscribed At,Source Page,Memo,Form Data\n";
         
         this.list.forEach(subscriber => {
-            const date = subscriber.subscribedAt?.toDate ? subscriber.subscribedAt.toDate().toISOString() : '';
             const email = `"${subscriber.email || ''}"`;
+            const type = `"${subscriber.type || 'newsletter'}"`;
+            const date = subscriber.subscribedAt?.toDate ? subscriber.subscribedAt.toDate().toISOString() : '';
+            const sourcePage = `"${subscriber.sourcePageName || ''}"`;
             const memo = `"${(subscriber.memo || '').replace(/"/g, '""')}"`;
-            csvContent += [email, date, memo].join(',') + "\n";
+            const formData = `"${JSON.stringify(subscriber.formData || {}).replace(/"/g, '""')}"`;
+
+            csvContent += [email, type, date, sourcePage, memo, formData].join(',') + "\n";
         });
 
         const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
