@@ -1,4 +1,4 @@
-// js/index_script.js v2.9.1 iframe 자동 비율 조절 적용
+// js/index_script.js v2.9.2 message 리스너에 높이 조절 로직 추가
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -329,27 +329,15 @@ function addEventListeners() {
       elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
       elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
 
-// ✨ [v2.9 추가] iframe으로부터 오는 신호(무전)를 수신하는 리스너
+ // ✨ [v2.9.2 수정] 기존 message 리스너에 높이 조절 로직 추가
     window.addEventListener('message', (event) => {
-        // 보안을 위해 신호를 보낸 곳(iframe의 도메인)이 내가 허용한 곳인지 확인합니다.
-        // 예를 들어, 내 광고 페이지가 'https://my-ads.netlify.app'에 있다면 아래와 같이 설정합니다.
-        // if (event.origin !== 'https://my-ads.netlify.app') {
-        //     return; 
-        // }
-        
-        // 우리가 약속한 신호("iframe-ad-clicked")가 맞는지 확인합니다.
+        // 우리가 약속한 "클릭" 신호가 맞는지 확인
         if (event.data === 'iframe-ad-clicked') {
             console.log('메인 페이지: iframe으로부터 클릭 신호 수신!');
-
-            // 신호를 보낸 iframe 요소를 찾습니다.
             const iframes = document.querySelectorAll('iframe');
             let clickedAdId = null;
-            
             for (const iframe of iframes) {
-                // event.source는 신호를 보낸 iframe의 window 객체입니다.
-                // iframe.contentWindow와 비교하여 어떤 iframe인지 찾아냅니다.
                 if (iframe.contentWindow === event.source) {
-                    // 해당 iframe의 부모 요소(ad-card)에서 data-id를 가져옵니다.
                     const adCard = iframe.closest('.ad-card');
                     if (adCard) {
                         clickedAdId = adCard.dataset.id;
@@ -357,12 +345,22 @@ function addEventListeners() {
                     break;
                 }
             }
-            
-            // ID를 찾았다면, 기존의 클릭 핸들러 함수를 호출합니다.
             if (clickedAdId) {
                 handleAdClick(clickedAdId);
             } else {
                 console.warn('클릭 신호를 보낸 iframe의 광고 ID를 찾을 수 없습니다.');
+            }
+        }
+        
+        // ✨ [v2.9.2 추가] 우리가 약속한 "높이 조절" 신호가 맞는지 확인
+        if (event.data && event.data.type === 'resize-iframe') {
+            const iframes = document.querySelectorAll('iframe');
+            for (const iframe of iframes) {
+                // 신호를 보낸 iframe을 찾아서 높이를 조절
+                if (iframe.contentWindow === event.source) {
+                    iframe.style.height = `${event.data.height}px`;
+                    break;
+                }
             }
         }
     });
@@ -436,18 +434,15 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        // ✨ [v2.9.1 수정] iframe 광고 생성 로직 변경
+        // ✨ [v2.9.2 수정] iframe에 고유 ID 추가, 인라인 style 제거
         if (item.adType === 'iframe' && item.iframeSrc) {
-            // 인라인 스타일을 제거하고, wrapper div를 추가하여 CSS로 비율을 제어합니다.
-            // iframe 태그에 width/height 속성을 추가하여 고유 비율을 브라우저에 알려줍니다.
             return `
             <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col p-0" data-id="${item.id}">
-                <div class="iframe-wrapper">
-                    <iframe src="${item.iframeSrc}" 
-                            width="560" height="315"
-                            title="${item.title || 'Advertisement'}">
-                    </iframe>
-                </div>
+                <iframe src="${item.iframeSrc}" 
+                        id="ad-iframe-${item.id}"
+                        style="width: 100%; border: none; display: block;"
+                        title="${item.title || 'Advertisement'}">
+                </iframe>
             </div>`;
         }
         

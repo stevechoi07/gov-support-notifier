@@ -3,38 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>마케팅 리뷰 배너 v1.2</title>
+    <title>마케팅 리뷰 배너 v1.4</title>
     <style>
-        /* [v1.3 수정] iframe에 삽입될 것을 고려하여 body 스타일 최적화 */
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
         }
-
         body {
-            /* body의 배경을 투명하게 만들어 배너 외 영역이 보이지 않게 함 */
             background-color: transparent; 
             font-family: 'Helvetica Neue', sans-serif;
-            
-            /* 배너(자식요소)를 iframe 공간 내에서 수직/수평 중앙 정렬 */
             display: flex;
             align-items: center;
             justify-content: center;
         }
-
         .review-banner {
             background-color: #ffffff;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 15px 20px; /* 좌우 여백도 조금 추가하면 좋습니다 */
+            padding: 15px 20px;
             overflow: hidden;
             width: 100%;
-            max-width: 900px; /* 최대 너비를 지정해 너무 길어지는 것을 방지 */
-            box-sizing: border-box; /* 패딩과 테두리를 너비에 포함 */
+            box-sizing: border-box;
         }
-
         .review-content {
             margin: 0;
             font-size: 16px;
@@ -44,28 +36,22 @@
             display: inline-block;
             padding-left: 100%;
         }
-        
         .review-content.playing {
             animation: scroll-left 10s linear infinite;
         }
-
         @keyframes scroll-left {
-            0% {
-                transform: translateX(0%);
-            }
-            100% {
-                transform: translateX(-200%);
-            }
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-200%); }
         }
     </style>
 </head>
 <body>
 
     <div class="review-banner">
-        <p class="review-content"></p> </div>
+        <p class="review-content"></p>
+    </div>
 
     <script>
-        // 1. 리뷰 데이터 창고 (얼마든지 추가/수정 가능!)
         const reviews = [
             "이 강의를 듣고 제 통장 잔고가 SEO 순위처럼 수직 상승했어요!",
             "A/B 테스트하다 인생까지 테스트할 뻔... 그래도 대표님 칭찬에 피로가 녹네요.",
@@ -74,30 +60,34 @@
             "퍼포먼스 마케팅인 줄 알았는데, 제 지갑 퍼포먼스가 더 좋아졌네요! (텅장에서 뚱장으로)"
         ];
 
-        // 2. HTML 요소를 JavaScript로 가져오기
         const reviewContent = document.querySelector('.review-content');
+        const reviewBanner = document.querySelector('.review-banner');
 
-        // 3. 랜덤 리뷰를 보여주는 함수
         function showRandomReview() {
-            // 리뷰를 랜덤으로 하나 선택
             const randomIndex = Math.floor(Math.random() * reviews.length);
-            const randomReview = reviews[randomIndex];
-            
-            // 선택된 리뷰를 화면에 표시
-            reviewContent.textContent = randomReview;
-
-            // 애니메이션을 리셋하고 다시 시작하는 '트릭'
-            reviewContent.classList.remove('playing'); // 애니메이션 중지
-            // reflow를 강제로 발생시켜서 애니메이션 리셋을 확실하게 함
+            reviewContent.textContent = reviews[randomIndex];
+            reviewContent.classList.remove('playing');
             void reviewContent.offsetWidth; 
-            reviewContent.classList.add('playing'); // 애니메이션 다시 시작
+            reviewContent.classList.add('playing');
+        }
+        
+        // ✨ [v1.4 추가] 자신의 높이를 부모 페이지로 전송하는 함수
+        function sendHeightToParent() {
+            // .review-banner 요소의 실제 렌더링 높이를 측정
+            const height = reviewBanner.offsetHeight;
+            // 부모 창으로 메시지 전송
+            parent.postMessage({ type: 'resize-iframe', height: height }, '*');
         }
 
-        // 4. 페이지가 처음 로드될 때 바로 한 번 실행
-        showRandomReview();
-
-        // 5. 10초(10000ms)마다 showRandomReview 함수를 반복 실행
-        setInterval(showRandomReview, 10000);
+        // 페이지 로딩 및 모든 리소스(폰트 등) 로딩이 끝나면 높이 전송
+        window.onload = () => {
+            showRandomReview();
+            setInterval(showRandomReview, 10000);
+            
+            // 높이를 한 번 보내고, 혹시 모를 변화에 대비해 약간의 시간차를 두고 한 번 더 보냄
+            sendHeightToParent();
+            setTimeout(sendHeightToParent, 500);
+        };
     </script>
 
 </body>
