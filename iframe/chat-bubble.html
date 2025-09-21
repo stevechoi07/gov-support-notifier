@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마케팅 리뷰 배너 v3.0</title>
+    <style>
+        /* --- 기본 설정 --- */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        body {
+            background-color: transparent;
+            font-family: 'Pretendard', 'Helvetica Neue', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- [v3.0] 채팅 버블 컨테이너 --- */
+        .review-banner {
+            background-color: #3B82F6; /* 친근한 파란색 배경 */
+            color: #ffffff; /* 흰색 텍스트 */
+            border-radius: 20px;
+            padding: 16px 20px;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* --- [v3.0] 말풍선 꼬리 만들기 --- */
+        .review-banner::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+            border-top-color: #3B82F6;
+            border-bottom: 0;
+            border-left: 0;
+            transform: skewX(-30deg);
+        }
+
+        /* --- [v3.0] 리뷰 컨텐츠 --- */
+        .review-content {
+            font-size: 16px;
+            margin: 0;
+            display: inline-block; /* 타이핑 애니메이션을 위해 */
+            vertical-align: middle;
+        }
+
+        /* --- [v3.0] 타이핑 애니메이션을 위한 텍스트 --- */
+        .review-text {
+            display: inline-block;
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 3px solid transparent; /* 커서 공간 확보 */
+            animation: none;
+            vertical-align: middle;
+        }
+
+        .review-text.playing {
+            border-right-color: rgba(255, 255, 255, 0.8); /* 커서 색상 */
+            animation: 
+                typing 3s steps(var(--char-count)) forwards,
+                blink 0.7s step-end infinite;
+        }
+
+        /* --- [v3.0] 타이핑 키프레임 --- */
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        /* --- [v3.0] 커서 깜빡임 키프레임 --- */
+        @keyframes blink {
+            from, to { border-color: transparent; }
+            50% { border-color: rgba(255, 255, 255, 0.8); }
+        }
+    </style>
+</head>
+<body>
+    <div class="review-banner">
+        <p class="review-content">
+            <span class="emoji"></span>
+            <span class="review-text"></span>
+        </p>
+    </div>
+
+    <script>
+        const reviews = [
+            { emoji: '🚀', text: "이 강의를 듣고 제 통장 잔고가 SEO 순위처럼 수직 상승했어요!" },
+            { emoji: '😂', text: "A/B 테스트하다 인생까지 테스트할 뻔... 그래도 칭찬에 피로가 녹네요." },
+            { emoji: '🔥', text: "광고 예산을 태웠더니, 고객들의 마음이 활활 타오르기 시작했습니다." },
+            { emoji: '🤔', text: "GA4... 너란 녀석... 덕분에 데이터와 밀당하는 법을 배웠습니다." },
+            { emoji: '💰', text: "퍼포먼스 마케팅인 줄 알았는데, 제 지갑 퍼포먼스가 더 좋아졌네요!" }
+        ];
+
+        const reviewBanner = document.querySelector('.review-banner');
+        const emojiSpan = document.querySelector('.emoji');
+        const reviewText = document.querySelector('.review-text');
+        
+        // 애니메이션 주기를 8초로 설정 (타이핑 3초 + 유지 5초)
+        const ANIMATION_INTERVAL = 8000;
+
+        function showRandomReview() {
+            const randomIndex = Math.floor(Math.random() * reviews.length);
+            const selectedReview = reviews[randomIndex];
+            
+            emojiSpan.textContent = selectedReview.emoji + ' ';
+            reviewText.textContent = selectedReview.text;
+            
+            // CSS 변수를 이용해 글자 수 전달
+            const charCount = selectedReview.text.length;
+            reviewText.style.setProperty('--char-count', charCount);
+
+            // 애니메이션 재시작
+            reviewText.classList.remove('playing');
+            void reviewText.offsetWidth; // 리플로우 강제
+            reviewText.classList.add('playing');
+        }
+
+        // --- 기존 로직 (수정 없음) ---
+        window.onload = () => {
+            showRandomReview();
+            setInterval(showRandomReview, ANIMATION_INTERVAL);
+
+            let attempts = 0;
+            const intervalId = setInterval(() => {
+                const height = reviewBanner.offsetHeight;
+                if (height > 0) {
+                    parent.postMessage({ type: 'resize-iframe', height: height }, '*');
+                }
+                attempts++;
+                if (attempts > 25) {
+                    clearInterval(intervalId);
+                }
+            }, 200);
+        };
+    </script>
+</body>
+</html>
