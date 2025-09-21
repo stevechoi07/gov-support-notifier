@@ -1,4 +1,4 @@
-// js/public.js v9.0 - iframe .card 클래스제거
+// js/public.js v9.0 - aspecRatio
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -237,9 +237,11 @@ function renderAllContent(contents, append = false) {
 				const contentType = 'card';
 				const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
 				
-				// ✨ [v8.2] .card 클래스를 제거하고 .iframe-container를 최상위로 변경
+				// ✨ [v8.3] aspectRatio 값을 데이터에서 읽어오거나, 없으면 기본값(16/9) 사용
+				const aspectRatio = content.aspectRatio || '16 / 9';
+
 				cardHtml = `
-					<div class="iframe-container" ${commonAttributes}>
+					<div class="iframe-container" ${commonAttributes} style="aspect-ratio: ${aspectRatio}; width: 100%;">
 						<iframe src="${content.iframeSrc}"
 								frameborder="0"
 								style="width: 100%; height: 100%; border: none; border-radius: 12px;"
