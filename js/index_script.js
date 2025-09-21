@@ -1,4 +1,4 @@
-// js/index_script.js v2.9.3 - iframe 종류에 따른 조건부 렌더링 적용
+// js/index_script.js v2.9.4  createItemHTML 함수 교체 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -434,10 +434,10 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        // ✨ [v2.9.3 수정] iframe 광고 생성 로직을 조건부로 변경
+        // ✨ [v2.9.3] iframe 광고 생성 로직을 조건부로 변경
         if (item.adType === 'iframe' && item.iframeSrc) {
             
-            // 만약 iframe 소스가 'review-banner.html'이라면 postMessage 방식을 사용
+            // 만약 iframe 소스에 'review-banner.html'이 포함되어 있다면 postMessage 방식을 사용
             if (item.iframeSrc.includes('review-banner.html')) {
                 return `
                 <div class="ad-card bg-slate-800 rounded-xl shadow-lg" data-id="${item.id}">
