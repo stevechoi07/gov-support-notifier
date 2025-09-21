@@ -1,4 +1,4 @@
-// js/public.js v8.1.1 - iframe 테두리 제거 속성 추가
+// js/public.js v9.0 - iframe .card 클래스제거
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -234,19 +234,18 @@ function renderAllContent(contents, append = false) {
                 const bgHtml = `<div class="story-launcher-bg" style="background-image: url('${sceneSettings.bgImage || ''}');"></div>`;
                 cardHtml = `<div class="page-section story-launcher" style="background-color: ${sceneSettings.bgColor || '#000'}; cursor: pointer;" data-story-page-id="${content.id}" data-observe-target>${bgHtml}<div class="page-content-wrapper"><h1 class="page-component" style="color:white; font-size: 2rem;">${content.name}</h1><p style="color: white; opacity: 0.8;">클릭하여 스토리 보기</p></div></div>`;
             } else if (content.adType === 'iframe' && content.iframeSrc) {
-                const contentType = 'card';
-                const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
-                // ✨ [v8.1.1] iframe 생성 부분 수정 ✨
-                cardHtml = `
-                    <div class="card ad-card" ${commonAttributes}>
-                        <div class="iframe-container" style="aspect-ratio: 16 / 9; width: 100%;">
-                            <iframe src="${content.iframeSrc}"
-                                    frameborder="0"
-                                    style="width: 100%; height: 100%; border: none;"
-                                    title="${content.title || 'Advertisement'}">
-                            </iframe>
-                        </div>
-                    </div>`;
+				const contentType = 'card';
+				const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
+				
+				// ✨ [v8.2] .card 클래스를 제거하고 .iframe-container를 최상위로 변경
+				cardHtml = `
+					<div class="iframe-container" ${commonAttributes}>
+						<iframe src="${content.iframeSrc}"
+								frameborder="0"
+								style="width: 100%; height: 100%; border: none; border-radius: 12px;"
+								title="${content.title || 'Advertisement'}">
+						</iframe>
+					</div>`;
             } else if (content.adType) {
                 const contentType = 'card';
                 const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
