@@ -1,4 +1,4 @@
-// js/public.js v8.0 - 페이지네이션 및 진정한 무한 스크롤 구현
+// js/public.js v8.1 - iframe 높이 자동 조절 기능 추가
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -476,7 +476,9 @@ function handleAdClick(adId) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 👇 이 부분을 통째로 교체해주세요!
     window.addEventListener('message', (event) => {
+        // --- 기존 광고 클릭 처리 로직 ---
         if (event.data === 'iframe-ad-clicked') {
             console.log('메인 페이지: iframe으로부터 클릭 신호 수신!');
             const iframes = document.querySelectorAll('iframe');
@@ -494,6 +496,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 handleAdClick(clickedAdId);
             } else {
                 console.warn('클릭된 iframe의 광고 ID를 찾을 수 없습니다.');
+            }
+        }
+
+        // ✨ --- [v8.1 추가] iframe 높이 조절 로직 --- ✨
+        if (event.data && event.data.type === 'resize-iframe' && event.data.height > 0) {
+            console.log(`메인 페이지: iframe 높이(${event.data.height}px) 조절 신호 수신!`);
+            
+            const iframes = document.querySelectorAll('iframe');
+            for (const iframe of iframes) {
+                // 메시지를 보낸 iframe을 정확히 찾아냅니다.
+                if (iframe.contentWindow === event.source) {
+                    const container = iframe.closest('.iframe-container');
+                    if (container) {
+                        // iframe을 감싸는 컨테이너의 높이를 조절하고, 고정 비율을 해제합니다.
+                        container.style.height = `${event.data.height}px`;
+                        container.style.aspectRatio = 'auto'; 
+                    }
+                    break; // 해당 iframe을 찾았으므로 반복을 멈춥니다.
+                }
             }
         }
     });
