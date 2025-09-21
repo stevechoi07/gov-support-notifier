@@ -71,13 +71,17 @@
             reviewContent.classList.add('playing');
         }
         
-        // ✨ [v1.4 추가] 자신의 높이를 부모 페이지로 전송하는 함수
-        function sendHeightToParent() {
-            // .review-banner 요소의 실제 렌더링 높이를 측정
-            const height = reviewBanner.offsetHeight;
-            // 부모 창으로 메시지 전송
-            parent.postMessage({ type: 'resize-iframe', height: height }, '*');
-        }
+        // ✨ [v1.5 디버깅] 자신의 높이를 부모 페이지로 전송하는 함수 (로그 추가)
+		function sendHeightToParent() {
+			// .review-banner 요소의 실제 렌더링 높이를 측정
+			const height = reviewBanner.offsetHeight;
+			
+			// ✨ 이 로그가 보이는지 확인하는 것이 핵심입니다!
+			console.log(`📢 review-banner: 높이 측정 완료 (${height}px). 부모에게 전송 시도...`);
+			
+			// 부모 창으로 메시지 전송
+			parent.postMessage({ type: 'resize-iframe', height: height }, '*');
+		}
 
         // 페이지 로딩 및 모든 리소스(폰트 등) 로딩이 끝나면 높이 전송
         window.onload = () => {
