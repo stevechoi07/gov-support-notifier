@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>마케팅 리뷰 배너 v4.0</title>
+    <title>마케팅 리뷰 배너 v5.0</title>
     <style>
         /* --- 기본 설정 --- */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; box-sizing: border-box; }
@@ -16,19 +16,29 @@
             padding: 0 1rem;
         }
 
-        /* --- [v4.0] 소셜 프루프 카드 디자인 --- */
+        /* --- [v5.0] 다크모드 소셜 프루프 카드 디자인 --- */
         .review-banner {
-            background-color: #f9fafb; /* 밝은 회색 배경 */
-            color: #1f2937; /* 어두운 텍스트 색상 */
+            background-color: #111827; /* 다크모드 배경 */
+            color: #E5E7EB; /* 밝은 텍스트 */
             border-radius: 12px;
             padding: 16px 20px;
             width: 100%;
-            max-width: 450px; /* 최대 너비 설정으로 PC에서도 보기 좋게 */
+            max-width: 450px;
             box-sizing: border-box;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-            opacity: 0; /* 애니메이션 시작을 위해 */
+            position: relative; /* 그라데이션 테두리를 위해 */
+            opacity: 0;
             animation: none;
+        }
+
+        /* --- [v5.0] 그라데이션 테두리 효과 --- */
+        .review-banner::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            z-index: -1;
+            margin: -1px; /* 테두리 두께 */
+            border-radius: inherit;
+            background: linear-gradient(to right, #38bdf8, #818cf8, #c084fc);
         }
         
         .review-banner.playing {
@@ -45,11 +55,12 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: #e5e7eb;
+            background-color: #374151; /* 다크모드에 맞는 아바타 배경 */
             margin-right: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
         .user-info {
@@ -60,22 +71,22 @@
         .user-name {
             font-weight: 700;
             font-size: 15px;
-            color: #111827;
+            color: #ffffff; /* 흰색으로 강조 */
         }
 
         .star-rating {
             font-size: 14px;
-            color: #f59e0b; /* 별점 색상 (노란색) */
+            color: #f59e0b;
         }
 
         .review-body p {
             font-size: 16px;
             line-height: 1.6;
             margin: 0;
-            color: #4b5563;
+            color: #d1d5db; /* 밝은 회색으로 조정 */
         }
 
-        /* --- [v4.0] 페이드 인/아웃 애니메이션 --- */
+        /* --- [v4.0] 페이드 인/아웃 애니메이션 (수정 없음) --- */
         @keyframes fade-in-out {
             0% { opacity: 0; transform: translateY(10px); }
             15% { opacity: 1; transform: translateY(0); }
@@ -113,19 +124,17 @@
         const userNameEl = document.querySelector('.user-name');
         const reviewTextEl = document.querySelector('.review-text');
         
-        const ANIMATION_INTERVAL = 8000; // 8초
+        const ANIMATION_INTERVAL = 8000;
 
         function showRandomReview() {
             const randomIndex = Math.floor(Math.random() * reviews.length);
             const selectedReview = reviews[randomIndex];
             
-            // 새로운 HTML 구조에 맞게 사용자 이름과 리뷰 텍스트를 채워줍니다.
             userNameEl.textContent = selectedReview.user;
             reviewTextEl.textContent = selectedReview.text;
             
-            // 애니메이션 재시작
             reviewBanner.classList.remove('playing');
-            void reviewBanner.offsetWidth; // 리플로우 강제
+            void reviewBanner.offsetWidth;
             reviewBanner.classList.add('playing');
         }
 
