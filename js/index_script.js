@@ -1,4 +1,4 @@
-// js/index_script.js v2.9.6 - 최종 안정화 버전
+// js/index_script.js v2.9.7 - unction createItemHTML(item) 수정 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -210,26 +210,6 @@ function addEventListeners() {
             }
         }
     });
-}
-
-function createItemHTML(item) {
-    if (item.isAd) {
-        if (item.adType === 'iframe' && item.iframeSrc) {
-            if (item.iframeSrc.includes('review-banner.html')) {
-                return `<div class="ad-card bg-slate-800 rounded-xl shadow-lg" data-id="${item.id}"><iframe src="${item.iframeSrc}" id="ad-iframe-${item.id}" style="width: 100%; border: none; display: block; background-color: transparent;" title="${item.title || 'Advertisement'}" scrolling="no"></iframe></div>`;
-            } else {
-                return `<div class="ad-card bg-slate-800 rounded-xl shadow-lg p-0" data-id="${item.id}"><div class="iframe-wrapper"><iframe src="${item.iframeSrc}" width="560" height="315" title="${item.title || 'Advertisement'}"></iframe></div></div>`;
-            }
-        }
-        let adContent = '';
-        if (item.mediaUrl) {
-            const mediaTag = item.mediaType === 'video' ? `<video autoplay loop muted playsinline src="${item.mediaUrl}"></video>` : `<img src="${item.mediaUrl}" alt="${item.title}" loading="lazy">`;
-            adContent = `<a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block"><div class="ad-media-container">${mediaTag}</div></a>`;
-        }
-        return `<div class="ad-card" data-id="${item.id}">${adContent}<div class="p-4"><a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link">${item.title}</a><p>${item.description||''}</p></div></div>`;
-    }
-    const dday = calculateDday(item.pbanc_rcpt_end_dt);
-    return `<div class="bg-slate-800 rounded-xl p-6">...</div>`; // Simplified for brevity
 }
 
 async function handleAdClick(adId){ try{ await updateDoc(doc(db,"adv",adId),{clickCount:increment(1)}); }catch(e){console.error("Click Count Error:",e);} }
