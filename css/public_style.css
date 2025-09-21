@@ -1,4 +1,4 @@
-/* css/public_style.css v7.3 - Iframe 자동 비율 조절 Wrapper 추가 */
+/* css/public_style.css v7.4 - Iframe 클래스 이름 통일 및 구문 오류 수정 */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
@@ -350,14 +350,15 @@ body {
         border-color: var(--chzzk-container-bg);
     }
 }
+
 /* 일반 iframe의 비율 유지를 위한 스타일 */
-.iframe-wrapper {
+.iframe-container {
     width: 100%;
     aspect-ratio: auto;
     overflow: hidden;
     border-radius: inherit;
 }
-.iframe-wrapper iframe {
+.iframe-container iframe {
     width: 100%;
     height: 100%;
     border: none;
