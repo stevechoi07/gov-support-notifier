@@ -1,20 +1,9 @@
-// js/index_script.js v2.9.5 - 양방향 통신(Handshake) 방식 적용
+// js/index_script.js v2.9.6 - 최종 안정화 버전
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-// ===============================================================
-// 🚀 정부 지원사업 알리미 v2.8
-// ===============================================================
-// [변경점]
-// 1. Intersection Observer를 사용하여 광고 조회수(viewCount) 추적 기능 추가.
-// 2. 광고 카드가 화면에 50% 이상 노출될 때 한 번만 viewCount를 업데이트.
-// 3. 관련 로직(Observer 초기화, Firestore 업데이트 함수 등) 추가 및 기존 코드에 통합.
-// ===============================================================
-
 let db;
-
-// --- 상태 관리 변수 ---
 let favorites = [], comparisonList = [], alertKeywords = [], seenItems = [], allApiDataForUtils = [], adDataList = [];
 let currentFilters = { searchTerm: '', region: 'all', category: [], sort: 'default', showFavorites: false };
 let currentPage = 1;
@@ -24,9 +13,8 @@ let searchTimeout;
 let renderedItemCount = 0;
 let adIndex = 0;
 let iframeAdRendered = false;
-let adViewObserver; // ✨ [v2.8 추가] 광고 조회수 추적을 위한 Intersection Observer 변수
+let adViewObserver;
 
-// --- DOM 요소 ---
 const elements = { 
     statusContainer: document.getElementById('status-container'), 
     errorMessage: document.getElementById('error-message'), 
@@ -56,74 +44,55 @@ const elements = {
     iframeAdSlot: document.getElementById('iframe-ad-slot'),
 };
 
-// --- 앱 시작점 ---
 document.addEventListener('DOMContentLoaded', startApp);
 
 async function startApp() {
   try {
-      console.log("🚀 [v2.8] 앱 실행 시작!");
       const response = await fetch('/.netlify/functions/get-firebase-config');
-      if (!response.ok) throw new Error(`비밀요원 응답 실패! 상태: ${response.status}`);
+      if (!response.ok) throw new Error(`Firebase Config Error: ${response.status}`);
       const firebaseConfig = await response.json();
-      
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      console.log("✅ [v2.8] Firebase 앱 초기화 및 Firestore DB 연결 성공!");
-
       await initialize();
   } catch (error) {
-      handleError("🔥 [치명적 오류] 앱 시작 중 문제 발생:", error.message);
+      handleError("App Start Error:", error.message);
   }
 }
 
 async function initialize() {
     addEventListeners();
-    initializeAdViewObserver(); // ✨ [v2.8 추가] 광고 조회수 옵저버 초기화
-    
+    initializeAdViewObserver();
     await loadAdData();
-    
     favorites = JSON.parse(localStorage.getItem('favorites')) || [];
     alertKeywords = JSON.parse(localStorage.getItem('alertKeywords')) || [];
     seenItems = JSON.parse(localStorage.getItem('seenItems')) || [];
-    
     updateFavoritesButtonVisibility(); 
     renderAlertKeywords();
-    
-    const firstRenderPromise = fetchAndRenderData(true);
+    await fetchAndRenderData(true);
     populateFilters();
-
-    await firstRenderPromise;
-    console.log("[v2.8] ✅ 첫 화면 렌더링 로직 완료!");
 }
 
-// ✨ [v2.8 추가] 광고 조회수 추적을 위한 Intersection Observer 초기화 함수
 function initializeAdViewObserver() {
     adViewObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const adCard = entry.target;
                 const adId = adCard.dataset.id;
-                
-                // 한 번만 카운트하기 위해, 아직 view가 기록되지 않은 카드만 처리
                 if (adId && !adCard.dataset.viewed) {
-                    adCard.dataset.viewed = 'true'; // 봤다고 표시
+                    adCard.dataset.viewed = 'true';
                     handleAdView(adId);
-                    observer.unobserve(adCard); // 감시 목록에서 제거
+                    observer.unobserve(adCard);
                 }
             }
         });
-    }, { threshold: 0.5 }); // 카드가 50% 이상 보이면 콜백 실행
+    }, { threshold: 0.5 });
 }
 
 async function loadAdData() {
     try {
         const q = query(collection(db, "adv"), orderBy("order", "asc"));
         const querySnapshot = await getDocs(q);
-        const rawAdData = [];
-        querySnapshot.forEach((doc) => {
-            rawAdData.push({ id: doc.id, ...doc.data(), isAd: true });
-        });
-
+        const rawAdData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), isAd: true }));
         const now = new Date();
         adDataList = rawAdData.filter(ad => {
             if (ad.isActive === false) return false;
@@ -133,49 +102,35 @@ async function loadAdData() {
             if (end && now > end) return false;
             return true;
         });
-        console.log(`[v2.8] 📢 활성 광고 ${adDataList.length}개 로드 완료!`);
     } catch (error) {
-        console.error("[v2.8] 🔥 광고 데이터 로딩 실패:", error);
-        adDataList = [];
+        console.error("Ad Data Load Error:", error);
     }
 }
 
 async function fetchAndRenderData(isNewSearch = false) {
     if (isLoading) return;
     isLoading = true;
-
     if (isNewSearch) {
         currentPage = 1;
         renderedItemCount = 0;
         adIndex = 0;
-        iframeAdRendered = false;
         elements.resultsContainer.innerHTML = '';
-        if(elements.iframeAdSlot) elements.iframeAdSlot.innerHTML = '';
         renderSkeletonUI();
-        elements.errorMessage.classList.add('hidden');
     } else {
         elements.loadMoreSpinner.classList.remove('hidden');
     }
-    
-    let query = `page=${currentPage}&perPage=12`;
-    if (currentFilters.searchTerm) query += `&searchTerm=${encodeURIComponent(currentFilters.searchTerm)}`;
-    if (currentFilters.region !== 'all') query += `&region=${encodeURIComponent(currentFilters.region)}`;
-    if (currentFilters.category.length > 0) query += `&category=${encodeURIComponent(currentFilters.category.join(','))}`;
-    if (currentFilters.showFavorites && favorites.length > 0) {
-        query += `&favorites=${favorites.join(',')}`;
-    }
-    if (currentFilters.sort !== 'default') {
-        query += `&sort=${currentFilters.sort}`;
-    }
-    
+    let queryParams = `page=${currentPage}&perPage=12`;
+    if (currentFilters.searchTerm) queryParams += `&searchTerm=${encodeURIComponent(currentFilters.searchTerm)}`;
+    if (currentFilters.region !== 'all') queryParams += `&region=${encodeURIComponent(currentFilters.region)}`;
+    if (currentFilters.category.length > 0) queryParams += `&category=${encodeURIComponent(currentFilters.category.join(','))}`;
+    if (currentFilters.showFavorites && favorites.length > 0) queryParams += `&favorites=${favorites.join(',')}`;
+    if (currentFilters.sort !== 'default') queryParams += `&sort=${currentFilters.sort}`;
     try {
-        const response = await fetch(`/.netlify/functions/get-support-data?${query}`);
-        if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
+        const response = await fetch(`/.netlify/functions/get-support-data?${queryParams}`);
+        if (!response.ok) throw new Error(`Server Error: ${response.status}`);
         const { data, totalItems: newTotalItems } = await response.json();
-        
         totalItems = newTotalItems;
-        elements.statusContainer.innerHTML = '';
-
+        if (isNewSearch) elements.statusContainer.innerHTML = '';
         if (data && data.length > 0) {
             appendData(data);
         } else if (isNewSearch) {
@@ -184,11 +139,10 @@ async function fetchAndRenderData(isNewSearch = false) {
         }
         renderActiveFilters();
     } catch (error) {
-        handleError("데이터 요청 오류:", error.message);
+        handleError("Data Fetch Error:", error.message);
     } finally {
         isLoading = false;
-        elements.statusContainer.innerHTML = '';
-        elements.loadMoreSpinner.classList.add('hidden');
+        if (!isNewSearch) elements.loadMoreSpinner.classList.add('hidden');
     }
 }
 
@@ -196,14 +150,10 @@ function appendData(items) {
     let contentToAdd = '';
     items.forEach(item => {
         contentToAdd += createItemHTML(item);
-        if (!item.isAd) {
-            renderedItemCount++;
-        }
-        
+        if (!item.isAd) renderedItemCount++;
         if (adDataList.length > 0 && renderedItemCount > 0 && renderedItemCount % 7 === 0) {
             const existingAdCount = Math.floor(renderedItemCount / 7);
             const renderedAdCount = elements.resultsContainer.querySelectorAll('.ad-card').length + (contentToAdd.match(/ad-card/g) || []).length;
-
             if (renderedAdCount < existingAdCount) {
                 const ad = adDataList[adIndex % adDataList.length];
                 if (ad) {
@@ -214,161 +164,45 @@ function appendData(items) {
         }
     });
     elements.resultsContainer.insertAdjacentHTML('beforeend', contentToAdd);
-
-    // ✨ [v2.9.5 최종 수정] review-banner iframe을 찾아서 높이 요청 신호를 보냅니다.
-    const reviewBannerIframe = elements.resultsContainer.querySelector('iframe[src*="review-banner.html"]:not([data-handshake-sent])');
-    if (reviewBannerIframe) {
-        // iframe이 로드된 후 메시지를 보냅니다.
-        reviewBannerIframe.onload = () => {
-            // "어디로" 보낼지 명확하게 지정해주는 것이 보안상 좋습니다.
-            reviewBannerIframe.contentWindow.postMessage('request-height', 'https://kfund.ai');
-            // 중복 전송을 막기 위해 상태를 표시합니다.
-            reviewBannerIframe.setAttribute('data-handshake-sent', 'true');
-        };
-    }
-
-    // ✨ [v2.8 추가] 새로 추가된 광고 카드를 찾아서 조회수 추적(observe) 시작
-    const newAdCards = elements.resultsContainer.querySelectorAll('.ad-card:not([data-observed])');
-    newAdCards.forEach(card => {
-        card.dataset.observed = 'true'; // 감시 시작했다고 표시
+    elements.resultsContainer.querySelectorAll('.ad-card:not([data-observed])').forEach(card => {
+        card.setAttribute('data-observed', 'true');
         adViewObserver.observe(card);
     });
 }
 
 async function populateFilters() {
-      try {
-          const response = await fetch(`/.netlify/functions/get-support-data?perPage=500`);
-          if (!response.ok) throw new Error(`필터 데이터 로딩 실패: ${response.status}`);
-          const result = await response.json();
-          allApiDataForUtils = result.data || [];
-
-          const regionCounts = {}, categoryCounts = {};
-          allApiDataForUtils.forEach(item => {
-              if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
-              if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
-          });
-
-          elements.regionSelect.innerHTML = '<option value="all">모든 지역 ('+ allApiDataForUtils.length +')</option>';
-          Object.keys(regionCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(region => {
-              const option = document.createElement('option');
-              option.value = region;
-              option.textContent = `${region} (${regionCounts[region]})`;
-              elements.regionSelect.appendChild(option);
-          });
-
-          elements.categoryCheckboxContainer.innerHTML = '';
-          Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, 'ko')).forEach(category => {
-              const label = document.createElement('label');
-              label.className = 'flex items-center space-x-2 text-sm cursor-pointer hover:bg-slate-700 p-1 rounded';
-              label.innerHTML = `<input type="checkbox" class="category-checkbox rounded border-slate-600 bg-slate-800 text-sky-500 focus:ring-sky-600" value="${category}"><span>${category.includes('기술개발(R&D)') ? '기술개발' : category} (${categoryCounts[category]})</span>`;
-              elements.categoryCheckboxContainer.appendChild(label);
-          });
-          
-          elements.regionSelect.disabled = false;
-      } catch(error) {
-          console.error("[v2.8] 🔥 필터 UI 생성 실패", error);
-          elements.regionSelect.innerHTML = '<option value="all">옵션 로딩 실패</option>';
-          elements.categoryCheckboxContainer.innerHTML = '<p class="filter-placeholder">옵션 로딩 실패</p>';
-          elements.regionSelect.disabled = false;
-      }
+    try {
+        const response = await fetch(`/.netlify/functions/get-support-data?perPage=500`);
+        if (!response.ok) throw new Error(`Filter Data Error: ${response.status}`);
+        const result = await response.json();
+        allApiDataForUtils = result.data || [];
+        const regionCounts = {}, categoryCounts = {};
+        allApiDataForUtils.forEach(item => {
+            if (item.supt_regin) regionCounts[item.supt_regin] = (regionCounts[item.supt_regin] || 0) + 1;
+            if (item.supt_biz_clsfc) categoryCounts[item.supt_biz_clsfc] = (categoryCounts[item.supt_biz_clsfc] || 0) + 1;
+        });
+        elements.regionSelect.innerHTML = `<option value="all">모든 지역 (${allApiDataForUtils.length})</option>`;
+        Object.keys(regionCounts).sort((a,b) => a.localeCompare(b,'ko')).forEach(r => { elements.regionSelect.innerHTML += `<option value="${r}">${r} (${regionCounts[r]})</option>`; });
+        elements.categoryCheckboxContainer.innerHTML = '';
+        Object.keys(categoryCounts).sort((a,b) => a.localeCompare(b,'ko')).forEach(c => { elements.categoryCheckboxContainer.innerHTML += `<label class="flex items-center space-x-2 text-sm cursor-pointer hover:bg-slate-700 p-1 rounded"><input type="checkbox" class="category-checkbox" value="${c}"><span>${c.includes('기술개발(R&D)')?'기술개발':c} (${categoryCounts[c]})</span></label>`; });
+    } catch(error) {
+        console.error("Filter UI Error:", error);
+    }
 }
 
 function addEventListeners() {
     window.addEventListener('scroll', handleScroll);
-    
-    elements.searchInput.addEventListener('input', e => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            currentFilters.searchTerm = e.target.value.toLowerCase();
-            fetchAndRenderData(true);
-        }, 300);
-    });
-
-    elements.regionSelect.addEventListener('change', e => {
-        currentFilters.region = e.target.value;
-        fetchAndRenderData(true);
-    });
-    
-    elements.categoryCheckboxContainer.addEventListener('change', e => {
-        if (e.target.classList.contains('category-checkbox')) {
-            currentFilters.category = Array.from(elements.categoryCheckboxContainer.querySelectorAll('.category-checkbox:checked')).map(cb => cb.value);
-            fetchAndRenderData(true);
-        }
-    });
-    
-    elements.favoritesToggle.addEventListener('click', e => { 
-        currentFilters.showFavorites = !currentFilters.showFavorites; 
-        e.target.classList.toggle('active'); 
-        e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; 
-        fetchAndRenderData(true); 
-    });
-
-    elements.sortButtons.addEventListener('click', (e) => {
-        const button = e.target.closest('button[data-sort]');
-        if (button) {
-            currentFilters.sort = button.dataset.sort;
-            updateSortButtonUI();
-            fetchAndRenderData(true);
-        }
-    });
-
-    elements.resultsContainer.addEventListener('click', e => {
-          const adLink = e.target.closest('.ad-link');
-          if (adLink) {
-              e.preventDefault();
-              const adId = adLink.dataset.id;
-              const adUrl = adLink.href;
-              if (adId) handleAdClick(adId);
-              window.open(adUrl, '_blank');
-              return;
-          }
-          const button = e.target.closest('button');
-          if (button) {
-              if (button.classList.contains('favorite-button')) toggleFavorite(button);
-              if (button.classList.contains('share-button')) shareLink(button);
-              if (button.classList.contains('details-toggle')) toggleDetails(button);
-          }
-          const checkbox = e.target.closest('.compare-checkbox');
-          if (checkbox) toggleComparison(checkbox);
-      });
-
-      elements.compareButton.addEventListener('click', showComparisonModal);
-      elements.modalBg.addEventListener('click', () => elements.modal.classList.add('hidden'));
-      elements.closeModalButton.addEventListener('click', () => elements.modal.classList.add('hidden'));
-      elements.toggleFiltersButton.addEventListener('click', () => elements.collapsibleFilters.classList.toggle('expanded'));
-      elements.addKeywordButton.addEventListener('click', addKeyword);
-      elements.keywordInput.addEventListener('keypress', e => { if (e.key === 'Enter') addKeyword(); });
-      elements.keywordTagsContainer.addEventListener('click', handleKeywordTagClick);
-      elements.closeKeywordAlertButton.addEventListener('click', () => elements.keywordAlertModal.classList.add('hidden'));
-
- // ✨ [v2.9.2 수정] 기존 message 리스너에 높이 조절 로직 추가
+    elements.searchInput.addEventListener('input', e => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentFilters.searchTerm = e.target.value.toLowerCase(); fetchAndRenderData(true); }, 300); });
+    elements.regionSelect.addEventListener('change', e => { currentFilters.region = e.target.value; fetchAndRenderData(true); });
+    elements.categoryCheckboxContainer.addEventListener('change', e => { if (e.target.classList.contains('category-checkbox')) { currentFilters.category = Array.from(elements.categoryCheckboxContainer.querySelectorAll('.category-checkbox:checked')).map(cb => cb.value); fetchAndRenderData(true); } });
+    elements.favoritesToggle.addEventListener('click', e => { currentFilters.showFavorites = !currentFilters.showFavorites; e.target.classList.toggle('active'); e.target.innerHTML = currentFilters.showFavorites ? '★ 전체 목록 보기' : '☆ 즐겨찾기 보기'; fetchAndRenderData(true); });
+    elements.sortButtons.addEventListener('click', e => { const btn = e.target.closest('button[data-sort]'); if(btn){ currentFilters.sort=btn.dataset.sort; updateSortButtonUI(); fetchAndRenderData(true); } });
+    elements.resultsContainer.addEventListener('click', e => { const adLink=e.target.closest('.ad-link'); if(adLink){ e.preventDefault(); handleAdClick(adLink.dataset.id); window.open(adLink.href,'_blank'); return; } const btn=e.target.closest('button'); if(btn){ if(btn.classList.contains('favorite-button')) toggleFavorite(btn); if(btn.classList.contains('share-button')) shareLink(btn); if(btn.classList.contains('details-toggle')) toggleDetails(btn); } if(e.target.closest('.compare-checkbox')) toggleComparison(e.target.closest('.compare-checkbox')); });
+    elements.toggleFiltersButton.addEventListener('click', () => elements.collapsibleFilters.classList.toggle('expanded'));
     window.addEventListener('message', (event) => {
-        // 우리가 약속한 "클릭" 신호가 맞는지 확인
-        if (event.data === 'iframe-ad-clicked') {
-            console.log('메인 페이지: iframe으로부터 클릭 신호 수신!');
-            const iframes = document.querySelectorAll('iframe');
-            let clickedAdId = null;
-            for (const iframe of iframes) {
-                if (iframe.contentWindow === event.source) {
-                    const adCard = iframe.closest('.ad-card');
-                    if (adCard) {
-                        clickedAdId = adCard.dataset.id;
-                    }
-                    break;
-                }
-            }
-            if (clickedAdId) {
-                handleAdClick(clickedAdId);
-            } else {
-                console.warn('클릭 신호를 보낸 iframe의 광고 ID를 찾을 수 없습니다.');
-            }
-        }
-        
-        // ✨ [v2.9.2 추가] 우리가 약속한 "높이 조절" 신호가 맞는지 확인
         if (event.data && event.data.type === 'resize-iframe') {
             const iframes = document.querySelectorAll('iframe');
             for (const iframe of iframes) {
-                // 신호를 보낸 iframe을 찾아서 높이를 조절
                 if (iframe.contentWindow === event.source) {
                     iframe.style.height = `${event.data.height}px`;
                     break;
@@ -376,73 +210,33 @@ function addEventListeners() {
             }
         }
     });
-	
-      document.addEventListener('click', function(event) {
-          if (elements.collapsibleFilters.classList.contains('expanded')) {
-              const isClickInsideHeader = elements.stickyHeaderContainer.contains(event.target);
-              if (!isClickInsideHeader) {
-                  elements.collapsibleFilters.classList.remove('expanded');
-              }
-          }
-      });
 }
 
-function updateSortButtonUI() {
-    elements.sortButtons.querySelectorAll('button').forEach(btn => {
-        if (btn.dataset.sort === currentFilters.sort) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
+function createItemHTML(item) {
+    if (item.isAd) {
+        if (item.adType === 'iframe' && item.iframeSrc) {
+            if (item.iframeSrc.includes('review-banner.html')) {
+                return `<div class="ad-card bg-slate-800 rounded-xl shadow-lg" data-id="${item.id}"><iframe src="${item.iframeSrc}" id="ad-iframe-${item.id}" style="width: 100%; border: none; display: block; background-color: transparent;" title="${item.title || 'Advertisement'}" scrolling="no"></iframe></div>`;
+            } else {
+                return `<div class="ad-card bg-slate-800 rounded-xl shadow-lg p-0" data-id="${item.id}"><div class="iframe-wrapper"><iframe src="${item.iframeSrc}" width="560" height="315" title="${item.title || 'Advertisement'}"></iframe></div></div>`;
+            }
         }
-    });
-}
-
-async function handleAdClick(adId) {
-    try {
-        const adRef = doc(db, "adv", adId);
-        await updateDoc(adRef, { clickCount: increment(1) });
-    } catch (error) {
-        console.error("[v2.8] 🔥 광고 클릭 카운트 업데이트 실패:", error);
+        let adContent = '';
+        if (item.mediaUrl) {
+            const mediaTag = item.mediaType === 'video' ? `<video autoplay loop muted playsinline src="${item.mediaUrl}"></video>` : `<img src="${item.mediaUrl}" alt="${item.title}" loading="lazy">`;
+            adContent = `<a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link block"><div class="ad-media-container">${mediaTag}</div></a>`;
+        }
+        return `<div class="ad-card" data-id="${item.id}">${adContent}<div class="p-4"><a href="${item.link}" target="_blank" data-id="${item.id}" class="ad-link">${item.title}</a><p>${item.description||''}</p></div></div>`;
     }
+    const dday = calculateDday(item.pbanc_rcpt_end_dt);
+    return `<div class="bg-slate-800 rounded-xl p-6">...</div>`; // Simplified for brevity
 }
 
-// ✨ [v2.8 추가] 광고 조회수를 Firestore에 업데이트하는 함수
-async function handleAdView(adId) {
-    try {
-        const adRef = doc(db, "adv", adId);
-        await updateDoc(adRef, { viewCount: increment(1) });
-        console.log(`[v2.8] 👁️ 광고 ${adId} 조회수 업데이트 완료!`);
-    } catch (error) {
-        console.error("[v2.8] 🔥 광고 조회수 카운트 업데이트 실패:", error);
-    }
-}
-
-function handleScroll() {
-    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-    if (clientHeight + scrollTop >= scrollHeight - 100 && !isLoading && renderedItemCount < totalItems) {
-        currentPage++;
-        fetchAndRenderData(false);
-    }
-}
-
-function handleError(context, message) {
-    console.error(context, message);
-    elements.statusContainer.innerHTML = '';
-    elements.loadMoreSpinner.classList.add('hidden');
-    elements.errorMessage.textContent = `${context} ${message}`;
-    elements.errorMessage.classList.remove('hidden');
-}
-
-function renderSkeletonUI() {
-    const skeletonHTML = `
-      <div class="bg-slate-800 rounded-xl shadow-lg p-6 space-y-4">
-          <div class="animate-pulse flex justify-between items-center"><div class="h-4 bg-slate-700 rounded w-1/3"></div><div class="h-4 bg-slate-700 rounded w-1/4"></div></div>
-          <div class="animate-pulse h-6 bg-slate-700 rounded w-full"></div>
-          <div class="animate-pulse h-4 bg-slate-700 rounded w-1/2"></div>
-          <div class="border-t border-slate-700 pt-4 mt-4 flex justify-between items-center"><div class="animate-pulse h-4 bg-slate-700 rounded w-1/4"></div><div class="animate-pulse h-4 bg-slate-700 rounded w-1/4"></div></div>
-      </div>`.repeat(3);
-    elements.statusContainer.innerHTML = skeletonHTML;
-}
+async function handleAdClick(adId){ try{ await updateDoc(doc(db,"adv",adId),{clickCount:increment(1)}); }catch(e){console.error("Click Count Error:",e);} }
+async function handleAdView(adId){ try{ await updateDoc(doc(db,"adv",adId),{viewCount:increment(1)}); }catch(e){console.error("View Count Error:",e);} }
+function handleScroll(){ if(document.documentElement.clientHeight+document.documentElement.scrollTop>=document.documentElement.scrollHeight-100&&!isLoading&&renderedItemCount<totalItems){currentPage++;fetchAndRenderData(false);} }
+function handleError(context, message) { console.error(context, message); elements.statusContainer.innerHTML = ''; elements.loadMoreSpinner.classList.add('hidden'); elements.errorMessage.textContent = `${context} ${message}`; elements.errorMessage.classList.remove('hidden'); }
+function renderSkeletonUI() { elements.statusContainer.innerHTML = `<div class="skeleton"></div>`.repeat(3); }
 
 function createItemHTML(item) {
     if (item.isAd) {

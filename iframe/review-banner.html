@@ -3,94 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>마케팅 리뷰 배너 v1.4</title>
+    <title>마케팅 리뷰 배너 v1.7</title>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-        }
-        body {
-            background-color: transparent; 
-            font-family: 'Helvetica Neue', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .review-banner {
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 15px 20px;
-            overflow: hidden;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .review-content {
-            margin: 0;
-            font-size: 16px;
-            color: #333;
-            animation: none;
-            white-space: nowrap;
-            display: inline-block;
-            padding-left: 100%;
-        }
-        .review-content.playing {
-            animation: scroll-left 10s linear infinite;
-        }
-        @keyframes scroll-left {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-200%); }
-        }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+        body { background-color: transparent; font-family: 'Helvetica Neue', sans-serif; display: flex; align-items: center; justify-content: center; }
+        .review-banner { background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); padding: 15px 20px; overflow: hidden; width: 100%; box-sizing: border-box; }
+        .review-content { margin: 0; font-size: 16px; color: #333; animation: none; white-space: nowrap; display: inline-block; padding-left: 100%; }
+        .review-content.playing { animation: scroll-left 10s linear infinite; }
+        @keyframes scroll-left { 0% { transform: translateX(0%); } 100% { transform: translateX(-200%); } }
     </style>
 </head>
 <body>
-
     <div class="review-banner">
         <p class="review-content"></p>
     </div>
-
     <script>
-    const reviews = [
-        "이 강의를 듣고 제 통장 잔고가 SEO 순위처럼 수직 상승했어요!",
-        "A/B 테스트하다 인생까지 테스트할 뻔... 그래도 대표님 칭찬에 피로가 녹네요.",
-        "광고 예산을 태웠더니, 고객들의 마음이 활활 타오르기 시작했습니다. 🔥",
-        "GA4... 너란 녀석... 덕분에 데이터와 밀당하는 법을 배웠습니다.",
-        "퍼포먼스 마케팅인 줄 알았는데, 제 지갑 퍼포먼스가 더 좋아졌네요! (텅장에서 뚱장으로)"
-    ];
+        const reviews = [
+            "이 강의를 듣고 제 통장 잔고가 SEO 순위처럼 수직 상승했어요!", "A/B 테스트하다 인생까지 테스트할 뻔... 그래도 대표님 칭찬에 피로가 녹네요.",
+            "광고 예산을 태웠더니, 고객들의 마음이 활활 타오르기 시작했습니다. 🔥", "GA4... 너란 녀석... 덕분에 데이터와 밀당하는 법을 배웠습니다.",
+            "퍼포먼스 마케팅인 줄 알았는데, 제 지갑 퍼포먼스가 더 좋아졌네요! (텅장에서 뚱장으로)"
+        ];
+        const reviewContent = document.querySelector('.review-content');
+        const reviewBanner = document.querySelector('.review-banner');
 
-    const reviewContent = document.querySelector('.review-content');
-    const reviewBanner = document.querySelector('.review-banner');
-
-    function showRandomReview() {
-        const randomIndex = Math.floor(Math.random() * reviews.length);
-        reviewContent.textContent = reviews[randomIndex];
-        reviewContent.classList.remove('playing');
-        void reviewContent.offsetWidth; 
-        reviewContent.classList.add('playing');
-    }
-    
-    // ✨ [v1.6 최종 수정] 부모의 요청에 응답하여 높이를 전송하는 함수
-    function sendHeightToParent() {
-        const height = reviewBanner.offsetHeight;
-        console.log(`📢 review-banner: 부모의 요청 수신! 높이 ${height}px를 응답합니다.`);
-        // event.origin을 사용하여 메시지를 보낸 곳으로 정확하게 응답합니다.
-        parent.postMessage({ type: 'resize-iframe', height: height }, event.origin);
-    }
-
-    // ✨ [v1.6 최종 수정] 부모로부터 오는 메시지를 듣는 리스너 추가
-    window.addEventListener('message', (event) => {
-        // 부모가 'request-height' 신호를 보내면, 높이를 측정하여 응답합니다.
-        if (event.data === 'request-height') {
-            sendHeightToParent();
+        function showRandomReview() {
+            const randomIndex = Math.floor(Math.random() * reviews.length);
+            reviewContent.textContent = reviews[randomIndex];
+            reviewContent.classList.remove('playing');
+            void reviewContent.offsetWidth; 
+            reviewContent.classList.add('playing');
         }
-    });
 
-    // 페이지 로딩 시 일단 배너는 동작 시작
-    showRandomReview();
-    setInterval(showRandomReview, 10000);
-	</script>
+        window.onload = () => {
+            showRandomReview();
+            setInterval(showRandomReview, 10000);
 
+            let attempts = 0;
+            const intervalId = setInterval(() => {
+                const height = reviewBanner.offsetHeight;
+                if (height > 0) {
+                    parent.postMessage({ type: 'resize-iframe', height: height }, '*');
+                }
+                attempts++;
+                if (attempts > 25) { // 약 5초 동안 시도 후 중지
+                    clearInterval(intervalId);
+                }
+            }, 200); // 0.2초마다 높이 전송
+        };
+    </script>
 </body>
 </html>
