@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마케팅 리뷰 배너 v4.0</title>
+    <style>
+        /* --- 기본 설정 --- */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; box-sizing: border-box; }
+        body {
+            background-color: transparent;
+            font-family: 'Pretendard', 'Helvetica Neue', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1rem;
+        }
+
+        /* --- [v4.0] 소셜 프루프 카드 디자인 --- */
+        .review-banner {
+            background-color: #f9fafb; /* 밝은 회색 배경 */
+            color: #1f2937; /* 어두운 텍스트 색상 */
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 100%;
+            max-width: 450px; /* 최대 너비 설정으로 PC에서도 보기 좋게 */
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            opacity: 0; /* 애니메이션 시작을 위해 */
+            animation: none;
+        }
+        
+        .review-banner.playing {
+            animation: fade-in-out 8s ease-in-out;
+        }
+
+        .review-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e5e7eb;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 700;
+            font-size: 15px;
+            color: #111827;
+        }
+
+        .star-rating {
+            font-size: 14px;
+            color: #f59e0b; /* 별점 색상 (노란색) */
+        }
+
+        .review-body p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0;
+            color: #4b5563;
+        }
+
+        /* --- [v4.0] 페이드 인/아웃 애니메이션 --- */
+        @keyframes fade-in-out {
+            0% { opacity: 0; transform: translateY(10px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="review-banner">
+        <div class="review-header">
+            <div class="avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </div>
+            <div class="user-info">
+                <span class="user-name"></span>
+                <span class="star-rating">★★★★★</span>
+            </div>
+        </div>
+        <div class="review-body">
+            <p class="review-text"></p>
+        </div>
+    </div>
+
+    <script>
+        const reviews = [
+            { user: '퍼포먼스 마케터 J님', text: "이 강의를 듣고 제 통장 잔고가 SEO 순위처럼 수직 상승했어요!" },
+            { user: '스타트업 대표 K님', text: "A/B 테스트하다 인생까지 테스트할 뻔... 그래도 대표님 칭찬에 피로가 녹네요." },
+            { user: '콘텐츠 제작자 L님', text: "광고 예산을 태웠더니, 고객들의 마음이 활활 타오르기 시작했습니다. 🔥" },
+            { user: '데이터 분석가 P님', text: "GA4... 너란 녀석... 덕분에 데이터와 밀당하는 법을 배웠습니다." },
+            { user: 'N잡러 S님', text: "퍼포먼스 마케팅인 줄 알았는데, 제 지갑 퍼포먼스가 더 좋아졌네요!" }
+        ];
+
+        const reviewBanner = document.querySelector('.review-banner');
+        const userNameEl = document.querySelector('.user-name');
+        const reviewTextEl = document.querySelector('.review-text');
+        
+        const ANIMATION_INTERVAL = 8000; // 8초
+
+        function showRandomReview() {
+            const randomIndex = Math.floor(Math.random() * reviews.length);
+            const selectedReview = reviews[randomIndex];
+            
+            // 새로운 HTML 구조에 맞게 사용자 이름과 리뷰 텍스트를 채워줍니다.
+            userNameEl.textContent = selectedReview.user;
+            reviewTextEl.textContent = selectedReview.text;
+            
+            // 애니메이션 재시작
+            reviewBanner.classList.remove('playing');
+            void reviewBanner.offsetWidth; // 리플로우 강제
+            reviewBanner.classList.add('playing');
+        }
+
+        window.onload = () => {
+            showRandomReview();
+            setInterval(showRandomReview, ANIMATION_INTERVAL);
+
+            let attempts = 0;
+            const intervalId = setInterval(() => {
+                const height = reviewBanner.offsetHeight;
+                if (height > 0) {
+                    parent.postMessage({ type: 'resize-iframe', height: height }, '*');
+                }
+                attempts++;
+                if (attempts > 25) {
+                    clearInterval(intervalId);
+                }
+            }, 200);
+        };
+    </script>
+</body>
+</html>
