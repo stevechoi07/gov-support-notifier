@@ -1,4 +1,4 @@
-// js/index_script.js v2.9 iframe무전기 설치
+// js/index_script.js v2.9.1 iframe 자동 비율 조절 적용
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -436,14 +436,18 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        // ✨ [v2.8 수정] 모든 광고 카드에 data-id 속성 추가
+        // ✨ [v2.9.1 수정] iframe 광고 생성 로직 변경
         if (item.adType === 'iframe' && item.iframeSrc) {
+            // 인라인 스타일을 제거하고, wrapper div를 추가하여 CSS로 비율을 제어합니다.
+            // iframe 태그에 width/height 속성을 추가하여 고유 비율을 브라우저에 알려줍니다.
             return `
             <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col p-0" data-id="${item.id}">
-                <iframe src="${item.iframeSrc}" 
-                        style="width: 100%; height: 100%; aspect-ratio: 4 / 3; border: none; min-height: 350px;"
-                        title="${item.title || 'Advertisement'}">
-                </iframe>
+                <div class="iframe-wrapper">
+                    <iframe src="${item.iframeSrc}" 
+                            width="560" height="315"
+                            title="${item.title || 'Advertisement'}">
+                    </iframe>
+                </div>
             </div>`;
         }
         
