@@ -1,4 +1,4 @@
-// js/public.js v8.1 - iframe 높이 자동 조절 기능 추가
+// js/public.js v8.1.1 - iframe 테두리 제거 속성 추가
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -236,10 +236,12 @@ function renderAllContent(contents, append = false) {
             } else if (content.adType === 'iframe' && content.iframeSrc) {
                 const contentType = 'card';
                 const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
+                // ✨ [v8.1.1] iframe 생성 부분 수정 ✨
                 cardHtml = `
                     <div class="card ad-card" ${commonAttributes}>
                         <div class="iframe-container" style="aspect-ratio: 16 / 9; width: 100%;">
                             <iframe src="${content.iframeSrc}"
+                                    frameborder="0"
                                     style="width: 100%; height: 100%; border: none;"
                                     title="${content.title || 'Advertisement'}">
                             </iframe>
