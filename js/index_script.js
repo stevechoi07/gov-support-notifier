@@ -218,7 +218,7 @@ function appendData(items) {
     // ✨ [v2.9.5 최종 수정] review-banner iframe을 찾아서 높이 요청 신호를 보냅니다.
     const reviewBannerIframe = elements.resultsContainer.querySelector('iframe[src*="review-banner.html"]:not([data-handshake-sent])');
     if (reviewBannerIframe) {
-        // iframe이 로드될 시간을 약간 기다린 후 메시지를 보냅니다.
+        // iframe이 로드된 후 메시지를 보냅니다.
         reviewBannerIframe.onload = () => {
             // "어디로" 보낼지 명확하게 지정해주는 것이 보안상 좋습니다.
             reviewBannerIframe.contentWindow.postMessage('request-height', 'https://kfund.ai');
