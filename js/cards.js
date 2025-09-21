@@ -1,4 +1,4 @@
-// js/cards.js (v3.5 - 파일 이름 기반 최종 수정본)
+// js/cards.js (v3.6 - iframe aspectRatio 필드 추가)
 
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
@@ -59,6 +59,7 @@ export const cards = {
             closeIframeModalButton: document.getElementById('close-iframe-modal-button'),
             iframeAdTitleInput: document.getElementById('iframe-ad-title'),
             iframeAdSrcInput: document.getElementById('iframe-ad-src'),
+            iframeAdAspectRatioInput: document.getElementById('iframe-ad-aspect-ratio'), // ✨ [v3.6] 추가
             iframeIsPartnersCheckbox: document.getElementById('iframe-is-partners-checkbox'),
             iframeAdStartDateInput: document.getElementById('iframe-ad-start-date'),
             iframeAdEndDateInput: document.getElementById('iframe-ad-end-date'),
@@ -281,6 +282,7 @@ export const cards = {
         const btn = this.ui.saveIframeAdButton;
         if(this.ui.iframeAdTitleInput) this.ui.iframeAdTitleInput.value = ''; 
         if(this.ui.iframeAdSrcInput) this.ui.iframeAdSrcInput.value = '';
+        if(this.ui.iframeAdAspectRatioInput) this.ui.iframeAdAspectRatioInput.value = ''; // ✨ [v3.6] 추가
         if(this.ui.iframeIsPartnersCheckbox) this.ui.iframeIsPartnersCheckbox.checked = false; 
         if(this.ui.iframeAdStartDateInput) this.ui.iframeAdStartDateInput.value = '';
         if(this.ui.iframeAdEndDateInput) this.ui.iframeAdEndDateInput.value = '';
@@ -305,6 +307,7 @@ export const cards = {
             this.ui.iframeModalTitle.textContent = "iframe 카드 수정";
             this.ui.iframeAdTitleInput.value = ad.title;
             this.ui.iframeAdSrcInput.value = ad.iframeSrc || '';
+            this.ui.iframeAdAspectRatioInput.value = ad.aspectRatio || ''; // ✨ [v3.6] 추가
             this.ui.iframeIsPartnersCheckbox.checked = ad.isPartners || false;
             this.ui.iframeAdStartDateInput.value = ad.startDate || '';
             this.ui.iframeAdEndDateInput.value = ad.endDate || '';
@@ -318,7 +321,8 @@ export const cards = {
             this.ui.adDescriptionInput.value = ad.description || ''; this.ui.adLinkInput.value = ad.link || '';
             this.ui.isPartnersCheckbox.checked = ad.isPartners || false;
             this.ui.isMembersOnlyCheckbox.checked = ad.isMembersOnly || false;
-            this.ui.adStartDateInput.value = ad.startDate || ''; this.ui.adEndDateInput.value = ad.endDate || '';
+            this.ui.adStartDateInput.value = ad.startDate || '';
+            this.ui.adEndDateInput.value = ad.endDate || '';
             this.ui.fileNameDisplay.textContent = ad.mediaUrl ? '기존 파일 유지' : '선택된 파일 없음';
             this.updatePreview(); this.ui.adModal.classList.add('active');
         }
@@ -442,30 +446,48 @@ export const cards = {
         const db = getFirestoreDB();
         const title = this.ui.iframeAdTitleInput.value.trim();
         const src = this.ui.iframeAdSrcInput.value.trim();
+        const aspectRatio = this.ui.iframeAdAspectRatioInput.value.trim(); // ✨ [v3.6] 추가
+
         if (!title || !src) { alert('제목과 iframe 주소를 모두 입력해주세요!'); return; }
+        
         const btn = this.ui.saveIframeAdButton;
         btn.disabled = true; btn.innerHTML = `<div class="spinner"></div><span>저장 중...</span>`;
+        
         try {
             const adData = {
                 adType: 'iframe',
                 title: title,
                 iframeSrc: src,
+                aspectRatio: aspectRatio, // ✨ [v3.6] 추가
                 isPartners: this.ui.iframeIsPartnersCheckbox.checked,
                 startDate: this.ui.iframeAdStartDateInput.value,
                 endDate: this.ui.iframeAdEndDateInput.value,
             };
             if (this.editingId) {
                 const ad = this.list.find(ad => ad.id === this.editingId);
-                Object.assign(adData, { order: ad.order, clickCount: 0, viewCount: 0, isActive: ad.isActive !== false });
+                Object.assign(adData, { 
+                    order: ad.order, 
+                    clickCount: ad.clickCount || 0, // 이전 값 유지
+                    viewCount: ad.viewCount || 0,   // 이전 값 유지
+                    isActive: ad.isActive !== false,
+                    isMembersOnly: ad.isMembersOnly || false 
+                });
                 await updateDoc(doc(db, "ads", this.editingId), adData);
             } else {
-                Object.assign(adData, { order: this.list.length, clickCount: 0, viewCount: 0, isActive: true, isMembersOnly: false });
+                Object.assign(adData, { 
+                    order: this.list.length, 
+                    clickCount: 0, 
+                    viewCount: 0, 
+                    isActive: true, 
+                    isMembersOnly: false 
+                });
                 await addDoc(collection(db, "ads"), adData);
             }
             this.ui.iframeAdModal.classList.remove('active');
         } catch (error) {
             console.error("iframe 카드 저장 중 오류:", error);
             alert("작업에 실패했습니다.");
+        } finally {
             btn.disabled = false;
             btn.innerHTML = '저장하기';
         }
