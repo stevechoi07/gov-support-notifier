@@ -1,4 +1,4 @@
-// js/index_script.js v2.9.2 message 리스너에 높이 조절 로직 추가
+// js/index_script.js v2.9.3 - iframe 종류에 따른 조건부 렌더링 적용
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
@@ -434,16 +434,33 @@ function renderSkeletonUI() {
 
 function createItemHTML(item) {
     if (item.isAd) {
-        // ✨ [v2.9.2 수정] iframe에 고유 ID 추가, 인라인 style 제거
+        // ✨ [v2.9.3 수정] iframe 광고 생성 로직을 조건부로 변경
         if (item.adType === 'iframe' && item.iframeSrc) {
-            return `
-            <div class="ad-card bg-slate-800 rounded-xl shadow-lg hover:shadow-sky-900/50 transition-shadow overflow-hidden relative flex flex-col p-0" data-id="${item.id}">
-                <iframe src="${item.iframeSrc}" 
-                        id="ad-iframe-${item.id}"
-                        style="width: 100%; border: none; display: block;"
-                        title="${item.title || 'Advertisement'}">
-                </iframe>
-            </div>`;
+            
+            // 만약 iframe 소스가 'review-banner.html'이라면 postMessage 방식을 사용
+            if (item.iframeSrc.includes('review-banner.html')) {
+                return `
+                <div class="ad-card bg-slate-800 rounded-xl shadow-lg" data-id="${item.id}">
+                    <iframe src="${item.iframeSrc}" 
+                            id="ad-iframe-${item.id}"
+                            style="width: 100%; border: none; display: block; background-color: transparent;"
+                            title="${item.title || 'Advertisement'}"
+                            scrolling="no">
+                    </iframe>
+                </div>`;
+            } 
+            // 그 외의 모든 iframe은 기존의 비율 유지 방식(wrapper)을 사용
+            else {
+                return `
+                <div class="ad-card bg-slate-800 rounded-xl shadow-lg p-0" data-id="${item.id}">
+                    <div class="iframe-wrapper">
+                        <iframe src="${item.iframeSrc}" 
+                                width="560" height="315"
+                                title="${item.title || 'Advertisement'}">
+                        </iframe>
+                    </div>
+                </div>`;
+            }
         }
         
         let adContent = '';
