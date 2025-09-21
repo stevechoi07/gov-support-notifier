@@ -1,4 +1,4 @@
-// js/layoutManager.js (v2.14 - 콘텐츠 추가 모달에 썸네일 완벽 적용)
+// js/layoutManager.js (v2.15 - iframe 카드 타입 구분 로직 추가)
 
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showToast } from './ui.js';
@@ -25,12 +25,14 @@ function renderLayoutList(contents) {
     }
     const sortedContents = currentLayoutIds.map(id => contents.find(c => c.id === id)).filter(Boolean);
     
-    // ✨ [수정] 렌더링 로직에도 썸네일 정보를 반영하도록 개선
     layoutListContainer.innerHTML = sortedContents.map(content => {
         const isPage = !content.adType;
         const isStory = isPage && content.components?.some(c => c.type === 'scene');
-        const typeLabel = isStory ? '✨ 스토리' : (isPage ? '📄 페이지' : '🗂️ 카드');
-        const typeColor = isStory ? 'bg-pink-500/20 text-pink-400' : (isPage ? 'bg-sky-500/20 text-sky-400' : 'bg-amber-500/20 text-amber-400');
+        
+        // ✨ [핵심 수정 v2.15] adType을 기준으로 iframe 카드와 일반 카드를 구분합니다.
+        const isIframeCard = content.adType === 'iframe';
+        const typeLabel = isStory ? '✨ 스토리' : (isPage ? '📄 페이지' : (isIframeCard ? '🌐 아이프레임' : '🗂️ 카드'));
+        const typeColor = isStory ? 'bg-pink-500/20 text-pink-400' : (isPage ? 'bg-sky-500/20 text-sky-400' : (isIframeCard ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'));
         
         let previewImageUrl = null;
         if(isStory) {
@@ -38,7 +40,7 @@ function renderLayoutList(contents) {
             previewImageUrl = firstScene?.sceneSettings?.bgImage;
         } else if (isPage) {
             previewImageUrl = content.pageSettings?.thumbnailUrl || content.pageSettings?.bgImage;
-        } else { // card
+        } else { // card 또는 iframe
             previewImageUrl = content.thumbnailUrl || content.mediaUrl;
         }
 
@@ -72,7 +74,6 @@ function setupModalListeners() { modalElements.closeButton?.addEventListener('cl
 function switchTab(tabName) { modalElements.tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabName)); modalElements.tabContents.forEach(content => content.classList.toggle('active', content.id.includes(tabName))); }
 async function addItemToLayout(contentId) { await firebaseReady; const db = getFirestoreDB(); if (!db) { showToast("데이터베이스 연결에 실패했습니다.", "error"); return; } try { const layoutRef = doc(db, "layouts", "mainLayout"); await updateDoc(layoutRef, { contentIds: arrayUnion(contentId) }); showToast('콘텐츠가 레이아웃에 추가되었습니다.'); } catch (error) { console.error("레이아웃에 아이템 추가 실패:", error); showToast("아이템 추가에 실패했습니다.", "error"); const button = document.querySelector(`.add-button[data-id="${contentId}"]`); if(button) { button.disabled = false; button.textContent = '추가'; } } }
 
-// ✨ [핵심 수정] 썸네일 표시 로직을 handleAddContentClick 함수에 통합
 export async function handleAddContentClick() {
     await Promise.all([pagesReady, cardsReady]);
 
@@ -95,8 +96,11 @@ export async function handleAddContentClick() {
                 thumbnailUrl = settings.bgImage;
                 mediaTypeIcon = '🖼️';
             }
-        } else { // card
-            if (item.mediaType === 'video') {
+        } else { // card or iframe
+            if (item.adType === 'iframe') {
+                 thumbnailUrl = item.thumbnailUrl; // iframe도 썸네일이 있다면 표시
+                 mediaTypeIcon = '🌐';
+            } else if (item.mediaType === 'video') {
                 thumbnailUrl = item.thumbnailUrl;
                 mediaTypeIcon = '🎬';
             } else {
@@ -109,9 +113,9 @@ export async function handleAddContentClick() {
             return `<div class="preview" style="background-image: url('${thumbnailUrl}')"><span class="media-type-icon">${mediaTypeIcon}</span></div>`;
         }
         
-        // 썸네일이 없을 경우 기본 아이콘
         if (type === 'page') mediaTypeIcon = '📄';
-        if (type === 'card') mediaTypeIcon = '🗂️';
+        if (type === 'card' && item.adType === 'iframe') mediaTypeIcon = '🌐';
+        else if (type === 'card') mediaTypeIcon = '🗂️';
         return `<div class="preview"><span class="media-type-icon">${mediaTypeIcon}</span></div>`;
     };
 
