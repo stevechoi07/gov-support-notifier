@@ -1,4 +1,4 @@
-// js/public.js v9.0 - aspecRatio
+// js/public.js v10.0 - 'Infinite Scroll'을 'Automatic Sequential Pre-loading'으로 변경
 
 import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { firebaseReady, getFirestoreDB } from './firebase.js';
@@ -7,16 +7,13 @@ import { showToast } from './ui.js';
 let swiperInstance = null;
 let storyTimer = null;
 
-// [v8.0 수정] 전체 콘텐츠를 저장하는 대신, 페이지 상태를 관리합니다.
-let allContentForStoryLookup = []; // 스토리 뷰어용 데이터는 계속 누적 저장
+let allContentForStoryLookup = [];
 let currentPage = 1;
 let totalItems = 0;
 let isLoadingMore = false;
-const ITEMS_PER_PAGE = 5; // 한 번에 불러올 아이템 수
+const ITEMS_PER_PAGE = 5;
 
 let isSubscribed = !!localStorage.getItem('vip-pass');
-
-// [v8.0 수정] 하이라이트 감시자를 관리하기 위한 변수
 let highlightObserver = null;
 
 const allPossibleFormFields = [ 
@@ -237,7 +234,6 @@ function renderAllContent(contents, append = false) {
 				const contentType = 'card';
 				const commonAttributes = `data-observe-target data-id="${content.id}" data-type="${contentType}"`;
 				
-				// ✨ [v8.3] aspectRatio 값을 데이터에서 읽어오거나, 없으면 기본값(16/9) 사용
 				const aspectRatio = content.aspectRatio || '16 / 9';
 
 				cardHtml = `
@@ -288,31 +284,18 @@ function renderAllContent(contents, append = false) {
 
     }).join('');
     
-    const trigger = document.getElementById('load-more-trigger');
-    
-    if (append) {
-        // 추가 로드 시에는 트리거를 잠시 떼었다가 다시 붙입니다.
-        if (trigger) trigger.remove();
-        container.insertAdjacentHTML('beforeend', contentHtml);
-        if (trigger) container.appendChild(trigger);
-    } else {
-        container.innerHTML = contentHtml;
-    }
+    container.insertAdjacentHTML('beforeend', contentHtml);
     
     applyStaggerAnimation('#content-container');
     setupHighlightObserver();
 }
 
-// [v8.0 수정] 더 많은 콘텐츠를 서버에서 불러오는 함수
 async function loadMoreContent() {
-    if (isLoadingMore) return; // 중복 로딩 방지
+    if (isLoadingMore) return;
 
     const loadedElementCount = document.querySelectorAll('#content-container > [data-stagger]').length;
     if (loadedElementCount >= totalItems) {
-        console.log("All content loaded.");
-        const trigger = document.getElementById('load-more-trigger');
-        if (trigger) trigger.remove();
-        return;
+        return; // 모든 콘텐츠 로드 완료
     }
 
     isLoadingMore = true;
@@ -327,24 +310,41 @@ async function loadMoreContent() {
         const { data: newContent } = await response.json();
 
         if (newContent && newContent.length > 0) {
-            // 스토리 뷰어용 데이터 누적
             allContentForStoryLookup = [...allContentForStoryLookup, ...newContent];
-            // 새 콘텐츠에 미디어 카드 인덱스 할당
             const lastMediaIndex = Math.max(-1, ...allContentForStoryLookup.filter(c => typeof c.mediaCardIndex !== 'undefined').map(c => c.mediaCardIndex));
             const processedNewContent = assignMediaCardIndices(newContent, lastMediaIndex + 1);
             
-            renderAllContent(processedNewContent, true); // 기존 콘텐츠에 이어서 렌더링
-        } else {
-             // 더 이상 불러올 콘텐츠가 없음
-            const trigger = document.getElementById('load-more-trigger');
-            if (trigger) trigger.remove();
+            renderAllContent(processedNewContent, true);
         }
-
     } catch (error) {
         console.error("🔥 Error loading more content:", error);
-        currentPage--; // 실패 시 페이지 번호 원상 복구
+        currentPage--;
     } finally {
         isLoadingMore = false;
+    }
+}
+
+// [v10.0 신규] 모든 페이지를 순차적으로 미리 불러오는 자동 로딩 엔진
+async function loadAllPagesSequentially() {
+    console.log("🚀 Starting automatic background loading of all pages...");
+    let loadedCount = document.querySelectorAll('#content-container > [data-stagger]').length;
+
+    while (loadedCount < totalItems) {
+        const previousCount = loadedCount;
+        
+        await loadMoreContent(); // 기존 함수를 재활용하여 다음 페이지 로드
+        
+        loadedCount = document.querySelectorAll('#content-container > [data-stagger]').length;
+
+        // 에러 등으로 로딩이 멈췄을 경우 무한 루프를 방지하기 위한 안전장치
+        if (loadedCount === previousCount) {
+            console.warn("Loading seems to have stalled. Stopping automatic pre-load.");
+            break;
+        }
+    }
+    
+    if (loadedCount >= totalItems) {
+        console.log("✅ All pages have been successfully pre-loaded.");
     }
 }
 
@@ -443,9 +443,9 @@ async function renderPublicPage() {
 
         renderAllContent(processedInitialContent);
         
-        if (processedInitialContent.length < totalItems) {
-            setupLoadMoreTrigger();
-        }
+        // [v10.0 수정] 스크롤 트리거 대신, 자동 로딩 엔진을 실행합니다.
+        loadAllPagesSequentially();
+        
     } catch (error) {
         console.error("🔥 An error occurred:", error);
         clearInterval(progressInterval);
@@ -457,31 +457,15 @@ async function renderPublicPage() {
     }
 }
 
-function setupLoadMoreTrigger() {
-    const existingTrigger = document.getElementById('load-more-trigger');
-    if (existingTrigger) existingTrigger.remove();
-
-    const trigger = document.createElement('div');
-    trigger.id = 'load-more-trigger';
-    document.getElementById('content-container').appendChild(trigger);
-
-    const observer = new IntersectionObserver(async (entries) => {
-        if (entries[0].isIntersecting) {
-            await loadMoreContent();
-        }
-    }, { threshold: 1.0 });
-
-    observer.observe(trigger);
-}
+// [v10.0 삭제] 더 이상 사용하지 않으므로 함수를 삭제합니다.
+// function setupLoadMoreTrigger() { ... }
 
 function handleAdClick(adId) {
     track(adId, 'card', 'clickCount');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 👇 이 부분을 통째로 교체해주세요!
     window.addEventListener('message', (event) => {
-        // --- 기존 광고 클릭 처리 로직 ---
         if (event.data === 'iframe-ad-clicked') {
             console.log('메인 페이지: iframe으로부터 클릭 신호 수신!');
             const iframes = document.querySelectorAll('iframe');
@@ -502,21 +486,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // ✨ --- [v8.1 추가] iframe 높이 조절 로직 --- ✨
         if (event.data && event.data.type === 'resize-iframe' && event.data.height > 0) {
             console.log(`메인 페이지: iframe 높이(${event.data.height}px) 조절 신호 수신!`);
             
             const iframes = document.querySelectorAll('iframe');
             for (const iframe of iframes) {
-                // 메시지를 보낸 iframe을 정확히 찾아냅니다.
                 if (iframe.contentWindow === event.source) {
                     const container = iframe.closest('.iframe-container');
                     if (container) {
-                        // iframe을 감싸는 컨테이너의 높이를 조절하고, 고정 비율을 해제합니다.
                         container.style.height = `${event.data.height}px`;
                         container.style.aspectRatio = 'auto'; 
                     }
-                    break; // 해당 iframe을 찾았으므로 반복을 멈춥니다.
+                    break;
                 }
             }
         }
@@ -583,7 +564,6 @@ document.addEventListener('submit', async (event) => {
                 localStorage.setItem('vip-pass', result.token);
                 isSubscribed = true;
                 
-                // 페이지 전체를 다시 렌더링하여 잠금 해제된 콘텐츠를 보여줍니다.
                 currentPage = 1;
                 document.getElementById('content-container').innerHTML = '';
                 renderPublicPage();
