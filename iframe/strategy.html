@@ -129,7 +129,26 @@
             color: #FF4D4D;
             animation: pulse-glow 2.5s infinite ease-in-out;
         }
+		
+		/* ================================== */
+		/* ✨ PC 모드 전용 폰트 크기 ✨ */
+		/* ================================== */
+		@media (min-width: 1024px) {
+			/* 화면 너비가 1024px 이상일 때 아래 스타일이 적용됩니다. */
 
+			.top-section h1 {
+				font-size: clamp(85px, 8vw, 110px); /* 최대 크기를 110px까지 대폭 상향 */
+			}
+			.top-section p {
+				font-size: clamp(18px, 1.5vw, 22px);
+			}
+			.bottom-section h1 {
+				font-size: clamp(75px, 7vw, 95px); /* 최대 크기를 95px까지 대폭 상향 */
+			}
+			.bottom-section p {
+				font-size: clamp(16px, 1.5vw, 20px);
+			}
+		}
     </style>
 </head>
 <body>
