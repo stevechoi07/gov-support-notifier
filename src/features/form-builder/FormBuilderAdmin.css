@@ -1,0 +1,44 @@
+.form-builder-admin {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: sans-serif;
+}
+
+.admin-header {
+  padding: 1rem 2rem;
+  background-color: #f7f7f7;
+  border-bottom: 1px solid #ddd;
+}
+
+.admin-workspace {
+  display: flex;
+  flex-grow: 1;
+}
+
+.form-canvas {
+  flex-grow: 1;
+  padding: 2rem;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-right: 1px solid #ddd;
+}
+
+.admin-tools {
+  width: 250px;
+  padding: 1rem;
+}
+
+.admin-tools h2 {
+  margin-top: 0;
+}
+
+.admin-tools button {
+  display: block;
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
