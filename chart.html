@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마케터를 위한 데이터 시각화 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        :root {
+            --bg-color: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #4B5563;
+            --accent-color: #2563EB;
+            --accent-light: #DBEAFE;
+            --border-color: #E5E7EB;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .readable-title { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+        .readable-text { font-size: 1.125rem; line-height: 1.75; }
+        .readable-small { font-size: 1rem; }
+
+        .card {
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: var(--accent-color);
+        }
+
+        .tab-btn {
+            transition: all 0.2s;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .tab-btn.active {
+            background-color: var(--text-primary);
+            color: white;
+            border-color: var(--text-primary);
+        }
+
+        .prompt-box {
+            background-color: #F3F4F6;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        /* 차트 미리보기 영역 스타일 */
+        .chart-preview {
+            height: 160px;
+            background-color: #F8FAFC;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .chart-preview svg {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 50;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 1.1rem;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">📊 Marketer's Chart Guide</h1>
+                <p class="text-gray-500 mt-1 text-lg">상황에 딱 맞는 차트를 찾고, AI 프롬프트까지 챙겨가세요.</p>
+            </div>
+            <div class="hidden md:block text-right">
+                <span class="text-sm text-gray-400 font-medium bg-gray-100 px-3 py-1 rounded-full">For Senior Marketers</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-6xl mx-auto px-6 py-10 w-full">
+        
+        <!-- Filter Tabs -->
+        <div class="flex flex-wrap gap-3 mb-10 justify-center md:justify-start" id="filter-container">
+            <!-- JS will populate tabs here -->
+        </div>
+
+        <!-- Chart Grid -->
+        <div id="chart-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- JS will populate cards here -->
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-100 border-t border-gray-200 mt-12">
+        <div class="max-w-6xl mx-auto px-6 py-8 text-center text-gray-500 readable-small">
+            <p>&copy; 2025 Data Driven Marketing. Designed for Clarity.</p>
+            <p class="mt-2">데이터 분석이 필요한 순간, 언제든 찾아오세요.</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast">프롬프트가 복사되었습니다! ✨</div>
+
+    <script>
+        // SVG 생성 헬퍼 함수들 (심플한 시각화)
+        const svgs = {
+            column: `<svg viewBox="0 0 100 60"><g transform="translate(10,5)"><rect x="0" y="20" width="15" height="30" rx="2" fill="#93C5FD"/><rect x="25" y="5" width="15" height="45" rx="2" fill="#2563EB"/><rect x="50" y="15" width="15" height="35" rx="2" fill="#60A5FA"/><rect x="75" y="25" width="15" height="25" rx="2" fill="#BFDBFE"/><line x1="0" y1="50" x2="90" y2="50" stroke="#CBD5E1" stroke-width="1"/></g></svg>`,
+            
+            grouped: `<svg viewBox="0 0 100 60"><g transform="translate(10,5)"><rect x="0" y="20" width="10" height="30" rx="1" fill="#2563EB"/><rect x="12" y="30" width="10" height="20" rx="1" fill="#93C5FD"/><rect x="35" y="10" width="10" height="40" rx="1" fill="#2563EB"/><rect x="47" y="20" width="10" height="30" rx="1" fill="#93C5FD"/><rect x="70" y="25" width="10" height="25" rx="1" fill="#2563EB"/><rect x="82" y="35" width="10" height="15" rx="1" fill="#93C5FD"/><line x1="0" y1="50" x2="95" y2="50" stroke="#CBD5E1" stroke-width="1"/></g></svg>`,
+            
+            donut: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="transparent" stroke="#E5E7EB" stroke-width="15"/><circle cx="50" cy="50" r="30" fill="transparent" stroke="#2563EB" stroke-width="15" stroke-dasharray="100 200" transform="rotate(-90 50 50)"/><circle cx="50" cy="50" r="30" fill="transparent" stroke="#93C5FD" stroke-width="15" stroke-dasharray="60 200" transform="rotate(90 50 50)"/></svg>`,
+            
+            stacked: `<svg viewBox="0 0 100 60"><g transform="translate(15,5)"><rect x="0" y="20" width="15" height="15" fill="#2563EB"/><rect x="0" y="35" width="15" height="15" fill="#93C5FD"/><rect x="25" y="10" width="15" height="25" fill="#2563EB"/><rect x="25" y="35" width="15" height="15" fill="#93C5FD"/><rect x="50" y="15" width="15" height="20" fill="#2563EB"/><rect x="50" y="35" width="15" height="15" fill="#93C5FD"/><line x1="-5" y1="50" x2="70" y2="50" stroke="#CBD5E1" stroke-width="1"/></g></svg>`,
+            
+            line: `<svg viewBox="0 0 100 60"><g transform="translate(5,5)"><polyline points="0,40 20,30 40,35 60,10 80,20 100,5" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="0" cy="40" r="2" fill="#2563EB"/><circle cx="20" cy="30" r="2" fill="#2563EB"/><circle cx="40" cy="35" r="2" fill="#2563EB"/><circle cx="60" cy="10" r="2" fill="#2563EB"/><circle cx="80" cy="20" r="2" fill="#2563EB"/><circle cx="100" cy="5" r="2" fill="#2563EB"/><line x1="0" y1="50" x2="100" y2="50" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="4 2"/></g></svg>`,
+            
+            bubble: `<svg viewBox="0 0 100 60"><circle cx="20" cy="40" r="5" fill="#2563EB" opacity="0.6"/><circle cx="40" cy="20" r="10" fill="#93C5FD" opacity="0.8"/><circle cx="60" cy="35" r="7" fill="#2563EB" opacity="0.7"/><circle cx="80" cy="15" r="12" fill="#60A5FA" opacity="0.6"/><circle cx="70" cy="45" r="4" fill="#93C5FD" opacity="0.8"/></svg>`,
+            
+            funnel: `<svg viewBox="0 0 100 60"><g transform="translate(25,5)"><polygon points="0,0 50,0 45,15 5,15" fill="#2563EB"/><polygon points="5,17 45,17 40,32 10,32" fill="#60A5FA"/><polygon points="10,34 40,34 35,49 15,49" fill="#93C5FD"/><polygon points="15,51 35,51 35,51 15,51" fill="#BFDBFE" stroke="#BFDBFE" stroke-width="2"/></g></svg>`,
+            
+            wordcloud: `<svg viewBox="0 0 100 60"><text x="50" y="30" text-anchor="middle" font-size="14" font-weight="bold" fill="#2563EB">Marketing</text><text x="20" y="15" text-anchor="middle" font-size="8" fill="#60A5FA">Data</text><text x="80" y="15" text-anchor="middle" font-size="9" fill="#4B5563">Trends</text><text x="25" y="50" text-anchor="middle" font-size="10" fill="#2563EB" opacity="0.7">Sales</text><text x="75" y="50" text-anchor="middle" font-size="8" fill="#93C5FD">Growth</text><text x="50" y="50" text-anchor="middle" font-size="7" fill="#60A5FA">Ads</text></svg>`,
+            
+            radar: `<svg viewBox="0 0 100 100"><g transform="translate(50,50)"><polygon points="0,-40 38,-12 24,32 -24,32 -38,-12" fill="none" stroke="#CBD5E1" stroke-width="1"/><line x1="0" y1="0" x2="0" y2="-40" stroke="#E2E8F0"/><line x1="0" y1="0" x2="38" y2="-12" stroke="#E2E8F0"/><line x1="0" y1="0" x2="24" y2="32" stroke="#E2E8F0"/><line x1="0" y1="0" x2="-24" y2="32" stroke="#E2E8F0"/><line x1="0" y1="0" x2="-38" y2="-12" stroke="#E2E8F0"/><polygon points="0,-30 25,-8 15,20 -10,25 -25,-5" fill="#2563EB" fill-opacity="0.2" stroke="#2563EB" stroke-width="1.5"/></g></svg>`
+        };
+
+        // 데이터 정의 (Chart Data)
+        const charts = [
+            {
+                id: 1,
+                name: "세로 막대 차트",
+                nameEn: "Column Chart",
+                category: "compare",
+                categoryLabel: "비교 (Comparison)",
+                visual: svgs.column,
+                desc: "항목 간의 크기를 단순 비교할 때 가장 효과적입니다.",
+                useCase: "채널별(인스타, 블로그, 유튜브) 월간 유입 방문자 수 비교",
+                prompt: "지난달 채널별 유입 데이터(CSV)를 분석해서, 방문자 수가 가장 높은 채널이 강조된 세로 막대 차트를 그려줘. X축은 채널명, Y축은 방문자 수로 설정해."
+            },
+            {
+                id: 2,
+                name: "그룹화 막대 차트",
+                nameEn: "Grouped Bar Chart",
+                category: "compare",
+                categoryLabel: "비교 (Comparison)",
+                visual: svgs.grouped,
+                desc: "두 가지 이상의 기준을 동시에 비교해야 할 때 적합합니다.",
+                useCase: "이번 달 vs 지난 달 매체별 광고 성과(ROAS) 동시 비교",
+                prompt: "첨부된 데이터에서 '월'과 '매체'를 기준으로 그룹화하여 ROAS 변화를 비교하는 그룹 막대 차트를 생성해줘. 색상은 월별로 구분해줘."
+            },
+            {
+                id: 3,
+                name: "도넛 차트",
+                nameEn: "Donut Chart",
+                category: "composition",
+                categoryLabel: "비중 (Composition)",
+                visual: svgs.donut,
+                desc: "전체에서 차지하는 비율을 봅니다. (항목 5개 미만 권장)",
+                useCase: "신규 방문자 vs 재방문자 비율, 기기별 접속 비중",
+                prompt: "전체 매출에서 각 상품 카테고리가 차지하는 비중을 도넛 차트로 시각화해줘. 비율(%)이 차트 안에 표시되도록 레이블을 달아줘."
+            },
+            {
+                id: 4,
+                name: "적층 막대 차트",
+                nameEn: "Stacked Bar Chart",
+                category: "composition",
+                categoryLabel: "비중 (Composition)",
+                visual: svgs.stacked,
+                desc: "전체 규모와 내부 구성 비율을 동시에 보여줍니다.",
+                useCase: "월별 매출 추이와 그 안에서 자사몰/외부몰 비중 변화",
+                prompt: "최근 6개월간 월별 총 매출을 보여주되, 각 막대 안에서 '판매 채널'별 비중이 나타나도록 적층 막대 차트를 그려줘."
+            },
+            {
+                id: 5,
+                name: "꺾은선 차트",
+                nameEn: "Line Chart",
+                category: "trend",
+                categoryLabel: "추세 (Trend)",
+                visual: svgs.line,
+                desc: "시간의 흐름에 따른 데이터의 상승/하락 추세를 파악합니다.",
+                useCase: "주간 활성 사용자(WAU) 변화, 일별 트래픽 추이 모니터링",
+                prompt: "일별 웹사이트 트래픽 데이터를 바탕으로 꺾은선 그래프를 그려줘. 주말과 평일의 패턴 차이가 잘 보이도록 날짜 축을 설정해줘."
+            },
+            {
+                id: 6,
+                name: "버블 차트",
+                nameEn: "Bubble Chart",
+                category: "relationship",
+                categoryLabel: "관계 (Relationship)",
+                visual: svgs.bubble,
+                desc: "3가지 변수의 상관관계를 찾을 때 유용합니다. (광고 분석용)",
+                useCase: "CPC(비용), CTR(클릭률), 전환수(크기) 3차원 키워드 분석",
+                prompt: "키워드별 광고 데이터를 사용해서 버블 차트를 만들어줘. X축은 CPC, Y축은 CTR로 하고, 버블의 크기는 '전환 매출액'으로 설정해줘."
+            },
+            {
+                id: 7,
+                name: "퍼널 차트",
+                nameEn: "Funnel Chart",
+                category: "special",
+                categoryLabel: "특수 (Special)",
+                visual: svgs.funnel,
+                desc: "단계별로 사용자가 얼마나 이탈하고 전환됐는지 확인합니다.",
+                useCase: "유입 > 상세페이지 > 장바구니 > 결제완료 단계별 전환율",
+                prompt: "사용자 행동 로그 데이터를 기반으로 '메인-상세-장바구니-결제' 단계별 전환율을 보여주는 퍼널 차트를 그려줘. 이탈률이 가장 높은 구간을 강조해줘."
+            },
+            {
+                id: 8,
+                name: "워드 클라우드",
+                nameEn: "Word Cloud",
+                category: "special",
+                categoryLabel: "특수 (Special)",
+                visual: svgs.wordcloud,
+                desc: "텍스트 데이터에서 자주 등장하는 키워드를 시각화합니다.",
+                useCase: "고객 리뷰, SNS 댓글 분석을 통한 브랜드 이미지 키워드 도출",
+                prompt: "고객 리뷰 텍스트 파일에서 가장 빈번하게 등장하는 명사와 형용사를 추출하여 워드 클라우드를 생성해줘."
+            },
+            {
+                id: 9,
+                name: "레이더 차트",
+                nameEn: "Radar Chart",
+                category: "special",
+                categoryLabel: "특수 (Special)",
+                visual: svgs.radar,
+                desc: "여러 속성 간의 균형이나 강점을 한눈에 비교합니다.",
+                useCase: "경쟁사 대비 자사 브랜드 속성(가격, 품질 등) 점수 비교",
+                prompt: "A사와 B사의 브랜드 이미지 설문조사 결과를 바탕으로 레이더 차트를 그려줘. 평가 항목은 가격, 품질, 서비스, 디자인, 접근성 5가지야."
+            }
+        ];
+
+        let currentFilter = 'all';
+        const filterContainer = document.getElementById('filter-container');
+        const chartGrid = document.getElementById('chart-grid');
+        const toast = document.getElementById('toast');
+
+        function init() {
+            renderFilters();
+            renderCharts();
+        }
+
+        function renderFilters() {
+            const categories = ['all', 'compare', 'composition', 'trend', 'relationship', 'special'];
+            const labels = {
+                'all': '전체 보기',
+                'compare': '비교 (Comparison)',
+                'composition': '비중 (Composition)',
+                'trend': '추세 (Trend)',
+                'relationship': '관계 (Relationship)',
+                'special': '특수 (Special)'
+            };
+
+            filterContainer.innerHTML = categories.map(cat => `
+                <button 
+                    onclick="setFilter('${cat}')"
+                    class="tab-btn px-5 py-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 ${cat === currentFilter ? 'active' : ''}"
+                >
+                    ${labels[cat]}
+                </button>
+            `).join('');
+        }
+
+        function renderCharts() {
+            const filteredCharts = currentFilter === 'all' 
+                ? charts 
+                : charts.filter(chart => chart.category === currentFilter);
+
+            chartGrid.innerHTML = filteredCharts.map(chart => `
+                <article class="card bg-white rounded-xl overflow-hidden shadow-sm flex flex-col h-full relative group">
+                    <!-- 시각화 미리보기 영역 -->
+                    <div class="chart-preview bg-slate-50">
+                        ${chart.visual}
+                    </div>
+
+                    <div class="p-7 flex flex-col flex-grow">
+                        <div class="mb-4">
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">${chart.categoryLabel.split(' ')[0]}</span>
+                            <h3 class="readable-title text-gray-900 mt-1">${chart.name}</h3>
+                            <span class="text-sm text-gray-400 font-medium">${chart.nameEn}</span>
+                        </div>
+                        
+                        <p class="readable-text text-gray-600 mb-6 flex-grow">
+                            ${chart.desc}
+                        </p>
+
+                        <div class="mb-6">
+                            <h4 class="text-sm font-bold text-gray-900 mb-2 border-b border-gray-100 pb-1">💡 마케팅 활용 예시</h4>
+                            <p class="readable-small text-gray-700">${chart.useCase}</p>
+                        </div>
+
+                        <div class="prompt-box p-4 rounded-lg relative mt-auto">
+                            <h4 class="text-xs font-bold text-gray-500 mb-2 uppercase">AI Prompt Example</h4>
+                            <p class="text-sm text-gray-800 italic pr-8 font-medium line-clamp-3">"${chart.prompt}"</p>
+                            <button 
+                                onclick="copyToClipboard('${chart.prompt.replace(/'/g, "\\'")}')"
+                                class="absolute top-2 right-2 p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                                title="프롬프트 복사"
+                            >
+                                <i class="fa-regular fa-copy text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        window.setFilter = (category) => {
+            currentFilter = category;
+            renderFilters();
+            renderCharts();
+        }
+
+        window.copyToClipboard = (text) => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast();
+        }
+
+        function showToast() {
+            toast.className = "show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
