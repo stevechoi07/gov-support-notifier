@@ -169,6 +169,16 @@
                 icon: <IconSchool size={20} />
             },
             {
+                id: 16,
+                category: "Atmosphere",
+                title: "화창한 교실 책상 (Sunny Classroom Desk)",
+                angle: "아이레벨 / 45도",
+                angleDesc: "책상 위 완성작을 바라보는 시선",
+                english: "A photograph of a completed [3D puzzle model] sitting centered on a light wooden school desk. Beside the model are an open instruction booklet with diagrams, several loose cardboard puzzle pieces, and a pair of small scissors. The background is a bright, sunlit elementary classroom with a green chalkboard, children's drawings pinned to a bulletin board, and sunlight streaming through a window on the right. The focus is sharp on the puzzle model, with a soft blur (bokeh) on the classroom background. Natural, warm light. (width: 860px)",
+                korean: "🏫 [New] 햇살이 들어오는 교실 책상 위 연출. 완성된 작품과 설명서, 가위 등을 배치하여 리얼한 조립 후기 느낌.",
+                icon: <IconSchool size={20} />
+            },
+            {
                 id: 7,
                 category: "Detail",
                 title: "질감과 명암의 대비 (Texture & Contrast)",
@@ -238,7 +248,7 @@
             };
 
             const generateMarkdown = () => {
-                let md = `# 🎨 입체퍼즐 범용 AI 프롬프트 가이드 (Ver 1.2 - School Edition)\n\n`;
+                let md = `# 🎨 입체퍼즐 범용 AI 프롬프트 가이드 (Ver 1.3 - School & Desk)\n\n`;
                 
                 md += `## 1. 배경/연출 (Atmosphere)\n`;
                 promptData.filter(p => p.category === "Atmosphere").forEach(p => {
@@ -269,7 +279,7 @@
                             <div>
                                 <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                                     <span className="bg-indigo-600 text-white p-1 rounded">NB</span>
-                                    NanoBanana Prompts <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Ver 1.2</span>
+                                    NanoBanana Prompts <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Ver 1.3</span>
                                 </h1>
                                 <p className="text-xs text-slate-500 mt-1">입체퍼즐 상세페이지용 AI 이미지 생성 도우미</p>
                             </div>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>크래커플러스 마스터 대시보드 (Dark Edition)</title>
+<title>크래커플러스 마스터 대시보드 (AI Edition)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
     body { font-family: 'Noto Sans KR', sans-serif; background-color: #0f172a; color: #e2e8f0; }
     .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); transition: all 0.3s ease; border-color: #6366f1; }
     
-    /* Custom Scrollbar for Dark Mode */
+    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #1e293b; }
     ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -66,7 +66,7 @@
     }
 
     .custom-checkbox:checked {
-        background-color: #6366f1; /* Indigo-500 */
+        background-color: #6366f1;
         border-color: #6366f1;
     }
 
@@ -84,7 +84,7 @@
         border-radius: 8px;
         padding: 16px;
         position: fixed;
-        z-index: 60;
+        z-index: 100;
         left: 50%;
         bottom: 30px;
         transform: translateX(-50%);
@@ -100,16 +100,8 @@
         bottom: 50px;
     }
 
-    .modal-content {
-        background-color: #1e293b;
-        color: #f1f5f9;
-    }
-    
-    .img-placeholder {
-        background: linear-gradient(45deg, #1e293b 25%, #334155 25%, #334155 50%, #1e293b 50%, #1e293b 75%, #334155 75%, #334155 100%);
-        background-size: 20px 20px;
-        opacity: 0.3;
-    }
+    .modal-content { background-color: #1e293b; color: #f1f5f9; }
+    .modal-overlay { background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
 </style>
 </head>
 <body>
@@ -122,13 +114,12 @@
                 <i data-lucide="box" class="w-6 h-6"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold text-white tracking-tight">CrackerPlus Master <span class="text-indigo-400 text-sm font-mono">DARK_EDITION_V5.4</span></h1>
-                <p class="text-xs text-slate-400 font-medium">전체 상품 78종 통합 관리 & 체크 시스템</p>
+                <h1 class="text-xl font-bold text-white tracking-tight">CrackerPlus Master <span class="text-pink-500 text-sm font-mono">AI_EDITION_V5.5</span></h1>
+                <p class="text-xs text-slate-400 font-medium">전체 상품 78종 통합 관리 & AI 프롬프트 생성</p>
             </div>
         </div>
         <div class="hidden md:flex gap-4 text-sm font-medium text-slate-400">
-            <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Local Storage ON</span>
-            <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="ruler" class="w-4 h-4 text-cyan-400"></i> Size Data Added</span>
+            <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="bot" class="w-4 h-4 text-pink-500"></i> AI Prompt Ready</span>
             <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="moon" class="w-4 h-4 text-yellow-500"></i> Dark Mode</span>
         </div>
     </div>
@@ -262,15 +253,15 @@
 </div>
 
 <!-- B2B Modal -->
-<div id="b2b-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
-    <div class="modal-overlay absolute w-full h-full bg-black opacity-80 backdrop-blur-sm" onclick="toggleModal('b2b-modal')"></div>
-    <div class="modal-container bg-slate-800 w-11/12 md:max-w-md mx-auto rounded-xl shadow-2xl z-50 overflow-y-auto max-h-[90vh] border border-slate-700">
+<div id="b2b-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50 transition-opacity duration-300">
+    <div class="modal-overlay absolute w-full h-full" onclick="toggleModal('b2b-modal')"></div>
+    <div class="modal-container bg-slate-800 w-11/12 md:max-w-md mx-auto rounded-xl shadow-2xl z-50 overflow-y-auto max-h-[90vh] border border-slate-700 transform scale-95 transition-transform duration-300">
         <div class="modal-content py-4 text-left px-6 rounded-xl">
             <div class="flex justify-between items-center pb-3 border-b border-slate-700">
                 <p class="text-xl font-bold text-white flex items-center gap-2">
                     <i data-lucide="package" class="text-blue-500"></i> B2B 합포 가이드
                 </p>
-                <div class="modal-close cursor-pointer z-50 hover:bg-slate-700 rounded-full p-1" onclick="toggleModal('b2b-modal')">
+                <div class="cursor-pointer hover:bg-slate-700 rounded-full p-1" onclick="toggleModal('b2b-modal')">
                     <i data-lucide="x" class="text-slate-400"></i>
                 </div>
             </div>
@@ -304,6 +295,34 @@
         </div>
     </div>
 </div>
+
+<!-- AI Prompt Modal -->
+<div id="ai-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50 transition-opacity duration-300">
+    <div class="modal-overlay absolute w-full h-full" onclick="toggleModal('ai-modal')"></div>
+    <div class="modal-container bg-slate-800 w-full md:max-w-2xl mx-4 rounded-xl shadow-2xl z-50 overflow-hidden border border-slate-700 flex flex-col max-h-[85vh]">
+        <div class="bg-slate-900 px-6 py-4 border-b border-slate-700 flex justify-between items-center sticky top-0">
+             <div>
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span class="bg-gradient-to-r from-pink-500 to-violet-500 text-white p-1 rounded-md"><i data-lucide="bot" class="w-5 h-5"></i></span>
+                    AI Prompt Generator
+                </h3>
+                <p class="text-xs text-slate-400 mt-1" id="ai-modal-subtitle">상품별 최적화된 프롬프트 5종</p>
+            </div>
+            <button onclick="toggleModal('ai-modal')" class="text-slate-400 hover:text-white transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto bg-slate-800" id="ai-prompt-container">
+            <!-- Prompts will be injected here -->
+        </div>
+
+        <div class="bg-slate-900 p-4 border-t border-slate-700 text-right">
+            <button onclick="toggleModal('ai-modal')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium transition">닫기</button>
+        </div>
+    </div>
+</div>
+
 
 <!-- Toast -->
 <div id="toast" class="copy-toast">클립보드에 복사되었습니다! 🎉</div>
@@ -451,6 +470,101 @@
         checkedCountEl.innerText = checkedItems.length;
     }
 
+    // --- AI PROMPT GENERATION LOGIC ---
+    function generatePrompts(product) {
+        const pName = `[${product.en_name}]`;
+        
+        // Base Templates (The NanoBanana Templates)
+        const templates = {
+            historic: "A detailed, warm-toned photograph of the " + pName + " placed on an antique wooden desk. It is surrounded by vintage hardcover books, rolled-up maps, and a classic fountain pen. Soft, natural sunlight streams from a window to the side, highlighting the texture of the model. The background is a blurred bookshelf filled with books. The overall atmosphere is studious and nostalgic. (width: 860px)",
+            cozy: "A cozy, sunlit lifestyle shot of the " + pName + " sitting on a floating wooden shelf. Behind it are textured beige and light grey pillows and a soft, rumpled linen blanket. Golden hour sunlight filters through a window, casting long, soft shadows. The scene feels relaxed and peaceful, showing the model as a charming piece of decor in a cozy room. (width: 860px)",
+            crafting: "An overhead, flat-lay photograph capturing the process of assembling the " + pName + ". The partially completed model is in the center, surrounded by its instruction sheets, puzzle parts yet to be assembled, and crafting tools. Hands are visible in the frame, holding a piece of the model. The setting is a clean, organized wooden work table with natural light. (width: 860px)",
+            cultural: "A still life photograph capturing the " + pName + " as a centerpiece on a traditional low wooden table. It is accompanied by a small ceramic vase with dried flowers and traditional tea ware on a small plate. The background features traditional patterns or a window with soft light filtering through. The color palette is muted and earthy, highlighting the colors of the model. (width: 860px)",
+            miniature: "A macro photograph showing the " + pName + " placed inside a detailed miniature landscape. The model sits on a bed of fake moss and tiny pebbles, surrounded by miniature trees. The lighting is soft and focused, making the scene look like a tiny, real world. The background is a gently blurred garden or forest. (width: 860px)",
+            modern: "A sleek, minimalist interior shot. The " + pName + " is placed on a clean, white floating shelf against a light grey concrete wall. Next to it is a small, modern geometric vase with a single branch. The lighting is cool and clean. The composition is simple, showcasing the design of the model as a striking modern objet d'art. (width: 860px)",
+            moonlight: "A cinematic night photograph of the " + pName + " illuminated by soft, internal warm LED lights. The model glows against a dark, starry night sky background with a full moon. The atmosphere is magical and mysterious, highlighting the silhouette of the architecture. (width: 860px)",
+            gift: "A festive holiday gift setting. The " + pName + " is placed next to a beautifully wrapped gift box with a red ribbon. The background features soft bokeh lights (like Christmas tree lights) or traditional holiday decor. The lighting is warm and celebratory. (width: 860px)",
+            classroom: "A lively classroom scene showing elementary school students' hands working together to assemble the " + pName + " on a group desk. Colorful school supplies, open textbooks, and a green chalkboard in the blurred background. Bright, cheerful classroom lighting. (width: 860px)",
+            sunnyDesk: "A photograph of a completed " + pName + " sitting centered on a light wooden school desk. Beside the model are an open instruction booklet with diagrams, several loose cardboard puzzle pieces, and a pair of small scissors. The background is a bright, sunlit elementary classroom with a green chalkboard, children's drawings pinned to a bulletin board, and sunlight streaming through a window on the right. The focus is sharp on the puzzle model, with a soft blur (bokeh) on the classroom background. Natural, warm light. (width: 860px)",
+            lowAngle: "A detailed, low-angle shot looking up at the " + pName + ". The intricate patterns and structural details underneath the protruding parts are sharply detailed, catching warm, golden afternoon sunlight. The complex structure is the main focus, making the model look majestic and large. The background is a soft, out-of-focus blue sky. (width: 860px)",
+            texture: "An extreme close-up photograph focusing on the surface texture of the " + pName + ". Strong side lighting from the left casts long, defining shadows across the details, emphasizing the layered structure. The sharp lines and structural edges contrast starkly against the shadows. The background is a smooth, blurred gradient to keep focus on the material. (width: 860px)",
+            scale: "A practical comparison shot. The " + pName + " is placed on a clean white desk next to common daily objects like a smartphone and a coffee mug to show its scale. The lighting is bright and neutral studio lighting. The focus is on showing the relative size clearly. (width: 860px)"
+        };
+
+        // Select Prompts based on Category to avoid cliches and ensure fit
+        let selectedPrompts = [];
+
+        if (product.category === 'edu') {
+            selectedPrompts = [
+                { type: 'Atmosphere', name: '역사를 품은 서재', text: templates.historic },
+                { type: 'Atmosphere', name: '화창한 교실 책상', text: templates.sunnyDesk },
+                { type: 'Detail', name: '웅장한 로우 앵글', text: templates.lowAngle },
+                { type: 'Detail', name: '미니어처 세상', text: templates.miniature },
+                { type: 'Action', name: '함께 만드는 즐거움', text: templates.crafting }
+            ];
+        } else if (product.category === 'military') {
+             selectedPrompts = [
+                { type: 'Atmosphere', name: '작전 지역 (디오라마)', text: templates.miniature }, // Military fits well with diorama
+                { type: 'Atmosphere', name: '달빛 야경 (야간작전)', text: templates.moonlight },
+                { type: 'Detail', name: '위풍당당 로우 앵글', text: templates.lowAngle },
+                { type: 'Detail', name: '정밀 디테일 (텍스처)', text: templates.texture },
+                { type: 'Action', name: '조립의 순간', text: templates.crafting }
+            ];
+        } else if (product.category === 'gift') {
+             selectedPrompts = [
+                { type: 'Atmosphere', name: '감성 인테리어 (Cozy)', text: templates.cozy },
+                { type: 'Atmosphere', name: '모던 오브제', text: templates.modern },
+                { type: 'Atmosphere', name: '설레는 선물상자', text: templates.gift },
+                { type: 'Atmosphere', name: '달빛 야경 (무드등)', text: templates.moonlight },
+                { type: 'Detail', name: '크기 체감 (스마트폰 비교)', text: templates.scale }
+            ];
+        } else { // Silver & Others
+             selectedPrompts = [
+                { type: 'Atmosphere', name: '전통의 미 (좌식)', text: templates.cultural },
+                { type: 'Atmosphere', name: '따뜻한 햇살 (Cozy)', text: templates.cozy },
+                { type: 'Action', name: '만드는 즐거움', text: templates.crafting },
+                { type: 'Detail', name: '질감 디테일', text: templates.texture },
+                { type: 'Detail', name: '크기 체감', text: templates.scale }
+            ];
+        }
+
+        return selectedPrompts;
+    }
+
+    function openAiModal(productId, event) {
+        event.stopPropagation();
+        const product = products.find(p => p.id === productId);
+        if(!product) return;
+
+        const container = document.getElementById('ai-prompt-container');
+        const subtitle = document.getElementById('ai-modal-subtitle');
+        
+        subtitle.innerText = `${product.name} (${product.en_name}) 맞춤형 프롬프트`;
+        container.innerHTML = '';
+
+        const prompts = generatePrompts(product);
+
+        prompts.forEach((p, idx) => {
+            const div = document.createElement('div');
+            div.className = "mb-4 bg-slate-700/50 p-4 rounded-xl border border-slate-600 group hover:border-pink-500 hover:bg-slate-700 transition cursor-pointer relative";
+            div.onclick = () => { copyText(p.text); };
+            
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold px-2 py-1 rounded bg-slate-800 text-pink-400 border border-slate-700">${p.type}</span>
+                    <span class="text-xs text-slate-400 flex items-center gap-1 group-hover:text-pink-400 transition"><i data-lucide="copy" class="w-3 h-3"></i> 클릭해서 복사</span>
+                </div>
+                <h4 class="font-bold text-white mb-2">${p.name}</h4>
+                <p class="text-xs text-slate-300 font-mono leading-relaxed opacity-80 group-hover:opacity-100">${p.text}</p>
+            `;
+            container.appendChild(div);
+        });
+
+        // Re-init icons inside modal
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        toggleModal('ai-modal');
+    }
+
     function renderProducts(filter = 'all') {
         grid.innerHTML = '';
         let filtered = products;
@@ -526,7 +640,7 @@
                         <span class="text-xs font-semibold text-blue-400 bg-blue-900/20 px-1 rounded border border-blue-900/30">📦 ${p.box_qty}개</span>
                     </div>
 
-                    <!-- Size Info Line (New!) -->
+                    <!-- Size Info Line -->
                     <div class="text-xs text-slate-400 mb-3 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition">
                          <i data-lucide="ruler" class="w-3 h-3 text-cyan-500"></i>
                          <span class="font-mono text-[11px]">${p.size}</span>
@@ -544,8 +658,10 @@
                                 <p class="text-xs text-slate-500">공급 ${fmtNum(p.supply)}</p>
                                 <p class="text-sm font-bold text-slate-200">${fmtNum(p.price)}원</p>
                             </div>
-                            <div class="text-right">
-                                <p class="text-xs text-indigo-400 font-bold">+${fmtNum(profit)}원</p>
+                            <div class="flex flex-col items-end gap-1">
+                                <button onclick="openAiModal(${p.id}, event)" class="bg-slate-700 hover:bg-pink-600 text-slate-300 hover:text-white px-2 py-1 rounded text-[10px] font-bold transition flex items-center gap-1 border border-slate-600 hover:border-pink-500 shadow-sm">
+                                    <i data-lucide="bot" class="w-3 h-3"></i> AI
+                                </button>
                                 <span class="text-[10px] ${isHighMargin ? 'bg-red-900/40 text-red-400 border border-red-900' : 'bg-indigo-900/40 text-indigo-400 border border-indigo-900'} px-1.5 py-0.5 rounded font-medium">Margin ${margin}%</span>
                             </div>
                         </div>
@@ -570,6 +686,18 @@
         modal.classList.toggle('opacity-0');
         modal.classList.toggle('pointer-events-none');
         document.body.classList.toggle('modal-active');
+        
+        // Modal zoom animation toggle
+        const container = modal.querySelector('.modal-container');
+        if(container) {
+            if (modal.classList.contains('opacity-0')) {
+                container.classList.remove('scale-100');
+                container.classList.add('scale-95');
+            } else {
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            }
+        }
     }
 
     function copyText(text) {
@@ -579,7 +707,7 @@
         textArea.select();
         try {
             document.execCommand('copy');
-            showToast("마케팅 카피 복사 완료!");
+            showToast("클립보드에 복사되었습니다!");
         } catch (err) {}
         document.body.removeChild(textArea);
     }
