@@ -122,13 +122,13 @@
                 <i data-lucide="box" class="w-6 h-6"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold text-white tracking-tight">CrackerPlus Master <span class="text-indigo-400 text-sm font-mono">DARK_EDITION_V5.3</span></h1>
+                <h1 class="text-xl font-bold text-white tracking-tight">CrackerPlus Master <span class="text-indigo-400 text-sm font-mono">DARK_EDITION_V5.4</span></h1>
                 <p class="text-xs text-slate-400 font-medium">전체 상품 78종 통합 관리 & 체크 시스템</p>
             </div>
         </div>
         <div class="hidden md:flex gap-4 text-sm font-medium text-slate-400">
             <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Local Storage ON</span>
-            <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="image" class="w-4 h-4 text-pink-500"></i> Image Ready</span>
+            <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="ruler" class="w-4 h-4 text-cyan-400"></i> Size Data Added</span>
             <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="moon" class="w-4 h-4 text-yellow-500"></i> Dark Mode</span>
         </div>
     </div>
@@ -309,92 +309,92 @@
 <div id="toast" class="copy-toast">클립보드에 복사되었습니다! 🎉</div>
 
 <script>
-    // FULL PRODUCT DATA with English Keywords
+    // FULL PRODUCT DATA with English Keywords & SIZES
     const products = [
         // EDU
-        { id: 1, name: "복원 숭례문", en_name: "Sungnyemun Gate", category: "edu", price: 8000, supply: 3600, pieces: 73, diff: 5, tag: "역사교과서", box_qty: 50, copy: "초등 사회 교과서 수록! 만들며 배우는 우리 역사 숭례문" },
-        { id: 4, name: "장안문(수원화성)", en_name: "Janganmun Gate", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "유네스코", box_qty: 100, copy: "정조의 효심이 깃든 수원화성 장안문, 역사 수행평가 추천" },
-        { id: 9, name: "향원정", en_name: "Hyangwonjeong", category: "edu", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "고궁", box_qty: 100, copy: "경복궁의 보석 향원정, 물 위에 떠 있는 듯한 아름다움" },
-        { id: 10, name: "서울역", en_name: "Seoul Station", category: "edu", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "근대역사", box_qty: 100, copy: "대한민국의 관문 서울역, 근대 역사 체험 학습 교구" },
-        { id: 11, name: "한국은행", en_name: "Bank of Korea", category: "edu", price: 5000, supply: 2250, pieces: 32, diff: 2, tag: "근대건축", box_qty: 100, copy: "화폐박물관이 된 한국은행, 경제 교육과 역사 공부를 동시에" },
-        { id: 12, name: "증기기관차", en_name: "Steam Locomotive", category: "edu", price: 8000, supply: 3600, pieces: 81, diff: 5, tag: "과학원리", box_qty: 50, copy: "칙칙폭폭 증기기관차의 원리를 배우는 조립 키트" },
-        { id: 13, name: "정화의 보선", en_name: "Treasure Ship", category: "edu", price: 8000, supply: 3600, pieces: 51, diff: 4, tag: "세계사", box_qty: 50, copy: "대항해시대 이전의 거대한 함선, 정화의 보선 만들기" },
-        { id: 14, name: "아크로폴리스", en_name: "Acropolis", category: "edu", price: 8000, supply: 3600, pieces: 47, diff: 4, tag: "세계문화", box_qty: 50, copy: "그리스 로마 신화 학습용! 아크로폴리스 파르테논 신전" },
-        { id: 15, name: "경복궁", en_name: "Gyeongbokgung", category: "edu", price: 5000, supply: 2250, pieces: 42, diff: 2, tag: "서울투어", box_qty: 100, copy: "외국인이 가장 좋아하는 한국 명소 1위, 내 손안의 경복궁" },
-        { id: 16, name: "불국사", en_name: "Bulguksa", category: "edu", price: 5000, supply: 2250, pieces: 45, diff: 2, tag: "신라역사", box_qty: 100, copy: "경주 불국사, 수학여행 가기 전 집에서 먼저 만나요" },
-        { id: 17, name: "다보탑", en_name: "Dabotap Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 47, diff: 3, tag: "국보", box_qty: 100, copy: "10원 동전 속 그 탑! 석가탑과 세트 추천 다보탑" },
-        { id: 18, name: "티라노사우루스", en_name: "Tyrannosaurus", category: "edu", price: 5000, supply: 2250, pieces: 12, diff: 1, tag: "공룡", box_qty: 100, copy: "공룡 덕후 아이들 모여라! 뼈대부터 맞추는 티라노 만들기" },
-        { id: 19, name: "트리케라톱스", en_name: "Triceratops", category: "edu", price: 5000, supply: 2250, pieces: 32, diff: 1, tag: "공룡", box_qty: 100, copy: "뿔 세 개 달린 트리케라톱스, 쉽고 재미있는 공룡 조립" },
-        { id: 20, name: "첨성대", en_name: "Cheomseongdae", category: "edu", price: 5000, supply: 2250, pieces: 41, diff: 3, tag: "과학문화재", box_qty: 100, copy: "동양 최고의 천문대 첨성대, 돌 하나하나 쌓는 재미" },
-        { id: 21, name: "해시계(앙부일구)", en_name: "Sundial", category: "edu", price: 5000, supply: 2250, pieces: 14, diff: 1, tag: "장영실", box_qty: 100, copy: "시간을 측정하는 과학 원리, 장영실의 앙부일구 만들기" },
-        { id: 24, name: "공룡시리즈1", en_name: "Dinosaur Set 1", category: "edu", price: 9000, supply: 4050, pieces: 47, diff: 3, tag: "공룡세트", box_qty: 50, copy: "인기 공룡 총집합! 아이들이 환호하는 공룡 종합 선물세트" },
-        { id: 25, name: "공룡시리즈2", en_name: "Dinosaur Set 2", category: "edu", price: 9000, supply: 4050, pieces: 49, diff: 3, tag: "공룡세트", box_qty: 50, copy: "쥐라기 공원 부럽지 않은 우리 집, 공룡 대탐험 2탄" },
-        { id: 26, name: "동물시리즈", en_name: "Zoo Animals", category: "edu", price: 9000, supply: 4050, pieces: 52, diff: 3, tag: "동물농장", box_qty: 50, copy: "사자, 기린, 코끼리! 손으로 만드는 나만의 동물원" },
-        { id: 32, name: "고려청자", en_name: "Goryeo Celadon", category: "edu", price: 5000, supply: 2250, pieces: 21, diff: 1, tag: "미술교육", box_qty: 100, copy: "우아한 곡선의 미, 고려청자 매병 만들기 (미술 수업 추천)" },
-        { id: 39, name: "수원화성", en_name: "Hwaseong Fortress", category: "edu", price: 9000, supply: 4050, pieces: 76, diff: 4, tag: "세계유산", box_qty: 50, copy: "성곽 건축의 꽃 수원화성, 웅장한 성벽을 재현하다" },
-        { id: 40, name: "창덕궁", en_name: "Changdeokgung", category: "edu", price: 5000, supply: 2250, pieces: 57, diff: 3, tag: "유네스코", box_qty: 100, copy: "가장 아름다운 궁궐 창덕궁, 인정전의 멋을 살린 퍼즐" },
-        { id: 41, name: "석가탑", en_name: "Seokgatap", category: "edu", price: 5000, supply: 2250, pieces: 44, diff: 3, tag: "국보", box_qty: 100, copy: "천년의 침묵, 단순함의 미학 석가탑 만들기" },
-        { id: 42, name: "독립문", en_name: "Independence Gate", category: "edu", price: 5000, supply: 2250, pieces: 29, diff: 2, tag: "근대사", box_qty: 100, copy: "자주독립의 상징 독립문, 서대문 형무소와 함께 배우는 역사" },
-        { id: 43, name: "거중기와 녹로", en_name: "Crane & Potter", category: "edu", price: 5000, supply: 2250, pieces: 55, diff: 3, tag: "정약용", box_qty: 100, copy: "무거운 돌을 번쩍! 정약용의 과학 기술 거중기 체험" },
-        { id: 44, name: "황룡사9층목탑", en_name: "Hwangnyongsa", category: "edu", price: 5000, supply: 2250, pieces: 55, diff: 3, tag: "신라", box_qty: 100, copy: "사라진 전설의 거대 목탑, 황룡사 9층 목탑 복원 프로젝트" },
-        { id: 45, name: "공산성", en_name: "Gongsanseong", category: "edu", price: 5000, supply: 2250, pieces: 37, diff: 2, tag: "백제", box_qty: 100, copy: "백제의 숨결이 깃든 공주 공산성, 백제 역사 탐방" },
-        { id: 46, name: "미륵사지/정림사지", en_name: "Mireuksaji", category: "edu", price: 5000, supply: 2250, pieces: 49, diff: 3, tag: "백제탑", box_qty: 100, copy: "백제 석탑의 정수, 미륵사지와 정림사지 석탑 세트" },
-        { id: 48, name: "오죽헌", en_name: "Ojukheon", category: "edu", price: 5000, supply: 2250, pieces: 29, diff: 2, tag: "신사임당", box_qty: 100, copy: "율곡 이이와 신사임당의 얼이 서린 강릉 오죽헌" },
-        { id: 49, name: "피라미드", en_name: "Pyramid", category: "edu", price: 8000, supply: 3600, pieces: 44, diff: 4, tag: "세계불가사의", box_qty: 50, copy: "이집트의 신비 피라미드와 스핑크스, 세계 문명 탐험" },
-        { id: 51, name: "서대문형무소", en_name: "Seodaemun Prison", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "항일역사", box_qty: 100, copy: "잊지 말아야 할 역사, 서대문형무소 역사관 만들기" },
-        { id: 52, name: "한양도성", en_name: "Hanyang City Wall", category: "edu", price: 9000, supply: 4050, pieces: 69, diff: 5, tag: "서울", box_qty: 50, copy: "서울을 감싸는 성곽길 한양도성, 역사 트레킹을 집에서" },
-        { id: 53, name: "우주왕복선", en_name: "Space Shuttle", category: "edu", price: 5000, supply: 2250, pieces: 49, diff: 3, tag: "우주과학", box_qty: 100, copy: "우주를 향한 꿈, 디스커버리호 우주왕복선 발사!" },
-        { id: 54, name: "월정사팔각구층석탑", en_name: "Woljeongsa Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 2, tag: "고려", box_qty: 100, copy: "평창의 보물 월정사 석탑, 고려 시대의 화려한 불교 미술" },
-        { id: 55, name: "금산사", en_name: "Geumsansa Temple", category: "edu", price: 9000, supply: 4050, pieces: 52, diff: 3, tag: "전통사찰", box_qty: 50, copy: "미륵 신앙의 성지 금산사, 3층 법당 미륵전을 재현하다" },
-        { id: 56, name: "적상산성", en_name: "Jeoksangsanseong", category: "edu", price: 5000, supply: 2250, pieces: 39, diff: 2, tag: "조선실록", box_qty: 100, copy: "조선왕조실록을 지켰던 요새, 무주 적상산성 사고" },
-        { id: 57, name: "한국의 문화유산1", en_name: "Heritage Set 1", category: "edu", price: 23000, supply: 10350, pieces: 226, diff: 5, tag: "종합선물", box_qty: 14, copy: "한국 대표 문화유산 총집합! 방학 숙제 끝판왕 세트" },
-        { id: 58, name: "한국의 문화유산2", en_name: "Heritage Set 2", category: "edu", price: 23000, supply: 10350, pieces: 172, diff: 5, tag: "종합선물", box_qty: 14, copy: "교과서에 나오는 문화재를 한 번에 만드는 대형 세트" },
-        { id: 61, name: "덕수궁", en_name: "Deoksugung", category: "edu", price: 5000, supply: 2250, pieces: 34, diff: 2, tag: "대한제국", box_qty: 100, copy: "고종 황제의 근대화 의지, 덕수궁 석조전과 중화전" },
-        { id: 62, name: "고조선과 단군신화", en_name: "Dangun Myth", category: "edu", price: 5000, supply: 2250, pieces: 14, diff: 1, tag: "건국신화", box_qty: 100, copy: "곰이 사람이 되었다고? 단군 할아버지 이야기 만들기" },
-        { id: 65, name: "무주 한풍루", en_name: "Hanpungnu Pavilion", category: "edu", price: 5000, supply: 2250, pieces: 25, diff: 2, tag: "누각", box_qty: 100, copy: "호남의 제1루 한풍루, 멋진 누각 위에서 풍류를 즐겨요" },
-        { id: 66, name: "원자력발전소", en_name: "Nuclear Plant", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "에너지", box_qty: 100, copy: "전기는 어떻게 만들어질까? 원자력 발전소 구조 배우기" },
-        { id: 67, name: "창경궁", en_name: "Changgyeonggung", category: "edu", price: 5000, supply: 2250, pieces: 50, diff: 3, tag: "궁궐", box_qty: 100, copy: "효심으로 지은 궁궐 창경궁, 명정전의 고즈넉함" },
-        { id: 68, name: "경희궁", en_name: "Gyeonghuigung", category: "edu", price: 5000, supply: 2250, pieces: 39, diff: 3, tag: "궁궐", box_qty: 100, copy: "서궐이라 불린 경희궁, 잃어버린 궁궐을 찾아서" },
-        { id: 69, name: "의성탑리리오층석탑", en_name: "Tamniri Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 58, diff: 3, tag: "통일신라", box_qty: 100, copy: "벽돌탑을 모방한 독특한 석탑, 의성 탑리리 5층 석탑" },
-        { id: 71, name: "강화산성", en_name: "Ganghwa Fortress", category: "edu", price: 9000, supply: 4050, pieces: 67, diff: 4, tag: "호국유적", box_qty: 50, copy: "외세의 침략을 막아낸 강화도, 강화산성 서문 만들기" },
-        { id: 76, name: "조선의 5대궁궐", en_name: "5 Grand Palaces", category: "edu", price: 25000, supply: 11250, pieces: 222, diff: 5, tag: "궁궐세트", box_qty: 14, copy: "경복궁부터 덕수궁까지, 조선 5대 궁궐 완전 정복" },
+        { id: 1, name: "복원 숭례문", en_name: "Sungnyemun Gate", category: "edu", price: 8000, supply: 3600, pieces: 73, diff: 5, tag: "역사교과서", box_qty: 50, size: "29x13.3x11cm", copy: "초등 사회 교과서 수록! 만들며 배우는 우리 역사 숭례문" },
+        { id: 4, name: "장안문(수원화성)", en_name: "Janganmun Gate", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "유네스코", box_qty: 100, size: "18x15x6.3cm", copy: "정조의 효심이 깃든 수원화성 장안문, 역사 수행평가 추천" },
+        { id: 9, name: "향원정", en_name: "Hyangwonjeong", category: "edu", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "고궁", box_qty: 100, size: "16x23.5x12cm", copy: "경복궁의 보석 향원정, 물 위에 떠 있는 듯한 아름다움" },
+        { id: 10, name: "서울역", en_name: "Seoul Station", category: "edu", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "근대역사", box_qty: 100, size: "23.5x12x9cm", copy: "대한민국의 관문 서울역, 근대 역사 체험 학습 교구" },
+        { id: 11, name: "한국은행", en_name: "Bank of Korea", category: "edu", price: 5000, supply: 2250, pieces: 32, diff: 2, tag: "근대건축", box_qty: 100, size: "17x14x7.5cm", copy: "화폐박물관이 된 한국은행, 경제 교육과 역사 공부를 동시에" },
+        { id: 12, name: "증기기관차", en_name: "Steam Locomotive", category: "edu", price: 8000, supply: 3600, pieces: 81, diff: 5, tag: "과학원리", box_qty: 50, size: "45x5.7x13cm", copy: "칙칙폭폭 증기기관차의 원리를 배우는 조립 키트" },
+        { id: 13, name: "정화의 보선", en_name: "Treasure Ship", category: "edu", price: 8000, supply: 3600, pieces: 51, diff: 4, tag: "세계사", box_qty: 50, size: "30x9.5x19cm", copy: "대항해시대 이전의 거대한 함선, 정화의 보선 만들기" },
+        { id: 14, name: "아크로폴리스", en_name: "Acropolis", category: "edu", price: 8000, supply: 3600, pieces: 47, diff: 4, tag: "세계문화", box_qty: 50, size: "29x22x6.3cm", copy: "그리스 로마 신화 학습용! 아크로폴리스 파르테논 신전" },
+        { id: 15, name: "경복궁", en_name: "Gyeongbokgung", category: "edu", price: 5000, supply: 2250, pieces: 42, diff: 2, tag: "서울투어", box_qty: 100, size: "30x42x6.3cm", copy: "외국인이 가장 좋아하는 한국 명소 1위, 내 손안의 경복궁" },
+        { id: 16, name: "불국사", en_name: "Bulguksa", category: "edu", price: 5000, supply: 2250, pieces: 45, diff: 2, tag: "신라역사", box_qty: 100, size: "30x42x4.8cm", copy: "경주 불국사, 수학여행 가기 전 집에서 먼저 만나요" },
+        { id: 17, name: "다보탑", en_name: "Dabotap Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 47, diff: 3, tag: "국보", box_qty: 100, size: "13x13x18cm", copy: "10원 동전 속 그 탑! 석가탑과 세트 추천 다보탑" },
+        { id: 18, name: "티라노사우루스", en_name: "Tyrannosaurus", category: "edu", price: 5000, supply: 2250, pieces: 12, diff: 1, tag: "공룡", box_qty: 100, size: "28x8x13cm", copy: "공룡 덕후 아이들 모여라! 뼈대부터 맞추는 티라노 만들기" },
+        { id: 19, name: "트리케라톱스", en_name: "Triceratops", category: "edu", price: 5000, supply: 2250, pieces: 32, diff: 1, tag: "공룡", box_qty: 100, size: "22x8x10cm", copy: "뿔 세 개 달린 트리케라톱스, 쉽고 재미있는 공룡 조립" },
+        { id: 20, name: "첨성대", en_name: "Cheomseongdae", category: "edu", price: 5000, supply: 2250, pieces: 41, diff: 3, tag: "과학문화재", box_qty: 100, size: "14x14x20cm", copy: "동양 최고의 천문대 첨성대, 돌 하나하나 쌓는 재미" },
+        { id: 21, name: "해시계(앙부일구)", en_name: "Sundial", category: "edu", price: 5000, supply: 2250, pieces: 14, diff: 1, tag: "장영실", box_qty: 100, size: "18x18x8.3cm", copy: "시간을 측정하는 과학 원리, 장영실의 앙부일구 만들기" },
+        { id: 24, name: "공룡시리즈1", en_name: "Dinosaur Set 1", category: "edu", price: 9000, supply: 4050, pieces: 47, diff: 3, tag: "공룡세트", box_qty: 50, size: "다양함", copy: "인기 공룡 총집합! 아이들이 환호하는 공룡 종합 선물세트" },
+        { id: 25, name: "공룡시리즈2", en_name: "Dinosaur Set 2", category: "edu", price: 9000, supply: 4050, pieces: 49, diff: 3, tag: "공룡세트", box_qty: 50, size: "다양함", copy: "쥐라기 공원 부럽지 않은 우리 집, 공룡 대탐험 2탄" },
+        { id: 26, name: "동물시리즈", en_name: "Zoo Animals", category: "edu", price: 9000, supply: 4050, pieces: 52, diff: 3, tag: "동물농장", box_qty: 50, size: "다양함", copy: "사자, 기린, 코끼리! 손으로 만드는 나만의 동물원" },
+        { id: 32, name: "고려청자", en_name: "Goryeo Celadon", category: "edu", price: 5000, supply: 2250, pieces: 21, diff: 1, tag: "미술교육", box_qty: 100, size: "9x9x13.5cm", copy: "우아한 곡선의 미, 고려청자 매병 만들기 (미술 수업 추천)" },
+        { id: 39, name: "수원화성", en_name: "Hwaseong Fortress", category: "edu", price: 9000, supply: 4050, pieces: 76, diff: 4, tag: "세계유산", box_qty: 50, size: "40.7x29x4cm", copy: "성곽 건축의 꽃 수원화성, 웅장한 성벽을 재현하다" },
+        { id: 40, name: "창덕궁", en_name: "Changdeokgung", category: "edu", price: 5000, supply: 2250, pieces: 57, diff: 3, tag: "유네스코", box_qty: 100, size: "23x22x9.5cm", copy: "가장 아름다운 궁궐 창덕궁, 인정전의 멋을 살린 퍼즐" },
+        { id: 41, name: "석가탑", en_name: "Seokgatap", category: "edu", price: 5000, supply: 2250, pieces: 44, diff: 3, tag: "국보", box_qty: 100, size: "11.3x12.5x23.5cm", copy: "천년의 침묵, 단순함의 미학 석가탑 만들기" },
+        { id: 42, name: "독립문", en_name: "Independence Gate", category: "edu", price: 5000, supply: 2250, pieces: 29, diff: 2, tag: "근대사", box_qty: 100, size: "12.7x15.5x14.3cm", copy: "자주독립의 상징 독립문, 서대문 형무소와 함께 배우는 역사" },
+        { id: 43, name: "거중기와 녹로", en_name: "Crane & Potter", category: "edu", price: 5000, supply: 2250, pieces: 55, diff: 3, tag: "정약용", box_qty: 100, size: "23x5.5x13cm", copy: "무거운 돌을 번쩍! 정약용의 과학 기술 거중기 체험" },
+        { id: 44, name: "황룡사9층목탑", en_name: "Hwangnyongsa", category: "edu", price: 5000, supply: 2250, pieces: 55, diff: 3, tag: "신라", box_qty: 100, size: "13x13x28cm", copy: "사라진 전설의 거대 목탑, 황룡사 9층 목탑 복원 프로젝트" },
+        { id: 45, name: "공산성", en_name: "Gongsanseong", category: "edu", price: 5000, supply: 2250, pieces: 37, diff: 2, tag: "백제", box_qty: 100, size: "26x18x8cm", copy: "백제의 숨결이 깃든 공주 공산성, 백제 역사 탐방" },
+        { id: 46, name: "미륵사지/정림사지", en_name: "Mireuksaji", category: "edu", price: 5000, supply: 2250, pieces: 49, diff: 3, tag: "백제탑", box_qty: 100, size: "10.5x11.7x21.5cm", copy: "백제 석탑의 정수, 미륵사지와 정림사지 석탑 세트" },
+        { id: 48, name: "오죽헌", en_name: "Ojukheon", category: "edu", price: 5000, supply: 2250, pieces: 29, diff: 2, tag: "신사임당", box_qty: 100, size: "18x14x9cm", copy: "율곡 이이와 신사임당의 얼이 서린 강릉 오죽헌" },
+        { id: 49, name: "피라미드", en_name: "Pyramid", category: "edu", price: 8000, supply: 3600, pieces: 44, diff: 4, tag: "세계불가사의", box_qty: 50, size: "28x19.5x9.5cm", copy: "이집트의 신비 피라미드와 스핑크스, 세계 문명 탐험" },
+        { id: 51, name: "서대문형무소", en_name: "Seodaemun Prison", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "항일역사", box_qty: 100, size: "20x11.5x9cm", copy: "잊지 말아야 할 역사, 서대문형무소 역사관 만들기" },
+        { id: 52, name: "한양도성", en_name: "Hanyang City Wall", category: "edu", price: 9000, supply: 4050, pieces: 69, diff: 5, tag: "서울", box_qty: 50, size: "41x28.7x4cm", copy: "서울을 감싸는 성곽길 한양도성, 역사 트레킹을 집에서" },
+        { id: 53, name: "우주왕복선", en_name: "Space Shuttle", category: "edu", price: 5000, supply: 2250, pieces: 49, diff: 3, tag: "우주과학", box_qty: 100, size: "13x10x27cm", copy: "우주를 향한 꿈, 디스커버리호 우주왕복선 발사!" },
+        { id: 54, name: "월정사팔각구층석탑", en_name: "Woljeongsa Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 2, tag: "고려", box_qty: 100, size: "10x10x23cm", copy: "평창의 보물 월정사 석탑, 고려 시대의 화려한 불교 미술" },
+        { id: 55, name: "금산사", en_name: "Geumsansa Temple", category: "edu", price: 9000, supply: 4050, pieces: 52, diff: 3, tag: "전통사찰", box_qty: 50, size: "32x23x15cm", copy: "미륵 신앙의 성지 금산사, 3층 법당 미륵전을 재현하다" },
+        { id: 56, name: "적상산성", en_name: "Jeoksangsanseong", category: "edu", price: 5000, supply: 2250, pieces: 39, diff: 2, tag: "조선실록", box_qty: 100, size: "26x36x8.2cm", copy: "조선왕조실록을 지켰던 요새, 무주 적상산성 사고" },
+        { id: 57, name: "한국의 문화유산1", en_name: "Heritage Set 1", category: "edu", price: 23000, supply: 10350, pieces: 226, diff: 5, tag: "종합선물", box_qty: 14, size: "대형세트", copy: "한국 대표 문화유산 총집합! 방학 숙제 끝판왕 세트" },
+        { id: 58, name: "한국의 문화유산2", en_name: "Heritage Set 2", category: "edu", price: 23000, supply: 10350, pieces: 172, diff: 5, tag: "종합선물", box_qty: 14, size: "대형세트", copy: "교과서에 나오는 문화재를 한 번에 만드는 대형 세트" },
+        { id: 61, name: "덕수궁", en_name: "Deoksugung", category: "edu", price: 5000, supply: 2250, pieces: 34, diff: 2, tag: "대한제국", box_qty: 100, size: "43x30x5cm", copy: "고종 황제의 근대화 의지, 덕수궁 석조전과 중화전" },
+        { id: 62, name: "고조선과 단군신화", en_name: "Dangun Myth", category: "edu", price: 5000, supply: 2250, pieces: 14, diff: 1, tag: "건국신화", box_qty: 100, size: "20x15.3x14.5cm", copy: "곰이 사람이 되었다고? 단군 할아버지 이야기 만들기" },
+        { id: 65, name: "무주 한풍루", en_name: "Hanpungnu Pavilion", category: "edu", price: 5000, supply: 2250, pieces: 25, diff: 2, tag: "누각", box_qty: 100, size: "18x12x10.5cm", copy: "호남의 제1루 한풍루, 멋진 누각 위에서 풍류를 즐겨요" },
+        { id: 66, name: "원자력발전소", en_name: "Nuclear Plant", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "에너지", box_qty: 100, size: "20x16.5x5.5cm", copy: "전기는 어떻게 만들어질까? 원자력 발전소 구조 배우기" },
+        { id: 67, name: "창경궁", en_name: "Changgyeonggung", category: "edu", price: 5000, supply: 2250, pieces: 50, diff: 3, tag: "궁궐", box_qty: 100, size: "30x42x4.6cm", copy: "효심으로 지은 궁궐 창경궁, 명정전의 고즈넉함" },
+        { id: 68, name: "경희궁", en_name: "Gyeonghuigung", category: "edu", price: 5000, supply: 2250, pieces: 39, diff: 3, tag: "궁궐", box_qty: 100, size: "30x42x4.6cm", copy: "서궐이라 불린 경희궁, 잃어버린 궁궐을 찾아서" },
+        { id: 69, name: "의성탑리리오층석탑", en_name: "Tamniri Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 58, diff: 3, tag: "통일신라", box_qty: 100, size: "10x11x16.5cm", copy: "벽돌탑을 모방한 독특한 석탑, 의성 탑리리 5층 석탑" },
+        { id: 71, name: "강화산성", en_name: "Ganghwa Fortress", category: "edu", price: 9000, supply: 4050, pieces: 67, diff: 4, tag: "호국유적", box_qty: 50, size: "39.8x28.5x4.5cm", copy: "외세의 침략을 막아낸 강화도, 강화산성 서문 만들기" },
+        { id: 76, name: "조선의 5대궁궐", en_name: "5 Grand Palaces", category: "edu", price: 25000, supply: 11250, pieces: 222, diff: 5, tag: "궁궐세트", box_qty: 14, size: "대형세트", copy: "경복궁부터 덕수궁까지, 조선 5대 궁궐 완전 정복" },
 
         // SILVER
-        { id: 2, name: "초가집", en_name: "Thatched House", category: "silver", price: 5000, supply: 2250, pieces: 33, diff: 3, tag: "회상요법", box_qty: 100, copy: "그때 그 시절 고향 집, 어르신 치매 예방 효도 선물" },
-        { id: 3, name: "기와집", en_name: "Tile-roofed House", category: "silver", price: 5000, supply: 2250, pieces: 41, diff: 3, tag: "전통가옥", box_qty: 100, copy: "고래등 같은 기와집, 소근육 발달을 위한 전통 만들기" },
-        { id: 8, name: "물레방앗간", en_name: "Water Mill", category: "silver", price: 5000, supply: 2250, pieces: 33, diff: 3, tag: "민속촌", box_qty: 100, copy: "돌아가는 물레방아, 어르신들이 가장 좋아하는 만들기 1위" },
-        { id: 33, name: "선사시대 움집", en_name: "Prehistoric Hut", category: "silver", price: 5000, supply: 2250, pieces: 29, diff: 1, tag: "쉬운조립", box_qty: 100, copy: "조각이 크고 쉬워요! 누구나 완성하는 움집 만들기" },
-        { id: 50, name: "까치구멍집", en_name: "Kkachigumeong", category: "silver", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "경북전통", box_qty: 100, copy: "안동의 전통 가옥 까치구멍집, 특별한 민속 체험" },
+        { id: 2, name: "초가집", en_name: "Thatched House", category: "silver", price: 5000, supply: 2250, pieces: 33, diff: 3, tag: "회상요법", box_qty: 100, size: "19x15x6.5cm", copy: "그때 그 시절 고향 집, 어르신 치매 예방 효도 선물" },
+        { id: 3, name: "기와집", en_name: "Tile-roofed House", category: "silver", price: 5000, supply: 2250, pieces: 41, diff: 3, tag: "전통가옥", box_qty: 100, size: "18x15x6.3cm", copy: "고래등 같은 기와집, 소근육 발달을 위한 전통 만들기" },
+        { id: 8, name: "물레방앗간", en_name: "Water Mill", category: "silver", price: 5000, supply: 2250, pieces: 33, diff: 3, tag: "민속촌", box_qty: 100, size: "18.5x10.3x9cm", copy: "돌아가는 물레방아, 어르신들이 가장 좋아하는 만들기 1위" },
+        { id: 33, name: "선사시대 움집", en_name: "Prehistoric Hut", category: "silver", price: 5000, supply: 2250, pieces: 29, diff: 1, tag: "쉬운조립", box_qty: 100, size: "19x21x7.3cm", copy: "조각이 크고 쉬워요! 누구나 완성하는 움집 만들기" },
+        { id: 50, name: "까치구멍집", en_name: "Kkachigumeong", category: "silver", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "경북전통", box_qty: 100, size: "20x17x6.5cm", copy: "안동의 전통 가옥 까치구멍집, 특별한 민속 체험" },
 
         // MILITARY
-        { id: 5, name: "구축함", en_name: "Destroyer Ship", category: "military", price: 5000, supply: 2250, pieces: 40, diff: 3, tag: "해군", box_qty: 100, copy: "바다를 지키는 방패! 날렵한 구축함 프라모델 입문" },
-        { id: 6, name: "잠수함", en_name: "Submarine", category: "military", price: 5000, supply: 2250, pieces: 31, diff: 2, tag: "해군", box_qty: 100, copy: "깊은 바닷속의 사냥꾼, 디테일한 잠수함 모형" },
-        { id: 7, name: "거북선", en_name: "Turtle Ship", category: "military", price: 5000, supply: 2250, pieces: 43, diff: 3, tag: "이순신", box_qty: 100, copy: "필사즉생! 이순신 장군의 거북선, 아빠와 함께 조립해요" },
-        { id: 22, name: "광개토대왕함", en_name: "Gwanggaeto Destroyer", category: "military", price: 8000, supply: 3600, pieces: 80, diff: 4, tag: "K-Warship", box_qty: 50, copy: "한국 해군 최초의 구축함, 웅장한 광개토대왕함" },
-        { id: 23, name: "세종대왕함", en_name: "Sejong Aegis Ship", category: "military", price: 8000, supply: 3600, pieces: 78, diff: 5, tag: "이지스함", box_qty: 50, copy: "세계 최강 수준의 이지스함, 세종대왕함을 내 책상 위에" },
-        { id: 31, name: "안중근", en_name: "Ahn Jung-geun", category: "military", price: 8000, supply: 3600, pieces: 38, diff: 3, tag: "독립운동", box_qty: 50, copy: "이토 히로부미를 저격한 하얼빈 의거, 영웅 안중근" },
-        { id: 34, name: "수리온 헬기", en_name: "Surion Helicopter", category: "military", price: 8000, supply: 3600, pieces: 52, diff: 3, tag: "국산헬기", box_qty: 50, copy: "대한민국 최초 국산 기동헬기 수리온, 프로펠러 가동!" },
-        { id: 35, name: "패튼전차", en_name: "Patton Tank", category: "military", price: 9000, supply: 4050, pieces: 57, diff: 4, tag: "탱크", box_qty: 50, copy: "지상전의 왕자 패튼전차, 묵직한 탱크의 매력" },
-        { id: 36, name: "세이버 전투기", en_name: "F-86 Sabre", category: "military", price: 9000, supply: 4050, pieces: 57, diff: 4, tag: "전투기", box_qty: 50, copy: "창공을 가르는 제트기 F-86 세이버, 날렵한 날개" },
-        { id: 37, name: "판옥선", en_name: "Panokseon", category: "military", price: 5000, supply: 2250, pieces: 54, diff: 3, tag: "조선수군", box_qty: 100, copy: "임진왜란 승리의 숨은 주역, 조선 주력함 판옥선" },
-        { id: 38, name: "맥아더장군", en_name: "General MacArthur", category: "military", price: 8000, supply: 3600, pieces: 72, diff: 4, tag: "인천상륙", box_qty: 50, copy: "인천상륙작전의 지휘관 맥아더 장군과 전적비" },
-        { id: 47, name: "독도", en_name: "Dokdo Island", category: "military", price: 5000, supply: 2250, pieces: 37, diff: 2, tag: "독도수호", box_qty: 100, copy: "독도는 우리 땅! 아이들에게 올바른 역사관을 심어주세요" },
-        { id: 56, name: "F-51D 무스탕", en_name: "F-51D Mustang", category: "military", price: 5000, supply: 2250, pieces: 21, diff: 2, tag: "전투기", box_qty: 100, copy: "6.25 전쟁의 하늘을 지킨 무스탕 전투기 (빨간 마후라)" },
-        { id: 63, name: "스탠다드-1 미사일", en_name: "Standard Missile", category: "military", price: 5000, supply: 2250, pieces: 42, diff: 2, tag: "미사일", box_qty: 100, copy: "함대공 미사일 스탠다드, 정밀한 무기 모형" },
-        { id: 64, name: "블랙이글스", en_name: "Black Eagles", category: "military", price: 5000, supply: 2250, pieces: 32, diff: 2, tag: "에어쇼", box_qty: 100, copy: "대한민국 공군 특수비행팀 블랙이글스 T-50B 편대 비행" },
-        { id: 70, name: "KF-21 보라매", en_name: "KF-21 Boramae", category: "military", price: 5000, supply: 2250, pieces: 38, diff: 2, tag: "국산전투기", box_qty: 100, copy: "가슴 웅장해지는 국산 초음속 전투기 KF-21 출격!" },
-        { id: 77, name: "조선강국시리즈", en_name: "Joseon Navy Set", category: "military", price: 10000, supply: 4500, pieces: 111, diff: 4, tag: "수군세트", box_qty: 50, copy: "거북선과 판옥선이 만났다! 조선 수군 천하무적 세트" },
-        { id: 78, name: "K2 흑표전차", en_name: "K2 Black Panther", category: "military", price: 10000, supply: 4500, pieces: 78, diff: 4, tag: "K-Tank", box_qty: 50, copy: "세계 정상급 성능, 대한민국 육군의 자존심 K2 흑표" },
+        { id: 5, name: "구축함", en_name: "Destroyer Ship", category: "military", price: 5000, supply: 2250, pieces: 40, diff: 3, tag: "해군", box_qty: 100, size: "40.5x5x11.5cm", copy: "바다를 지키는 방패! 날렵한 구축함 프라모델 입문" },
+        { id: 6, name: "잠수함", en_name: "Submarine", category: "military", price: 5000, supply: 2250, pieces: 31, diff: 2, tag: "해군", box_qty: 100, size: "35x8x13cm", copy: "깊은 바닷속의 사냥꾼, 디테일한 잠수함 모형" },
+        { id: 7, name: "거북선", en_name: "Turtle Ship", category: "military", price: 5000, supply: 2250, pieces: 43, diff: 3, tag: "이순신", box_qty: 100, size: "26x9x18.5cm", copy: "필사즉생! 이순신 장군의 거북선, 아빠와 함께 조립해요" },
+        { id: 22, name: "광개토대왕함", en_name: "Gwanggaeto Destroyer", category: "military", price: 8000, supply: 3600, pieces: 80, diff: 4, tag: "K-Warship", box_qty: 50, size: "6x51x13cm", copy: "한국 해군 최초의 구축함, 웅장한 광개토대왕함" },
+        { id: 23, name: "세종대왕함", en_name: "Sejong Aegis Ship", category: "military", price: 8000, supply: 3600, pieces: 78, diff: 5, tag: "이지스함", box_qty: 50, size: "7x53x15.5cm", copy: "세계 최강 수준의 이지스함, 세종대왕함을 내 책상 위에" },
+        { id: 31, name: "안중근", en_name: "Ahn Jung-geun", category: "military", price: 8000, supply: 3600, pieces: 38, diff: 3, tag: "독립운동", box_qty: 50, size: "30x20.9x6.2cm", copy: "이토 히로부미를 저격한 하얼빈 의거, 영웅 안중근" },
+        { id: 34, name: "수리온 헬기", en_name: "Surion Helicopter", category: "military", price: 8000, supply: 3600, pieces: 52, diff: 3, tag: "국산헬기", box_qty: 50, size: "38x49x14cm", copy: "대한민국 최초 국산 기동헬기 수리온, 프로펠러 가동!" },
+        { id: 35, name: "패튼전차", en_name: "Patton Tank", category: "military", price: 9000, supply: 4050, pieces: 57, diff: 4, tag: "탱크", box_qty: 50, size: "28.5x29.5x13cm", copy: "지상전의 왕자 패튼전차, 묵직한 탱크의 매력" },
+        { id: 36, name: "세이버 전투기", en_name: "F-86 Sabre", category: "military", price: 9000, supply: 4050, pieces: 57, diff: 4, tag: "전투기", box_qty: 50, size: "25x24x9cm", copy: "창공을 가르는 제트기 F-86 세이버, 날렵한 날개" },
+        { id: 37, name: "판옥선", en_name: "Panokseon", category: "military", price: 5000, supply: 2250, pieces: 54, diff: 3, tag: "조선수군", box_qty: 100, size: "28.5x29.5x13cm", copy: "임진왜란 승리의 숨은 주역, 조선 주력함 판옥선" },
+        { id: 38, name: "맥아더장군", en_name: "General MacArthur", category: "military", price: 8000, supply: 3600, pieces: 72, diff: 4, tag: "인천상륙", box_qty: 50, size: "10x20x17.5cm", copy: "인천상륙작전의 지휘관 맥아더 장군과 전적비" },
+        { id: 47, name: "독도", en_name: "Dokdo Island", category: "military", price: 5000, supply: 2250, pieces: 37, diff: 2, tag: "독도수호", box_qty: 100, size: "26.5x17.5x4.2cm", copy: "독도는 우리 땅! 아이들에게 올바른 역사관을 심어주세요" },
+        { id: 56, name: "F-51D 무스탕", en_name: "F-51D Mustang", category: "military", price: 5000, supply: 2250, pieces: 21, diff: 2, tag: "전투기", box_qty: 100, size: "25.5x24x9cm", copy: "6.25 전쟁의 하늘을 지킨 무스탕 전투기 (빨간 마후라)" },
+        { id: 63, name: "스탠다드-1 미사일", en_name: "Standard Missile", category: "military", price: 5000, supply: 2250, pieces: 42, diff: 2, tag: "미사일", box_qty: 100, size: "20x15.3x14.5cm", copy: "함대공 미사일 스탠다드, 정밀한 무기 모형" },
+        { id: 64, name: "블랙이글스", en_name: "Black Eagles", category: "military", price: 5000, supply: 2250, pieces: 32, diff: 2, tag: "에어쇼", box_qty: 100, size: "39x25x9.5cm", copy: "대한민국 공군 특수비행팀 블랙이글스 T-50B 편대 비행" },
+        { id: 70, name: "KF-21 보라매", en_name: "KF-21 Boramae", category: "military", price: 5000, supply: 2250, pieces: 38, diff: 2, tag: "국산전투기", box_qty: 100, size: "29x19x8.2cm", copy: "가슴 웅장해지는 국산 초음속 전투기 KF-21 출격!" },
+        { id: 77, name: "조선강국시리즈", en_name: "Joseon Navy Set", category: "military", price: 10000, supply: 4500, pieces: 111, diff: 4, tag: "수군세트", box_qty: 50, size: "30x42x4.6cm", copy: "거북선과 판옥선이 만났다! 조선 수군 천하무적 세트" },
+        { id: 78, name: "K2 흑표전차", en_name: "K2 Black Panther", category: "military", price: 10000, supply: 4500, pieces: 78, diff: 4, tag: "K-Tank", box_qty: 50, size: "30x11x10.5cm", copy: "세계 정상급 성능, 대한민국 육군의 자존심 K2 흑표" },
 
         // GIFT
-        { id: 27, name: "남산타워 LED", en_name: "N Seoul Tower", category: "gift", price: 8000, supply: 3600, pieces: 22, diff: 2, tag: "무드등", box_qty: 25, copy: "서울의 밤을 선물하세요, 반짝이는 N서울타워 무드등" },
-        { id: 28, name: "타이페이 101 LED", en_name: "Taipei 101", category: "gift", price: 8000, supply: 3600, pieces: 24, diff: 2, tag: "대만여행", box_qty: 25, copy: "대만 랜드마크 타이페이 101, 방구석 세계 여행" },
-        { id: 29, name: "부르즈할리파 LED", en_name: "Burj Khalifa", category: "gift", price: 8000, supply: 3600, pieces: 37, diff: 3, tag: "두바이", box_qty: 25, copy: "세계 최고층 빌딩 두바이 부르즈 할리파의 야경" },
-        { id: 30, name: "광화문 LED", en_name: "Gwanghwamun Gate", category: "gift", price: 8000, supply: 3600, pieces: 43, diff: 3, tag: "한국미", box_qty: 25, copy: "외국인 친구 선물 1위! 밤에 더 아름다운 광화문" },
-        { id: 72, name: "세계전통가옥(아시아)", en_name: "Asian Houses", category: "gift", price: 10000, supply: 4500, pieces: 101, diff: 4, tag: "다문화", box_qty: 50, copy: "일본, 중국, 몽골의 집을 한 번에! 아시아 전통 가옥 체험" },
-        { id: 73, name: "세계전통가옥(유럽)", en_name: "European Houses", category: "gift", price: 10000, supply: 4500, pieces: 98, diff: 4, tag: "다문화", box_qty: 50, copy: "풍차의 나라 네덜란드부터 영국까지, 유럽 마을 만들기" },
-        { id: 74, name: "세계전통가옥(아메리카)", en_name: "American Houses", category: "gift", price: 10000, supply: 4500, pieces: 89, diff: 4, tag: "다문화", box_qty: 50, copy: "인디언 티피와 이글루, 아메리카 대륙의 집 탐험" },
-        { id: 75, name: "세계전통가옥(아프리카)", en_name: "African Houses", category: "gift", price: 10000, supply: 4500, pieces: 93, diff: 4, tag: "다문화", box_qty: 50, copy: "신비로운 아프리카와 오세아니아의 원주민 가옥 체험" }
+        { id: 27, name: "남산타워 LED", en_name: "N Seoul Tower", category: "gift", price: 8000, supply: 3600, pieces: 22, diff: 2, tag: "무드등", box_qty: 25, size: "12x13.5x43cm", copy: "서울의 밤을 선물하세요, 반짝이는 N서울타워 무드등" },
+        { id: 28, name: "타이페이 101 LED", en_name: "Taipei 101", category: "gift", price: 8000, supply: 3600, pieces: 24, diff: 2, tag: "대만여행", box_qty: 25, size: "10x10x32cm", copy: "대만 랜드마크 타이페이 101, 방구석 세계 여행" },
+        { id: 29, name: "부르즈할리파 LED", en_name: "Burj Khalifa", category: "gift", price: 8000, supply: 3600, pieces: 37, diff: 3, tag: "두바이", box_qty: 25, size: "13.5x13.5x34cm", copy: "세계 최고층 빌딩 두바이 부르즈 할리파의 야경" },
+        { id: 30, name: "광화문 LED", en_name: "Gwanghwamun Gate", category: "gift", price: 8000, supply: 3600, pieces: 43, diff: 3, tag: "한국미", box_qty: 25, size: "20x8x9.5cm", copy: "외국인 친구 선물 1위! 밤에 더 아름다운 광화문" },
+        { id: 72, name: "세계전통가옥(아시아)", en_name: "Asian Houses", category: "gift", price: 10000, supply: 4500, pieces: 101, diff: 4, tag: "다문화", box_qty: 50, size: "8.8x9.2x6cm", copy: "일본, 중국, 몽골의 집을 한 번에! 아시아 전통 가옥 체험" },
+        { id: 73, name: "세계전통가옥(유럽)", en_name: "European Houses", category: "gift", price: 10000, supply: 4500, pieces: 98, diff: 4, tag: "다문화", box_qty: 50, size: "8.8x9.2x8cm", copy: "풍차의 나라 네덜란드부터 영국까지, 유럽 마을 만들기" },
+        { id: 74, name: "세계전통가옥(아메리카)", en_name: "American Houses", category: "gift", price: 10000, supply: 4500, pieces: 89, diff: 4, tag: "다문화", box_qty: 50, size: "8.8x9.2x7cm", copy: "인디언 티피와 이글루, 아메리카 대륙의 집 탐험" },
+        { id: 75, name: "세계전통가옥(아프리카)", en_name: "African Houses", category: "gift", price: 10000, supply: 4500, pieces: 93, diff: 4, tag: "다문화", box_qty: 50, size: "8.8x9.2x8cm", copy: "신비로운 아프리카와 오세아니아의 원주민 가옥 체험" }
     ];
 
     // Hashtags
@@ -486,10 +486,7 @@
             const isChecked = checkedItems.includes(p.id);
 
             // Dynamic Image Placeholder
-            // Using Placehold.co with specific text for clean, professional look
-            // You can replace this logic with actual Image URLs later
             const imgUrl = `https://placehold.co/600x400/1e293b/6366f1?text=${encodeURIComponent(p.en_name)}&font=roboto`;
-            // Alternative: const imgUrl = `https://loremflickr.com/600/400/${encodeURIComponent(p.en_name.split(' ')[0])}`; // For random real images (less stable)
 
             const card = document.createElement('div');
             card.className = 'card-hover bg-slate-800 rounded-xl overflow-hidden border border-slate-700 flex flex-col h-full relative group shadow-lg';
@@ -521,12 +518,18 @@
                         <span class="text-[10px] text-slate-500 font-medium border border-slate-600 rounded px-1 inline-block mt-1">${p.tag}</span>
                     </div>
 
-                    <div class="text-xs text-slate-400 mb-3 flex items-center gap-2">
+                    <div class="text-xs text-slate-400 mb-2 flex items-center gap-2">
                         <span>${p.pieces}pcs</span>
                         <span class="text-slate-600">|</span>
                         <span class="text-yellow-500 tracking-tighter">${getStars(p.diff)}</span>
                         <span class="text-slate-600">|</span>
                         <span class="text-xs font-semibold text-blue-400 bg-blue-900/20 px-1 rounded border border-blue-900/30">📦 ${p.box_qty}개</span>
+                    </div>
+
+                    <!-- Size Info Line (New!) -->
+                    <div class="text-xs text-slate-400 mb-3 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition">
+                         <i data-lucide="ruler" class="w-3 h-3 text-cyan-500"></i>
+                         <span class="font-mono text-[11px]">${p.size}</span>
                     </div>
 
                     <div class="mt-auto">
