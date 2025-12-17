@@ -487,7 +487,7 @@
             modern: "Minimalist interior shot. " + pName + " on a white floating shelf against a grey concrete wall. Next to a modern geometric vase. Cool, clean lighting. (width: 860px)",
             lowAngle: "Low-angle shot looking up at " + pName + ". Intricate details catching warm golden sunlight. Majestic scale. Blue sky background. (width: 860px)",
             texture: "Extreme close-up on surface texture of " + pName + ". Strong side lighting casting defining shadows. Sharp lines against smooth blurred background. (width: 860px)",
-            scale: "Comparison shot. " + pName + " on a white desk next to a smartphone and coffee mug. Bright neutral studio lighting. (width: 860px)"
+            concept: "A conceptual photograph. The " + pName + " is placed on a vintage desk surface covered with old maps, architectural blueprints, and handwritten letters. Soft, nostalgic lighting with an antique compass or quill pen nearby. Tells a story of history and travel. (width: 860px)"
         };
 
         // Specific Templates by Sub-Tag
@@ -528,7 +528,7 @@
                     { type: 'Action', name: '발굴 현장 (Making)', text: base.crafting },
                     { type: 'Atmosphere', name: '박물관 전시', text: base.modern },
                     { type: 'Detail', name: '피부 질감 (Texture)', text: base.texture },
-                    { type: 'Detail', name: '크기 비교 (Scale)', text: base.scale }
+                    { type: 'Concept', name: '탐험가의 지도 (Map)', text: base.concept }
                 ];
             } else if (t.includes('과학') || t.includes('에너지') || t.includes('우주')) {
                 prompts = [
@@ -552,7 +552,7 @@
                     { type: 'Atmosphere', name: '서재 연출', text: base.desk },
                     { type: 'Action', name: '조립 중', text: base.crafting },
                     { type: 'Detail', name: '로우 앵글', text: base.lowAngle },
-                    { type: 'Detail', name: '크기 체감', text: base.scale }
+                    { type: 'Concept', name: '역사와 기록 (Map)', text: base.concept }
                 ];
             }
         } else if (product.category === 'military') {
@@ -605,7 +605,7 @@
                 { type: 'Atmosphere', name: '따뜻한 햇살 (Cozy)', text: base.cozy },
                 { type: 'Action', name: '만드는 즐거움', text: base.crafting },
                 { type: 'Detail', name: '질감 디테일', text: base.texture },
-                { type: 'Detail', name: '크기 체감', text: base.scale }
+                { type: 'Concept', name: '추억의 한 페이지', text: base.concept }
             ];
         }
 
