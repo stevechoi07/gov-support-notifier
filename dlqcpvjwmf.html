@@ -1,22 +1,84 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>크래커플러스 마스터 대시보드 (V5.1)</title>
+<title>크래커플러스 마스터 대시보드 (Dark Edition)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+        darkMode: 'class',
+        theme: {
+            extend: {
+                colors: {
+                    gray: {
+                        750: '#2d3748',
+                        850: '#1a202c',
+                        950: '#0d1117',
+                    }
+                }
+            }
+        }
+    }
+</script>
 <style>
-    body { font-family: 'Noto Sans KR', sans-serif; background-color: #f3f4f6; }
-    .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: all 0.3s ease; }
-    .category-btn.active { background-color: #111827; color: white; border-color: #111827; }
+    body { font-family: 'Noto Sans KR', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+    .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); transition: all 0.3s ease; border-color: #6366f1; }
     
+    /* Custom Scrollbar for Dark Mode */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Checkbox Styling */
+    .custom-checkbox {
+        appearance: none;
+        background-color: rgba(30, 41, 59, 0.8);
+        margin: 0;
+        font: inherit;
+        color: currentColor;
+        width: 1.5em;
+        height: 1.5em;
+        border: 2px solid #94a3b8;
+        border-radius: 0.35em;
+        display: grid;
+        place-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        backdrop-filter: blur(4px);
+    }
+
+    .custom-checkbox::before {
+        content: "";
+        width: 0.85em;
+        height: 0.85em;
+        transform: scale(0);
+        transition: 120ms transform ease-in-out;
+        box-shadow: inset 1em 1em white;
+        transform-origin: center;
+        clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    }
+
+    .custom-checkbox:checked {
+        background-color: #6366f1; /* Indigo-500 */
+        border-color: #6366f1;
+    }
+
+    .custom-checkbox:checked::before {
+        transform: scale(1);
+    }
+
     /* Toast Notification */
     .copy-toast {
         visibility: hidden;
         min-width: 250px;
-        background-color: #333;
+        background-color: #6366f1;
         color: #fff;
         text-align: center;
         border-radius: 8px;
@@ -27,8 +89,10 @@
         bottom: 30px;
         transform: translateX(-50%);
         font-size: 14px;
+        font-weight: bold;
         opacity: 0;
         transition: opacity 0.3s, bottom 0.3s;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
     }
     .copy-toast.show {
         visibility: visible;
@@ -36,51 +100,36 @@
         bottom: 50px;
     }
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; }
-    ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    .modal-content {
+        background-color: #1e293b;
+        color: #f1f5f9;
+    }
     
-    .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-    }
-    .scrollbar-hide {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
-    .strategy-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-    }
-
-    /* Modal Animation */
-    .modal {
-        transition: opacity 0.25s ease;
-    }
-    body.modal-active {
-        overflow-x: hidden;
-        overflow-y: visible !important;
+    .img-placeholder {
+        background: linear-gradient(45deg, #1e293b 25%, #334155 25%, #334155 50%, #1e293b 50%, #1e293b 75%, #334155 75%, #334155 100%);
+        background-size: 20px 20px;
+        opacity: 0.3;
     }
 </style>
 </head>
 <body>
 
 <!-- Header Section -->
-<header class="bg-white shadow-sm sticky top-0 z-20">
+<header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 backdrop-blur-md bg-opacity-90">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg shadow-indigo-200">
+            <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg shadow-indigo-500/30">
                 <i data-lucide="box" class="w-6 h-6"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold text-gray-900 tracking-tight">CrackerPlus Master <span class="text-indigo-500 text-sm">V5.1</span></h1>
-                <p class="text-xs text-gray-500 font-medium">전체 상품 78종 통합 관리 & 전략 시스템</p>
+                <h1 class="text-xl font-bold text-white tracking-tight">CrackerPlus Master <span class="text-indigo-400 text-sm font-mono">DARK_EDITION_V5.3</span></h1>
+                <p class="text-xs text-slate-400 font-medium">전체 상품 78종 통합 관리 & 체크 시스템</p>
             </div>
         </div>
-        <div class="hidden md:flex gap-4 text-sm font-medium text-gray-600">
-            <span class="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Made in Korea</span>
-            <span class="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full"><i data-lucide="truck" class="w-4 h-4 text-blue-500"></i> 배송비 3,000원</span>
+        <div class="hidden md:flex gap-4 text-sm font-medium text-slate-400">
+            <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Local Storage ON</span>
+            <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="image" class="w-4 h-4 text-pink-500"></i> Image Ready</span>
+            <span class="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"><i data-lucide="moon" class="w-4 h-4 text-yellow-500"></i> Dark Mode</span>
         </div>
     </div>
 </header>
@@ -89,114 +138,120 @@
 
     <!-- 1. Stats Overview -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <!-- Total SKU -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
             <div>
-                <p class="text-xs text-gray-400 font-medium uppercase">Total SKU</p>
-                <p class="text-2xl font-bold text-gray-800" id="total-count">0</p>
+                <p class="text-xs text-slate-400 font-medium uppercase">Total SKU</p>
+                <p class="text-2xl font-bold text-white" id="total-count">0</p>
             </div>
-            <div class="bg-gray-100 p-2 rounded-lg"><i data-lucide="layers" class="text-gray-600 w-5 h-5"></i></div>
+            <div class="bg-slate-700 p-2 rounded-lg"><i data-lucide="layers" class="text-slate-400 w-5 h-5"></i></div>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+        
+        <!-- Checked Count -->
+        <div class="bg-indigo-900/30 p-4 rounded-xl border border-indigo-500/30 flex items-center justify-between">
             <div>
-                <p class="text-xs text-gray-400 font-medium uppercase">Avg Margin</p>
-                <p class="text-2xl font-bold text-indigo-600" id="avg-margin">0%</p>
+                <p class="text-xs text-indigo-300 font-medium uppercase">Selected Items</p>
+                <p class="text-2xl font-bold text-indigo-400" id="checked-count">0</p>
             </div>
-            <div class="bg-indigo-50 p-2 rounded-lg"><i data-lucide="percent" class="text-indigo-600 w-5 h-5"></i></div>
+            <div class="bg-indigo-900/50 p-2 rounded-lg"><i data-lucide="check-square" class="text-indigo-400 w-5 h-5"></i></div>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+
+        <!-- Profit / Unit -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
             <div>
-                <p class="text-xs text-gray-400 font-medium uppercase">Profit / Unit</p>
-                <p class="text-2xl font-bold text-green-600" id="avg-profit">0원</p>
+                <p class="text-xs text-slate-400 font-medium uppercase">Profit / Unit</p>
+                <p class="text-2xl font-bold text-green-400" id="avg-profit">0원</p>
             </div>
-            <div class="bg-green-50 p-2 rounded-lg"><i data-lucide="banknote" class="text-green-600 w-5 h-5"></i></div>
+            <div class="bg-green-900/30 p-2 rounded-lg"><i data-lucide="banknote" class="text-green-500 w-5 h-5"></i></div>
         </div>
-         <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-100 flex items-center justify-between cursor-pointer hover:bg-blue-100 transition group" onclick="toggleModal('b2b-modal')">
+
+        <!-- B2B Guide -->
+         <div class="bg-blue-900/20 p-4 rounded-xl border border-blue-500/20 flex items-center justify-between cursor-pointer hover:bg-blue-900/30 transition group" onclick="toggleModal('b2b-modal')">
             <div>
-                <p class="text-sm text-blue-700 font-bold group-hover:underline flex items-center gap-1">B2B 합포 가이드 <i data-lucide="external-link" class="w-3 h-3"></i></p>
-                <p class="text-xs text-blue-500 mt-1">대량 배송비 절감 비법</p>
+                <p class="text-sm text-blue-400 font-bold group-hover:text-blue-300 flex items-center gap-1">B2B 합포 가이드 <i data-lucide="external-link" class="w-3 h-3"></i></p>
+                <p class="text-xs text-blue-500/70 mt-1">대량 배송비 절감</p>
             </div>
-            <div class="bg-white p-2 rounded-lg"><i data-lucide="package" class="text-blue-500 w-5 h-5"></i></div>
+            <div class="bg-blue-900/30 p-2 rounded-lg"><i data-lucide="package" class="text-blue-500 w-5 h-5"></i></div>
         </div>
     </div>
 
     <!-- 2. Strategic Insight Board -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
         <!-- Insight 1: Seasonal Calendar -->
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 strategy-card">
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 lg:col-span-2">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <h3 class="font-bold text-white flex items-center gap-2">
                     <i data-lucide="calendar" class="w-5 h-5 text-red-500"></i> 월별 공략 포인트
                 </h3>
-                <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded font-medium">Timing Strategy</span>
+                <span class="text-xs bg-red-900/50 text-red-400 px-2 py-1 rounded font-medium border border-red-900">Timing Strategy</span>
             </div>
             <div class="grid grid-cols-4 gap-2 text-center text-sm">
-                <div class="p-2 rounded bg-gray-50 border border-gray-100 opacity-50"><span class="block text-xs text-gray-400">3월</span>신학기(에듀)</div>
-                <div class="p-2 rounded bg-gray-50 border border-gray-100 opacity-50"><span class="block text-xs text-gray-400">4월</span>과학의날</div>
-                <div class="p-2 rounded bg-orange-50 border border-orange-200 font-bold text-orange-700 ring-2 ring-orange-100"><span class="block text-xs text-orange-400">5월</span>가정의달🎁</div>
-                <div class="p-2 rounded bg-blue-50 border border-blue-200 font-bold text-blue-700 ring-2 ring-blue-100"><span class="block text-xs text-blue-400">6월</span>호국보훈🚁</div>
-                <div class="p-2 rounded bg-gray-50 border border-gray-100 opacity-50"><span class="block text-xs text-gray-400">8월</span>광복절</div>
-                <div class="p-2 rounded bg-purple-50 border border-purple-200 font-bold text-purple-700"><span class="block text-xs text-purple-400">9월</span>추석(전통)🌕</div>
-                <div class="p-2 rounded bg-gray-50 border border-gray-100 opacity-50"><span class="block text-xs text-gray-400">10월</span>한글날</div>
-                <div class="p-2 rounded bg-yellow-50 border border-yellow-200 font-bold text-yellow-700"><span class="block text-xs text-yellow-500">12월</span>크리스마스🎄</div>
+                <div class="p-2 rounded bg-slate-700/50 border border-slate-600 text-slate-400"><span class="block text-xs text-slate-500">3월</span>신학기</div>
+                <div class="p-2 rounded bg-slate-700/50 border border-slate-600 text-slate-400"><span class="block text-xs text-slate-500">4월</span>과학의날</div>
+                <div class="p-2 rounded bg-orange-900/30 border border-orange-700/50 font-bold text-orange-400"><span class="block text-xs text-orange-500/70">5월</span>가정의달🎁</div>
+                <div class="p-2 rounded bg-blue-900/30 border border-blue-700/50 font-bold text-blue-400"><span class="block text-xs text-blue-500/70">6월</span>호국보훈🚁</div>
+                <div class="p-2 rounded bg-slate-700/50 border border-slate-600 text-slate-400"><span class="block text-xs text-slate-500">8월</span>광복절</div>
+                <div class="p-2 rounded bg-purple-900/30 border border-purple-700/50 font-bold text-purple-400"><span class="block text-xs text-purple-500/70">9월</span>추석(전통)🌕</div>
+                <div class="p-2 rounded bg-slate-700/50 border border-slate-600 text-slate-400"><span class="block text-xs text-slate-500">10월</span>한글날</div>
+                <div class="p-2 rounded bg-yellow-900/30 border border-yellow-700/50 font-bold text-yellow-400"><span class="block text-xs text-yellow-600/70">12월</span>크리스마스🎄</div>
             </div>
         </div>
 
         <!-- Insight 2: Bundle Recommendation -->
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 strategy-card">
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
              <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <h3 class="font-bold text-white flex items-center gap-2">
                     <i data-lucide="shopping-bag" class="w-5 h-5 text-indigo-500"></i> 추천 세트 (객단가UP)
                 </h3>
-                <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded font-medium">Bundle</span>
+                <span class="text-xs bg-indigo-900/50 text-indigo-400 px-2 py-1 rounded font-medium border border-indigo-900">Bundle</span>
             </div>
             <div class="space-y-3">
-                <div class="flex items-center justify-between p-2 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition" onclick="showToast('경주 역사 세트 마케팅 카피 복사!')">
+                <div class="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600 cursor-pointer hover:bg-green-900/20 hover:border-green-800 transition group" onclick="showToast('경주 역사 세트 마케팅 카피 복사!')">
                     <div>
-                        <p class="font-bold text-sm text-green-800">🏛️ 경주 역사 탐방 세트</p>
-                        <p class="text-xs text-green-600">불국사 + 석가탑 + 첨성대</p>
+                        <p class="font-bold text-sm text-green-400 group-hover:text-green-300">🏛️ 경주 역사 탐방 세트</p>
+                        <p class="text-xs text-slate-400 mt-1">불국사 + 석가탑 + 첨성대</p>
                     </div>
-                    <span class="text-xs font-bold bg-white text-green-600 px-2 py-1 rounded shadow-sm">마진 8,250원</span>
+                    <span class="text-xs font-bold bg-slate-800 text-green-400 px-2 py-1 rounded border border-slate-700">마진 8,250원</span>
                 </div>
-                <div class="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition" onclick="showToast('최강 국군 세트 마케팅 카피 복사!')">
+                <div class="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600 cursor-pointer hover:bg-blue-900/20 hover:border-blue-800 transition group" onclick="showToast('최강 국군 세트 마케팅 카피 복사!')">
                     <div>
-                        <p class="font-bold text-sm text-blue-800">🚁 최강 국군 세트</p>
-                        <p class="text-xs text-blue-600">K2 흑표 + KF-21 보라매</p>
+                        <p class="font-bold text-sm text-blue-400 group-hover:text-blue-300">🚁 최강 국군 세트</p>
+                        <p class="text-xs text-slate-400 mt-1">K2 흑표 + KF-21 보라매</p>
                     </div>
-                    <span class="text-xs font-bold bg-white text-blue-600 px-2 py-1 rounded shadow-sm">마진 8,250원</span>
+                    <span class="text-xs font-bold bg-slate-800 text-blue-400 px-2 py-1 rounded border border-slate-700">마진 8,250원</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- 3. Filter Tabs -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-1 sticky top-20 z-10">
+    <div class="bg-slate-800 rounded-xl shadow-lg border border-slate-700 p-1 sticky top-20 z-10 backdrop-blur-sm bg-opacity-95">
         <div class="flex space-x-2 overflow-x-auto p-1 scrollbar-hide" id="filter-container">
-            <button onclick="filterProducts('all')" class="category-btn active flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-50 transition whitespace-nowrap text-center">
+            <button onclick="filterProducts('all')" class="category-btn active flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:bg-slate-700 transition whitespace-nowrap text-center border border-transparent">
                 전체 보기
             </button>
-            <button onclick="filterProducts('edu')" class="category-btn flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-green-50 hover:text-green-600 transition whitespace-nowrap flex items-center justify-center gap-2">
+            <button onclick="filterProducts('edu')" class="category-btn flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:bg-green-900/30 hover:text-green-400 hover:border-green-900 transition whitespace-nowrap flex items-center justify-center gap-2 border border-transparent">
                 <i data-lucide="graduation-cap" class="w-4 h-4"></i> 에듀/학교
             </button>
-            <button onclick="filterProducts('silver')" class="category-btn flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition whitespace-nowrap flex items-center justify-center gap-2">
+            <button onclick="filterProducts('silver')" class="category-btn flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:bg-orange-900/30 hover:text-orange-400 hover:border-orange-900 transition whitespace-nowrap flex items-center justify-center gap-2 border border-transparent">
                 <i data-lucide="heart-handshake" class="w-4 h-4"></i> 실버/복지
             </button>
-            <button onclick="filterProducts('military')" class="category-btn flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition whitespace-nowrap flex items-center justify-center gap-2">
+            <button onclick="filterProducts('military')" class="category-btn flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:bg-blue-900/30 hover:text-blue-400 hover:border-blue-900 transition whitespace-nowrap flex items-center justify-center gap-2 border border-transparent">
                 <i data-lucide="shield" class="w-4 h-4"></i> 밀리터리
             </button>
-            <button onclick="filterProducts('gift')" class="category-btn flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-purple-50 hover:text-purple-600 transition whitespace-nowrap flex items-center justify-center gap-2">
+            <button onclick="filterProducts('gift')" class="category-btn flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:bg-purple-900/30 hover:text-purple-400 hover:border-purple-900 transition whitespace-nowrap flex items-center justify-center gap-2 border border-transparent">
                 <i data-lucide="gift" class="w-4 h-4"></i> K-감성
             </button>
         </div>
     </div>
 
     <!-- 4. Hashtag Tool -->
-    <div id="hashtag-bar" class="hidden bg-gray-800 text-gray-200 text-xs p-3 rounded-lg flex justify-between items-center animate-fade-in-down">
+    <div id="hashtag-bar" class="hidden bg-slate-900 border border-slate-700 text-slate-300 text-xs p-3 rounded-lg flex justify-between items-center animate-fade-in-down shadow-lg">
         <div class="flex items-center gap-2 overflow-hidden">
-            <i data-lucide="hash" class="w-4 h-4 text-yellow-400 flex-shrink-0"></i>
-            <span id="hashtag-text" class="truncate">#추천태그</span>
+            <i data-lucide="hash" class="w-4 h-4 text-yellow-500 flex-shrink-0"></i>
+            <span id="hashtag-text" class="truncate font-mono">#추천태그</span>
         </div>
-        <button onclick="copyHashtags()" class="text-yellow-400 hover:text-yellow-300 font-bold whitespace-nowrap ml-2">복사하기</button>
+        <button onclick="copyHashtags()" class="text-yellow-500 hover:text-yellow-400 font-bold whitespace-nowrap ml-2 px-3 py-1 rounded bg-yellow-900/20 hover:bg-yellow-900/40 transition">복사하기</button>
     </div>
 
     <!-- 5. Product Grid -->
@@ -208,43 +263,43 @@
 
 <!-- B2B Modal -->
 <div id="b2b-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
-    <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="toggleModal('b2b-modal')"></div>
-    <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-xl shadow-2xl z-50 overflow-y-auto max-h-[90vh]">
-        <div class="modal-content py-4 text-left px-6">
-            <div class="flex justify-between items-center pb-3 border-b border-gray-100">
-                <p class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <i data-lucide="package" class="text-blue-600"></i> B2B 합포 가이드
+    <div class="modal-overlay absolute w-full h-full bg-black opacity-80 backdrop-blur-sm" onclick="toggleModal('b2b-modal')"></div>
+    <div class="modal-container bg-slate-800 w-11/12 md:max-w-md mx-auto rounded-xl shadow-2xl z-50 overflow-y-auto max-h-[90vh] border border-slate-700">
+        <div class="modal-content py-4 text-left px-6 rounded-xl">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-700">
+                <p class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="package" class="text-blue-500"></i> B2B 합포 가이드
                 </p>
-                <div class="modal-close cursor-pointer z-50" onclick="toggleModal('b2b-modal')">
-                    <i data-lucide="x" class="text-gray-500"></i>
+                <div class="modal-close cursor-pointer z-50 hover:bg-slate-700 rounded-full p-1" onclick="toggleModal('b2b-modal')">
+                    <i data-lucide="x" class="text-slate-400"></i>
                 </div>
             </div>
             <div class="py-4 space-y-4">
-                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <p class="text-sm text-blue-800 font-bold mb-1">💡 합포(Combined Packing)란?</p>
-                    <p class="text-xs text-blue-600">
+                <div class="bg-blue-900/20 p-4 rounded-lg border border-blue-500/20">
+                    <p class="text-sm text-blue-300 font-bold mb-1">💡 합포(Combined Packing)란?</p>
+                    <p class="text-xs text-blue-200/70 leading-relaxed">
                         한 박스에 최대로 담을 수 있는 상품 수량입니다. 배송비(3,000원)는 박스 단위로 부과되므로, 
-                        <span class="underline">합포 수량 단위로 주문</span>하면 배송비를 가장 아낄 수 있습니다.
+                        <span class="underline decoration-blue-500 text-blue-200">합포 수량 단위로 주문</span>하면 배송비를 가장 아낄 수 있습니다.
                     </p>
                 </div>
                 <div>
-                    <h4 class="text-sm font-bold text-gray-700 mb-2">📦 상품별 합포 수량</h4>
+                    <h4 class="text-sm font-bold text-slate-300 mb-3">📦 상품별 합포 수량</h4>
                     <div class="grid grid-cols-2 gap-3">
-                        <div class="border rounded-lg p-3 text-center bg-gray-50">
-                            <p class="text-2xl font-bold text-gray-800">50개</p>
-                            <p class="text-xs text-gray-500">/ 1 Box</p>
-                            <div class="mt-2 text-xs text-gray-600 bg-white border rounded p-1">대형 제품군</div>
+                        <div class="border border-slate-600 rounded-lg p-3 text-center bg-slate-700/50">
+                            <p class="text-2xl font-bold text-white">50개</p>
+                            <p class="text-xs text-slate-400">/ 1 Box</p>
+                            <div class="mt-2 text-xs text-slate-300 bg-slate-600 rounded p-1">대형 제품군</div>
                         </div>
-                        <div class="border rounded-lg p-3 text-center bg-gray-50">
-                            <p class="text-2xl font-bold text-gray-800">100개</p>
-                            <p class="text-xs text-gray-500">/ 1 Box</p>
-                            <div class="mt-2 text-xs text-gray-600 bg-white border rounded p-1">소형 제품군</div>
+                        <div class="border border-slate-600 rounded-lg p-3 text-center bg-slate-700/50">
+                            <p class="text-2xl font-bold text-white">100개</p>
+                            <p class="text-xs text-slate-400">/ 1 Box</p>
+                            <div class="mt-2 text-xs text-slate-300 bg-slate-600 rounded p-1">소형 제품군</div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="flex justify-end pt-2">
-                <button onclick="toggleModal('b2b-modal')" class="px-4 py-2 bg-indigo-600 p-3 rounded-lg text-white hover:bg-indigo-500 font-medium text-sm">확인했습니다</button>
+                <button onclick="toggleModal('b2b-modal')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-medium text-sm transition shadow-lg shadow-indigo-500/20">확인했습니다</button>
             </div>
         </div>
     </div>
@@ -254,92 +309,92 @@
 <div id="toast" class="copy-toast">클립보드에 복사되었습니다! 🎉</div>
 
 <script>
-    // FULL PRODUCT DATA (Parsed from PDF)
+    // FULL PRODUCT DATA with English Keywords
     const products = [
-        // EDU (역사, 교육, 과학)
-        { id: 1, name: "복원 숭례문", category: "edu", price: 8000, supply: 3600, pieces: 73, diff: 5, tag: "역사교과서", box_qty: 50, copy: "초등 사회 교과서 수록! 만들며 배우는 우리 역사 숭례문" },
-        { id: 4, name: "장안문(수원화성)", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "유네스코", box_qty: 100, copy: "정조의 효심이 깃든 수원화성 장안문, 역사 수행평가 추천" },
-        { id: 9, name: "향원정", category: "edu", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "고궁", box_qty: 100, copy: "경복궁의 보석 향원정, 물 위에 떠 있는 듯한 아름다움" },
-        { id: 10, name: "서울역", category: "edu", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "근대역사", box_qty: 100, copy: "대한민국의 관문 서울역, 근대 역사 체험 학습 교구" },
-        { id: 11, name: "한국은행", category: "edu", price: 5000, supply: 2250, pieces: 32, diff: 2, tag: "근대건축", box_qty: 100, copy: "화폐박물관이 된 한국은행, 경제 교육과 역사 공부를 동시에" },
-        { id: 12, name: "증기기관차", category: "edu", price: 8000, supply: 3600, pieces: 81, diff: 5, tag: "과학원리", box_qty: 50, copy: "칙칙폭폭 증기기관차의 원리를 배우는 조립 키트" },
-        { id: 13, name: "정화의 보선", category: "edu", price: 8000, supply: 3600, pieces: 51, diff: 4, tag: "세계사", box_qty: 50, copy: "대항해시대 이전의 거대한 함선, 정화의 보선 만들기" },
-        { id: 14, name: "아크로폴리스", category: "edu", price: 8000, supply: 3600, pieces: 47, diff: 4, tag: "세계문화", box_qty: 50, copy: "그리스 로마 신화 학습용! 아크로폴리스 파르테논 신전" },
-        { id: 15, name: "경복궁", category: "edu", price: 5000, supply: 2250, pieces: 42, diff: 2, tag: "서울투어", box_qty: 100, copy: "외국인이 가장 좋아하는 한국 명소 1위, 내 손안의 경복궁" },
-        { id: 16, name: "불국사", category: "edu", price: 5000, supply: 2250, pieces: 45, diff: 2, tag: "신라역사", box_qty: 100, copy: "경주 불국사, 수학여행 가기 전 집에서 먼저 만나요" },
-        { id: 17, name: "다보탑", category: "edu", price: 5000, supply: 2250, pieces: 47, diff: 3, tag: "국보", box_qty: 100, copy: "10원 동전 속 그 탑! 석가탑과 세트 추천 다보탑" },
-        { id: 18, name: "티라노사우루스", category: "edu", price: 5000, supply: 2250, pieces: 12, diff: 1, tag: "공룡", box_qty: 100, copy: "공룡 덕후 아이들 모여라! 뼈대부터 맞추는 티라노 만들기" },
-        { id: 19, name: "트리케라톱스", category: "edu", price: 5000, supply: 2250, pieces: 32, diff: 1, tag: "공룡", box_qty: 100, copy: "뿔 세 개 달린 트리케라톱스, 쉽고 재미있는 공룡 조립" },
-        { id: 20, name: "첨성대", category: "edu", price: 5000, supply: 2250, pieces: 41, diff: 3, tag: "과학문화재", box_qty: 100, copy: "동양 최고의 천문대 첨성대, 돌 하나하나 쌓는 재미" },
-        { id: 21, name: "해시계(앙부일구)", category: "edu", price: 5000, supply: 2250, pieces: 14, diff: 1, tag: "장영실", box_qty: 100, copy: "시간을 측정하는 과학 원리, 장영실의 앙부일구 만들기" },
-        { id: 24, name: "공룡시리즈1", category: "edu", price: 9000, supply: 4050, pieces: 47, diff: 3, tag: "공룡세트", box_qty: 50, copy: "인기 공룡 총집합! 아이들이 환호하는 공룡 종합 선물세트" },
-        { id: 25, name: "공룡시리즈2", category: "edu", price: 9000, supply: 4050, pieces: 49, diff: 3, tag: "공룡세트", box_qty: 50, copy: "쥐라기 공원 부럽지 않은 우리 집, 공룡 대탐험 2탄" },
-        { id: 26, name: "동물시리즈", category: "edu", price: 9000, supply: 4050, pieces: 52, diff: 3, tag: "동물농장", box_qty: 50, copy: "사자, 기린, 코끼리! 손으로 만드는 나만의 동물원" },
-        { id: 32, name: "고려청자", category: "edu", price: 5000, supply: 2250, pieces: 21, diff: 1, tag: "미술교육", box_qty: 100, copy: "우아한 곡선의 미, 고려청자 매병 만들기 (미술 수업 추천)" },
-        { id: 39, name: "수원화성", category: "edu", price: 9000, supply: 4050, pieces: 76, diff: 4, tag: "세계유산", box_qty: 50, copy: "성곽 건축의 꽃 수원화성, 웅장한 성벽을 재현하다" },
-        { id: 40, name: "창덕궁", category: "edu", price: 5000, supply: 2250, pieces: 57, diff: 3, tag: "유네스코", box_qty: 100, copy: "가장 아름다운 궁궐 창덕궁, 인정전의 멋을 살린 퍼즐" },
-        { id: 41, name: "석가탑", category: "edu", price: 5000, supply: 2250, pieces: 44, diff: 3, tag: "국보", box_qty: 100, copy: "천년의 침묵, 단순함의 미학 석가탑 만들기" },
-        { id: 42, name: "독립문", category: "edu", price: 5000, supply: 2250, pieces: 29, diff: 2, tag: "근대사", box_qty: 100, copy: "자주독립의 상징 독립문, 서대문 형무소와 함께 배우는 역사" },
-        { id: 43, name: "거중기와 녹로", category: "edu", price: 5000, supply: 2250, pieces: 55, diff: 3, tag: "정약용", box_qty: 100, copy: "무거운 돌을 번쩍! 정약용의 과학 기술 거중기 체험" },
-        { id: 44, name: "황룡사9층목탑", category: "edu", price: 5000, supply: 2250, pieces: 55, diff: 3, tag: "신라", box_qty: 100, copy: "사라진 전설의 거대 목탑, 황룡사 9층 목탑 복원 프로젝트" },
-        { id: 45, name: "공산성", category: "edu", price: 5000, supply: 2250, pieces: 37, diff: 2, tag: "백제", box_qty: 100, copy: "백제의 숨결이 깃든 공주 공산성, 백제 역사 탐방" },
-        { id: 46, name: "미륵사지/정림사지", category: "edu", price: 5000, supply: 2250, pieces: 49, diff: 3, tag: "백제탑", box_qty: 100, copy: "백제 석탑의 정수, 미륵사지와 정림사지 석탑 세트" },
-        { id: 48, name: "오죽헌", category: "edu", price: 5000, supply: 2250, pieces: 29, diff: 2, tag: "신사임당", box_qty: 100, copy: "율곡 이이와 신사임당의 얼이 서린 강릉 오죽헌" },
-        { id: 49, name: "피라미드", category: "edu", price: 8000, supply: 3600, pieces: 44, diff: 4, tag: "세계불가사의", box_qty: 50, copy: "이집트의 신비 피라미드와 스핑크스, 세계 문명 탐험" },
-        { id: 51, name: "서대문형무소", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "항일역사", box_qty: 100, copy: "잊지 말아야 할 역사, 서대문형무소 역사관 만들기" },
-        { id: 52, name: "한양도성", category: "edu", price: 9000, supply: 4050, pieces: 69, diff: 5, tag: "서울", box_qty: 50, copy: "서울을 감싸는 성곽길 한양도성, 역사 트레킹을 집에서" },
-        { id: 53, name: "우주왕복선", category: "edu", price: 5000, supply: 2250, pieces: 49, diff: 3, tag: "우주과학", box_qty: 100, copy: "우주를 향한 꿈, 디스커버리호 우주왕복선 발사!" },
-        { id: 54, name: "월정사팔각구층석탑", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 2, tag: "고려", box_qty: 100, copy: "평창의 보물 월정사 석탑, 고려 시대의 화려한 불교 미술" },
-        { id: 55, name: "금산사", category: "edu", price: 9000, supply: 4050, pieces: 52, diff: 3, tag: "전통사찰", box_qty: 50, copy: "미륵 신앙의 성지 금산사, 3층 법당 미륵전을 재현하다" },
-        { id: 56, name: "적상산성", category: "edu", price: 5000, supply: 2250, pieces: 39, diff: 2, tag: "조선실록", box_qty: 100, copy: "조선왕조실록을 지켰던 요새, 무주 적상산성 사고" },
-        { id: 57, name: "한국의 문화유산1", category: "edu", price: 23000, supply: 10350, pieces: 226, diff: 5, tag: "종합선물", box_qty: 14, copy: "한국 대표 문화유산 총집합! 방학 숙제 끝판왕 세트" },
-        { id: 58, name: "한국의 문화유산2", category: "edu", price: 23000, supply: 10350, pieces: 172, diff: 5, tag: "종합선물", box_qty: 14, copy: "교과서에 나오는 문화재를 한 번에 만드는 대형 세트" },
-        { id: 61, name: "덕수궁", category: "edu", price: 5000, supply: 2250, pieces: 34, diff: 2, tag: "대한제국", box_qty: 100, copy: "고종 황제의 근대화 의지, 덕수궁 석조전과 중화전" },
-        { id: 62, name: "고조선과 단군신화", category: "edu", price: 5000, supply: 2250, pieces: 14, diff: 1, tag: "건국신화", box_qty: 100, copy: "곰이 사람이 되었다고? 단군 할아버지 이야기 만들기" },
-        { id: 65, name: "무주 한풍루", category: "edu", price: 5000, supply: 2250, pieces: 25, diff: 2, tag: "누각", box_qty: 100, copy: "호남의 제1루 한풍루, 멋진 누각 위에서 풍류를 즐겨요" },
-        { id: 66, name: "원자력발전소", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "에너지", box_qty: 100, copy: "전기는 어떻게 만들어질까? 원자력 발전소 구조 배우기" },
-        { id: 67, name: "창경궁", category: "edu", price: 5000, supply: 2250, pieces: 50, diff: 3, tag: "궁궐", box_qty: 100, copy: "효심으로 지은 궁궐 창경궁, 명정전의 고즈넉함" },
-        { id: 68, name: "경희궁", category: "edu", price: 5000, supply: 2250, pieces: 39, diff: 3, tag: "궁궐", box_qty: 100, copy: "서궐이라 불린 경희궁, 잃어버린 궁궐을 찾아서" },
-        { id: 69, name: "의성탑리리오층석탑", category: "edu", price: 5000, supply: 2250, pieces: 58, diff: 3, tag: "통일신라", box_qty: 100, copy: "벽돌탑을 모방한 독특한 석탑, 의성 탑리리 5층 석탑" },
-        { id: 71, name: "강화산성", category: "edu", price: 9000, supply: 4050, pieces: 67, diff: 4, tag: "호국유적", box_qty: 50, copy: "외세의 침략을 막아낸 강화도, 강화산성 서문 만들기" },
-        { id: 76, name: "조선의 5대궁궐", category: "edu", price: 25000, supply: 11250, pieces: 222, diff: 5, tag: "궁궐세트", box_qty: 14, copy: "경복궁부터 덕수궁까지, 조선 5대 궁궐 완전 정복" },
+        // EDU
+        { id: 1, name: "복원 숭례문", en_name: "Sungnyemun Gate", category: "edu", price: 8000, supply: 3600, pieces: 73, diff: 5, tag: "역사교과서", box_qty: 50, copy: "초등 사회 교과서 수록! 만들며 배우는 우리 역사 숭례문" },
+        { id: 4, name: "장안문(수원화성)", en_name: "Janganmun Gate", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "유네스코", box_qty: 100, copy: "정조의 효심이 깃든 수원화성 장안문, 역사 수행평가 추천" },
+        { id: 9, name: "향원정", en_name: "Hyangwonjeong", category: "edu", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "고궁", box_qty: 100, copy: "경복궁의 보석 향원정, 물 위에 떠 있는 듯한 아름다움" },
+        { id: 10, name: "서울역", en_name: "Seoul Station", category: "edu", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "근대역사", box_qty: 100, copy: "대한민국의 관문 서울역, 근대 역사 체험 학습 교구" },
+        { id: 11, name: "한국은행", en_name: "Bank of Korea", category: "edu", price: 5000, supply: 2250, pieces: 32, diff: 2, tag: "근대건축", box_qty: 100, copy: "화폐박물관이 된 한국은행, 경제 교육과 역사 공부를 동시에" },
+        { id: 12, name: "증기기관차", en_name: "Steam Locomotive", category: "edu", price: 8000, supply: 3600, pieces: 81, diff: 5, tag: "과학원리", box_qty: 50, copy: "칙칙폭폭 증기기관차의 원리를 배우는 조립 키트" },
+        { id: 13, name: "정화의 보선", en_name: "Treasure Ship", category: "edu", price: 8000, supply: 3600, pieces: 51, diff: 4, tag: "세계사", box_qty: 50, copy: "대항해시대 이전의 거대한 함선, 정화의 보선 만들기" },
+        { id: 14, name: "아크로폴리스", en_name: "Acropolis", category: "edu", price: 8000, supply: 3600, pieces: 47, diff: 4, tag: "세계문화", box_qty: 50, copy: "그리스 로마 신화 학습용! 아크로폴리스 파르테논 신전" },
+        { id: 15, name: "경복궁", en_name: "Gyeongbokgung", category: "edu", price: 5000, supply: 2250, pieces: 42, diff: 2, tag: "서울투어", box_qty: 100, copy: "외국인이 가장 좋아하는 한국 명소 1위, 내 손안의 경복궁" },
+        { id: 16, name: "불국사", en_name: "Bulguksa", category: "edu", price: 5000, supply: 2250, pieces: 45, diff: 2, tag: "신라역사", box_qty: 100, copy: "경주 불국사, 수학여행 가기 전 집에서 먼저 만나요" },
+        { id: 17, name: "다보탑", en_name: "Dabotap Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 47, diff: 3, tag: "국보", box_qty: 100, copy: "10원 동전 속 그 탑! 석가탑과 세트 추천 다보탑" },
+        { id: 18, name: "티라노사우루스", en_name: "Tyrannosaurus", category: "edu", price: 5000, supply: 2250, pieces: 12, diff: 1, tag: "공룡", box_qty: 100, copy: "공룡 덕후 아이들 모여라! 뼈대부터 맞추는 티라노 만들기" },
+        { id: 19, name: "트리케라톱스", en_name: "Triceratops", category: "edu", price: 5000, supply: 2250, pieces: 32, diff: 1, tag: "공룡", box_qty: 100, copy: "뿔 세 개 달린 트리케라톱스, 쉽고 재미있는 공룡 조립" },
+        { id: 20, name: "첨성대", en_name: "Cheomseongdae", category: "edu", price: 5000, supply: 2250, pieces: 41, diff: 3, tag: "과학문화재", box_qty: 100, copy: "동양 최고의 천문대 첨성대, 돌 하나하나 쌓는 재미" },
+        { id: 21, name: "해시계(앙부일구)", en_name: "Sundial", category: "edu", price: 5000, supply: 2250, pieces: 14, diff: 1, tag: "장영실", box_qty: 100, copy: "시간을 측정하는 과학 원리, 장영실의 앙부일구 만들기" },
+        { id: 24, name: "공룡시리즈1", en_name: "Dinosaur Set 1", category: "edu", price: 9000, supply: 4050, pieces: 47, diff: 3, tag: "공룡세트", box_qty: 50, copy: "인기 공룡 총집합! 아이들이 환호하는 공룡 종합 선물세트" },
+        { id: 25, name: "공룡시리즈2", en_name: "Dinosaur Set 2", category: "edu", price: 9000, supply: 4050, pieces: 49, diff: 3, tag: "공룡세트", box_qty: 50, copy: "쥐라기 공원 부럽지 않은 우리 집, 공룡 대탐험 2탄" },
+        { id: 26, name: "동물시리즈", en_name: "Zoo Animals", category: "edu", price: 9000, supply: 4050, pieces: 52, diff: 3, tag: "동물농장", box_qty: 50, copy: "사자, 기린, 코끼리! 손으로 만드는 나만의 동물원" },
+        { id: 32, name: "고려청자", en_name: "Goryeo Celadon", category: "edu", price: 5000, supply: 2250, pieces: 21, diff: 1, tag: "미술교육", box_qty: 100, copy: "우아한 곡선의 미, 고려청자 매병 만들기 (미술 수업 추천)" },
+        { id: 39, name: "수원화성", en_name: "Hwaseong Fortress", category: "edu", price: 9000, supply: 4050, pieces: 76, diff: 4, tag: "세계유산", box_qty: 50, copy: "성곽 건축의 꽃 수원화성, 웅장한 성벽을 재현하다" },
+        { id: 40, name: "창덕궁", en_name: "Changdeokgung", category: "edu", price: 5000, supply: 2250, pieces: 57, diff: 3, tag: "유네스코", box_qty: 100, copy: "가장 아름다운 궁궐 창덕궁, 인정전의 멋을 살린 퍼즐" },
+        { id: 41, name: "석가탑", en_name: "Seokgatap", category: "edu", price: 5000, supply: 2250, pieces: 44, diff: 3, tag: "국보", box_qty: 100, copy: "천년의 침묵, 단순함의 미학 석가탑 만들기" },
+        { id: 42, name: "독립문", en_name: "Independence Gate", category: "edu", price: 5000, supply: 2250, pieces: 29, diff: 2, tag: "근대사", box_qty: 100, copy: "자주독립의 상징 독립문, 서대문 형무소와 함께 배우는 역사" },
+        { id: 43, name: "거중기와 녹로", en_name: "Crane & Potter", category: "edu", price: 5000, supply: 2250, pieces: 55, diff: 3, tag: "정약용", box_qty: 100, copy: "무거운 돌을 번쩍! 정약용의 과학 기술 거중기 체험" },
+        { id: 44, name: "황룡사9층목탑", en_name: "Hwangnyongsa", category: "edu", price: 5000, supply: 2250, pieces: 55, diff: 3, tag: "신라", box_qty: 100, copy: "사라진 전설의 거대 목탑, 황룡사 9층 목탑 복원 프로젝트" },
+        { id: 45, name: "공산성", en_name: "Gongsanseong", category: "edu", price: 5000, supply: 2250, pieces: 37, diff: 2, tag: "백제", box_qty: 100, copy: "백제의 숨결이 깃든 공주 공산성, 백제 역사 탐방" },
+        { id: 46, name: "미륵사지/정림사지", en_name: "Mireuksaji", category: "edu", price: 5000, supply: 2250, pieces: 49, diff: 3, tag: "백제탑", box_qty: 100, copy: "백제 석탑의 정수, 미륵사지와 정림사지 석탑 세트" },
+        { id: 48, name: "오죽헌", en_name: "Ojukheon", category: "edu", price: 5000, supply: 2250, pieces: 29, diff: 2, tag: "신사임당", box_qty: 100, copy: "율곡 이이와 신사임당의 얼이 서린 강릉 오죽헌" },
+        { id: 49, name: "피라미드", en_name: "Pyramid", category: "edu", price: 8000, supply: 3600, pieces: 44, diff: 4, tag: "세계불가사의", box_qty: 50, copy: "이집트의 신비 피라미드와 스핑크스, 세계 문명 탐험" },
+        { id: 51, name: "서대문형무소", en_name: "Seodaemun Prison", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "항일역사", box_qty: 100, copy: "잊지 말아야 할 역사, 서대문형무소 역사관 만들기" },
+        { id: 52, name: "한양도성", en_name: "Hanyang City Wall", category: "edu", price: 9000, supply: 4050, pieces: 69, diff: 5, tag: "서울", box_qty: 50, copy: "서울을 감싸는 성곽길 한양도성, 역사 트레킹을 집에서" },
+        { id: 53, name: "우주왕복선", en_name: "Space Shuttle", category: "edu", price: 5000, supply: 2250, pieces: 49, diff: 3, tag: "우주과학", box_qty: 100, copy: "우주를 향한 꿈, 디스커버리호 우주왕복선 발사!" },
+        { id: 54, name: "월정사팔각구층석탑", en_name: "Woljeongsa Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 2, tag: "고려", box_qty: 100, copy: "평창의 보물 월정사 석탑, 고려 시대의 화려한 불교 미술" },
+        { id: 55, name: "금산사", en_name: "Geumsansa Temple", category: "edu", price: 9000, supply: 4050, pieces: 52, diff: 3, tag: "전통사찰", box_qty: 50, copy: "미륵 신앙의 성지 금산사, 3층 법당 미륵전을 재현하다" },
+        { id: 56, name: "적상산성", en_name: "Jeoksangsanseong", category: "edu", price: 5000, supply: 2250, pieces: 39, diff: 2, tag: "조선실록", box_qty: 100, copy: "조선왕조실록을 지켰던 요새, 무주 적상산성 사고" },
+        { id: 57, name: "한국의 문화유산1", en_name: "Heritage Set 1", category: "edu", price: 23000, supply: 10350, pieces: 226, diff: 5, tag: "종합선물", box_qty: 14, copy: "한국 대표 문화유산 총집합! 방학 숙제 끝판왕 세트" },
+        { id: 58, name: "한국의 문화유산2", en_name: "Heritage Set 2", category: "edu", price: 23000, supply: 10350, pieces: 172, diff: 5, tag: "종합선물", box_qty: 14, copy: "교과서에 나오는 문화재를 한 번에 만드는 대형 세트" },
+        { id: 61, name: "덕수궁", en_name: "Deoksugung", category: "edu", price: 5000, supply: 2250, pieces: 34, diff: 2, tag: "대한제국", box_qty: 100, copy: "고종 황제의 근대화 의지, 덕수궁 석조전과 중화전" },
+        { id: 62, name: "고조선과 단군신화", en_name: "Dangun Myth", category: "edu", price: 5000, supply: 2250, pieces: 14, diff: 1, tag: "건국신화", box_qty: 100, copy: "곰이 사람이 되었다고? 단군 할아버지 이야기 만들기" },
+        { id: 65, name: "무주 한풍루", en_name: "Hanpungnu Pavilion", category: "edu", price: 5000, supply: 2250, pieces: 25, diff: 2, tag: "누각", box_qty: 100, copy: "호남의 제1루 한풍루, 멋진 누각 위에서 풍류를 즐겨요" },
+        { id: 66, name: "원자력발전소", en_name: "Nuclear Plant", category: "edu", price: 5000, supply: 2250, pieces: 35, diff: 3, tag: "에너지", box_qty: 100, copy: "전기는 어떻게 만들어질까? 원자력 발전소 구조 배우기" },
+        { id: 67, name: "창경궁", en_name: "Changgyeonggung", category: "edu", price: 5000, supply: 2250, pieces: 50, diff: 3, tag: "궁궐", box_qty: 100, copy: "효심으로 지은 궁궐 창경궁, 명정전의 고즈넉함" },
+        { id: 68, name: "경희궁", en_name: "Gyeonghuigung", category: "edu", price: 5000, supply: 2250, pieces: 39, diff: 3, tag: "궁궐", box_qty: 100, copy: "서궐이라 불린 경희궁, 잃어버린 궁궐을 찾아서" },
+        { id: 69, name: "의성탑리리오층석탑", en_name: "Tamniri Pagoda", category: "edu", price: 5000, supply: 2250, pieces: 58, diff: 3, tag: "통일신라", box_qty: 100, copy: "벽돌탑을 모방한 독특한 석탑, 의성 탑리리 5층 석탑" },
+        { id: 71, name: "강화산성", en_name: "Ganghwa Fortress", category: "edu", price: 9000, supply: 4050, pieces: 67, diff: 4, tag: "호국유적", box_qty: 50, copy: "외세의 침략을 막아낸 강화도, 강화산성 서문 만들기" },
+        { id: 76, name: "조선의 5대궁궐", en_name: "5 Grand Palaces", category: "edu", price: 25000, supply: 11250, pieces: 222, diff: 5, tag: "궁궐세트", box_qty: 14, copy: "경복궁부터 덕수궁까지, 조선 5대 궁궐 완전 정복" },
 
-        // SILVER (실버/민속/쉬운조립)
-        { id: 2, name: "초가집", category: "silver", price: 5000, supply: 2250, pieces: 33, diff: 3, tag: "회상요법", box_qty: 100, copy: "그때 그 시절 고향 집, 어르신 치매 예방 효도 선물" },
-        { id: 3, name: "기와집", category: "silver", price: 5000, supply: 2250, pieces: 41, diff: 3, tag: "전통가옥", box_qty: 100, copy: "고래등 같은 기와집, 소근육 발달을 위한 전통 만들기" },
-        { id: 8, name: "물레방앗간", category: "silver", price: 5000, supply: 2250, pieces: 33, diff: 3, tag: "민속촌", box_qty: 100, copy: "돌아가는 물레방아, 어르신들이 가장 좋아하는 만들기 1위" },
-        { id: 33, name: "선사시대 움집", category: "silver", price: 5000, supply: 2250, pieces: 29, diff: 1, tag: "쉬운조립", box_qty: 100, copy: "조각이 크고 쉬워요! 누구나 완성하는 움집 만들기" },
-        { id: 50, name: "까치구멍집", category: "silver", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "경북전통", box_qty: 100, copy: "안동의 전통 가옥 까치구멍집, 특별한 민속 체험" },
+        // SILVER
+        { id: 2, name: "초가집", en_name: "Thatched House", category: "silver", price: 5000, supply: 2250, pieces: 33, diff: 3, tag: "회상요법", box_qty: 100, copy: "그때 그 시절 고향 집, 어르신 치매 예방 효도 선물" },
+        { id: 3, name: "기와집", en_name: "Tile-roofed House", category: "silver", price: 5000, supply: 2250, pieces: 41, diff: 3, tag: "전통가옥", box_qty: 100, copy: "고래등 같은 기와집, 소근육 발달을 위한 전통 만들기" },
+        { id: 8, name: "물레방앗간", en_name: "Water Mill", category: "silver", price: 5000, supply: 2250, pieces: 33, diff: 3, tag: "민속촌", box_qty: 100, copy: "돌아가는 물레방아, 어르신들이 가장 좋아하는 만들기 1위" },
+        { id: 33, name: "선사시대 움집", en_name: "Prehistoric Hut", category: "silver", price: 5000, supply: 2250, pieces: 29, diff: 1, tag: "쉬운조립", box_qty: 100, copy: "조각이 크고 쉬워요! 누구나 완성하는 움집 만들기" },
+        { id: 50, name: "까치구멍집", en_name: "Kkachigumeong", category: "silver", price: 5000, supply: 2250, pieces: 30, diff: 2, tag: "경북전통", box_qty: 100, copy: "안동의 전통 가옥 까치구멍집, 특별한 민속 체험" },
 
-        // MILITARY (밀리터리/국뽕/무기)
-        { id: 5, name: "구축함", category: "military", price: 5000, supply: 2250, pieces: 40, diff: 3, tag: "해군", box_qty: 100, copy: "바다를 지키는 방패! 날렵한 구축함 프라모델 입문" },
-        { id: 6, name: "잠수함", category: "military", price: 5000, supply: 2250, pieces: 31, diff: 2, tag: "해군", box_qty: 100, copy: "깊은 바닷속의 사냥꾼, 디테일한 잠수함 모형" },
-        { id: 7, name: "거북선", category: "military", price: 5000, supply: 2250, pieces: 43, diff: 3, tag: "이순신", box_qty: 100, copy: "필사즉생! 이순신 장군의 거북선, 아빠와 함께 조립해요" },
-        { id: 22, name: "광개토대왕함", category: "military", price: 8000, supply: 3600, pieces: 80, diff: 4, tag: "K-Warship", box_qty: 50, copy: "한국 해군 최초의 구축함, 웅장한 광개토대왕함" },
-        { id: 23, name: "세종대왕함", category: "military", price: 8000, supply: 3600, pieces: 78, diff: 5, tag: "이지스함", box_qty: 50, copy: "세계 최강 수준의 이지스함, 세종대왕함을 내 책상 위에" },
-        { id: 31, name: "안중근", category: "military", price: 8000, supply: 3600, pieces: 38, diff: 3, tag: "독립운동", box_qty: 50, copy: "이토 히로부미를 저격한 하얼빈 의거, 영웅 안중근" },
-        { id: 34, name: "수리온 헬기", category: "military", price: 8000, supply: 3600, pieces: 52, diff: 3, tag: "국산헬기", box_qty: 50, copy: "대한민국 최초 국산 기동헬기 수리온, 프로펠러 가동!" },
-        { id: 35, name: "패튼전차", category: "military", price: 9000, supply: 4050, pieces: 57, diff: 4, tag: "탱크", box_qty: 50, copy: "지상전의 왕자 패튼전차, 묵직한 탱크의 매력" },
-        { id: 36, name: "세이버 전투기", category: "military", price: 9000, supply: 4050, pieces: 57, diff: 4, tag: "전투기", box_qty: 50, copy: "창공을 가르는 제트기 F-86 세이버, 날렵한 날개" },
-        { id: 37, name: "판옥선", category: "military", price: 5000, supply: 2250, pieces: 54, diff: 3, tag: "조선수군", box_qty: 100, copy: "임진왜란 승리의 숨은 주역, 조선 주력함 판옥선" },
-        { id: 38, name: "맥아더장군", category: "military", price: 8000, supply: 3600, pieces: 72, diff: 4, tag: "인천상륙", box_qty: 50, copy: "인천상륙작전의 지휘관 맥아더 장군과 전적비" },
-        { id: 47, name: "독도", category: "military", price: 5000, supply: 2250, pieces: 37, diff: 2, tag: "독도수호", box_qty: 100, copy: "독도는 우리 땅! 아이들에게 올바른 역사관을 심어주세요" },
-        { id: 56, name: "F-51D 무스탕", category: "military", price: 5000, supply: 2250, pieces: 21, diff: 2, tag: "전투기", box_qty: 100, copy: "6.25 전쟁의 하늘을 지킨 무스탕 전투기 (빨간 마후라)" },
-        { id: 63, name: "스탠다드-1 미사일", category: "military", price: 5000, supply: 2250, pieces: 42, diff: 2, tag: "미사일", box_qty: 100, copy: "함대공 미사일 스탠다드, 정밀한 무기 모형" },
-        { id: 64, name: "블랙이글스", category: "military", price: 5000, supply: 2250, pieces: 32, diff: 2, tag: "에어쇼", box_qty: 100, copy: "대한민국 공군 특수비행팀 블랙이글스 T-50B 편대 비행" },
-        { id: 70, name: "KF-21 보라매", category: "military", price: 5000, supply: 2250, pieces: 38, diff: 2, tag: "국산전투기", box_qty: 100, copy: "가슴 웅장해지는 국산 초음속 전투기 KF-21 출격!" },
-        { id: 77, name: "조선강국시리즈", category: "military", price: 10000, supply: 4500, pieces: 111, diff: 4, tag: "수군세트", box_qty: 50, copy: "거북선과 판옥선이 만났다! 조선 수군 천하무적 세트" },
-        { id: 78, name: "K2 흑표전차", category: "military", price: 10000, supply: 4500, pieces: 78, diff: 4, tag: "K-Tank", box_qty: 50, copy: "세계 정상급 성능, 대한민국 육군의 자존심 K2 흑표" },
+        // MILITARY
+        { id: 5, name: "구축함", en_name: "Destroyer Ship", category: "military", price: 5000, supply: 2250, pieces: 40, diff: 3, tag: "해군", box_qty: 100, copy: "바다를 지키는 방패! 날렵한 구축함 프라모델 입문" },
+        { id: 6, name: "잠수함", en_name: "Submarine", category: "military", price: 5000, supply: 2250, pieces: 31, diff: 2, tag: "해군", box_qty: 100, copy: "깊은 바닷속의 사냥꾼, 디테일한 잠수함 모형" },
+        { id: 7, name: "거북선", en_name: "Turtle Ship", category: "military", price: 5000, supply: 2250, pieces: 43, diff: 3, tag: "이순신", box_qty: 100, copy: "필사즉생! 이순신 장군의 거북선, 아빠와 함께 조립해요" },
+        { id: 22, name: "광개토대왕함", en_name: "Gwanggaeto Destroyer", category: "military", price: 8000, supply: 3600, pieces: 80, diff: 4, tag: "K-Warship", box_qty: 50, copy: "한국 해군 최초의 구축함, 웅장한 광개토대왕함" },
+        { id: 23, name: "세종대왕함", en_name: "Sejong Aegis Ship", category: "military", price: 8000, supply: 3600, pieces: 78, diff: 5, tag: "이지스함", box_qty: 50, copy: "세계 최강 수준의 이지스함, 세종대왕함을 내 책상 위에" },
+        { id: 31, name: "안중근", en_name: "Ahn Jung-geun", category: "military", price: 8000, supply: 3600, pieces: 38, diff: 3, tag: "독립운동", box_qty: 50, copy: "이토 히로부미를 저격한 하얼빈 의거, 영웅 안중근" },
+        { id: 34, name: "수리온 헬기", en_name: "Surion Helicopter", category: "military", price: 8000, supply: 3600, pieces: 52, diff: 3, tag: "국산헬기", box_qty: 50, copy: "대한민국 최초 국산 기동헬기 수리온, 프로펠러 가동!" },
+        { id: 35, name: "패튼전차", en_name: "Patton Tank", category: "military", price: 9000, supply: 4050, pieces: 57, diff: 4, tag: "탱크", box_qty: 50, copy: "지상전의 왕자 패튼전차, 묵직한 탱크의 매력" },
+        { id: 36, name: "세이버 전투기", en_name: "F-86 Sabre", category: "military", price: 9000, supply: 4050, pieces: 57, diff: 4, tag: "전투기", box_qty: 50, copy: "창공을 가르는 제트기 F-86 세이버, 날렵한 날개" },
+        { id: 37, name: "판옥선", en_name: "Panokseon", category: "military", price: 5000, supply: 2250, pieces: 54, diff: 3, tag: "조선수군", box_qty: 100, copy: "임진왜란 승리의 숨은 주역, 조선 주력함 판옥선" },
+        { id: 38, name: "맥아더장군", en_name: "General MacArthur", category: "military", price: 8000, supply: 3600, pieces: 72, diff: 4, tag: "인천상륙", box_qty: 50, copy: "인천상륙작전의 지휘관 맥아더 장군과 전적비" },
+        { id: 47, name: "독도", en_name: "Dokdo Island", category: "military", price: 5000, supply: 2250, pieces: 37, diff: 2, tag: "독도수호", box_qty: 100, copy: "독도는 우리 땅! 아이들에게 올바른 역사관을 심어주세요" },
+        { id: 56, name: "F-51D 무스탕", en_name: "F-51D Mustang", category: "military", price: 5000, supply: 2250, pieces: 21, diff: 2, tag: "전투기", box_qty: 100, copy: "6.25 전쟁의 하늘을 지킨 무스탕 전투기 (빨간 마후라)" },
+        { id: 63, name: "스탠다드-1 미사일", en_name: "Standard Missile", category: "military", price: 5000, supply: 2250, pieces: 42, diff: 2, tag: "미사일", box_qty: 100, copy: "함대공 미사일 스탠다드, 정밀한 무기 모형" },
+        { id: 64, name: "블랙이글스", en_name: "Black Eagles", category: "military", price: 5000, supply: 2250, pieces: 32, diff: 2, tag: "에어쇼", box_qty: 100, copy: "대한민국 공군 특수비행팀 블랙이글스 T-50B 편대 비행" },
+        { id: 70, name: "KF-21 보라매", en_name: "KF-21 Boramae", category: "military", price: 5000, supply: 2250, pieces: 38, diff: 2, tag: "국산전투기", box_qty: 100, copy: "가슴 웅장해지는 국산 초음속 전투기 KF-21 출격!" },
+        { id: 77, name: "조선강국시리즈", en_name: "Joseon Navy Set", category: "military", price: 10000, supply: 4500, pieces: 111, diff: 4, tag: "수군세트", box_qty: 50, copy: "거북선과 판옥선이 만났다! 조선 수군 천하무적 세트" },
+        { id: 78, name: "K2 흑표전차", en_name: "K2 Black Panther", category: "military", price: 10000, supply: 4500, pieces: 78, diff: 4, tag: "K-Tank", box_qty: 50, copy: "세계 정상급 성능, 대한민국 육군의 자존심 K2 흑표" },
 
-        // GIFT (감성, LED, 세계)
-        { id: 27, name: "남산타워 LED", category: "gift", price: 8000, supply: 3600, pieces: 22, diff: 2, tag: "무드등", box_qty: 25, copy: "서울의 밤을 선물하세요, 반짝이는 N서울타워 무드등" },
-        { id: 28, name: "타이페이 101 LED", category: "gift", price: 8000, supply: 3600, pieces: 24, diff: 2, tag: "대만여행", box_qty: 25, copy: "대만 랜드마크 타이페이 101, 방구석 세계 여행" },
-        { id: 29, name: "부르즈할리파 LED", category: "gift", price: 8000, supply: 3600, pieces: 37, diff: 3, tag: "두바이", box_qty: 25, copy: "세계 최고층 빌딩 두바이 부르즈 할리파의 야경" },
-        { id: 30, name: "광화문 LED", category: "gift", price: 8000, supply: 3600, pieces: 43, diff: 3, tag: "한국미", box_qty: 25, copy: "외국인 친구 선물 1위! 밤에 더 아름다운 광화문" },
-        { id: 72, name: "세계전통가옥(아시아)", category: "gift", price: 10000, supply: 4500, pieces: 101, diff: 4, tag: "다문화", box_qty: 50, copy: "일본, 중국, 몽골의 집을 한 번에! 아시아 전통 가옥 체험" },
-        { id: 73, name: "세계전통가옥(유럽)", category: "gift", price: 10000, supply: 4500, pieces: 98, diff: 4, tag: "다문화", box_qty: 50, copy: "풍차의 나라 네덜란드부터 영국까지, 유럽 마을 만들기" },
-        { id: 74, name: "세계전통가옥(아메리카)", category: "gift", price: 10000, supply: 4500, pieces: 89, diff: 4, tag: "다문화", box_qty: 50, copy: "인디언 티피와 이글루, 아메리카 대륙의 집 탐험" },
-        { id: 75, name: "세계전통가옥(아프리카)", category: "gift", price: 10000, supply: 4500, pieces: 93, diff: 4, tag: "다문화", box_qty: 50, copy: "신비로운 아프리카와 오세아니아의 원주민 가옥 체험" }
+        // GIFT
+        { id: 27, name: "남산타워 LED", en_name: "N Seoul Tower", category: "gift", price: 8000, supply: 3600, pieces: 22, diff: 2, tag: "무드등", box_qty: 25, copy: "서울의 밤을 선물하세요, 반짝이는 N서울타워 무드등" },
+        { id: 28, name: "타이페이 101 LED", en_name: "Taipei 101", category: "gift", price: 8000, supply: 3600, pieces: 24, diff: 2, tag: "대만여행", box_qty: 25, copy: "대만 랜드마크 타이페이 101, 방구석 세계 여행" },
+        { id: 29, name: "부르즈할리파 LED", en_name: "Burj Khalifa", category: "gift", price: 8000, supply: 3600, pieces: 37, diff: 3, tag: "두바이", box_qty: 25, copy: "세계 최고층 빌딩 두바이 부르즈 할리파의 야경" },
+        { id: 30, name: "광화문 LED", en_name: "Gwanghwamun Gate", category: "gift", price: 8000, supply: 3600, pieces: 43, diff: 3, tag: "한국미", box_qty: 25, copy: "외국인 친구 선물 1위! 밤에 더 아름다운 광화문" },
+        { id: 72, name: "세계전통가옥(아시아)", en_name: "Asian Houses", category: "gift", price: 10000, supply: 4500, pieces: 101, diff: 4, tag: "다문화", box_qty: 50, copy: "일본, 중국, 몽골의 집을 한 번에! 아시아 전통 가옥 체험" },
+        { id: 73, name: "세계전통가옥(유럽)", en_name: "European Houses", category: "gift", price: 10000, supply: 4500, pieces: 98, diff: 4, tag: "다문화", box_qty: 50, copy: "풍차의 나라 네덜란드부터 영국까지, 유럽 마을 만들기" },
+        { id: 74, name: "세계전통가옥(아메리카)", en_name: "American Houses", category: "gift", price: 10000, supply: 4500, pieces: 89, diff: 4, tag: "다문화", box_qty: 50, copy: "인디언 티피와 이글루, 아메리카 대륙의 집 탐험" },
+        { id: 75, name: "세계전통가옥(아프리카)", en_name: "African Houses", category: "gift", price: 10000, supply: 4500, pieces: 93, diff: 4, tag: "다문화", box_qty: 50, copy: "신비로운 아프리카와 오세아니아의 원주민 가옥 체험" }
     ];
 
     // Hashtags
@@ -353,28 +408,47 @@
 
     const grid = document.getElementById('product-grid');
     const totalCountEl = document.getElementById('total-count');
-    const avgMarginEl = document.getElementById('avg-margin');
+    const checkedCountEl = document.getElementById('checked-count');
     const avgProfitEl = document.getElementById('avg-profit');
     const btns = document.querySelectorAll('.category-btn');
     const hashtagBar = document.getElementById('hashtag-bar');
     const hashtagText = document.getElementById('hashtag-text');
+
+    // Checked Items State (LocalStorage)
+    let checkedItems = JSON.parse(localStorage.getItem('checkedItems')) || [];
 
     const fmtNum = (num) => new Intl.NumberFormat('ko-KR').format(num);
     const getStars = (level) => '★'.repeat(level) + '☆'.repeat(5-level);
 
     const getCatColor = (cat) => {
         const map = {
-            'edu': 'bg-green-100 text-green-800',
-            'silver': 'bg-orange-100 text-orange-800',
-            'military': 'bg-blue-100 text-blue-800',
-            'gift': 'bg-purple-100 text-purple-800'
+            'edu': 'bg-green-900/40 text-green-300 border border-green-800',
+            'silver': 'bg-orange-900/40 text-orange-300 border border-orange-800',
+            'military': 'bg-blue-900/40 text-blue-300 border border-blue-800',
+            'gift': 'bg-purple-900/40 text-purple-300 border border-purple-800'
         };
-        return map[cat] || 'bg-gray-100 text-gray-800';
+        return map[cat] || 'bg-slate-700 text-slate-300';
     };
 
     const getCatName = (cat) => {
          const map = { 'edu': '교육/역사', 'silver': '실버/복지', 'military': '밀리터리', 'gift': '감성/선물' };
          return map[cat];
+    }
+
+    function toggleProductCheck(id, event) {
+        if (event) event.stopPropagation();
+        const idx = checkedItems.indexOf(id);
+        if (idx === -1) {
+            checkedItems.push(id);
+        } else {
+            checkedItems.splice(idx, 1);
+        }
+        localStorage.setItem('checkedItems', JSON.stringify(checkedItems));
+        updateCheckedCount();
+    }
+
+    function updateCheckedCount() {
+        checkedCountEl.innerText = checkedItems.length;
     }
 
     function renderProducts(filter = 'all') {
@@ -387,14 +461,13 @@
 
         // Stats Update
         totalCountEl.innerText = filtered.length;
+        updateCheckedCount();
+
         if (filtered.length > 0) {
             const totalProfit = filtered.reduce((acc, cur) => acc + (cur.price - cur.supply), 0);
-            const totalMargin = filtered.reduce((acc, cur) => acc + ((cur.price - cur.supply) / cur.price) * 100, 0);
             avgProfitEl.innerText = fmtNum(Math.round(totalProfit / filtered.length)) + '원';
-            avgMarginEl.innerText = Math.round(totalMargin / filtered.length) + '%';
         } else {
             avgProfitEl.innerText = '0원';
-            avgMarginEl.innerText = '0%';
         }
 
         // Hashtag Update
@@ -410,52 +483,67 @@
             const profit = p.price - p.supply;
             const margin = Math.round((profit / p.price) * 100);
             const isHighMargin = margin >= 50;
+            const isChecked = checkedItems.includes(p.id);
+
+            // Dynamic Image Placeholder
+            // Using Placehold.co with specific text for clean, professional look
+            // You can replace this logic with actual Image URLs later
+            const imgUrl = `https://placehold.co/600x400/1e293b/6366f1?text=${encodeURIComponent(p.en_name)}&font=roboto`;
+            // Alternative: const imgUrl = `https://loremflickr.com/600/400/${encodeURIComponent(p.en_name.split(' ')[0])}`; // For random real images (less stable)
 
             const card = document.createElement('div');
-            card.className = 'card-hover bg-white rounded-xl overflow-hidden border border-gray-100 flex flex-col h-full relative group';
+            card.className = 'card-hover bg-slate-800 rounded-xl overflow-hidden border border-slate-700 flex flex-col h-full relative group shadow-lg';
             card.innerHTML = `
-                ${isHighMargin ? '<div class="absolute top-2 left-2 z-10 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">고마진🔥</div>' : ''}
-                <div class="h-32 bg-gray-50 flex items-center justify-center relative">
-                    <div class="text-4xl transform group-hover:scale-110 transition duration-300">
-                        ${p.category === 'edu' ? '📚' : p.category === 'silver' ? '👵' : p.category === 'military' ? '🚁' : '🎁'}
-                    </div>
-                    <div class="absolute top-2 right-2">
-                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${getCatColor(p.category)}">
+                ${isHighMargin ? '<div class="absolute top-2 left-2 z-10 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md animate-pulse">고마진🔥</div>' : ''}
+                
+                <!-- Checkbox Zone -->
+                <div class="absolute top-2 right-2 z-20">
+                    <input type="checkbox" class="custom-checkbox" 
+                           ${isChecked ? 'checked' : ''} 
+                           onchange="toggleProductCheck(${p.id}, event)">
+                </div>
+
+                <!-- Image Zone -->
+                <div class="h-40 overflow-hidden relative border-b border-slate-700 bg-slate-900 group">
+                    <img src="${imgUrl}" alt="${p.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-90 group-hover:opacity-100">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent opacity-60"></div>
+                    <div class="absolute bottom-2 right-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium backdrop-blur-md ${getCatColor(p.category)}">
                             ${getCatName(p.category)}
                         </span>
                     </div>
-                    <div class="absolute bottom-1 right-2 text-[10px] text-gray-400">No.${p.id}</div>
+                    <div class="absolute bottom-2 left-2 text-[10px] text-slate-400 font-mono bg-slate-900/50 px-1 rounded">No.${p.id}</div>
                 </div>
 
                 <div class="p-4 flex-1 flex flex-col">
                     <div class="mb-2">
-                        <h3 class="font-bold text-gray-900 leading-tight">${p.name}</h3>
-                        <span class="text-[10px] text-gray-400 font-medium border border-gray-200 rounded px-1 inline-block mt-1">${p.tag}</span>
+                        <h3 class="font-bold text-slate-100 leading-tight">${p.name}</h3>
+                        <span class="text-[10px] text-slate-500 font-medium border border-slate-600 rounded px-1 inline-block mt-1">${p.tag}</span>
                     </div>
 
-                    <div class="text-xs text-gray-400 mb-3 flex items-center gap-2">
+                    <div class="text-xs text-slate-400 mb-3 flex items-center gap-2">
                         <span>${p.pieces}pcs</span>
-                        <span class="text-gray-300">|</span>
-                        <span class="text-yellow-400 tracking-tighter">${getStars(p.diff)}</span>
-                        <span class="text-gray-300">|</span>
-                        <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-1 rounded">📦 ${p.box_qty}개</span>
+                        <span class="text-slate-600">|</span>
+                        <span class="text-yellow-500 tracking-tighter">${getStars(p.diff)}</span>
+                        <span class="text-slate-600">|</span>
+                        <span class="text-xs font-semibold text-blue-400 bg-blue-900/20 px-1 rounded border border-blue-900/30">📦 ${p.box_qty}개</span>
                     </div>
 
                     <div class="mt-auto">
-                        <div class="bg-gray-50 p-2 rounded-lg mb-3 border border-dashed border-gray-200 cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition group/copy relative" 
+                        <div class="bg-slate-700/30 p-2 rounded-lg mb-3 border border-dashed border-slate-600 cursor-pointer hover:bg-indigo-900/20 hover:border-indigo-500/50 transition group/copy relative" 
                              onclick="copyText('${p.copy}')">
-                            <p class="text-xs text-gray-600 leading-snug pr-4 line-clamp-2">"${p.copy}"</p>
-                            <i data-lucide="copy" class="w-3 h-3 text-gray-400 absolute top-2 right-2 group-hover/copy:text-indigo-500"></i>
+                            <p class="text-xs text-slate-400 leading-snug pr-4 line-clamp-2 group-hover/copy:text-slate-300">"${p.copy}"</p>
+                            <i data-lucide="copy" class="w-3 h-3 text-slate-500 absolute top-2 right-2 group-hover/copy:text-indigo-400"></i>
                         </div>
 
-                        <div class="flex justify-between items-end border-t border-gray-100 pt-3">
+                        <div class="flex justify-between items-end border-t border-slate-700 pt-3">
                             <div>
-                                <p class="text-xs text-gray-400">공급 ${fmtNum(p.supply)}</p>
-                                <p class="text-sm font-bold text-gray-900">${fmtNum(p.price)}원</p>
+                                <p class="text-xs text-slate-500">공급 ${fmtNum(p.supply)}</p>
+                                <p class="text-sm font-bold text-slate-200">${fmtNum(p.price)}원</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-xs text-indigo-600 font-bold">+${fmtNum(profit)}원</p>
-                                <span class="text-[10px] ${isHighMargin ? 'bg-red-100 text-red-600' : 'bg-indigo-50 text-indigo-500'} px-1.5 py-0.5 rounded font-medium">Margin ${margin}%</span>
+                                <p class="text-xs text-indigo-400 font-bold">+${fmtNum(profit)}원</p>
+                                <span class="text-[10px] ${isHighMargin ? 'bg-red-900/40 text-red-400 border border-red-900' : 'bg-indigo-900/40 text-indigo-400 border border-indigo-900'} px-1.5 py-0.5 rounded font-medium">Margin ${margin}%</span>
                             </div>
                         </div>
                     </div>
@@ -464,11 +552,9 @@
             grid.appendChild(card);
         });
         
-        // 아이콘 생성은 스크립트가 로드된 후 실행되도록 약간의 지연을 주거나 안전하게 호출합니다.
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         } else {
-            // 스크립트 로딩 대기 후 재시도
             setTimeout(() => {
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             }, 500);
@@ -509,14 +595,28 @@
     }
 
     function filterProducts(category) {
-        btns.forEach(btn => btn.classList.remove('active', 'bg-gray-800', 'text-white'));
+        btns.forEach(btn => btn.classList.remove('active', 'bg-indigo-600', 'text-white'));
+        
+        // Find button and active state
         const targetBtn = Array.from(btns).find(b => b.getAttribute('onclick').includes(category));
-        if(targetBtn) targetBtn.classList.add('active');
+        
+        // Custom active style for dark mode
+        btns.forEach(btn => {
+            btn.classList.add('text-slate-400', 'hover:bg-slate-700');
+            btn.classList.remove('bg-indigo-600', 'text-white');
+        });
+
+        if(targetBtn) {
+            targetBtn.classList.remove('text-slate-400', 'hover:bg-slate-700');
+            targetBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-500/30');
+        }
+        
         renderProducts(category);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        renderProducts('all');
+        // Initial button state
+        filterProducts('all');
     });
 </script>
 
