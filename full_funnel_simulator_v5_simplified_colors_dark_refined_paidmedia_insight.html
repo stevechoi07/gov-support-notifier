@@ -1,0 +1,2425 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마케팅 통합 예산 대시보드 (Ultimate V6.2)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --accent: #5BB4FB;
+            --accent-strong: #A7DAFF;
+            --accent-soft: rgba(91, 180, 251, 0.18);
+            --accent-panel: rgba(91, 180, 251, 0.1);
+            --success: #34D399;
+            --success-soft: rgba(52, 211, 153, 0.16);
+            --primary-sa: var(--accent);
+            --primary-ext: var(--accent);
+            --primary-gfa: var(--accent);
+            --primary-viral: var(--accent);
+            --primary-infilt: var(--accent);
+            --primary-blog: var(--accent);
+            --primary-conn: var(--accent);
+            --primary-traffic: var(--accent);
+            --bg-gradient-1: #08111f;
+            --bg-gradient-2: #111c2d;
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-panel: rgba(10, 18, 32, 0.82);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --text-main: #F8FAFC;
+            --text-sub: rgba(232, 240, 255, 0.78);
+            --warning-color: #FF8E8E;
+            --warning-bg: rgba(255, 107, 107, 0.18);
+            --kpi-glow: rgba(91, 180, 251, 0.26);
+            --roas-glow: rgba(91, 180, 251, 0.28);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .calculator-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.46);
+            border-radius: 24px;
+            padding: 50px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--text-main);
+            font-size: 36px;
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: -0.5px;
+        }
+        h2 strong { font-weight: 700; color: #fff; }
+        
+        .header-controls {
+            display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 40px;
+        }
+
+        .version-badge {
+            text-align: center; color: var(--accent-strong); font-weight: 800; letter-spacing: 2px;
+        }
+
+        .reset-btn {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border);
+            color: var(--text-sub); padding: 4px 12px; border-radius: 8px; cursor: pointer;
+            font-size: 13px; font-weight: 600; transition: all 0.2s; backdrop-filter: blur(4px);
+        }
+        .reset-btn:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+        .save-status {
+            color: var(--success); font-size: 13px; font-weight: 600; opacity: 0; transition: opacity 0.5s;
+        }
+
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .grid-3-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-5-col { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 15px; }
+        .mix-nav-card {
+            cursor: pointer;
+            border-radius: 14px;
+            padding: 8px;
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .mix-nav-card:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+        }
+        .mix-nav-card:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+        }
+        .mix-nav-card.soft-warning {
+            background: rgba(255, 107, 107, 0.08);
+            box-shadow: 0 0 0 1px rgba(255, 107, 107, 0.3);
+        }
+        .section-anchor {
+            scroll-margin-top: 28px;
+            border-radius: 18px;
+            transition: box-shadow 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+        }
+        .section-anchor.section-highlight {
+            background: rgba(91, 180, 251, 0.08);
+            box-shadow: 0 0 0 1px rgba(91, 180, 251, 0.32), 0 0 0 10px rgba(91, 180, 251, 0.05);
+        }
+
+        @media (max-width: 900px) { 
+            .grid-container, .grid-3-col { grid-template-columns: 1fr; } 
+            .grid-5-col { grid-template-columns: 1fr 1fr 1fr; }
+        }
+        @media (max-width: 500px) { .grid-5-col { grid-template-columns: 1fr 1fr; } }
+
+        .section-title {
+            font-size: 24px; font-weight: 600; margin-bottom: 20px;
+            padding-bottom: 12px; border-bottom: 2px solid rgba(91, 180, 251, 0.22); color: var(--accent-strong);
+        }
+
+        .sa-title { color: var(--text-main); }
+        .ext-title { color: var(--text-main); }
+        .gfa-title { color: var(--text-main); }
+        .viral-title { color: var(--text-main); }
+        .infilt-title { color: var(--text-main); }
+        .blog-title { color: var(--text-main); }
+        .conn-title { color: var(--text-main); }
+        .traffic-title { color: var(--text-main); }
+
+        .input-group { margin-bottom: 24px; }
+        .input-group label {
+            display: block; margin-bottom: 10px; font-weight: 500; font-size: 19px; color: var(--text-sub);
+        }
+        
+        .input-wrapper { position: relative; }
+        
+        .calc-input {
+            width: 100%; padding: 16px 110px 16px 45px; 
+            background: rgba(8, 15, 28, 0.72); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px; font-size: 24px; font-weight: 600; color: var(--text-main);
+            box-sizing: border-box; text-align: right; transition: all 0.3s ease;
+        }
+        .calc-input:focus {
+            outline: none; border-color: var(--accent); background: rgba(8, 15, 28, 0.92);
+            box-shadow: 0 0 0 1px rgba(91, 180, 251, 0.28), 0 0 22px rgba(91, 180, 251, 0.2);
+        }
+        .mix-panel .input-wrapper .calc-input {
+            padding: 16px 18px 16px 42px;
+            font-size: 20px;
+            letter-spacing: 0;
+            font-variant-numeric: tabular-nums;
+        }
+        .mix-panel .input-wrapper .unit {
+            left: 16px;
+            font-size: 18px;
+        }
+
+        .kpi-output {
+            width: 100%; padding: 16px 20px; 
+            background: rgba(91, 180, 251, 0.1); border: 2px solid rgba(91, 180, 251, 0.42);
+            border-radius: 12px; font-size: 24px; font-weight: 800; color: var(--primary-sa);
+            box-sizing: border-box; text-align: right; pointer-events: none;
+            box-shadow: inset 0 0 10px var(--kpi-glow);
+        }
+        
+        .kpi-output-dual {
+            padding: 12px 20px; line-height: 1.3;
+        }
+
+        .input-wrapper .unit {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            color: var(--text-sub); font-size: 21px; font-weight: 600; pointer-events: none;
+        }
+
+        .input-controls {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            display: flex; gap: 6px;
+        }
+
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff; width: 40px; height: 40px; border-radius: 8px; font-size: 22px; font-weight: 300;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            transition: all 0.2s ease; backdrop-filter: blur(4px);
+        }
+        .ctrl-btn:hover { background: rgba(255, 255, 255, 0.2); border-color: var(--primary-gfa); }
+        .ctrl-btn:active { transform: scale(0.92); }
+
+        .select-wrapper { position: relative; }
+        .select-wrapper select {
+            width: 100%; padding: 16px 45px 16px 20px; background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border); border-radius: 12px; font-size: 22px;
+            font-weight: 600; color: var(--text-main); appearance: none; cursor: pointer;
+        }
+        .select-wrapper select:focus { outline: none; border-color: var(--accent); }
+        .select-wrapper::after {
+            content: '▼'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            font-size: 16px; color: var(--text-sub); pointer-events: none;
+        }
+        .select-wrapper select option { background: var(--bg-gradient-2); color: #fff; }
+        .preset-selection-status {
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-sub);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .preset-selection-status.active {
+            background: var(--accent-soft);
+            border-color: rgba(77, 171, 247, 0.35);
+            color: #dbeafe;
+        }
+        .preset-selection-status.custom {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-sub);
+        }
+
+        .divider { height: 1px; background: var(--glass-border); margin: 50px 0; }
+
+        .mix-panel {
+            background: rgba(10, 18, 32, 0.62); border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 30px; border-radius: 16px; margin-bottom: 50px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 16px 36px rgba(0, 0, 0, 0.24);
+        }
+        .mix-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        }
+        .mix-header h3 { margin: 0; font-size: 22px; font-weight: 600; color: #fff; }
+        .mix-total-badge {
+            padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 18px;
+            background: var(--success-soft); color: var(--success); border: 1px solid var(--success);
+            transition: all 0.3s ease;
+        }
+        .mix-total-badge.error { background: rgba(255, 107, 107, 0.2); color: #FF6B6B; border-color: #FF6B6B; }
+        .mix-tools {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+        .mix-remaining {
+            font-size: 14px;
+            color: var(--text-sub);
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .mix-remaining.over { color: #ffd4d4; border-color: rgba(255, 107, 107, 0.35); background: rgba(255, 107, 107, 0.1); }
+        .mix-balance-btn {
+            background: rgba(91, 180, 251, 0.14);
+            border: 1px solid rgba(91, 180, 251, 0.35);
+            color: #e8f4ff;
+            padding: 10px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+        .mix-balance-btn:hover {
+            background: rgba(91, 180, 251, 0.22);
+            transform: translateY(-1px);
+        }
+
+        /* [UPDATED] 요약 패널 텍스트 겹침 및 잘림 방지를 위한 CSS 수정 */
+        .stage-summary {
+            background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 20px; border-radius: 12px; display: flex; justify-content: space-between;
+            align-items: flex-start; margin-top: -5px; min-height: 80px; box-sizing: border-box;
+        }
+        .stage-summary span { font-size: 16px; color: var(--text-sub); font-weight: 500; margin-top: 4px; }
+        .stage-summary strong { font-size: 22px; text-align: right; line-height: 1.4; display: block; flex: 1; margin-left: 10px; }
+        .stage-summary strong.negative-cost { color: var(--warning-color); }
+        .section-title small {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-sub);
+            letter-spacing: 0.02em;
+            vertical-align: middle;
+        }
+        .insight-card {
+            background: rgba(255, 107, 107, 0.08);
+            border: 1px solid rgba(255, 107, 107, 0.28);
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+            box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.04);
+        }
+        .insight-card h4 {
+            margin: 0 0 10px;
+            font-size: 16px;
+            color: #FFD5D5;
+        }
+        .insight-card p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-sub);
+        }
+        .insight-card p + p { margin-top: 8px; }
+        .insight-card strong { color: #FFE4E6; }
+        .metric-flow {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .metric-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+        .metric-chip span {
+            display: block;
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+        }
+        .metric-chip strong {
+            display: block;
+            font-size: 16px;
+            color: #fff;
+        }
+        .analysis-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-top: 14px;
+        }
+        .analysis-card h4 {
+            margin: 0 0 10px;
+            font-size: 16px;
+            color: #fff;
+        }
+        .analysis-card p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-sub);
+        }
+        .analysis-card p + p { margin-top: 8px; }
+        .mix-guidance {
+            display: none;
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.28);
+            color: #ffdada;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .mix-guidance.active { display: block; }
+        @media (max-width: 900px) {
+            .metric-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        .budget-cap-box {
+            background: var(--accent-panel); border: 2px solid rgba(91, 180, 251, 0.42);
+            padding: 20px 25px; border-radius: 12px; display: flex; justify-content: space-between;
+            align-items: center; margin-top: -10px; margin-bottom: 40px;
+            box-shadow: inset 0 0 15px var(--roas-glow);
+        }
+        .budget-cap-box span { font-size: 19px; color: var(--primary-gfa); font-weight: 600; }
+        .budget-cap-box strong { font-size: 28px; color: var(--primary-gfa); }
+
+        .top-roas-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: -18px;
+            margin-bottom: 40px;
+        }
+        .top-roas-card {
+            background: rgba(11, 20, 35, 0.84);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 18px 20px;
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .top-roas-card .summary-label {
+            display: block;
+            font-size: 15px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .top-roas-card strong {
+            display: block;
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.15;
+        }
+        .top-roas-card .summary-note {
+            display: block;
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+        .top-roas-card.cap strong { color: var(--accent-strong); }
+        .top-roas-card.actual strong { color: #F8FAFC; }
+        .top-roas-card.overspend {
+            border-color: rgba(255, 255, 255, 0.12);
+            transition: all 0.2s ease;
+        }
+        .top-roas-card.overspend.safe {
+            background: var(--success-soft);
+            border-color: rgba(34, 197, 94, 0.28);
+        }
+        .top-roas-card.overspend.safe strong { color: var(--success); }
+        .top-roas-card.overspend.danger {
+            background: rgba(255, 107, 107, 0.12);
+            border-color: rgba(255, 107, 107, 0.45);
+            box-shadow: 0 12px 28px rgba(255, 107, 107, 0.16);
+        }
+        .top-roas-card.overspend.danger strong { color: var(--warning-color); }
+
+        @media (max-width: 900px) {
+            .top-roas-summary { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .top-roas-card strong { font-size: 24px; }
+        }
+
+        .result-panel {
+            background: var(--glass-panel); border: 1px solid rgba(255,255,255,0.12);
+            padding: 35px; border-radius: 16px;
+            box-shadow: 0 18px 38px rgba(0,0,0,0.24);
+        }
+        .result-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; font-size: 21px; color: var(--text-main);
+        }
+        .result-row.ratio-row {
+            background: rgba(255,255,255,0.06); padding: 15px 20px;
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); margin: 20px 0;
+        }
+
+        .ratio-val { font-size: 26px; font-weight: 800; }
+        .ratio-val.safe { color: var(--success); }
+        .ratio-val.warn { color: var(--warning-color); }
+
+        .result-row.total {
+            font-weight: bold; font-size: 28px; border-top: 2px dashed var(--glass-border);
+            padding-top: 25px; margin-top: 25px; margin-bottom: 0;
+        }
+
+        .warning-box {
+            display: none; background: var(--warning-bg); color: var(--warning-color);
+            padding: 20px; border-radius: 12px; font-size: 20px; font-weight: 500;
+            margin-top: 24px; border: 1px solid rgba(255, 135, 135, 0.38);
+            text-align: center; line-height: 1.6; backdrop-filter: blur(5px);
+        }
+
+        .export-btn {
+            width: 100%; padding: 18px; margin-top: 30px;
+            background: linear-gradient(135deg, #5bb4fb 0%, #3182ce 100%);
+            border: none; border-radius: 12px; color: #fff; font-size: 20px; font-weight: 700;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .export-btn:hover {
+            transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        .toast-msg {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(34, 197, 94, 0.92); color: #fff; padding: 12px 24px;
+            border-radius: 30px; font-size: 16px; font-weight: 600; z-index: 1000;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* 차트 레이아웃 및 캡션 영역 CSS 최적화 */
+        .charts-wrapper {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 30px; 
+            margin-top: 30px;
+        }
+        .chart-title {
+            color: #fff; font-size: 22px; font-weight: 600; margin-top: 80px; margin-bottom: 10px;
+            padding-bottom: 15px; border-bottom: 1px solid var(--glass-border);
+        }
+        .chart-subtitle {
+            font-size: 15px; color: var(--text-sub); margin-bottom: 30px; font-weight: 400;
+        }
+        .chart-card {
+            background: rgba(255,255,255,0.02); border-radius: 16px; padding: 20px; box-sizing: border-box;
+            border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;
+        }
+        .canvas-wrapper { 
+            position: relative; height: 350px; width: 100%; margin-bottom: 20px;
+        }
+        
+        /* 차트 설명(인사이트) 디자인 패널 */
+        .chart-desc {
+            background: rgba(10, 18, 32, 0.72); border-radius: 12px; padding: 18px;
+            font-size: 14.5px; line-height: 1.6; color: var(--text-sub);
+            border-left: 3px solid rgba(91,180,251,0.35); margin-top: auto;
+        }
+        .chart-desc-title {
+            font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .chart-desc strong { color: #fff; }
+        
+        @media (max-width: 900px) { .charts-wrapper { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="calculator-container">
+        <h2><strong>통합 마케팅 예산</strong> 대시보드</h2>
+        
+        <div class="header-controls">
+            <span class="version-badge">V6.2 RECOVERY & ANALYSIS MASTER</span>
+            <button class="reset-btn" onclick="resetData()">🔄 초기화</button>
+            <span id="save-status" class="save-status">💾 자동 저장됨</span>
+        </div>
+
+        <!-- 목표 ROAS 기반 예산 통제 영역 -->
+        <div class="grid-3-col" style="margin-bottom: 25px;">
+            <div class="input-group">
+                <label style="color:#fff; font-weight:700; font-size:20px;">👑 전체 통합 목표 매출</label>
+                <div class="input-wrapper">
+                    <span class="unit">₩</span>
+                    <input type="text" id="total-revenue" class="calc-input" value="50,000,000" data-step="5000000" oninput="handleFormat(this)" style="border-color:var(--accent); color:var(--accent-strong);">
+                    <div class="input-controls">
+                        <button class="ctrl-btn" onclick="adjustVal('total-revenue', -1)">-</button>
+                        <button class="ctrl-btn" onclick="adjustVal('total-revenue', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group">
+                <label style="color:#fff; font-weight:700; font-size:20px;">🎯 목표 ROAS (예산통제용)</label>
+                <div class="input-wrapper">
+                    <span class="unit">%</span>
+                    <input type="text" id="target-roas" class="calc-input" value="400" data-step="10" oninput="handleFormat(this)" style="border-color:var(--accent); color:var(--accent-strong);">
+                    <div class="input-controls">
+                        <button class="ctrl-btn" onclick="adjustVal('target-roas', -1)">-</button>
+                        <button class="ctrl-btn" onclick="adjustVal('target-roas', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group">
+                <label style="font-size:20px;">전사 평균 객단가 (AOV)</label>
+                <div class="input-wrapper">
+                    <span class="unit">₩</span>
+                    <input type="text" id="aov" class="calc-input" value="50,000" data-step="1000" oninput="handleFormat(this)">
+                    <div class="input-controls">
+                        <button class="ctrl-btn" onclick="adjustVal('aov', -1)">-</button>
+                        <button class="ctrl-btn" onclick="adjustVal('aov', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="budget-cap-box">
+            <span>🔒 목표 ROAS 달성을 위한 마케팅 예산 상한선 (Budget Cap)</span>
+            <strong id="budget-cap">₩ 0</strong>
+        </div>
+
+        <div class="top-roas-summary">
+            <div class="top-roas-card cap">
+                <span class="summary-label">Budget Cap</span>
+                <strong id="top-budget-cap">₩ 0</strong>
+                <span class="summary-note">목표 ROAS 기준 허용 예산</span>
+            </div>
+            <div class="top-roas-card actual">
+                <span class="summary-label">Actual</span>
+                <strong id="top-actual-spend">₩ 0</strong>
+                <span class="summary-note">현재 세팅 기준 총 필요 예산</span>
+            </div>
+            <div class="top-roas-card overspend safe" id="top-overspend-card">
+                <span class="summary-label">Over Spend</span>
+                <strong id="top-overspend">₩ 0</strong>
+                <span class="summary-note" id="top-overspend-note">현재는 예산 상한선 이내입니다</span>
+            </div>
+        </div>
+
+        <div class="mix-panel" style="margin-bottom: 30px; border-color: rgba(77, 171, 247, 0.24);">
+            <div class="mix-header" style="margin-bottom: 10px;">
+                <h3 style="color: var(--accent-strong);">📂 업계별 벤치마크 프리셋 (영점 조절)</h3>
+            </div>
+            <p style="color: var(--text-sub); font-size: 15px; margin-bottom: 20px;">* 아래 산업군을 선택하면, 해당 업계의 최신 평균 데이터로 모든 입력칸이 자동 세팅됩니다.</p>
+            <div class="select-wrapper">
+                <select id="industry-preset" onchange="applyPreset(this.value)">
+                    <option value="custom" selected>직접 입력 및 미세 조정 중 (커스텀)</option>
+                    <option value="beauty">💄 뷰티/코스메틱 (저관여/충동구매형)</option>
+                    <option value="it">💻 가전/IT기기 (고관여/목적구매형)</option>
+                    <option value="health">🍎 건강기능식품/식품 (재구매/리뷰신뢰형)</option>
+                </select>
+            </div>
+            <div id="preset-selection-status" class="preset-selection-status custom">현재 상태: 커스텀 입력 모드</div>
+        </div>
+
+        <div class="mix-panel">
+            <div class="mix-header">
+                <h3>매출 기여도 포트폴리오 비중 세팅</h3>
+                <div id="mix-total-badge" class="mix-total-badge">총합 100%</div>
+            </div>
+            <div class="grid-5-col">
+                <div class="input-group mix-nav-card" style="margin-bottom:0;" role="button" tabindex="0" onclick="handleMixCardClick(event, 'section-sa')" onkeydown="handleSectionNavKey(event, 'section-sa')">
+                    <label style="color:var(--primary-sa); font-size: 16px;">1-1. SA 비중</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="mix-sa" class="calc-input" value="50" data-step="5" oninput="handleFormat(this)">
+                    </div>
+                </div>
+                <div class="input-group mix-nav-card" style="margin-bottom:0;" role="button" tabindex="0" onclick="handleMixCardClick(event, 'section-ext')" onkeydown="handleSectionNavKey(event, 'section-ext')">
+                    <label style="color:var(--primary-ext); font-size: 16px;">1-2. PM 비중</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="mix-ext" class="calc-input" value="10" data-step="5" oninput="handleFormat(this)">
+                    </div>
+                </div>
+                <div id="mix-gfa-card" class="input-group mix-nav-card" style="margin-bottom:0;" role="button" tabindex="0" onclick="handleMixCardClick(event, 'section-gfa')" onkeydown="handleSectionNavKey(event, 'section-gfa')">
+                    <label style="color:var(--primary-gfa); font-size: 16px;">2. DA 비중</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="mix-gfa" class="calc-input" value="10" data-step="5" oninput="handleFormat(this)">
+                    </div>
+                </div>
+                <div class="input-group mix-nav-card" style="margin-bottom:0;" role="button" tabindex="0" onclick="handleMixCardClick(event, 'section-viral')" onkeydown="handleSectionNavKey(event, 'section-viral')">
+                    <label style="color:var(--primary-viral); font-size: 16px;">3. 바이럴 비중</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="mix-viral" class="calc-input" value="10" data-step="5" oninput="handleFormat(this)">
+                    </div>
+                </div>
+                <div class="input-group mix-nav-card" style="margin-bottom:0;" role="button" tabindex="0" onclick="handleMixCardClick(event, 'section-conn')" onkeydown="handleSectionNavKey(event, 'section-conn')">
+                    <label style="color:var(--primary-conn); font-size: 16px;">6. 커넥트 비중</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="mix-conn" class="calc-input" value="20" data-step="5" oninput="handleFormat(this)">
+                    </div>
+                </div>
+            </div>
+            <div id="mix-error-text" style="display:none; color:#FF6B6B; margin-top:15px; font-weight:600; text-align:center;">
+                ⚠️ 비중의 총합이 100%가 아닙니다. 예산 및 KPI 수치가 부정확할 수 있습니다.
+            </div>
+            <div class="mix-tools">
+                <div id="mix-remaining" class="mix-remaining">남은 비율 0%</div>
+                <button class="mix-balance-btn" onclick="normalizeMixToHundred()">100%에 맞추기</button>
+            </div>
+            <div id="mix-gfa-guidance" class="mix-guidance">DA 비중 가이드가 여기에 표시됩니다.</div>
+        </div>
+
+        <div class="grid-container">
+            <div id="section-sa" class="section-anchor">
+                <div class="section-title sa-title">1-1단계: 네이버 검색광고 (SA) <small>키워드, 파워링크, 브랜드</small></div>
+                <div class="input-group">
+                    <label>SA 예상 전환율 (CVR)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="sa-cvr" class="calc-input" value="2.5" data-step="0.1" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('sa-cvr', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('sa-cvr', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>SA 클릭당 단가 (CPC)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="sa-cpc" class="calc-input" value="1,200" data-step="10" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('sa-cpc', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('sa-cpc', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--primary-sa)">🎯 목표 유입 수량 (자동 역산)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">명</span>
+                        <div id="sa-qty-out" class="kpi-output">0</div>
+                    </div>
+                </div>
+                <div class="stage-summary">
+                    <span>매출 목표: ₩ <span id="target-sa-rev">0</span></span>
+                    <strong id="sum-sa-spend" class="negative-cost">(-) 예상광고비 ₩ 0</strong>
+                </div>
+                <div class="analysis-card">
+                    <h4>SA 비용 대비 효율 인사이트</h4>
+                    <p id="sa-efficiency-main">클릭 단가와 전환율을 기준으로 예상 CPA와 클릭당 기대매출을 분석합니다.</p>
+                    <p id="sa-efficiency-sub">CPC가 올라가거나 CVR이 내려가면 같은 매출 목표를 위해 필요한 광고비가 빠르게 커집니다.</p>
+                </div>
+            </div>
+
+            <div id="section-ext" class="section-anchor">
+                <div class="section-title ext-title">1-2단계: Paid Media (Meta/IG/kakao 등)</div>
+                <div class="input-group">
+                    <label>외부 매체 노출당 단가 (CPM)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="ext-cpm" class="calc-input" value="5,000" data-step="100" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('ext-cpm', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('ext-cpm', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>외부 매체 예상 클릭률 (CTR)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="ext-ctr" class="calc-input" value="1.5" data-step="0.1" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('ext-ctr', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('ext-ctr', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <h4>CVR 입력 대신 계산 인사이트</h4>
+                    <p id="ext-cvr-insight-main">Paid Media는 검색광고보다 탐색형 유입 비중이 높아서, SA CVR을 기준으로 보수적으로 추정하는 방식이 현실적입니다.</p>
+                    <p id="ext-cvr-insight-sub">기본식: SA CVR × 인텐트 보정치(30~50%). 데이터가 쌓이면 구매수 ÷ 랜딩페이지뷰 × 100으로 실제 CVR을 업데이트하세요.</p>
+                </div>
+                <div class="analysis-card">
+                    <h4>Paid Media 구조 분석</h4>
+                    <div class="metric-flow">
+                        <div class="metric-chip"><span>CPM</span><strong id="ext-flow-cpm">₩ 0</strong></div>
+                        <div class="metric-chip"><span>CTR</span><strong id="ext-flow-ctr">0%</strong></div>
+                        <div class="metric-chip"><span>유도 CPC</span><strong id="ext-flow-cpc">₩ 0</strong></div>
+                        <div class="metric-chip"><span>추정 CVR</span><strong id="ext-flow-cvr">0%</strong></div>
+                        <div class="metric-chip"><span>예상 CPA</span><strong id="ext-flow-cpa">₩ 0</strong></div>
+                    </div>
+                    <p id="ext-efficiency-main">CTR이 낮으면 같은 CPM에서도 유도 CPC가 상승하고, 그 결과 예상 CPA가 빠르게 나빠집니다.</p>
+                    <p id="ext-efficiency-sub">PM은 CPM만 보는 것보다 CTR과 CVR을 함께 봐야 실제 효율을 판단할 수 있습니다.</p>
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--primary-ext)">🎯 목표 유입 및 필요 노출 (역산)</label>
+                    <div class="input-wrapper">
+                        <div id="ext-qty-out" class="kpi-output kpi-output-dual" style="color:var(--primary-ext); box-shadow: inset 0 0 10px rgba(77, 171, 247, 0.2); border-color: rgba(77, 171, 247, 0.45); background: rgba(77, 171, 247, 0.06);">
+                            유입 0명<br><span style="font-size:14px; opacity:0.8;">(필요 노출: 0회)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stage-summary">
+                    <span>매출 목표: ₩ <span id="target-ext-rev">0</span></span>
+                    <strong id="sum-ext-spend" class="negative-cost">(-) 예상광고비 ₩ 0</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="analysis-card" style="margin-top: 20px; margin-bottom: 10px;">
+            <h4>1-1 vs 1-2 효율 비교</h4>
+            <p id="channel-compare-main">SA와 Paid Media의 예상 CPA와 ROAS를 비교해 비용 대비 효율을 읽어볼 수 있습니다.</p>
+            <p id="channel-compare-sub">일반적으로 SA는 고의도 검색 수요, Paid Media는 확장 유입 확보에 강점이 있습니다.</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="grid-container">
+            <div id="section-gfa" class="section-anchor">
+                <div class="section-title gfa-title">2단계: GFA 리타겟팅 (DA)</div>
+                <div class="input-group">
+                    <label>GFA 예상 전환율 (CVR)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="gfa-cvr" class="calc-input" value="1.5" data-step="0.1" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('gfa-cvr', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('gfa-cvr', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>GFA 클릭당 단가 (CPC)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="gfa-cpc" class="calc-input" value="350" data-step="10" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('gfa-cpc', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('gfa-cpc', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--primary-gfa)">🎯 목표 유입 수량 (자동 역산)</label>
+                    <div class="input-wrapper">
+                        <div id="gfa-qty-out" class="kpi-output kpi-output-dual" style="color:var(--primary-gfa); box-shadow: inset 0 0 10px rgba(77, 171, 247, 0.2); border-color: rgba(77, 171, 247, 0.5); background: rgba(77, 171, 247, 0.05);">목표 클릭 0명<br><span style="font-size:14px; opacity:0.8;">(간이 상한 클릭: 0명)</span></div>
+                    </div>
+                </div>
+                <div class="stage-summary">
+                    <span>매출 목표: ₩ <span id="target-gfa-rev">0</span></span>
+                    <strong id="sum-gfa-spend" class="negative-cost">(-) 예상광고비 ₩ 0</strong>
+                </div>
+                <div class="analysis-card">
+                    <h4>GFA 실현 가능성 인사이트</h4>
+                    <p id="gfa-capacity-main">단순 모델에서는 GFA를 CVR과 CPC만 입력받고, SA/PM이 만든 노출량으로 간이 상한을 추정합니다.</p>
+                    <p id="gfa-capacity-sub">즉 GFA는 독립적으로 무한 확장되는 채널이 아니라, 앞단 노출이 충분할 때 비중을 더 키울 수 있다고 이해하면 됩니다.</p>
+                </div>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; justify-content:center;">
+                <div style="padding: 30px; background: rgba(77, 171, 247, 0.05); border-radius: 16px; border: 1px dashed rgba(77, 171, 247, 0.3);">
+                    <h4 style="color: var(--primary-gfa); margin-top: 0; font-size: 20px;">💡 통합 리타겟팅 모수 안내</h4>
+                    <p style="color: var(--text-sub); line-height: 1.7; font-size: 16px;">
+                        이제 <strong>'1-1단계(SA)'</strong>와 <strong>'1-2단계(외부 매체)'</strong>를 통해 들어온 트래픽이 합산되어 GFA 리타겟팅 모수로 형성됩니다.<br><br>
+                        SA의 CPC가 너무 비싸 모수 확보가 어렵다면, 외부 매체(Meta/IG) 비중을 늘려 싼값에 대량의 트래픽을 끌어오세요. 넉넉해진 모수를 바탕으로 GFA의 전환 효율을 끌어올릴 수 있습니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="section-viral" class="section-anchor">
+        <div class="section-title viral-title">3단계: N쇼핑 구매 후기형 바이럴 (KPI 자동 역산)</div>
+        <div class="grid-container">
+            <div>
+                <div class="input-group">
+                    <label>제품 가격 (판매가)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="viral-price" class="calc-input" value="50,000" data-step="1000" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('viral-price', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('viral-price', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--primary-sa)">🎯 목표 진행 수량 (자동 역산)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">건</span>
+                        <div id="viral-qty-out" class="kpi-output">0</div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>스마트스토어 사업자 등급</label>
+                    <div class="select-wrapper">
+                        <select id="naver-tier" onchange="markPresetAsCustom(); calculate(); saveData();">
+                            <option value="1.947" selected>영세 (수수료 1.947%)</option>
+                            <option value="2.563">중소1 (수수료 2.563%)</option>
+                            <option value="2.728">중소2 (수수료 2.728%)</option>
+                            <option value="3.003">중소3 (수수료 3.003%)</option>
+                            <option value="3.630">일반 (수수료 3.630%)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="input-group">
+                    <label>택배비 (건당)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="viral-shipping" class="calc-input" value="3,000" data-step="500" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('viral-shipping', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('viral-shipping', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>대행 수수료율 (%)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="viral-fee" class="calc-input" value="20" data-step="1" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('viral-fee', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('viral-fee', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stage-summary">
+            <span>매출 목표: ₩ <span id="target-viral-rev">0</span></span>
+            <strong id="sum-viral-net" class="negative-cost">(-) 예상광고비 ₩ 0</strong>
+        </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title infilt-title">4단계: 카페/커뮤니티 침투 마케팅 (순수 비용)[오가닉]</div>
+        <div class="grid-container">
+            <div>
+                <div class="input-group">
+                    <label>기본 세트 단가 (본문1+댓글4)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="infilt-base-price" class="calc-input" value="25,000" data-step="1000" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('infilt-base-price', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('infilt-base-price', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>진행 수량 (세트)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">건</span>
+                        <input type="text" id="infilt-qty" class="calc-input" value="20" data-step="5" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('infilt-qty', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('infilt-qty', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="input-group">
+                    <label>추가 댓글 단가 (개당)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="infilt-comm-price" class="calc-input" value="5,000" data-step="500" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('infilt-comm-price', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('infilt-comm-price', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>추가 댓글 수 (세트당)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">개</span>
+                        <input type="text" id="infilt-comm-qty" class="calc-input" value="0" data-step="1" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('infilt-comm-qty', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('infilt-comm-qty', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stage-summary">
+            <span>💡 4단계 총 지출 비용</span>
+            <strong id="sum-infilt-spend" class="negative-cost">(-) 예상광고비 ₩ 0</strong>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title blog-title">5단계: 네이버 블로그 체험단 (제품 무상 제공)[오가닉]</div>
+        <div class="grid-container">
+            <div>
+                <div class="input-group">
+                    <label>제품 원가/제공가</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="blog-price" class="calc-input" value="20,000" data-step="1000" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('blog-price', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('blog-price', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>원고료/대행비 (건당 - 선택)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="blog-fee" class="calc-input" value="0" data-step="5000" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('blog-fee', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('blog-fee', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="input-group">
+                    <label>택배비 (건당)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="blog-shipping" class="calc-input" value="3,000" data-step="500" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('blog-shipping', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('blog-shipping', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>진행 수량 (명)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">건</span>
+                        <input type="text" id="blog-qty" class="calc-input" value="30" data-step="5" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('blog-qty', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('blog-qty', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stage-summary">
+            <span>💡 5단계 총 지출 비용</span>
+            <strong id="sum-blog-spend" class="negative-cost">(-) 예상광고비 ₩ 0</strong>
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="section-conn" class="section-anchor">
+        <div class="section-title conn-title">6단계: 네이버 쇼핑커넥트 (KPI 자동 역산)[오가닉]</div>
+        <div class="grid-container">
+            <div>
+                <div class="input-group">
+                    <label>제품 판매가</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="conn-price" class="calc-input" value="50,000" data-step="1000" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('conn-price', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('conn-price', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--primary-sa)">🎯 목표 판매 수량 (자동 역산)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">건</span>
+                        <div id="conn-qty-out" class="kpi-output">0</div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="input-group">
+                    <label>인플루언서 수수료율 (%)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">%</span>
+                        <input type="text" id="conn-fee" class="calc-input" value="10" data-step="1" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('conn-fee', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('conn-fee', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stage-summary">
+            <span>매출 목표: ₩ <span id="target-conn-rev">0</span></span>
+            <strong id="sum-conn-spend" class="negative-cost">(-) 예상광고비 ₩ 0</strong>
+        </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title traffic-title">7단계: 실사용자 기반 트래픽 (N쇼핑 카테고리 상위 노출)</div>
+        <div class="grid-container">
+            <div>
+                <div class="input-group">
+                    <label>트래픽 단가 (건당)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">₩</span>
+                        <input type="text" id="traffic-price" class="calc-input" value="70" data-step="10" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('traffic-price', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('traffic-price', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>진행 키워드 수 (개)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">개</span>
+                        <input type="text" id="traffic-kw" class="calc-input" value="3" data-step="1" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('traffic-kw', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('traffic-kw', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="input-group">
+                    <label>키워드당 진행 수량 (건)</label>
+                    <div class="input-wrapper">
+                        <span class="unit">건</span>
+                        <input type="text" id="traffic-qty" class="calc-input" value="10,000" data-step="1000" oninput="handleFormat(this)">
+                        <div class="input-controls">
+                            <button class="ctrl-btn" onclick="adjustVal('traffic-qty', -1)">-</button>
+                            <button class="ctrl-btn" onclick="adjustVal('traffic-qty', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stage-summary">
+            <span>💡 7단계 총 지출 비용</span>
+            <strong id="sum-traffic-spend" class="negative-cost">(-) 예상광고비 ₩ 0</strong>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 최종 하단 요약 패널 -->
+        <div class="result-panel">
+            <div class="result-row ratio-row">
+                <span>📊 GFA 필요 클릭 / 최대 수용 클릭 비율</span>
+                <span id="res-ratio-val" class="ratio-val safe">0.0%</span>
+            </div>
+
+            <div class="result-row" style="margin-top: 20px; font-size: 22px;">
+                <span>🔒 목표 달성 허용 예산 (Budget Cap)</span>
+                <strong id="res-budget-cap" style="color: var(--primary-gfa)">₩ 0</strong>
+            </div>
+            <div class="result-row" style="margin-top: 10px; font-size: 22px;">
+                <span>🔥 현재 세팅 기준 필요 예산 (Actual)</span>
+                <strong id="res-total-spend" style="color: #FF8787">₩ 0</strong>
+            </div>
+            
+            <div class="result-row total" style="margin-top: 30px; border-top: 2px dashed var(--glass-border); padding-top: 25px;">
+                <span>📈 100% 달성 시 보장된 총 매출액</span>
+                <strong id="res-total-rev" style="color: var(--primary-sa)">₩ 0</strong>
+            </div>
+            <div class="result-row total" style="margin-top: 15px; border-top: none; padding-top: 0; font-size: 28px;">
+                <span>🎯 최종 예측 ROAS (목표 대비)</span>
+                <strong id="res-total-roas" style="text-align: right;">0%</strong>
+            </div>
+
+            <button class="export-btn" onclick="exportToExcel()">📊 Excel 보고서용 데이터 복사하기 (TSV)</button>
+        </div>
+
+        <div id="warning-box" class="warning-box">
+            🚨 <b>GFA 수용 클릭 한계 초과 주의!</b><br>
+            현재 리타겟팅 가능 모수, 빈도, CTR 기준으로는 목표 클릭을 모두 소화하기 어렵습니다. <br>
+            리타겟팅 가능 모수율, 빈도, CTR을 높이거나 GFA 매출 목표를 낮춰 주세요.
+        </div>
+
+        <!-- 차트 영역 -->
+        <div class="chart-title">📊 기본 분석 (Basic Analytics)</div>
+        <div class="chart-subtitle">매출 할당액과 실제 필요 예산의 규모 및 매체별 예산 포트폴리오를 점검합니다.</div>
+        <div class="charts-wrapper">
+            <div class="chart-card">
+                <div class="canvas-wrapper"><canvas id="mixChart"></canvas></div>
+                <div class="chart-desc" style="border-color: rgba(91,180,251,0.42);">
+                    <div class="chart-desc-title">💡 <span>그래프 읽는 법</span></div>
+                    매체별로 <strong>[할당된 목표 매출액]</strong> 대비 <strong>[이를 달성하기 위해 써야 할 예산]</strong>의 볼륨을 직관적으로 비교합니다. 우측 예산 막대가 매출 막대보다 턱없이 높다면 <strong>'비효율적인 매체(뱀파이어)'</strong>이므로 비중을 즉시 줄여야 합니다.
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="canvas-wrapper"><canvas id="doughnutChart"></canvas></div>
+                <div class="chart-desc" style="border-color: rgba(91,180,251,0.42);">
+                    <div class="chart-desc-title">💡 <span>그래프 읽는 법</span></div>
+                    우리가 세팅한 전체 지출 예산 100% 중 <strong>각 매체가 차지하는 파이(Pie) 비중</strong>을 보여줍니다. 직접적인 매출을 발생시키는 '퍼포먼스 예산'과 검색 노출을 위한 '브랜딩/방어 예산'의 밸런스가 잘 맞는지 점검하세요.
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-title">🚀 심화 분석 (Advanced Analytics)</div>
+        <div class="chart-subtitle">예산 통제 상황, 단계별 누적 비용 흐름, 퍼널 전환 추이, 매체별 효율 매트릭스를 다차원적으로 뜯어봅니다.</div>
+        
+        <div class="charts-wrapper" style="margin-top: 0;">
+            <div class="chart-card">
+                <div class="canvas-wrapper"><canvas id="gaugeChart"></canvas></div>
+                <div class="chart-desc" style="border-color: rgba(91,180,251,0.42);">
+                    <div class="chart-desc-title">💡 <span>그래프 읽는 법 (재무 통제력)</span></div>
+                    설정한 목표 ROAS를 달성하기 위해 쓸 수 있는 <strong>'예산 상한선(Budget Cap)'</strong> 대비 현재 속도입니다. 바늘이 <strong><span style="color:#22C55E;">안전 구간</span></strong>에 있으면 예산을 세이브한 것이며, <strong><span style="color:#FF6B6B;">경고 구간</span></strong>을 넘어가면 당장 비효율 매체를 컷오프(Cut-off)해야 합니다.
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="canvas-wrapper"><canvas id="waterfallChart"></canvas></div>
+                <div class="chart-desc" style="border-color: rgba(91,180,251,0.42);">
+                    <div class="chart-desc-title">💡 <span>그래프 읽는 법 (비용 발생 흐름)</span></div>
+                    퍼널의 첫 단계(SA/Meta)부터 마지막(트래픽)까지 예산이 어떻게 계단식으로 누적되어 <strong>최종 청구서</strong>를 만드는지 보여줍니다. 그래프가 위로 <strong>가장 길고 가파르게 뛰는 구간</strong>이 현재 우리의 가장 핵심적인 '비용 발생 원인(Cost Driver)'입니다.
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="canvas-wrapper"><canvas id="funnelChart"></canvas></div>
+                <div class="chart-desc" style="border-color: rgba(91,180,251,0.42);">
+                    <div class="chart-desc-title">💡 <span>그래프 읽는 법 (고객 여정 진단)</span></div>
+                    광고 <strong>[노출] ➡️ [유입] ➡️ [최종 결제]</strong>로 이어지는 고객의 이탈률을 시각화합니다. 윗단은 매우 넓은데 가운데 유입이 좁다면 <strong>'광고 소재/배너'</strong>를 교체해야 하고, 유입은 넓은데 최종 결제가 좁다면 <strong>'상세페이지 후기/프로모션'</strong>을 개선해야 합니다.
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="canvas-wrapper"><canvas id="bubbleChart"></canvas></div>
+                <div class="chart-desc" style="border-color: rgba(91,180,251,0.42);">
+                    <div class="chart-desc-title">💡 <span>그래프 읽는 법 (매체 포트폴리오 매트릭스)</span></div>
+                    가로축은 <strong>[비용]</strong>, 세로축은 <strong>[ROAS 효율]</strong>, 원의 크기는 <strong>[매출 규모]</strong>입니다. <strong>좌측 상단(저비용 고효율)</strong>에 위치한 큰 원이 우리의 🌟<strong>캐시카우</strong> 채널이며, <strong>우측 하단(고비용 저효율)</strong>의 원은 예산을 즉시 삭감해야 할 ✂️<strong>투자 경고 대상</strong>입니다.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="toast-msg" class="toast-msg">복사 완료!</div>
+
+<script>
+    let myChart = null,
+        myDoughnutChart = null,
+        myGaugeChart = null,
+        myWaterfallChart = null,
+        myFunnelChart = null,
+        myBubbleChart = null;
+
+    Chart.defaults.color = 'rgba(255, 255, 255, 0.7)';
+    Chart.defaults.font.size = 14;
+
+    let saveTimeout;
+
+    const STORAGE_KEY = 'marketingDashboardData_v6_2_fixed';
+
+    const MIX_IDS = ['mix-sa', 'mix-ext', 'mix-gfa', 'mix-viral', 'mix-conn'];
+
+    const FIELD_RULES = {
+        'total-revenue': { min: 0, max: 100000000000 },
+        'target-roas': { min: 1, max: 100000 },
+        'aov': { min: 1, max: 100000000 },
+
+        'mix-sa': { min: 0, max: 100 },
+        'mix-ext': { min: 0, max: 100 },
+        'mix-gfa': { min: 0, max: 100 },
+        'mix-viral': { min: 0, max: 100 },
+        'mix-conn': { min: 0, max: 100 },
+
+        'sa-cvr': { min: 0, max: 100 },
+        'sa-cpc': { min: 0, max: 1000000 },
+
+        'ext-cpm': { min: 0, max: 1000000 },
+        'ext-ctr': { min: 0, max: 100 },
+
+        'gfa-cvr': { min: 0, max: 100 },
+        'gfa-cpc': { min: 0, max: 1000000 },
+
+        'viral-price': { min: 1, max: 100000000 },
+        'viral-shipping': { min: 0, max: 1000000 },
+        'viral-fee': { min: 0, max: 1000 },
+
+        'infilt-base-price': { min: 0, max: 100000000 },
+        'infilt-qty': { min: 0, max: 1000000 },
+        'infilt-comm-price': { min: 0, max: 100000000 },
+        'infilt-comm-qty': { min: 0, max: 100000 },
+
+        'blog-price': { min: 0, max: 100000000 },
+        'blog-fee': { min: 0, max: 100000000 },
+        'blog-shipping': { min: 0, max: 1000000 },
+        'blog-qty': { min: 0, max: 1000000 },
+
+        'conn-price': { min: 1, max: 100000000 },
+        'conn-fee': { min: 0, max: 1000 },
+
+        'traffic-price': { min: 0, max: 1000000 },
+        'traffic-kw': { min: 0, max: 100000 },
+        'traffic-qty': { min: 0, max: 100000000 }
+    };
+
+    const presets = {
+        beauty: {
+            'mix-sa': '20',
+            'mix-ext': '20',
+            'mix-gfa': '10',
+            'mix-viral': '30',
+            'mix-conn': '20',
+            'aov': '40,000',
+            'sa-cvr': '4.0',
+            'sa-cpc': '600',
+            'ext-cpm': '6,000',
+            'ext-ctr': '1.5',
+            'gfa-cvr': '1.8',
+            'gfa-cpc': '300',
+            'viral-price': '40,000',
+            'conn-price': '40,000',
+            'blog-price': '15,000'
+        },
+        it: {
+            'mix-sa': '50',
+            'mix-ext': '10',
+            'mix-gfa': '10',
+            'mix-viral': '10',
+            'mix-conn': '20',
+            'aov': '150,000',
+            'sa-cvr': '1.0',
+            'sa-cpc': '1,500',
+            'ext-cpm': '8,000',
+            'ext-ctr': '0.8',
+            'gfa-cvr': '0.5',
+            'gfa-cpc': '400',
+            'viral-price': '150,000',
+            'conn-price': '150,000',
+            'blog-price': '50,000'
+        },
+        health: {
+            'mix-sa': '30',
+            'mix-ext': '20',
+            'mix-gfa': '20',
+            'mix-viral': '20',
+            'mix-conn': '10',
+            'aov': '50,000',
+            'sa-cvr': '2.5',
+            'sa-cpc': '800',
+            'ext-cpm': '5,000',
+            'ext-ctr': '1.2',
+            'gfa-cvr': '1.0',
+            'gfa-cpc': '300',
+            'viral-price': '50,000',
+            'conn-price': '50,000',
+            'blog-price': '20,000'
+        }
+    };
+
+    function parseInput(val) {
+        if (val === null || val === undefined) return 0;
+        const num = parseFloat(String(val).replace(/,/g, ''));
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    function formatNum(num) {
+        const safeNum = Number.isFinite(num) ? Math.round(num) : 0;
+        return safeNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    function ceilMoney(num) {
+        return Number.isFinite(num) ? Math.ceil(Math.max(0, num)) : 0;
+    }
+
+    function formatMoney(num) {
+        return ceilMoney(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    function formatRatio(num, digits = 1) {
+        const safeNum = Number.isFinite(num) ? num : 0;
+        return safeNum.toLocaleString('ko-KR', {
+            minimumFractionDigits: digits,
+            maximumFractionDigits: digits
+        });
+    }
+
+    function formatTooltipMoney(num) {
+        return `₩ ${formatMoney(num)}`;
+    }
+
+    function clamp(value, min = -Infinity, max = Infinity) {
+        if (!Number.isFinite(value)) return min > 0 ? min : 0;
+        return Math.min(Math.max(value, min), max);
+    }
+
+    function getRule(id) {
+        return FIELD_RULES[id] || { min: 0, max: Number.MAX_SAFE_INTEGER };
+    }
+
+    function sanitizeNumericString(value) {
+        let raw = String(value ?? '').replace(/[^0-9.]/g, '');
+
+        const firstDot = raw.indexOf('.');
+        if (firstDot !== -1) {
+            raw = raw.slice(0, firstDot + 1) + raw.slice(firstDot + 1).replace(/\./g, '');
+        }
+
+        if (raw.startsWith('.')) raw = '0' + raw;
+        return raw;
+    }
+
+    function normalizeField(el) {
+        const rule = getRule(el.id);
+        const raw = sanitizeNumericString(el.value);
+
+        if (raw === '') {
+            el.value = '';
+            return 0;
+        }
+
+        let num = parseFloat(raw);
+        if (!Number.isFinite(num)) num = 0;
+        num = clamp(num, rule.min, rule.max);
+
+        const parts = String(num).split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        el.value = parts.join('.');
+        return num;
+    }
+
+    function handleFormat(el) {
+        normalizeField(el);
+        markPresetAsCustom();
+        calculate();
+    }
+
+    function adjustVal(inputId, direction) {
+        const input = document.getElementById(inputId);
+        const step = parseFloat(input.getAttribute('data-step')) || 1;
+        const rule = getRule(inputId);
+
+        let currentVal = parseInput(input.value);
+        let newVal = currentVal + (step * direction);
+        newVal = Math.round(newVal * 100) / 100;
+        newVal = clamp(newVal, rule.min, rule.max);
+
+        const parts = String(newVal).split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        input.value = parts.join('.');
+
+        markPresetAsCustom();
+        calculate();
+    }
+
+    function getInputValue(id) {
+        const el = document.getElementById(id);
+        if (!el) return 0;
+        return clamp(parseInput(el.value), getRule(id).min, getRule(id).max);
+    }
+
+    let activeHighlightTimer = null;
+
+    function jumpToSection(sectionId) {
+        const target = document.getElementById(sectionId);
+        if (!target) return;
+
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.remove('section-highlight');
+
+        window.requestAnimationFrame(() => {
+            target.classList.add('section-highlight');
+        });
+
+        if (activeHighlightTimer) {
+            window.clearTimeout(activeHighlightTimer);
+        }
+
+        activeHighlightTimer = window.setTimeout(() => {
+            target.classList.remove('section-highlight');
+        }, 1600);
+    }
+
+    function handleMixCardClick(event, sectionId) {
+        const interactiveTarget = event.target.closest('input, .input-controls, .ctrl-btn');
+        if (interactiveTarget) return;
+        jumpToSection(sectionId);
+    }
+
+    function handleSectionNavKey(event, sectionId) {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        jumpToSection(sectionId);
+    }
+
+    function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.innerText = value;
+    }
+
+    function setHTML(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = value;
+    }
+
+    function showToast(message = '복사 완료!') {
+        const toast = document.getElementById('toast-msg');
+        if (!toast) return;
+        toast.innerText = message;
+        toast.style.opacity = '1';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+        }, 2000);
+    }
+
+    function updatePresetSelectionStatus() {
+        const select = document.getElementById('industry-preset');
+        const statusEl = document.getElementById('preset-selection-status');
+        if (!select || !statusEl) return;
+
+        const selectedOption = select.options[select.selectedIndex];
+        const selectedLabel = selectedOption ? selectedOption.text : '직접 입력 및 미세 조정 중 (커스텀)';
+
+        statusEl.classList.remove('active', 'custom');
+        if (select.value === 'custom') {
+            statusEl.classList.add('custom');
+            statusEl.textContent = '현재 상태: 커스텀 입력 모드';
+        } else {
+            statusEl.classList.add('active');
+            statusEl.textContent = `현재 적용 프리셋: ${selectedLabel}`;
+        }
+    }
+
+    function markPresetAsCustom() {
+        const select = document.getElementById('industry-preset');
+        if (!select || select.value === 'custom') return;
+        select.value = 'custom';
+        updatePresetSelectionStatus();
+    }
+
+    function saveData() {
+        const data = {};
+        document.querySelectorAll('.calc-input, #naver-tier, #industry-preset').forEach(el => {
+            data[el.id] = el.value;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+        const statusEl = document.getElementById('save-status');
+        if (statusEl) {
+            statusEl.style.opacity = '1';
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                statusEl.style.opacity = '0';
+            }, 1500);
+        }
+    }
+
+    function loadData() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return;
+
+        try {
+            const data = JSON.parse(saved);
+            document.querySelectorAll('.calc-input, #naver-tier, #industry-preset').forEach(el => {
+                if (data[el.id] !== undefined) {
+                    el.value = data[el.id];
+                }
+            });
+            updatePresetSelectionStatus();
+        } catch (err) {
+            console.error('저장 데이터 복원 실패:', err);
+        }
+    }
+
+    function resetData() {
+        if (confirm("모든 세팅값을 초기 기본값으로 되돌리시겠습니까?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    function applyPreset(type) {
+        if (type === 'custom') {
+            updatePresetSelectionStatus();
+            saveData();
+            return;
+        }
+
+        const data = presets[type];
+        if (!data) return;
+
+        for (const key in data) {
+            const el = document.getElementById(key);
+            if (el) {
+                el.value = data[key];
+                el.style.backgroundColor = 'rgba(77, 171, 247, 0.16)';
+                setTimeout(() => {
+                    el.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+                }, 300);
+            }
+        }
+
+        document.getElementById('industry-preset').value = type;
+        updatePresetSelectionStatus();
+        calculate();
+        saveData();
+    }
+
+    function initChart() {
+        const ctxMix = document.getElementById('mixChart').getContext('2d');
+        myChart = new Chart(ctxMix, {
+            type: 'bar',
+            data: {
+                labels: ['목표 매출 배분액', '역산 지출 예산'],
+                datasets: [
+                    { label: '쇼핑검색 (SA)', backgroundColor: 'rgba(167, 218, 255, 0.95)', data: [0, 0] },
+                    { label: 'PM', backgroundColor: 'rgba(128, 201, 255, 0.92)', data: [0, 0] },
+                    { label: 'GFA (DA)', backgroundColor: 'rgba(91, 180, 251, 0.9)', data: [0, 0] },
+                    { label: '구매형 바이럴', backgroundColor: 'rgba(71, 156, 232, 0.88)', data: [0, 0] },
+                    { label: '커뮤니티 침투', backgroundColor: 'rgba(117, 147, 180, 0.84)', data: [0, 0] },
+                    { label: '블로그 체험단', backgroundColor: 'rgba(100, 131, 166, 0.84)', data: [0, 0] },
+                    { label: '쇼핑커넥트', backgroundColor: 'rgba(58, 132, 201, 0.88)', data: [0, 0] },
+                    { label: '상위노출 트래픽', backgroundColor: 'rgba(82, 112, 148, 0.82)', data: [0, 0] }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                elements: { bar: { borderRadius: 6, borderWidth: 0 } },
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: {
+                        stacked: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: {
+                            callback: v => v >= 10000 ? (v / 10000).toLocaleString() + '만' : v
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { font: { size: 12 }, usePointStyle: true } }
+                }
+            }
+        });
+
+        const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+        myDoughnutChart = new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: ['SA', 'PM', 'GFA', '바이럴', '침투', '블로그', '커넥트', '트래픽'],
+                datasets: [{
+                    data: [0, 0, 0, 0, 0, 0, 0, 0],
+                    backgroundColor: [
+                        'rgba(167, 218, 255, 0.95)',
+                        'rgba(128, 201, 255, 0.92)',
+                        'rgba(91, 180, 251, 0.9)',
+                        'rgba(71, 156, 232, 0.88)',
+                        'rgba(117, 147, 180, 0.84)',
+                        'rgba(100, 131, 166, 0.84)',
+                        'rgba(58, 132, 201, 0.88)',
+                        'rgba(82, 112, 148, 0.82)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { position: 'right', labels: { font: { size: 12 }, usePointStyle: true } }
+                }
+            }
+        });
+
+        const ctxGauge = document.getElementById('gaugeChart').getContext('2d');
+        myGaugeChart = new Chart(ctxGauge, {
+            type: 'doughnut',
+            data: {
+                labels: ['현재 사용', '잔여'],
+                datasets: [{
+                    data: [0, 100],
+                    backgroundColor: ['rgba(34, 197, 94, 0.84)', 'rgba(255, 255, 255, 0.1)'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                rotation: 270,
+                circumference: 180,
+                cutout: '80%',
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const ctxWaterfall = document.getElementById('waterfallChart').getContext('2d');
+        myWaterfallChart = new Chart(ctxWaterfall, {
+            type: 'bar',
+            data: {
+                labels: ['SA', 'PM', 'GFA', '바이럴', '침투', '블로그', '커넥트', '트래픽', '최종'],
+                datasets: [{
+                    label: '비용',
+                    data: [],
+                    backgroundColor: [
+                        'rgba(167, 218, 255, 0.92)',
+                        'rgba(128, 201, 255, 0.88)',
+                        'rgba(91, 180, 251, 0.86)',
+                        'rgba(71, 156, 232, 0.84)',
+                        'rgba(117, 147, 180, 0.82)',
+                        'rgba(100, 131, 166, 0.82)',
+                        'rgba(58, 132, 201, 0.84)',
+                        'rgba(82, 112, 148, 0.8)',
+                        'rgba(255, 107, 107, 0.9)'
+                    ],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: v => v >= 10000 ? (v / 10000).toLocaleString() + '만' : v
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const raw = context.raw;
+                                if (Array.isArray(raw) && raw.length === 2) {
+                                    return `비용: [${formatMoney(raw[0])}, ${formatMoney(raw[1])}]`;
+                                }
+                                return `비용: ${formatTooltipMoney(raw)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const ctxFunnel = document.getElementById('funnelChart').getContext('2d');
+        myFunnelChart = new Chart(ctxFunnel, {
+            type: 'bar',
+            data: {
+                labels: ['노출(Imp)', '유입(Click)', '액션(Action)'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: 'rgba(91, 180, 251, 0.9)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const ctxBubble = document.getElementById('bubbleChart').getContext('2d');
+        myBubbleChart = new Chart(ctxBubble, {
+            type: 'bubble',
+            data: { datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: {
+                            callback: v => v >= 10000 ? (v / 10000).toLocaleString() + '만' : v
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const point = context.raw || {};
+                                const channel = context.dataset?.label || '채널';
+                                const cost = formatMoney(point.x);
+                                const roas = formatRatio(point.y);
+                                const actualRevenue = formatMoney(point.actualRevenue);
+                                return [
+                                    `채널: ${channel}`,
+                                    `비용: ₩ ${cost}`,
+                                    `ROAS 효율: ${roas}%`,
+                                    `실제 매출액: ₩ ${actualRevenue}`
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function safeDivide(numerator, denominator) {
+        if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) return 0;
+        return numerator / denominator;
+    }
+
+    function calcStageRoasNumber(rev, spend) {
+        return spend > 0 ? Number(((rev / spend) * 100).toFixed(0)) : 0;
+    }
+
+    function calcCapPctNumber(spend, targetBudgetCap) {
+        return targetBudgetCap > 0 ? Number(((spend / targetBudgetCap) * 100).toFixed(1)) : 0;
+    }
+
+    function estimatePaidMediaCvr(saCvr, extCtr) {
+        const safeSaCvr = saCvr > 0 ? saCvr : 1;
+        const safeCtr = extCtr > 0 ? extCtr : 0;
+        const intentWeight = clamp(0.3 + Math.min(safeCtr, 2.0) * 0.1, 0.3, 0.5);
+        return clamp(safeSaCvr * intentWeight, 0.2, safeSaCvr);
+    }
+
+    function updatePaidMediaInsight(saCvr, extCtr, extCvr) {
+        const mainEl = document.getElementById('ext-cvr-insight-main');
+        const subEl = document.getElementById('ext-cvr-insight-sub');
+        if (!mainEl || !subEl) return;
+
+        const intentWeight = clamp(0.3 + Math.min(extCtr > 0 ? extCtr : 0, 2.0) * 0.1, 0.3, 0.5);
+        const low = clamp(extCvr * 0.8, 0.1, 100);
+        const high = clamp(extCvr * 1.2, 0.1, 100);
+
+        mainEl.innerHTML = `자동 추정 CVR: <strong>${formatRatio(extCvr)}%</strong> = SA CVR <strong>${formatRatio(saCvr)}%</strong> × 인텐트 보정치 <strong>${formatRatio(intentWeight * 100)}%</strong>`;
+        subEl.innerHTML = `추천 시작 범위는 <strong>${formatRatio(low)}% ~ ${formatRatio(high)}%</strong>입니다. 이후에는 <strong>구매수 ÷ 랜딩페이지뷰 × 100</strong> 또는 <strong>구매수 ÷ 세션 × 100</strong>으로 실측 CVR을 덮어쓰는 방식이 좋습니다.`;
+    }
+
+    function updateAcquisitionInsights({ aov, saCpc, saCvr, saRoas, extCpm, extCtr, extCvr, extRoas }) {
+        const saCpa = saCvr > 0 ? saCpc / (saCvr / 100) : 0;
+        const saRevenuePerClick = aov * (saCvr / 100);
+        const saEfficiencyRatio = saCpc > 0 ? saRevenuePerClick / saCpc : 0;
+
+        setText('ext-flow-cpm', `₩ ${formatMoney(extCpm)}`);
+        setText('ext-flow-ctr', `${formatRatio(extCtr)}%`);
+
+        const extCpc = extCtr > 0 ? extCpm / (1000 * (extCtr / 100)) : 0;
+        const extCpa = extCvr > 0 ? extCpc / (extCvr / 100) : 0;
+        setText('ext-flow-cpc', `₩ ${formatMoney(extCpc)}`);
+        setText('ext-flow-cvr', `${formatRatio(extCvr)}%`);
+        setText('ext-flow-cpa', `₩ ${formatMoney(extCpa)}`);
+
+        const saMain = document.getElementById('sa-efficiency-main');
+        const saSub = document.getElementById('sa-efficiency-sub');
+        if (saMain && saSub) {
+            saMain.innerHTML = `예상 CPA는 <strong>₩ ${formatMoney(saCpa)}</strong>, 클릭 1회당 기대매출은 <strong>₩ ${formatMoney(saRevenuePerClick)}</strong>입니다.`;
+            if (saEfficiencyRatio >= 1) {
+                saSub.innerHTML = `현재 기준 클릭당 기대매출이 CPC의 <strong>${formatRatio(saEfficiencyRatio, 2)}배</strong>입니다. SA는 검색 의도가 강할수록 비용 효율이 좋아집니다.`;
+            } else {
+                saSub.innerHTML = `현재 기준 클릭당 기대매출이 CPC보다 낮습니다. <strong>CPC 하향</strong> 또는 <strong>CVR 개선</strong> 없이는 효율 방어가 어렵습니다.`;
+            }
+        }
+
+        const extMain = document.getElementById('ext-efficiency-main');
+        const extSub = document.getElementById('ext-efficiency-sub');
+        if (extMain && extSub) {
+            extMain.innerHTML = `유도 CPC는 <strong>₩ ${formatMoney(extCpc)}</strong>, 예상 CPA는 <strong>₩ ${formatMoney(extCpa)}</strong>입니다. CTR이 낮아지면 CPM이 같아도 실제 클릭 비용은 상승합니다.`;
+            extSub.innerHTML = `PM은 <strong>CTR이 CPC를 만들고</strong>, <strong>CVR이 CPA를 결정</strong>합니다. 그래서 CPM 단독보다 <strong>CTR × CVR 조합</strong>을 함께 봐야 현실적인 효율 판단이 됩니다.`;
+        }
+
+        const compareMain = document.getElementById('channel-compare-main');
+        const compareSub = document.getElementById('channel-compare-sub');
+        if (compareMain && compareSub) {
+            const betterCpaIsSa = saCpa > 0 && extCpa > 0 ? saCpa <= extCpa : saRoas >= extRoas;
+            const cpaGap = saCpa > 0 && extCpa > 0 ? Math.abs((extCpa / saCpa) - 1) * 100 : 0;
+            if (betterCpaIsSa) {
+                compareMain.innerHTML = `현재 기준 <strong>SA</strong>가 더 효율적입니다. 예상 CPA는 SA <strong>₩ ${formatMoney(saCpa)}</strong>, Paid Media <strong>₩ ${formatMoney(extCpa)}</strong> 수준입니다.`;
+                compareSub.innerHTML = `Paid Media는 <strong>도달 확장</strong> 역할, SA는 <strong>회수 효율</strong> 역할이 더 강합니다. PM 효율을 끌어올리려면 CPM보다 <strong>CTR와 랜딩 CVR</strong> 개선이 우선입니다.${cpaGap ? ` 현재 CPA 차이는 약 <strong>${formatRatio(cpaGap)}%</strong>입니다.` : ''}`;
+            } else {
+                compareMain.innerHTML = `현재 기준 <strong>Paid Media</strong> 효율이 더 좋게 계산됩니다. 예상 CPA는 SA <strong>₩ ${formatMoney(saCpa)}</strong>, Paid Media <strong>₩ ${formatMoney(extCpa)}</strong> 수준입니다.`;
+                compareSub.innerHTML = `지금 세팅에서는 PM의 <strong>CTR 또는 추정 CVR</strong>이 강하게 잡혀 있습니다. SA는 <strong>CPC 상승</strong> 구간인지 같이 점검하는 것이 좋습니다.${cpaGap ? ` 현재 CPA 차이는 약 <strong>${formatRatio(cpaGap)}%</strong>입니다.` : ''}`;
+            }
+        }
+    }
+
+    function updateGfaCapacityInsight({ upstreamExposure, saExposure, pmExposure, requiredClicks, cappedClicks, realizedRevenue, revenueGap }) {
+        const mainEl = document.getElementById('gfa-capacity-main');
+        const subEl = document.getElementById('gfa-capacity-sub');
+        if (!mainEl || !subEl) return;
+
+        mainEl.innerHTML = `간이 기준으로는 SA 노출 환산 <strong>${formatNum(saExposure)}회</strong>와 Paid Media 노출 <strong>${formatNum(pmExposure)}회</strong>를 합쳐, 총 <strong>${formatNum(upstreamExposure)}회</strong>의 앞단 노출을 GFA 가능 모수의 기반으로 봅니다.`;
+
+        if (revenueGap > 0.5) {
+            subEl.innerHTML = `현재 세팅으로는 목표 클릭 <strong>${formatNum(requiredClicks)}명</strong> 대비 간이 상한 클릭이 <strong>${formatNum(cappedClicks)}명</strong> 수준입니다. 예상 실현 매출은 <strong>₩ ${formatMoney(realizedRevenue)}</strong>, 부족분은 <strong>₩ ${formatMoney(revenueGap)}</strong>입니다. 즉 DA 비중이 앞단 노출량보다 빠르게 커진 상태로 해석할 수 있습니다.`;
+        } else {
+            subEl.innerHTML = `현재 세팅이면 목표 클릭 <strong>${formatNum(requiredClicks)}명</strong>이 앞단 노출 기반 간이 상한 안에 있습니다. 따라서 DA 비중은 무리 없는 범위로 볼 수 있습니다.`;
+        }
+    }
+
+    function updateGfaMixGuidance({ recommendedCap, currentMix, saExposure, pmExposure, upstreamExposure, gfaCapRevenue }) {
+        const box = document.getElementById('mix-gfa-guidance');
+        const card = document.getElementById('mix-gfa-card');
+        if (!box || !card) return;
+
+        const over = currentMix > recommendedCap + 0.01;
+        card.classList.toggle('soft-warning', over);
+        box.classList.add('active');
+
+        if (over) {
+            box.innerHTML = `DA 비중 경고: 현재 <strong>${formatRatio(currentMix)}%</strong>는 권장 상한 <strong>${formatRatio(recommendedCap)}%</strong>를 넘습니다. 단순 모델 기준으로는 SA 노출 환산 <strong>${formatNum(saExposure)}회</strong> + PM 노출 <strong>${formatNum(pmExposure)}회</strong> 수준에서 GFA가 소화 가능한 매출이 약 <strong>₩ ${formatMoney(gfaCapRevenue)}</strong>까지로 추정됩니다.`;
+        } else {
+            box.innerHTML = `DA 비중 가이드: 현재 앞단 노출은 SA 환산 <strong>${formatNum(saExposure)}회</strong>, PM <strong>${formatNum(pmExposure)}회</strong>, 총 <strong>${formatNum(upstreamExposure)}회</strong>입니다. 단순 모델 기준 권장 DA 상한은 <strong>${formatRatio(recommendedCap)}%</strong> 수준이며, 현재 입력값은 이 범위 안에 있습니다.`;
+        }
+    }
+
+    function getTraffic(rev, aov, cvr) {
+        if (aov <= 0 || cvr <= 0) return 0;
+        return (rev / aov) / (cvr / 100);
+    }
+
+    function validateMixTotal(pctTotal) {
+        const badge = document.getElementById('mix-total-badge');
+        const errText = document.getElementById('mix-error-text');
+        const remainingEl = document.getElementById('mix-remaining');
+        const delta = Number((100 - pctTotal).toFixed(1));
+
+        badge.innerText = `총합 ${pctTotal}%`;
+        if (remainingEl) {
+            if (delta >= 0) {
+                remainingEl.innerText = `남은 비율 ${formatRatio(delta)}%`;
+                remainingEl.classList.remove('over');
+            } else {
+                remainingEl.innerText = `초과 비율 ${formatRatio(Math.abs(delta))}%`;
+                remainingEl.classList.add('over');
+            }
+        }
+
+        if (pctTotal !== 100) {
+            badge.className = 'mix-total-badge error';
+            errText.style.display = 'block';
+            return false;
+        }
+
+        badge.className = 'mix-total-badge';
+        errText.style.display = 'none';
+        return true;
+    }
+
+    function normalizeMixToHundred() {
+        const inputs = MIX_IDS.map(id => document.getElementById(id)).filter(Boolean);
+        if (inputs.length === 0) return;
+
+        const values = inputs.map(el => Math.max(0, parseInput(el.value)));
+        const total = values.reduce((sum, value) => sum + value, 0);
+
+        if (total <= 0) return;
+
+        const scaled = values.map(value => (value / total) * 100);
+        const rounded = scaled.map(value => Math.floor(value * 10) / 10);
+        let remainder = Math.round((100 - rounded.reduce((sum, value) => sum + value, 0)) * 10);
+
+        const indexedFractions = scaled
+            .map((value, index) => ({ index, fraction: value - rounded[index] }))
+            .sort((a, b) => b.fraction - a.fraction);
+
+        for (let i = 0; i < indexedFractions.length && remainder > 0; i += 1) {
+            rounded[indexedFractions[i].index] += 0.1;
+            remainder -= 1;
+        }
+
+        inputs.forEach((el, index) => {
+            const normalized = Math.round(rounded[index] * 10) / 10;
+            const parts = String(normalized).split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            el.value = parts.join('.');
+        });
+
+        markPresetAsCustom();
+        calculate();
+    }
+
+    function updateStageSummary(id, spend, roas, capPct, isPureCost = false) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('negative-cost');
+
+        if (isPureCost) {
+            setHTML(
+                id,
+                `(-) 예상광고비 ₩ ${formatMoney(spend)}<br><span style="font-size:13.5px; font-weight:400; color:#aaa;">(순수비용 | 캡 소진 ${capPct.toFixed(1)}%)</span>`
+            );
+            return;
+        }
+
+        setHTML(
+            id,
+            `(-) 예상광고비 ₩ ${formatMoney(spend)}<br><span style="font-size:13.5px; font-weight:400; color:#aaa;">(ROAS ${formatRatio(roas)}% | 캡 소진 ${capPct.toFixed(1)}%)</span>`
+        );
+    }
+
+    function updateCharts(data) {
+        if (!myChart) initChart();
+
+        myChart.data.datasets[0].data = [ceilMoney(data.saRevTarget), ceilMoney(data.saSpend)];
+        myChart.data.datasets[1].data = [ceilMoney(data.extRevTarget), ceilMoney(data.extSpend)];
+        myChart.data.datasets[2].data = [ceilMoney(data.gfaRevTarget), ceilMoney(data.gfaSpend)];
+        myChart.data.datasets[3].data = [ceilMoney(data.viralPaymentSales), ceilMoney(Math.max(0, data.netViralCost))];
+        myChart.data.datasets[4].data = [0, ceilMoney(data.infiltTotalCost)];
+        myChart.data.datasets[5].data = [0, ceilMoney(data.blogTotalCost)];
+        myChart.data.datasets[6].data = [ceilMoney(data.connSales), ceilMoney(data.connTotalCost)];
+        myChart.data.datasets[7].data = [0, ceilMoney(data.trafficTotalCost)];
+        myChart.update();
+
+        myDoughnutChart.data.datasets[0].data = [
+            ceilMoney(data.saSpend),
+            ceilMoney(data.extSpend),
+            ceilMoney(data.gfaSpend),
+            ceilMoney(Math.max(0, data.netViralCost)),
+            ceilMoney(data.infiltTotalCost),
+            ceilMoney(data.blogTotalCost),
+            ceilMoney(data.connTotalCost),
+            ceilMoney(data.trafficTotalCost)
+        ];
+        myDoughnutChart.update();
+
+        if (data.budgetGap >= 0) {
+            myGaugeChart.data.datasets[0].data = [ceilMoney(data.finalTotalSpend), ceilMoney(data.budgetGap)];
+            myGaugeChart.data.datasets[0].backgroundColor = [
+                'rgba(34, 197, 94, 0.84)',
+                'rgba(255, 255, 255, 0.1)'
+            ];
+        } else {
+            myGaugeChart.data.datasets[0].data = [ceilMoney(data.targetBudgetCap), ceilMoney(Math.abs(data.budgetGap))];
+            myGaugeChart.data.datasets[0].backgroundColor = [
+                'rgba(255, 107, 107, 0.8)',
+                'rgba(255, 0, 0, 0.3)'
+            ];
+        }
+        myGaugeChart.update();
+
+        let current = 0;
+        const waterfallData = [];
+        [
+            data.saSpend,
+            data.extSpend,
+            data.gfaSpend,
+            Math.max(0, data.netViralCost),
+            data.infiltTotalCost,
+            data.blogTotalCost,
+            data.connTotalCost,
+            data.trafficTotalCost
+        ].forEach(sp => {
+            waterfallData.push([ceilMoney(current), ceilMoney(current + sp)]);
+            current += sp;
+        });
+        waterfallData.push([0, ceilMoney(current)]);
+
+        myWaterfallChart.data.datasets[0].data = waterfallData;
+        myWaterfallChart.update();
+
+        myFunnelChart.data.datasets[0].data = [
+            data.extImpressions,
+            data.combinedTraffic,
+            data.calcViralQty + data.calcConnQty
+        ];
+        myFunnelChart.update();
+
+        const sf = 1500000;
+        myBubbleChart.data.datasets = [
+            {
+                label: 'SA',
+                data: [{ x: ceilMoney(data.saSpend), y: data.saRoas, r: Math.max(5, ceilMoney(data.saRevTarget) / sf), actualRevenue: ceilMoney(data.saRevTarget) }],
+                backgroundColor: 'rgba(167, 218, 255, 0.82)'
+            },
+            {
+                label: 'PM',
+                data: [{ x: ceilMoney(data.extSpend), y: data.extRoas, r: Math.max(5, ceilMoney(data.extRevTarget) / sf), actualRevenue: ceilMoney(data.extRevTarget) }],
+                backgroundColor: 'rgba(128, 201, 255, 0.78)'
+            },
+            {
+                label: 'GFA',
+                data: [{ x: ceilMoney(data.gfaSpend), y: data.gfaRoas, r: Math.max(5, ceilMoney(data.gfaRevTarget) / sf), actualRevenue: ceilMoney(data.gfaRevTarget) }],
+                backgroundColor: 'rgba(91, 180, 251, 0.76)'
+            },
+            {
+                label: '바이럴',
+                data: [{ x: ceilMoney(Math.max(0, data.netViralCost)), y: data.viralRoas, r: Math.max(5, ceilMoney(data.viralRevTarget) / sf), actualRevenue: ceilMoney(data.viralRevTarget) }],
+                backgroundColor: 'rgba(71, 156, 232, 0.76)'
+            },
+            {
+                label: '커넥트',
+                data: [{ x: ceilMoney(data.connTotalCost), y: data.connRoas, r: Math.max(5, ceilMoney(data.connRevTarget) / sf), actualRevenue: ceilMoney(data.connRevTarget) }],
+                backgroundColor: 'rgba(58, 132, 201, 0.76)'
+            }
+        ];
+        myBubbleChart.update();
+    }
+
+    function calculate() {
+        document.querySelectorAll('.calc-input').forEach(normalizeField);
+
+        const totalRev = getInputValue('total-revenue');
+        const aov = getInputValue('aov') || 1;
+        const targetRoas = getInputValue('target-roas') || 1;
+
+        const targetBudgetCap = totalRev / (targetRoas / 100);
+
+        setText('budget-cap', `₩ ${formatMoney(targetBudgetCap)}`);
+        setText('top-budget-cap', `₩ ${formatMoney(targetBudgetCap)}`);
+        setText('res-budget-cap', `₩ ${formatMoney(targetBudgetCap)}`);
+
+        const pctSa = getInputValue('mix-sa');
+        const pctExt = getInputValue('mix-ext');
+        const pctGfa = getInputValue('mix-gfa');
+        const pctViral = getInputValue('mix-viral');
+        const pctConn = getInputValue('mix-conn');
+        const pctTotal = pctSa + pctExt + pctGfa + pctViral + pctConn;
+        const isMixValid = validateMixTotal(pctTotal);
+
+        const saRevTarget = totalRev * (pctSa / 100);
+        const extRevTarget = totalRev * (pctExt / 100);
+        const gfaRevTarget = totalRev * (pctGfa / 100);
+        const viralRevTarget = totalRev * (pctViral / 100);
+        const connRevTarget = totalRev * (pctConn / 100);
+
+        setText('target-sa-rev', formatMoney(saRevTarget));
+        setText('target-ext-rev', formatMoney(extRevTarget));
+        setText('target-gfa-rev', formatMoney(gfaRevTarget));
+        setText('target-viral-rev', formatMoney(viralRevTarget));
+        setText('target-conn-rev', formatMoney(connRevTarget));
+
+        const saCvr = getInputValue('sa-cvr');
+        const saCpc = getInputValue('sa-cpc');
+        const saTraffic = getTraffic(saRevTarget, aov, saCvr);
+        const saSpend = saTraffic * saCpc;
+
+        const extCpm = getInputValue('ext-cpm');
+        const extCtr = getInputValue('ext-ctr');
+        const extCvr = estimatePaidMediaCvr(saCvr, extCtr);
+        const extTraffic = getTraffic(extRevTarget, aov, extCvr);
+        const extImpressions = extCtr > 0 ? extTraffic / (extCtr / 100) : 0;
+        const extSpend = (extImpressions / 1000) * extCpm;
+
+        const gfaCvr = getInputValue('gfa-cvr');
+        const gfaCpc = getInputValue('gfa-cpc');
+        const gfaRequiredClicks = getTraffic(gfaRevTarget, aov, gfaCvr);
+        const saEstimatedImpressions = saTraffic * 12;
+        const upstreamExposure = saEstimatedImpressions + extImpressions;
+        const gfaMaxClicks = upstreamExposure * 0.0018;
+        const gfaTraffic = Math.min(gfaRequiredClicks, gfaMaxClicks);
+        const gfaSpend = gfaTraffic * gfaCpc;
+        const gfaRealizedRev = gfaTraffic * (gfaCvr / 100) * aov;
+        const gfaRevenueGap = Math.max(0, gfaRevTarget - gfaRealizedRev);
+        const recommendedGfaMixCap = totalRev > 0 ? Math.min(100, (gfaRealizedRev / totalRev) * 100) : 0;
+
+        setText('sa-qty-out', formatNum(saTraffic));
+        setHTML(
+            'ext-qty-out',
+            `유입 ${formatNum(extTraffic)}명<br><span style="font-size:14px; opacity:0.8;">(필요 노출: ${formatNum(extImpressions)}회)</span>`
+        );
+        updatePaidMediaInsight(saCvr, extCtr, extCvr);
+        updateAcquisitionInsights({
+            aov,
+            saCpc,
+            saCvr,
+            saRoas: calcStageRoasNumber(saRevTarget, saSpend),
+            extCpm,
+            extCtr,
+            extCvr,
+            extRoas: calcStageRoasNumber(extRevTarget, extSpend)
+        });
+        setHTML(
+            'gfa-qty-out',
+            `목표 클릭 ${formatNum(gfaRequiredClicks)}명<br><span style="font-size:14px; opacity:0.8;">(간이 상한 클릭: ${formatNum(gfaTraffic)}명 | 앞단 노출: ${formatNum(upstreamExposure)}회)</span>`
+        );
+        updateGfaCapacityInsight({
+            upstreamExposure,
+            saExposure: saEstimatedImpressions,
+            pmExposure: extImpressions,
+            requiredClicks: gfaRequiredClicks,
+            cappedClicks: gfaTraffic,
+            realizedRevenue: gfaRealizedRev,
+            revenueGap: gfaRevenueGap
+        });
+        updateGfaMixGuidance({
+            recommendedCap: recommendedGfaMixCap,
+            currentMix: pctGfa,
+            saExposure: saEstimatedImpressions,
+            pmExposure: extImpressions,
+            upstreamExposure,
+            gfaCapRevenue: gfaRealizedRev
+        });
+
+        const viralPrice = getInputValue('viral-price') || 1;
+        const viralShipping = getInputValue('viral-shipping');
+        const viralFeeRate = getInputValue('viral-fee');
+        const naverTierRate = parseFloat(document.getElementById('naver-tier').value) || 0;
+
+        const calcViralQty = Math.ceil(viralRevTarget / viralPrice);
+        const viralPaymentSales = viralPrice * calcViralQty;
+
+        let netViralCost =
+            ((viralPrice + viralShipping) * calcViralQty * (1 + (viralFeeRate / 100))) -
+            (viralPaymentSales - (viralPaymentSales * (naverTierRate / 100)));
+
+        if (!Number.isFinite(netViralCost)) netViralCost = 0;
+
+        const infiltBasePrice = getInputValue('infilt-base-price');
+        const infiltQty = getInputValue('infilt-qty');
+        const infiltCommPrice = getInputValue('infilt-comm-price');
+        const infiltCommQty = getInputValue('infilt-comm-qty');
+        const infiltTotalCost = (infiltBasePrice + (infiltCommPrice * infiltCommQty)) * infiltQty;
+
+        const blogPrice = getInputValue('blog-price');
+        const blogShipping = getInputValue('blog-shipping');
+        const blogFee = getInputValue('blog-fee');
+        const blogQty = getInputValue('blog-qty');
+        const blogTotalCost = (blogPrice + blogShipping + blogFee) * blogQty;
+
+        const connPrice = getInputValue('conn-price') || 1;
+        const connFeeRate = getInputValue('conn-fee');
+        const calcConnQty = Math.ceil(connRevTarget / connPrice);
+        const connSales = connPrice * calcConnQty;
+        const connTotalCost = (connSales * (connFeeRate / 100)) + (connSales * (naverTierRate / 100));
+
+        setText('viral-qty-out', formatNum(calcViralQty));
+        setText('conn-qty-out', formatNum(calcConnQty));
+
+        const trafficPrice = getInputValue('traffic-price');
+        const trafficKw = getInputValue('traffic-kw');
+        const trafficQty = getInputValue('traffic-qty');
+        const trafficTotalCost = trafficPrice * trafficKw * trafficQty;
+
+        const finalTotalSpend =
+            saSpend +
+            extSpend +
+            gfaSpend +
+            netViralCost +
+            infiltTotalCost +
+            blogTotalCost +
+            connTotalCost +
+            trafficTotalCost;
+
+        const finalTotalRev =
+            saRevTarget +
+            extRevTarget +
+            gfaRealizedRev +
+            viralPaymentSales +
+            connSales;
+
+        const totalRoas = finalTotalSpend > 0 ? (finalTotalRev / finalTotalSpend) * 100 : 0;
+        const budgetGap = targetBudgetCap - finalTotalSpend;
+        const overSpend = Math.max(0, finalTotalSpend - targetBudgetCap);
+
+        const saRoas = calcStageRoasNumber(saRevTarget, saSpend);
+        const extRoas = calcStageRoasNumber(extRevTarget, extSpend);
+        const gfaRoas = calcStageRoasNumber(gfaRealizedRev, gfaSpend);
+        const viralRoas = calcStageRoasNumber(viralRevTarget, Math.max(0.000001, netViralCost));
+        const connRoas = calcStageRoasNumber(connRevTarget, connTotalCost);
+
+        const saCap = calcCapPctNumber(saSpend, targetBudgetCap);
+        const extCap = calcCapPctNumber(extSpend, targetBudgetCap);
+        const gfaCap = calcCapPctNumber(gfaSpend, targetBudgetCap);
+        const viralCap = calcCapPctNumber(netViralCost, targetBudgetCap);
+        const infiltCap = calcCapPctNumber(infiltTotalCost, targetBudgetCap);
+        const blogCap = calcCapPctNumber(blogTotalCost, targetBudgetCap);
+        const connCap = calcCapPctNumber(connTotalCost, targetBudgetCap);
+        const trafficCap = calcCapPctNumber(trafficTotalCost, targetBudgetCap);
+
+        updateStageSummary('sum-sa-spend', saSpend, saRoas, saCap);
+        updateStageSummary('sum-ext-spend', extSpend, extRoas, extCap);
+        updateStageSummary('sum-gfa-spend', gfaSpend, gfaRoas, gfaCap);
+        updateStageSummary('sum-viral-net', netViralCost, viralRoas, viralCap);
+        updateStageSummary('sum-infilt-spend', infiltTotalCost, 0, infiltCap, true);
+        updateStageSummary('sum-blog-spend', blogTotalCost, 0, blogCap, true);
+        updateStageSummary('sum-conn-spend', connTotalCost, connRoas, connCap);
+        updateStageSummary('sum-traffic-spend', trafficTotalCost, 0, trafficCap, true);
+
+        setText('res-total-spend', `₩ ${formatMoney(finalTotalSpend)}`);
+        setText('top-actual-spend', `₩ ${formatMoney(finalTotalSpend)}`);
+        setText('res-total-rev', `₩ ${formatMoney(finalTotalRev)}`);
+
+        const overSpendCard = document.getElementById('top-overspend-card');
+        const overSpendNote = document.getElementById('top-overspend-note');
+        setText('top-overspend', `₩ ${formatMoney(overSpend)}`);
+        if (overSpend > 0) {
+            overSpendCard.classList.remove('safe');
+            overSpendCard.classList.add('danger');
+            overSpendNote.textContent = 'Budget Cap을 초과한 예산입니다';
+        } else {
+            overSpendCard.classList.remove('danger');
+            overSpendCard.classList.add('safe');
+            overSpendNote.textContent = '현재는 예산 상한선 이내입니다';
+        }
+
+        const roasEl = document.getElementById('res-total-roas');
+        if (totalRoas >= targetRoas) {
+            roasEl.style.color = '#22C55E';
+            roasEl.innerHTML =
+                `${formatRatio(totalRoas)}% <br>` +
+                `<span style="font-size:18px; font-weight:400; color:#F8FAFC;">🎉 목표 달성 안정권! (예산 ₩ ${formatMoney(budgetGap)} 세이브 가능)</span>`;
+        } else {
+            roasEl.style.color = '#FF6B6B';
+            roasEl.innerHTML =
+                `${formatRatio(totalRoas)}% <br>` +
+                `<span style="font-size:18px; font-weight:400; color:#F8FAFC;">⚠️ 목표 미달 위험! (예산 ₩ ${formatMoney(Math.abs(budgetGap))} 초과 지출)</span>`;
+        }
+
+        let ratio = 0;
+        const combinedTraffic = saTraffic + extTraffic;
+        if (gfaMaxClicks > 0 && Number.isFinite(gfaMaxClicks)) {
+            ratio = (gfaRequiredClicks / gfaMaxClicks) * 100;
+        }
+
+        const ratioEl = document.getElementById('res-ratio-val');
+        ratioEl.innerText = ratio.toFixed(1) + '%';
+
+        const warnBox = document.getElementById('warning-box');
+        if (ratio > 100) {
+            ratioEl.className = 'ratio-val warn';
+            warnBox.style.display = 'block';
+        } else {
+            ratioEl.className = 'ratio-val safe';
+            warnBox.style.display = 'none';
+        }
+
+        updateCharts({
+            saRevTarget,
+            extRevTarget,
+            gfaRevTarget: gfaRealizedRev,
+            viralRevTarget,
+            connRevTarget,
+            saSpend,
+            extSpend,
+            gfaSpend,
+            netViralCost,
+            infiltTotalCost,
+            blogTotalCost,
+            connTotalCost,
+            trafficTotalCost,
+            viralPaymentSales,
+            connSales,
+            targetBudgetCap,
+            finalTotalSpend,
+            extImpressions,
+            combinedTraffic,
+            calcViralQty,
+            calcConnQty,
+            budgetGap,
+            saRoas,
+            extRoas,
+            gfaRoas,
+            viralRoas,
+            connRoas
+        });
+
+        window.reportData = {
+            isMixValid,
+
+            totalRev: formatMoney(totalRev),
+            targetRoas: formatRatio(targetRoas),
+            budgetCap: formatMoney(targetBudgetCap),
+
+            saRev: formatMoney(saRevTarget),
+            saPct: pctSa,
+            saSpend: formatMoney(saSpend),
+            saKpi: formatNum(saTraffic),
+            saCap: saCap.toFixed(1),
+
+            extRev: formatMoney(extRevTarget),
+            extPct: pctExt,
+            extSpend: formatMoney(extSpend),
+            extKpi: formatNum(extTraffic),
+            extImp: formatNum(extImpressions),
+            extCap: extCap.toFixed(1),
+
+            gfaRev: formatMoney(gfaRealizedRev),
+            gfaTargetRev: formatMoney(gfaRevTarget),
+            gfaPct: pctGfa,
+            gfaSpend: formatMoney(gfaSpend),
+            gfaKpi: formatNum(gfaTraffic),
+            gfaCap: gfaCap.toFixed(1),
+
+            viralRev: formatMoney(viralRevTarget),
+            viralPct: pctViral,
+            viralSpend: formatMoney(netViralCost),
+            viralKpi: formatNum(calcViralQty),
+            viralCap: viralCap.toFixed(1),
+
+            infiltSpend: formatMoney(infiltTotalCost),
+            infiltCap: infiltCap.toFixed(1),
+
+            blogSpend: formatMoney(blogTotalCost),
+            blogCap: blogCap.toFixed(1),
+
+            connRev: formatMoney(connRevTarget),
+            connPct: pctConn,
+            connSpend: formatMoney(connTotalCost),
+            connKpi: formatNum(calcConnQty),
+            connCap: connCap.toFixed(1),
+
+            trafficSpend: formatMoney(trafficTotalCost),
+            trafficCap: trafficCap.toFixed(1),
+
+            finalSpend: formatMoney(finalTotalSpend),
+            finalRev: formatMoney(finalTotalRev),
+            finalRoas: formatRatio(totalRoas)
+        };
+
+        saveData();
+    }
+
+    async function exportToExcel() {
+        const r = window.reportData;
+        if (!r) return;
+
+        if (!r.isMixValid) {
+            alert('매출 기여도 비중의 총합이 100%가 아닙니다. 먼저 비중을 100%로 맞춘 후 내보내기 하세요.');
+            return;
+        }
+
+        let tsv = "퍼널 단계\t매출 목표\t매출 비중\t예상광고비\tCap 소진율\t핵심 KPI\n";
+        tsv += `1-1. 네이버 검색광고 (SA)\t₩ ${r.saRev}\t${r.saPct}%\t₩ ${r.saSpend}\t${r.saCap}%\t유입 ${r.saKpi}명\n`;
+        tsv += `1-2. Paid Media (PM)\t₩ ${r.extRev}\t${r.extPct}%\t₩ ${r.extSpend}\t${r.extCap}%\t유입 ${r.extKpi}명 (노출 ${r.extImp}회)\n`;
+        tsv += `2. GFA 배너 (DA)\t₩ ${r.gfaRev}\t${r.gfaPct}%\t₩ ${r.gfaSpend}\t${r.gfaCap}%\t실현 클릭 ${r.gfaKpi}명 (목표 매출 ₩ ${r.gfaTargetRev})\n`;
+        tsv += `3. 바이럴 (페이백)\t₩ ${r.viralRev}\t${r.viralPct}%\t₩ ${r.viralSpend}\t${r.viralCap}%\t섭외 ${r.viralKpi}건\n`;
+        tsv += `4. 커뮤니티 침투\t-\t-\t₩ ${r.infiltSpend}\t${r.infiltCap}%\t-\n`;
+        tsv += `5. 블로그 체험단\t-\t-\t₩ ${r.blogSpend}\t${r.blogCap}%\t-\n`;
+        tsv += `6. 쇼핑커넥트\t₩ ${r.connRev}\t${r.connPct}%\t₩ ${r.connSpend}\t${r.connCap}%\t판매 ${r.connKpi}건\n`;
+        tsv += `7. 상위노출 트래픽\t-\t-\t₩ ${r.trafficSpend}\t${r.trafficCap}%\t-\n\n`;
+
+        tsv += `핵심 목표\t수치\n`;
+        tsv += `목표 매출\t₩ ${r.totalRev}\n`;
+        tsv += `목표 ROAS\t${r.targetRoas}%\n`;
+        tsv += `Budget Cap\t₩ ${r.budgetCap}\n\n`;
+
+        tsv += `최종 진단\t수치\n`;
+        tsv += `총 지출(Actual)\t₩ ${r.finalSpend}\n`;
+        tsv += `총 매출\t₩ ${r.finalRev}\n`;
+        tsv += `예측 ROAS\t${r.finalRoas}%\n`;
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(tsv);
+                showToast('TSV 복사 완료!');
+            } else {
+                const temp = document.createElement('textarea');
+                temp.value = tsv;
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                showToast('TSV 복사 완료!');
+            }
+        } catch (err) {
+            console.error('복사 실패:', err);
+            alert('클립보드 복사에 실패했습니다. 브라우저 권한을 확인해 주세요.');
+        }
+    }
+
+    window.onload = () => {
+        loadData();
+        updatePresetSelectionStatus();
+        calculate();
+    };
+</script>
+	
+	
+</body>
+</html>
