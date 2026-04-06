@@ -503,8 +503,9 @@
 
         /* 차트 레이아웃 및 캡션 영역 CSS 최적화 */
         .charts-wrapper {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 30px; 
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; 
             margin-top: 30px;
+            min-width: 0;
         }
         .chart-title {
             color: #fff; font-size: 22px; font-weight: 600; margin-top: 80px; margin-bottom: 10px;
@@ -516,9 +517,19 @@
         .chart-card {
             background: rgba(255,255,255,0.02); border-radius: 16px; padding: 20px; box-sizing: border-box;
             border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
         }
         .canvas-wrapper { 
             position: relative; height: 350px; width: 100%; margin-bottom: 20px;
+            min-width: 0;
+            overflow: hidden;
+            isolation: isolate;
+        }
+        .canvas-wrapper canvas {
+            display: block;
+            width: 100% !important;
+            max-width: 100%;
         }
         
         /* 차트 설명(인사이트) 디자인 패널 */
@@ -533,6 +544,9 @@
         }
         .chart-desc strong { color: #fff; }
         
+        @media (max-width: 1200px) {
+            .canvas-wrapper { height: 320px; }
+        }
         @media (max-width: 900px) { .charts-wrapper { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -1628,7 +1642,7 @@
                 maintainAspectRatio: false,
                 cutout: '75%',
                 plugins: {
-                    legend: { position: 'right', labels: { font: { size: 12 }, usePointStyle: true } }
+                    legend: { position: 'bottom', labels: { font: { size: 12 }, usePointStyle: true, boxWidth: 10, padding: 12 } }
                 }
             }
         });
